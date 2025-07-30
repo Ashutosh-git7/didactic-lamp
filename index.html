@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ashirwad Mini App</title>
   <style>
     body {
@@ -20,9 +20,10 @@
       border-radius: 12px;
       max-width: 400px;
       margin: 20px auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    input, button {
+    input,
+    button {
       width: 90%;
       padding: 10px;
       margin: 10px 0;
@@ -41,23 +42,34 @@
     #dashboard {
       margin-top: 20px;
     }
+    #walletBox {
+      background: #f0fff0;
+      padding: 15px;
+      border: 1px dashed #28a745;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-family: monospace;
+      word-wrap: break-word;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
   <h1>🪔 Ashirwad Plan</h1>
+
   <div id="authBox" class="box">
     <h2>Register</h2>
-    <input type="text" id="regName" placeholder="Your Name">
-    <input type="text" id="regPhone" placeholder="Phone Number">
-    <input type="text" id="regRef" placeholder="Referral Code (Optional)">
+    <input type="text" id="regName" placeholder="Your Name" />
+    <input type="text" id="regPhone" placeholder="Phone Number" />
+    <input type="text" id="regRef" placeholder="Referral Code (Optional)" />
     <button onclick="register()">Register</button>
     <p>Already registered? <a href="#" onclick="toggleLogin()">Login</a></p>
   </div>
 
   <div id="loginBox" class="box hidden">
     <h2>Login</h2>
-    <input type="text" id="loginPhone" placeholder="Phone Number">
+    <input type="text" id="loginPhone" placeholder="Phone Number" />
     <button onclick="login()">Login</button>
     <p>New user? <a href="#" onclick="toggleRegister()">Register</a></p>
   </div>
@@ -67,35 +79,42 @@
     <p>📆 Monthly Deposit: ₹100 – ₹1000</p>
     <p>🎁 20% Return in 13th Month</p>
     <p>🔗 Referral Income: 5%</p>
-    <button onclick="alert('Deposit Received!')">Make Deposit</button>
+    
+    <button onclick="showWallet()">Make Deposit</button>
+
+    <div id="walletBox" class="hidden">
+      <p><strong>Send USDT (BEP20)</strong> to:</p>
+      <p style="color: green;">0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p>
+      <p>⚠️ Minimum: $10 USDT</p>
+    </div>
+
     <button onclick="logout()">Logout</button>
   </div>
 
   <script>
     function toggleLogin() {
-      document.getElementById('authBox').classList.add('hidden');
-      document.getElementById('loginBox').classList.remove('hidden');
+      document.getElementById("authBox").classList.add("hidden");
+      document.getElementById("loginBox").classList.remove("hidden");
     }
 
     function toggleRegister() {
-      document.getElementById('loginBox').classList.add('hidden');
-      document.getElementById('authBox').classList.remove('hidden');
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("authBox").classList.remove("hidden");
     }
 
     function register() {
-      const name = document.getElementById('regName').value;
-      const phone = document.getElementById('regPhone').value;
+      const name = document.getElementById("regName").value;
+      const phone = document.getElementById("regPhone").value;
       if (!name || !phone) return alert("Fill all fields");
 
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userPhone', phone);
+      localStorage.setItem("userName", name);
+      localStorage.setItem("userPhone", phone);
       showDashboard();
     }
 
     function login() {
-      const phone = document.getElementById('loginPhone').value;
-      const storedPhone = localStorage.getItem('userPhone');
-      const name = localStorage.getItem('userName');
+      const phone = document.getElementById("loginPhone").value;
+      const storedPhone = localStorage.getItem("userPhone");
       if (phone === storedPhone) {
         showDashboard();
       } else {
@@ -104,22 +123,27 @@
     }
 
     function logout() {
-      document.getElementById('dashboard').classList.add('hidden');
-      document.getElementById('loginBox').classList.remove('hidden');
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("loginBox").classList.remove("hidden");
     }
 
     function showDashboard() {
-      document.getElementById('authBox').classList.add('hidden');
-      document.getElementById('loginBox').classList.add('hidden');
-      document.getElementById('dashboard').classList.remove('hidden');
-      document.getElementById('userName').innerText = localStorage.getItem('userName') || "User";
+      document.getElementById("authBox").classList.add("hidden");
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      document.getElementById("userName").innerText =
+        localStorage.getItem("userName") || "User";
+    }
+
+    function showWallet() {
+      document.getElementById("walletBox").classList.remove("hidden");
     }
 
     window.onload = () => {
-      if (localStorage.getItem('userName')) {
+      if (localStorage.getItem("userName")) {
         showDashboard();
       }
-    }
+    };
   </script>
 </body>
 </html>
