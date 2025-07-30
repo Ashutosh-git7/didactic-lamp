@@ -2,211 +2,282 @@
 <html>
 <head>
   <title>Ashirwad Mini App</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
-    .box { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; margin-bottom: 20px; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #aaa; }
+    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
     h2 { text-align: center; }
-    .hidden { display: none; }
+    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+    .hide { display: none; }
+    .btn { background: #4CAF50; color: white; border: none; cursor: pointer; }
+    .btn:hover { background: #45a049; }
+    .link { color: blue; cursor: pointer; text-align: center; display: block; margin-top: 10px; }
+    table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+    .admin-panel { background: #ffe0b2; }
   </style>
 </head>
 <body>
+  <div class="container" id="welcomeBox">
+    <h2>Ashirwad Mini App</h2>
+    <button onclick="showRegister()">Register</button>
+    <button onclick="showLogin()">Login</button>
+    <button onclick="showAdminLogin()">Admin Login</button>
+  </div>
 
-<div class="box" id="loginBox">
-  <h2>User Register / Login</h2>
-  <input type="text" id="wallet" placeholder="Your BEP20 Wallet Address">
-  <input type="text" id="ref" placeholder="Referral Code (optional)">
-  <button onclick="register()">Register</button>
-  <input type="text" id="loginId" placeholder="Enter your ANS ID">
-  <button onclick="login()">Login</button>
-</div>
+  <div class="container hide" id="registerBox">
+    <h2>User Registration</h2>
+    <input type="text" id="regName" placeholder="Your Name" />
+    <input type="text" id="regWallet" placeholder="Your USDT BEP20 Wallet Address" />
+    <input type="text" id="regPassword" placeholder="Password" />
+    <input type="text" id="regRef" placeholder="Referral Code (Optional)" />
+    <button class="btn" onclick="registerUser()">Register</button>
+    <div class="link" onclick="backHome()">Back</div>
+  </div>
 
-<div class="box hidden" id="userBox">
-  <h2>Welcome, <span id="userIdShow"></span></h2>
-  <p><b>Referral Link:</b> <span id="refLink"></span></p>
-  <p><b>Your Wallet:</b> <span id="walletShow"></span></p>
+  <div class="container hide" id="loginBox">
+    <h2>User Login</h2>
+    <input type="text" id="logID" placeholder="Your ID" />
+    <input type="password" id="logPass" placeholder="Password" />
+    <button class="btn" onclick="loginUser()">Login</button>
+    <div class="link" onclick="backHome()">Back</div>
+  </div>
 
-  <hr>
-  <h3>Deposit</h3>
-  <p>Send USDT to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
-  <input type="number" id="depositAmt" placeholder="Enter amount (10–1000)">
-  <button onclick="makeDeposit()">Submit Deposit</button>
-
-  <hr>
-  <h3>Your Info</h3>
-  <p>Deposit: $<span id="depAmt">0</span> (<span id="depStatus">❌</span>)</p>
-  <p>Interest (after 30 days): $<span id="interestAmt">0</span></p>
-  <p>Referral Income: $<span id="refAmt">0</span></p>
-
-  <hr>
-  <h3>Withdraw</h3>
-  <input type="number" id="withdrawAmt" placeholder="Min $1">
-  <button onclick="requestWithdraw()">Withdraw</button>
-  <p>Status: <span id="withdrawStatus">N/A</span></p>
-
-  <hr>
-  <h3>Referral Team</h3>
-  <ul id="refList"></ul>
-
-  <button onclick="logout()">Logout</button>
-</div>
-
-<div class="box" id="adminBox">
-  <h2>Admin Login</h2>
-  <input type="text" id="adminId" placeholder="Admin ID">
-  <input type="password" id="adminPass" placeholder="Password">
-  <button onclick="adminLogin()">Login</button>
-</div>
-
-<div class="box hidden" id="adminPanel">
-  <h2>All Users</h2>
-  <div id="allUsers"></div>
-  <button onclick="logout()">Logout</button>
-</div>
+  <div class="container hide" id="adminLoginBox">
+    <h2>Admin Login</h2>
+    <input type="text" id="adminID" placeholder="Admin ID" />
+    <input type="password" id="adminPass" placeholder="Password" />
+    <button class="btn" onclick="loginAdmin()">Login</button>
+    <div class="link" onclick="backHome()">Back</div>
+  </div>
 
 <script>
-let users = JSON.parse(localStorage.getItem("users") || "{}");
-let currentUser = null;
+let users = JSON.parse(localStorage.getItem("ashirwad_users") || "[]");
+let currentUserID = localStorage.getItem("ashirwad_current");
+let isAdmin = localStorage.getItem("ashirwad_admin") === "true";
+const usdtAddress = "0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B";
 
-function generateId() {
-  return "ANS" + Math.random().toString(36).substring(2, 6);
+function showRegister() {
+  hideAll(); document.getElementById("registerBox").classList.remove("hide");
 }
 
-function register() {
-  const wallet = document.getElementById("wallet").value.trim();
-  const ref = document.getElementById("ref").value.trim().toLowerCase();
-
-  if (!wallet) return alert("Please enter wallet address.");
-  const id = generateId();
-  users[id] = {
-    id,
-    wallet,
-    ref,
-    depAmt: 0,
-    depApproved: false,
-    depTime: null,
-    refAmt: 0,
-    interest: 0,
-    withdrawStatus: "N/A",
-    team: []
-  };
-  if (ref) {
-    for (let uid in users) {
-      if (uid.slice(3).toLowerCase() === ref) {
-        users[uid].refAmt += 0;
-        users[uid].team.push(id);
-        break;
-      }
-    }
-  }
-  localStorage.setItem("users", JSON.stringify(users));
-  alert("Registered. Your ID is: " + id);
-  document.getElementById("loginId").value = id;
+function showLogin() {
+  hideAll(); document.getElementById("loginBox").classList.remove("hide");
 }
 
-function login() {
-  const idInput = document.getElementById("loginId").value.trim().toUpperCase();
-  if (!users[idInput]) return alert("Invalid ID");
-  currentUser = idInput;
-  showUser();
+function showAdminLogin() {
+  hideAll(); document.getElementById("adminLoginBox").classList.remove("hide");
 }
 
-function showUser() {
-  const u = users[currentUser];
-  document.getElementById("loginBox").classList.add("hidden");
-  document.getElementById("adminBox").classList.add("hidden");
-  document.getElementById("userBox").classList.remove("hidden");
-  document.getElementById("userIdShow").innerText = currentUser;
-  document.getElementById("walletShow").innerText = u.wallet;
-  document.getElementById("refLink").innerText = window.location.href.split('?')[0] + "?r=" + currentUser.slice(3).toLowerCase();
-  document.getElementById("depAmt").innerText = u.depAmt;
-  document.getElementById("depStatus").innerText = u.depApproved ? "✅" : "❌";
-  document.getElementById("interestAmt").innerText = calcInterest(u);
-  document.getElementById("refAmt").innerText = u.refAmt.toFixed(2);
-  document.getElementById("withdrawStatus").innerText = u.withdrawStatus || "N/A";
-  document.getElementById("refList").innerHTML = (u.team || []).map(id => `<li>${id}</li>`).join("");
+function backHome() {
+  hideAll(); document.getElementById("welcomeBox").classList.remove("hide");
+}
+
+function hideAll() {
+  document.querySelectorAll(".container").forEach(e => e.classList.add("hide"));
+}
+
+function generateID() {
+  return "ANS" + Math.floor(1000 + Math.random() * 9000);
+}
+
+function registerUser() {
+  const name = document.getElementById("regName").value.trim();
+  const wallet = document.getElementById("regWallet").value.trim();
+  const pass = document.getElementById("regPassword").value.trim();
+  const ref = document.getElementById("regRef").value.trim();
+  if (!name || !wallet || !pass) return alert("All fields are required.");
+  const id = generateID();
+  const user = { id, name, wallet, pass, ref, deposit: 0, depositDate: null, interest: 0, referralEarn: 0, team: [], withdrawRequests: [] };
+  users.push(user);
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+  alert("Registration successful! Your ID is: " + id);
+  backHome();
+}
+
+function loginUser() {
+  const id = document.getElementById("logID").value.trim();
+  const pass = document.getElementById("logPass").value.trim();
+  const user = users.find(u => u.id === id && u.pass === pass);
+  if (user) {
+    localStorage.setItem("ashirwad_current", id);
+    location.reload();
+  } else alert("Invalid ID or Password");
+}
+
+function loginAdmin() {
+  const id = document.getElementById("adminID").value.trim();
+  const pass = document.getElementById("adminPass").value.trim();
+  if (id === "Admin" && pass === "Jaihanuman@7") {
+    localStorage.setItem("ashirwad_admin", "true");
+    location.reload();
+  } else alert("Invalid Admin credentials");
+}
+
+if (currentUserID) showDashboard();
+else if (isAdmin) showAdminPanel();
+
+function showDashboard() {
+  const user = users.find(u => u.id === currentUserID);
+  document.body.innerHTML = `
+  <div class="container">
+    <h2>Welcome ${user.name}</h2>
+    <p><strong>ID:</strong> ${user.id}</p>
+    <p><strong>Wallet:</strong> ${user.wallet}</p>
+    <p><strong>Referral Code:</strong> ${user.id.toLowerCase()}</p>
+    <p><strong>Your Referral Link:</strong> <input value="?r=${user.id.toLowerCase()}" readonly /></p>
+
+    <h3>Make a Deposit</h3>
+    <p>Send USDT (BEP20) to:</p>
+    <input value="${usdtAddress}" readonly />
+    <input type="number" id="depositAmt" placeholder="Enter amount ($10 - $1000)" />
+    <button class="btn" onclick="makeDeposit()">I Have Paid</button>
+
+    <h3>Your Deposit</h3>
+    <p><strong>Amount:</strong> $${user.deposit || 0}</p>
+    <p><strong>Deposited On:</strong> ${user.depositDate || 'N/A'}</p>
+    <p><strong>Interest Earned:</strong> $${user.interest.toFixed(2)}</p>
+    <p><strong>Referral Income:</strong> $${user.referralEarn.toFixed(2)}</p>
+    <button onclick="withdrawInterest()">Withdraw Interest</button>
+    <button onclick="withdrawReferral()">Withdraw Referral</button>
+
+    <h3>Withdraw Principal (after 100 days)</h3>
+    <button onclick="requestWithdraw()">Request Withdrawal</button>
+
+    <h3>Your Team</h3>
+    <ul>${user.team.map(t => `<li>${t}</li>`).join('')}</ul>
+
+    <button onclick="logout()">Logout</button>
+  </div>
+  `;
+  updateEarnings(user);
 }
 
 function makeDeposit() {
   const amt = parseFloat(document.getElementById("depositAmt").value);
-  if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Enter valid amount between 10 and 1000");
-  let u = users[currentUser];
-  u.depAmt = amt;
-  u.depApproved = false;
-  u.depTime = Date.now();
-  localStorage.setItem("users", JSON.stringify(users));
-  alert("Deposit submitted for admin approval.");
-  showUser();
+  if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Enter amount between $10 - $1000.");
+  const user = users.find(u => u.id === currentUserID);
+  user.deposit = amt;
+  user.depositDate = new Date().toISOString();
+  user.interest = 0;
+  user.withdrawRequests = [];
+
+  if (user.ref) {
+    const refUser = users.find(u => u.id.toLowerCase() === user.ref.toLowerCase());
+    if (refUser) {
+      refUser.referralEarn += amt * 0.10;
+      refUser.team.push(user.id);
+    }
+  }
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+  alert("Deposit recorded.");
+  location.reload();
 }
 
-function calcInterest(u) {
-  if (!u.depApproved || !u.depTime) return 0;
-  let days = (Date.now() - u.depTime) / (1000 * 60 * 60 * 24);
-  if (days >= 30) return (u.depAmt * 0.05).toFixed(2);
-  return "0.00";
+function updateEarnings(user) {
+  if (!user.deposit || !user.depositDate) return;
+  const days = Math.floor((new Date() - new Date(user.depositDate)) / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
+  user.interest = parseFloat((user.deposit * 0.05 * months).toFixed(2));
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+}
+
+function withdrawInterest() {
+  const user = users.find(u => u.id === currentUserID);
+  if (user.interest < 1) return alert("Minimum $1 required.");
+  user.withdrawRequests.push({ type: 'interest', amount: user.interest, status: 'pending' });
+  user.interest = 0;
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+  alert("Interest withdrawal requested.");
+  location.reload();
+}
+
+function withdrawReferral() {
+  const user = users.find(u => u.id === currentUserID);
+  if (user.referralEarn < 1) return alert("Minimum $1 required.");
+  user.withdrawRequests.push({ type: 'referral', amount: user.referralEarn, status: 'pending' });
+  user.referralEarn = 0;
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+  alert("Referral withdrawal requested.");
+  location.reload();
 }
 
 function requestWithdraw() {
-  const amt = parseFloat(document.getElementById("withdrawAmt").value);
-  if (isNaN(amt) || amt < 1) return alert("Min $1 required");
-  users[currentUser].withdrawStatus = "Pending $" + amt;
-  localStorage.setItem("users", JSON.stringify(users));
-  alert("Withdrawal request sent.");
-  showUser();
+  const user = users.find(u => u.id === currentUserID);
+  if (!user.depositDate) return;
+  const days = Math.floor((new Date() - new Date(user.depositDate)) / (1000 * 60 * 60 * 24));
+  if (days < 100) return alert("You can withdraw after 100 days.");
+  user.withdrawRequests.push({ type: 'principal', amount: user.deposit, status: 'pending' });
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+  alert("Principal withdrawal requested.");
+  location.reload();
 }
 
 function logout() {
-  currentUser = null;
-  document.getElementById("userBox").classList.add("hidden");
-  document.getElementById("adminPanel").classList.add("hidden");
-  document.getElementById("loginBox").classList.remove("hidden");
-  document.getElementById("adminBox").classList.remove("hidden");
-}
-
-// ---------------- ADMIN PANEL ----------------
-function adminLogin() {
-  const id = document.getElementById("adminId").value;
-  const pass = document.getElementById("adminPass").value;
-  if (id === "Admin" && pass === "Jaihanuman@7") {
-    showAdminPanel();
-  } else {
-    alert("Wrong admin credentials");
-  }
+  localStorage.removeItem("ashirwad_current");
+  localStorage.removeItem("ashirwad_admin");
+  location.reload();
 }
 
 function showAdminPanel() {
-  document.getElementById("loginBox").classList.add("hidden");
-  document.getElementById("adminBox").classList.add("hidden");
-  document.getElementById("adminPanel").classList.remove("hidden");
-  let html = "";
-  for (let id in users) {
-    const u = users[id];
-    html += `<div style="border:1px solid #ccc; padding:10px; margin:10px 0;">
-      <b>${id}</b><br>Wallet: ${u.wallet}<br>
-      Deposit: $${u.depAmt} (${u.depApproved ? "✅" : "❌"}) 
-      <button onclick="approveDeposit('${id}')">Approve</button><br>
-      Interest: $${calcInterest(u)} | Referral: $${u.refAmt}<br>
-      Withdraw: ${u.withdrawStatus || "N/A"} 
-      <button onclick="approveWithdraw('${id}')">Approve</button>
-    </div>`;
-  }
-  document.getElementById("allUsers").innerHTML = html;
+  document.body.innerHTML = `<div class="container admin-panel"><h2>Admin Panel</h2><button onclick="logout()">Logout</button><h3>All Users</h3><div id="userList"></div></div>`;
+  displayAllUsers();
 }
 
-function approveDeposit(id) {
-  users[id].depApproved = true;
-  localStorage.setItem("users", JSON.stringify(users));
+function displayAllUsers() {
+  const container = document.getElementById("userList");
+  container.innerHTML = "";
+  users.forEach((u, i) => {
+    let wHtml = "";
+    if (u.withdrawRequests.length > 0) {
+      wHtml = `
+      <table>
+        <tr><th>Type</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+        ${u.withdrawRequests.map((w, wi) => `
+          <tr>
+            <td>${w.type}</td>
+            <td>$${w.amount}</td>
+            <td>${w.status}</td>
+            <td>${w.status === 'pending' ? `
+              <button onclick="approveWithdraw(${i}, ${wi})">✅</button>
+              <button onclick="rejectWithdraw(${i}, ${wi})">❌</button>` : ''}
+            </td>
+          </tr>`).join('')}
+      </table>`;
+    }
+
+    container.innerHTML += `
+    <div style="border:1px solid #aaa; padding:10px; margin-bottom:10px;">
+      <strong>ID:</strong> ${u.id}<br>
+      <strong>Name:</strong> <input value="${u.name}" onchange="editField(${i}, 'name', this.value)" /><br>
+      <strong>Wallet:</strong> ${u.wallet}<br>
+      <strong>Password:</strong> <input value="${u.pass}" onchange="editField(${i}, 'pass', this.value)" /><br>
+      <strong>Deposit:</strong> <input value="${u.deposit}" onchange="editField(${i}, 'deposit', this.value)" /><br>
+      <strong>Referral:</strong> ${u.ref || 'None'}<br>
+      <strong>Interest:</strong> <input value="${u.interest}" onchange="editField(${i}, 'interest', this.value)" /><br>
+      <strong>Referral Earned:</strong> <input value="${u.referralEarn}" onchange="editField(${i}, 'referralEarn', this.value)" /><br>
+      ${wHtml}
+    </div>`;
+  });
+}
+
+function editField(i, field, val) {
+  users[i][field] = field === 'deposit' || field === 'interest' || field === 'referralEarn' ? parseFloat(val) : val;
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
+}
+
+function approveWithdraw(i, wi) {
+  users[i].withdrawRequests[wi].status = 'approved';
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
   showAdminPanel();
 }
 
-function approveWithdraw(id) {
-  users[id].withdrawStatus = "Approved";
-  localStorage.setItem("users", JSON.stringify(users));
+function rejectWithdraw(i, wi) {
+  users[i].withdrawRequests[wi].status = 'rejected';
+  localStorage.setItem("ashirwad_users", JSON.stringify(users));
   showAdminPanel();
 }
 </script>
-
 </body>
 </html>
