@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ashirwad Mini App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #ccc;
+      margin-bottom: 20px;
+    }
+    input, button, select {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    h2 { margin-top: 0; }
+    .admin-section { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>Ashirwad Mini App</h1>
+
+  <div class="box">
+    <h2>User Registration / Login</h2>
+    <input type="text" id="userId" placeholder="Enter Your ID" />
+    <button onclick="loginUser()">Login</button>
+  </div>
+
+  <div id="userSection" class="box" style="display:none">
+    <h2>Welcome, <span id="currentUser"></span></h2>
+
+    <label>Deposit Amount ($10 - $1000)</label>
+    <input type="number" id="depositAmount" min="10" max="1000" />
+    <button onclick="makeDeposit()">Make Deposit</button>
+
+    <label>Your USDT Wallet Address (for withdrawal)</label>
+    <input type="text" id="walletAddress" />
+    <button onclick="saveWallet()">Save Wallet Address</button>
+
+    <p><b>Your Referral Link:</b><br><span id="refLink"></span></p>
+
+    <h3>📊 Your Data</h3>
+    <p>Deposit Amount: $<span id="depoAmt">0</span></p>
+    <p>Monthly 5% Dividend: $<span id="monthlyProfit">0</span></p>
+    <p>Referral Earnings: $<span id="refEarnings">0</span></p>
+    <p>Referred Users: <span id="teamList">None</span></p>
+  </div>
+
+  <div class="box">
+    <h2>USDT Deposit Address (Fixed)</h2>
+    <p><b>BEP20:</b> 0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p>
+  </div>
+
+  <div class="box">
+    <h2>Admin Login</h2>
+    <input type="text" id="adminId" placeholder="Admin ID" />
+    <input type="password" id="adminPass" placeholder="Password" />
+    <button onclick="adminLogin()">Login as Admin</button>
+  </div>
+
+  <div class="box admin-section" id="adminPanel">
+    <h2>🔐 Admin Panel</h2>
+    <div id="adminData"></div>
+  </div>
+
+  <script>
+    const userDB = {};
+    let currentUser = null;
+
+    function loginUser() {
+      const uid = document.getElementById("userId").value.trim();
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (!userDB[uid]) {
+        userDB[uid] = { deposit: 0, wallet: "", refBy: ref || null, referrals: [], refEarn: 0 };
+        if (ref && userDB[ref]) {
+          userDB[ref].referrals.push(uid);
+        }
+      }
+      currentUser = uid;
+      document.getElementById("currentUser").innerText = uid;
+      document.getElementById("userSection").style.display = "block";
+      document.getElementById("refLink").innerText = window.location.href.split('?')[0] + "?ref=" + uid;
+      updateUserData();
+    }
+
+    function makeDeposit() {
+      const amt = parseFloat(document.getElementById("depositAmount").value);
+      if (amt >= 10 && amt <= 1000) {
+        userDB[currentUser].deposit += amt;
+        const ref = userDB[currentUser].refBy;
+        if (ref && userDB[ref]) {
+          userDB[ref].refEarn += amt * 0.10;
+        }
+        updateUserData();
+        alert("Deposit recorded. Pay to the fixed USDT address.");
+      } else {
+        alert("Amount must be between $10 and $1000");
+      }
+    }
+
+    function saveWallet() {
+      const addr = document.getElementById("walletAddress").value.trim();
+      userDB[currentUser].wallet = addr;
+      alert("Wallet address saved.");
+    }
+
+    function updateUserData() {
+      const user = userDB[currentUser];
+      document.getElementById("depoAmt").innerText = user.deposit.toFixed(2);
+      document.getElementById("monthlyProfit").innerText = (user.deposit * 0.05).toFixed(2);
+      document.getElementById("refEarnings").innerText = user.refEarn.toFixed(2);
+      document.getElementById("teamList").innerText = user.referrals.length ? user.referrals.join(", ") : "None";
+    }
+
+    function adminLogin() {
+      const id = document.getElementById("adminId").value.trim();
+      const pass = document.getElementById("adminPass").value.trim();
+      if (id === "admin" && pass === "1234") {
+        document.getElementById("adminPanel").style.display = "block";
+        showAdminData();
+      } else {
+        alert("Invalid admin credentials");
+      }
+    }
+
+    function showAdminData() {
+      let html = "";
+      for (const uid in userDB) {
+        const u = userDB[uid];
+        html += `
+          <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px">
+            <b>ID:</b> ${uid}<br>
+            <label>Deposit: <input type="number" value="${u.deposit}" onchange="updateField('${uid}', 'deposit', this.value)" /></label><br>
+            <label>Wallet: <input type="text" value="${u.wallet}" onchange="updateField('${uid}', 'wallet', this.value)" /></label><br>
+            <label>Referral Earnings: <input type="number" value="${u.refEarn}" onchange="updateField('${uid}', 'refEarn', this.value)" /></label><br>
+            <small>Referrals: ${u.referrals.join(", ") || "None"}</small>
+          </div>`;
+      }
+      document.getElementById("adminData").innerHTML = html;
+    }
+
+    function updateField(uid, field, value) {
+      if (field === "deposit" || field === "refEarn") {
+        userDB[uid][field] = parseFloat(value);
+      } else {
+        userDB[uid][field] = value;
+      }
+      if (uid === currentUser) updateUserData();
+    }
+  </script>
+</body>
+</html>
