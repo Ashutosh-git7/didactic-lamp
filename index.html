@@ -10,7 +10,7 @@
     .btn { background: #28a745; color: white; font-weight: bold; }
     .btn:hover { background: #218838; cursor: pointer; }
     .admin { background: #ffc107; color: black; font-weight: bold; }
-    .hidden { display: none; }
+    code { word-break: break-all; }
   </style>
 </head>
 <body>
@@ -20,6 +20,7 @@
   <script>
     const adminID = "admin";
     const adminPass = "admin123";
+    const usdtAddress = "0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B";
 
     const urlParams = new URLSearchParams(window.location.search);
     const ref = urlParams.get('ref');
@@ -116,8 +117,10 @@
           <p><b>Total Deposits:</b> $${deposits}</p>
           <p><b>Referral Earnings:</b> $${referralAmount.toFixed(2)}</p>
           <p><b>Referral Link:</b><br><code>${location.origin + location.pathname}?ref=${user.userId}</code></p>
+          <hr>
+          <p><b>Deposit USDT to:</b><br><code>${usdtAddress}</code></p>
           <button onclick="setWallet()">Set/Change Wallet</button>
-          <button onclick="addDeposit()">Make Deposit</button>
+          <button onclick="addDeposit()">Mark Deposit</button>
           <button onclick="showTeam()">View Referral Team</button>
           <button onclick="logout()">Logout</button>
         </div>
@@ -137,7 +140,7 @@
     }
 
     function addDeposit() {
-      let amt = prompt("Enter amount to deposit (10 - 1000 USDT):");
+      let amt = prompt("Enter amount you deposited (10 - 1000 USDT):");
       amt = parseFloat(amt);
       if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Invalid amount");
       let uid = localStorage.getItem("currentUser");
@@ -203,7 +206,6 @@
       show(html);
     }
 
-    // Auto load home or dashboard
     if (localStorage.getItem("currentUser")) dashboard();
     else home();
   </script>
