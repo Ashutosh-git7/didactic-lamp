@@ -21,13 +21,15 @@
 
   <!-- Registration -->
   <div id="authSection">
-    <input type="text" id="refInput" placeholder="Referral ID (optional)" />
+    <input type="text" id="refInput" placeholder="Referral Code (optional)" />
+    <input type="text" id="walletInput" placeholder="Your BEP20 Wallet Address" />
     <button onclick="registerUser()">Register / Login</button>
   </div>
 
   <!-- Dashboard -->
   <div id="dashboard" class="hidden">
     <p><b>Your ID:</b> <span id="userId"></span></p>
+    <p><b>Wallet:</b> <span id="userWallet"></span></p>
     <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
     <p><b>Interest:</b> <span id="userInterest">0</span> USDT</p>
     <p><b>Referral:</b> <span id="userReferral">0</span> USDT</p>
@@ -37,12 +39,6 @@
       <p>Send to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
       <input type="number" id="depositAmt" placeholder="Amount (1-1000)" />
       <button onclick="submitDeposit()">I have paid</button>
-    </div>
-
-    <div class="section">
-      <h4>🔐 Wallet Address</h4>
-      <input type="text" id="walletAddr" placeholder="Your BEP20 Wallet" />
-      <button onclick="saveWallet()">Save Wallet</button>
     </div>
 
     <div class="section">
@@ -90,11 +86,23 @@ function saveData() {
   localStorage.setItem("ashirWithdrawals", JSON.stringify(withdrawals));
 }
 
+function generateId() {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let id = "u";
+  for (let i = 0; i < 4; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
 function registerUser() {
   const ref = document.getElementById("refInput").value.trim();
-  const id = "ID" + Math.floor(10000 + Math.random() * 90000);
+  const wallet = document.getElementById("walletInput").value.trim();
+  if (wallet.length < 10) return alert("Enter valid wallet address.");
+
+  const id = generateId();
   users[id] = {
-    deposit: 0, approved: false, interest: 0, wallet: "",
+    deposit: 0, approved: false, interest: 0, wallet,
     refBy: ref, referrals: [], refAmt: 0, depDate: null
   };
   if (users[ref]) users[ref].referrals.push(id);
@@ -109,13 +117,14 @@ function showDashboard() {
   document.getElementById("dashboard").classList.remove("hidden");
   let u = users[current];
   document.getElementById("userId").innerText = current;
+  document.getElementById("userWallet").innerText = u.wallet;
   document.getElementById("userDeposit").innerText = u.deposit;
   const days = getDaysSince(u.depDate);
   document.getElementById("userInterest").innerText =
     u.approved && days >= 30 ? (u.deposit * 0.05).toFixed(2) : "Pending";
   document.getElementById("userReferral").innerText = u.refAmt.toFixed(2);
   document.getElementById("refLink").innerText =
-    location.href.split("?")[0] + "?ref=" + current.replace("ID", "");
+    location.href.split("?")[0] + "?ref=" + current.substring(1);
 }
 
 function submitDeposit() {
@@ -128,17 +137,6 @@ function submitDeposit() {
     alert("Deposit submitted. Awaiting admin approval.");
   } else {
     alert("Enter valid amount.");
-  }
-}
-
-function saveWallet() {
-  let addr = document.getElementById("walletAddr").value.trim();
-  if (addr.length > 10) {
-    users[current].wallet = addr;
-    saveData();
-    alert("Wallet saved.");
-  } else {
-    alert("Invalid wallet.");
   }
 }
 
@@ -247,14 +245,14 @@ function approveWithdraw(i) {
   showAdminData();
 }
 
-// Auto-login
+// Auto-login with shortened referral
 (function(){
   const urlParams = new URLSearchParams(window.location.search);
   const ref = urlParams.get("ref");
   if (current) showDashboard();
-  else if (ref) document.getElementById("refInput").value = "ID" + ref;
+  else if (ref) document.getElementById("refInput").value = "u" + ref;
 })();
 </script>
 
 </body>
-</html>
+  </html>
