@@ -1,139 +1,113 @@
-<?php
-session_start();
-
-// Dummy admin credentials
-$adminEmail = "admin@example.com";
-$adminPass = "admin123";
-
-// Replace with your USDT BEP20 wallet address
-$depositWallet = "0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B";
-
-// In-memory array to simulate DB (for demonstration only)
-if (!isset($_SESSION['users'])) $_SESSION['users'] = [];
-if (!isset($_SESSION['withdrawals'])) $_SESSION['withdrawals'] = [];
-
-function calculateReferral($amount, $level) {
-  if ($level == 1) return $amount * 0.12;
-  if ($level == 2) return $amount * 0.05;
-  if ($level == 3) return $amount * 0.03;
-  return 0;
-}
-
-// Registration
-if (isset($_POST['register'])) {
-  $_SESSION['users'][] = [
-    'name' => $_POST['name'],
-    'email' => $_POST['email'],
-    'referral' => $_POST['referral'],
-    'wallet' => $_POST['wallet'],
-    'deposit' => $_POST['amount'],
-    'hash' => $_POST['hash'],
-    'timestamp' => date("Y-m-d H:i:s")
-  ];
-  echo "<script>alert('Registration successful');</script>";
-}
-
-// Withdrawal Request
-if (isset($_POST['withdraw'])) {
-  $_SESSION['withdrawals'][] = [
-    'email' => $_POST['email'],
-    'amount' => $_POST['amount'],
-    'wallet' => $_POST['wallet'],
-    'status' => 'Pending'
-  ];
-  echo "<script>alert('Withdrawal Request Submitted');</script>";
-}
-
-// Admin Login
-$isAdmin = false;
-if (isset($_POST['admin_login'])) {
-  if ($_POST['email'] == $adminEmail && $_POST['password'] == $adminPass) {
-    $isAdmin = true;
-  } else {
-    echo "<script>alert('Invalid Admin Login');</script>";
-  }
-}
-?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Mini App Plan</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ashirwad Telegram Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: Arial; background: #f4f4f4; padding: 20px; }
-    .box { background: white; padding: 20px; margin: 10px auto; max-width: 600px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    input, select { padding: 8px; width: 100%; margin-bottom: 10px; }
-    button { padding: 10px; background: green; color: white; border: none; width: 100%; }
-    h2 { text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 450px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 { color: #2e7d32; }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .info-box {
+      background: #e8f5e9;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .note {
+      font-size: 12px;
+      color: #777;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>🌟 Ashirwad Investment</h2>
 
-<div class="box">
-  <h2>Register & Deposit</h2>
-  <form method="POST">
-    <input type="text" name="name" placeholder="Your Name" required />
-    <input type="email" name="email" placeholder="Email" required />
-    <input type="text" name="referral" placeholder="Referral Email (optional)" />
-    <input type="text" name="wallet" placeholder="Your BEP20 Wallet Address" required />
-    <input type="number" name="amount" placeholder="Deposit Amount ($50 - $1000)" required min="50" max="1000" />
-    <input type="text" name="hash" placeholder="Transaction Hash after sending USDT" required />
-    <p>Send USDT to: <b><?php echo $depositWallet; ?></b></p>
-    <button name="register">Submit Deposit</button>
-  </form>
-</div>
+    <div class="info-box">
+      ✅ Invest: <b>$10 - $1000</b><br/>
+      💸 Monthly Return: <b>5% after 30 days</b><br/>
+      👥 Direct Referral Bonus: <b>10%</b><br/>
+      💼 Minimum Withdrawal: <b>$1</b>
+    </div>
 
-<div class="box">
-  <h2>Withdraw Request</h2>
-  <form method="POST">
-    <input type="email" name="email" placeholder="Your Email" required />
-    <input type="number" name="amount" placeholder="Withdraw Amount" required />
-    <input type="text" name="wallet" placeholder="Your BEP20 Wallet Address" required />
-    <button name="withdraw">Request Withdrawal</button>
-  </form>
-</div>
+    <p><b>USDT Deposit Address (BEP20):</b></p>
+    <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
 
-<div class="box">
-  <h2>Admin Login</h2>
-  <form method="POST">
-    <input type="email" name="email" placeholder="Admin Email" required />
-    <input type="password" name="password" placeholder="Password" required />
-    <button name="admin_login">Login</button>
-  </form>
-</div>
+    <p>💳 Enter Your Deposit Amount ($):</p>
+    <input type="number" id="depositAmount" min="10" max="1000" placeholder="e.g. 50">
 
-<?php if ($isAdmin): ?>
-  <div class="box">
-    <h2>Admin Panel - Users</h2>
-    <table border="1" width="100%">
-      <tr><th>Name</th><th>Email</th><th>Deposit</th><th>Wallet</th><th>Referral</th></tr>
-      <?php foreach ($_SESSION['users'] as $u): ?>
-        <tr>
-          <td><?= $u['name'] ?></td>
-          <td><?= $u['email'] ?></td>
-          <td>$<?= $u['deposit'] ?></td>
-          <td><?= $u['wallet'] ?></td>
-          <td><?= $u['referral'] ?></td>
-        </tr>
-      <?php endforeach; ?>
-    </table>
+    <p>🔐 Your USDT Wallet (for Withdrawal):</p>
+    <input type="text" id="usdtWallet" placeholder="Your BEP20 wallet address">
+
+    <button onclick="submitDeposit()">✅ Submit Deposit</button>
+
+    <div class="note">
+      Your referral link will be generated after deposit.<br/>
+      Referral earnings: 10% of direct referrals.
+    </div>
   </div>
 
-  <div class="box">
-    <h2>Withdraw Requests</h2>
-    <table border="1" width="100%">
-      <tr><th>Email</th><th>Amount</th><th>Wallet</th><th>Status</th></tr>
-      <?php foreach ($_SESSION['withdrawals'] as $w): ?>
-        <tr>
-          <td><?= $w['email'] ?></td>
-          <td>$<?= $w['amount'] ?></td>
-          <td><?= $w['wallet'] ?></td>
-          <td><?= $w['status'] ?></td>
-        </tr>
-      <?php endforeach; ?>
-    </table>
-  </div>
-<?php endif; ?>
+  <script>
+    Telegram.WebApp.ready();
 
+    const tgUser = Telegram.WebApp.initDataUnsafe?.user || { id: 0, first_name: 'Guest' };
+    console.log("Telegram User:", tgUser);
+
+    function submitDeposit() {
+      const amount = document.getElementById("depositAmount").value;
+      const wallet = document.getElementById("usdtWallet").value;
+
+      if (!amount || amount < 10 || amount > 1000) {
+        alert("Deposit amount must be between $10 and $1000.");
+        return;
+      }
+      if (!wallet || wallet.length < 10) {
+        alert("Please enter a valid USDT wallet address.");
+        return;
+      }
+
+      const payload = {
+        telegram_id: tgUser.id,
+        name: tgUser.first_name,
+        amount: amount,
+        wallet: wallet
+      };
+
+      fetch("submit.php", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.text())
+      .then(data => {
+        alert("Deposit submitted! Admin will verify soon.");
+        Telegram.WebApp.close();
+      });
+    }
+  </script>
 </body>
 </html>
