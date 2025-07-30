@@ -78,3 +78,185 @@
     <div id="userTable"></div>
     <button onclick="logout()" class="btn" style="background:red">Logout</button>
         </div>
+<script>
+let currentUser = null;
+
+// Utility functions
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(div => div.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+}
+
+function generateId() {
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const lastId = users.length ? parseInt(users[users.length - 1].id.replace('Ashirwad', '')) : 0;
+  return 'Ashirwad' + String(lastId + 1).padStart(3, '0');
+}
+
+function register() {
+  const name = document.getElementById('regName').value.trim();
+  const wallet = document.getElementById('regWallet').value.trim();
+  if (!name || !wallet) return alert("Enter all fields");
+
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const id = generateId();
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get('r');
+
+  const newUser = {
+    id, name, wallet, password: '', deposits: [], interest: 0, referral: 0, referredBy: ref || '', requests: []
+  };
+  users.push(newUser);
+  localStorage.setItem('users', JSON.stringify(users));
+  alert(`Registered! Your ID: ${id}`);
+  showSection('loginSection');
+}
+
+function login() {
+  const id = document.getElementById('loginId').value.trim();
+  if (id.toLowerCase() === 'admin') {
+    showSection('adminLoginSection');
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const user = users.find(u => u.id.toLowerCase() === id.toLowerCase());
+  if (!user) return alert("User not found");
+
+  currentUser = user;
+  updateDashboard();
+  showSection('dashboardSection');
+}
+
+function logout() {
+  currentUser = null;
+  showSection('loginSection');
+}
+
+function updateDashboard() {
+  document.getElementById('userName').innerText = currentUser.name;
+  document.getElementById('userId').innerText = currentUser.id;
+  document.getElementById('userWallet').innerText = currentUser.wallet;
+  document.getElementById('userReferral').innerText = `${location.origin + location.pathname}?r=${currentUser.id.toLowerCase()}`;
+  updateDepositList();
+}
+
+function makeDeposit() {
+  const amount = parseFloat(document.getElementById('depositAmount').value);
+  if (isNaN(amount) || amount < 10 || amount > 1000) return alert("Enter valid amount (10-1000)");
+
+  const users = JSON.parse(localStorage.getItem('users'));
+  const idx = users.findIndex(u => u.id === currentUser.id);
+
+  users[idx].deposits.push({ amount, date: Date.now(), approved: false, interestWithdrawn: false, principalWithdrawn: false });
+  
+  // Referral bonus
+  if (users[idx].referredBy) {
+    const refUser = users.find(u => u.id.toLowerCase() === users[idx].referredBy.toLowerCase());
+    if (refUser) refUser.referral += amount * 0.10;
+  }
+
+  localStorage.setItem('users', JSON.stringify(users));
+  alert("Deposit request submitted!");
+  currentUser = users[idx];
+  updateDashboard();
+}
+
+function updateDepositList() {
+  const div = document.getElementById('depositList');
+  div.innerHTML = '';
+  currentUser.deposits.forEach((d, i) => {
+    const days = Math.floor((Date.now() - d.date) / (1000 * 60 * 60 * 24));
+    const interest = (days >= 30 && d.approved && !d.interestWithdrawn) ? d.amount * 0.05 : 0;
+    const withdrawable = (days >= 100 && d.approved && !d.principalWithdrawn) ? d.amount : 0;
+    div.innerHTML += `<div>
+      Amount: $${d.amount} | Days: ${days} | Approved: ${d.approved ? '✅' : '⏳'}
+      ${interest ? `<br><button onclick="withdrawInterest(${i})">Withdraw Interest ($${interest.toFixed(2)})</button>` : ''}
+      ${withdrawable ? `<br><button onclick="withdrawPrincipal(${i})">Withdraw Deposit ($${withdrawable})</button>` : ''}
+    </div><hr>`;
+  });
+}
+
+function withdrawInterest(index) {
+  const users = JSON.parse(localStorage.getItem('users'));
+  const user = users.find(u => u.id === currentUser.id);
+  const deposit = user.deposits[index];
+  const days = Math.floor((Date.now() - deposit.date) / (1000 * 60 * 60 * 24));
+  if (days >= 30 && deposit.approved && !deposit.interestWithdrawn) {
+    user.interest += deposit.amount * 0.05;
+    deposit.interestWithdrawn = true;
+    localStorage.setItem('users', JSON.stringify(users));
+    currentUser = user;
+    alert("Interest added to balance");
+    updateDashboard();
+  }
+}
+
+function withdrawPrincipal(index) {
+  const users = JSON.parse(localStorage.getItem('users'));
+  const user = users.find(u => u.id === currentUser.id);
+  const deposit = user.deposits[index];
+  const days = Math.floor((Date.now() - deposit.date) / (1000 * 60 * 60 * 24));
+  if (days >= 100 && deposit.approved && !deposit.principalWithdrawn) {
+    deposit.principalWithdrawn = true;
+    localStorage.setItem('users', JSON.stringify(users));
+    currentUser = user;
+    alert("Deposit returned to wallet (admin will process)");
+    updateDashboard();
+  }
+}
+
+function requestInterestWithdrawal() {
+  alert("Interest withdrawal sent. Admin will process.");
+}
+function requestReferralWithdrawal() {
+  alert("Referral withdrawal sent. Admin will process.");
+}
+
+function adminLogin() {
+  const id = document.getElementById('adminId').value.trim();
+  const pass = document.getElementById('adminPass').value.trim();
+  if (id === 'admin' && pass === 'admin123') {
+    showSection('adminPanelSection');
+    loadAdminPanel();
+  } else {
+    alert("Wrong credentials");
+  }
+}
+
+function loadAdminPanel() {
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const div = document.getElementById('userTable');
+  div.innerHTML = '';
+  users.forEach((u, i) => {
+    div.innerHTML += `<div class="admin-section">
+      <b>${u.id}</b> - ${u.name}<br>
+      Wallet: ${u.wallet}<br>
+      Referral: ${u.referredBy}<br>
+      Interest: $${u.interest.toFixed(2)} | Referral: $${u.referral.toFixed(2)}
+      <br>Deposits:<br>
+      ${u.deposits.map((d,j) => `
+        $${d.amount} | ${Math.floor((Date.now()-d.date)/86400000)}d | Approved: ${d.approved}
+        ${!d.approved ? `<button onclick="approveDeposit(${i},${j})">Approve</button>` : ''}
+        <button onclick="rejectDeposit(${i},${j})">Reject</button>
+      `).join('<br>')}
+      <hr>
+    </div>`;
+  });
+}
+
+function approveDeposit(userIndex, depIndex) {
+  const users = JSON.parse(localStorage.getItem('users'));
+  users[userIndex].deposits[depIndex].approved = true;
+  localStorage.setItem('users', JSON.stringify(users));
+  loadAdminPanel();
+}
+function rejectDeposit(userIndex, depIndex) {
+  const users = JSON.parse(localStorage.getItem('users'));
+  users[userIndex].deposits.splice(depIndex, 1);
+  localStorage.setItem('users', JSON.stringify(users));
+  loadAdminPanel();
+}
+</script>
+</body>
+</html>
