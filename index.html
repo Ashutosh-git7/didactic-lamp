@@ -38,3 +38,40 @@
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Ashirwad App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; text-align: center; background: #f2f2f2; }
+    .container { margin-top: 80px; padding: 20px; background: white; max-width: 400px; margin:auto; border-radius: 10px; }
+    input, button { width: 90%; padding: 10px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>User Login</h2>
+    <input type="text" id="userId" placeholder="Your User ID">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p>New here? <a href="register.html">Register</a></p>
+  </div>
+
+  <script>
+    function login() {
+      let userId = document.getElementById("userId").value;
+      let password = document.getElementById("password").value;
+
+      let data = localStorage.getItem(userId);
+      if (!data) return alert("Invalid ID");
+      let user = JSON.parse(data);
+      if (user.password !== password) return alert("Wrong password");
+
+      localStorage.setItem("currentUser", userId);
+      location.href = "dashboard.html";
+    }
+  </script>
+</body>
+</html>
+
