@@ -5,139 +5,151 @@
   <title>Ashirwad Mini App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
-    .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    input, button { width: 90%; padding: 10px; margin: 10px auto; border-radius: 5px; border: 1px solid #ccc; display: block; }
-    button { background: #28a745; color: #fff; font-weight: bold; }
-    button:hover { background: #218838; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    input, button { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background-color: #28a745; color: white; font-weight: bold; }
+    .section { margin-top: 20px; }
     .hidden { display: none; }
-    .section { margin-bottom: 20px; }
-    small { font-size: 12px; color: #888; }
+    small { font-size: 12px; color: gray; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>🌟 Ashirwad Investment App</h2>
+  <h2>🌟 Ashirwad Investment</h2>
 
-  <div id="auth" class="section">
+  <!-- Registration -->
+  <div id="authSection">
     <input type="text" id="refInput" placeholder="Referral ID (optional)" />
-    <button onclick="register()">Register / Login</button>
+    <button onclick="registerUser()">Register / Login</button>
   </div>
 
-  <div id="dashboard" class="section hidden">
-    <p><b>User ID:</b> <span id="userId"></span></p>
-    <p><b>Deposit:</b> <span id="deposit">0</span> USDT</p>
-    <p><b>Interest:</b> <span id="interest">0</span> USDT</p>
-    <p><b>Referral Income:</b> <span id="referral">0</span> USDT</p>
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden">
+    <p><b>Your ID:</b> <span id="userId"></span></p>
+    <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
+    <p><b>Interest:</b> <span id="userInterest">0</span> USDT</p>
+    <p><b>Referral:</b> <span id="userReferral">0</span> USDT</p>
 
-    <h4>💸 Make a Deposit</h4>
-    <p>Send to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
-    <input type="number" id="depAmt" placeholder="Amount (1-1000 USDT)" />
-    <button onclick="makeDeposit()">I Have Paid</button>
+    <div class="section">
+      <h4>💸 Deposit</h4>
+      <p>Send to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+      <input type="number" id="depositAmt" placeholder="Amount (1-1000)" />
+      <button onclick="submitDeposit()">I have paid</button>
+    </div>
 
-    <h4>🔐 Wallet Address</h4>
-    <input type="text" id="walletAddr" placeholder="Enter your BEP20 wallet" />
-    <button onclick="saveWallet()">Save Wallet</button>
+    <div class="section">
+      <h4>🔐 Wallet Address</h4>
+      <input type="text" id="walletAddr" placeholder="Your BEP20 Wallet" />
+      <button onclick="saveWallet()">Save Wallet</button>
+    </div>
 
-    <h4>💰 Withdraw</h4>
-    <button onclick="withdraw()">Request Withdrawal</button>
+    <div class="section">
+      <h4>💰 Withdraw</h4>
+      <button onclick="requestWithdrawal()">Request Withdrawal</button>
+    </div>
 
-    <h4>👥 Referral</h4>
-    <p>Your link: <span id="myLink"></span></p>
-    <button onclick="showTeam()">My Team</button>
+    <div class="section">
+      <h4>👥 Referral Link</h4>
+      <p id="refLink"></p>
+      <button onclick="viewReferrals()">View Team</button>
+    </div>
 
     <button onclick="logout()">Logout</button>
   </div>
 
-  <div id="admin" class="section hidden">
-    <h3>🔐 Admin Panel</h3>
+  <!-- Admin -->
+  <div id="adminSection" class="section">
+    <h3>🔐 Admin Login</h3>
     <input type="text" id="adminUser" placeholder="Username" />
     <input type="password" id="adminPass" placeholder="Password" />
     <button onclick="adminLogin()">Login</button>
+
     <div id="adminPanel" class="hidden">
       <h4>✅ Approve Deposits</h4>
-      <ul id="depList"></ul>
-      <h4>💸 Withdrawals</h4>
+      <ul id="depositList"></ul>
+
+      <h4>📤 Withdrawal Requests</h4>
       <ul id="withdrawList"></ul>
     </div>
   </div>
 
-  <small>Made for Telegram Mini App</small>
+  <small>Made for Telegram Mini App – Ashirwad Plan</small>
 </div>
 
 <script>
-let users = JSON.parse(localStorage.getItem("users") || "{}");
-let withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
-let current = localStorage.getItem("currentUser");
+let users = JSON.parse(localStorage.getItem("ashirUsers") || "{}");
+let withdrawals = JSON.parse(localStorage.getItem("ashirWithdrawals") || "[]");
+let current = localStorage.getItem("ashirCurrent");
 
 function saveData() {
-  localStorage.setItem("users", JSON.stringify(users));
-  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+  localStorage.setItem("ashirUsers", JSON.stringify(users));
+  localStorage.setItem("ashirWithdrawals", JSON.stringify(withdrawals));
 }
 
-function register() {
-  let ref = document.getElementById("refInput").value.trim();
-  let id = "ID" + Math.floor(10000 + Math.random() * 90000);
-  users[id] = { deposit: 0, interest: 0, refBy: ref, referrals: [], wallet: "", refAmt: 0, approved: false };
+function registerUser() {
+  const ref = document.getElementById("refInput").value.trim();
+  const id = "ID" + Math.floor(10000 + Math.random() * 90000);
+  users[id] = { deposit: 0, approved: false, interest: 0, wallet: "", refBy: ref, referrals: [], refAmt: 0 };
   if (users[ref]) users[ref].referrals.push(id);
   current = id;
-  localStorage.setItem("currentUser", id);
+  localStorage.setItem("ashirCurrent", id);
   saveData();
-  loadDashboard();
+  showDashboard();
 }
 
-function loadDashboard() {
-  document.getElementById("auth").classList.add("hidden");
+function showDashboard() {
+  document.getElementById("authSection").classList.add("hidden");
   document.getElementById("dashboard").classList.remove("hidden");
   let u = users[current];
   document.getElementById("userId").innerText = current;
-  document.getElementById("deposit").innerText = u.deposit;
-  document.getElementById("interest").innerText = (u.approved ? (u.deposit * 0.05).toFixed(2) : "Pending");
-  document.getElementById("referral").innerText = u.refAmt.toFixed(2);
-  document.getElementById("myLink").innerText = window.location.href.split("?")[0] + "?r=" + current;
+  document.getElementById("userDeposit").innerText = u.deposit;
+  document.getElementById("userInterest").innerText = u.approved ? (u.deposit * 0.05).toFixed(2) : "Pending";
+  document.getElementById("userReferral").innerText = u.refAmt.toFixed(2);
+  document.getElementById("refLink").innerText = location.href.split("?")[0] + "?r=" + current;
 }
 
-function makeDeposit() {
-  let amt = parseFloat(document.getElementById("depAmt").value);
+function submitDeposit() {
+  let amt = parseFloat(document.getElementById("depositAmt").value);
   if (amt >= 1 && amt <= 1000) {
     users[current].deposit = amt;
     users[current].approved = false;
     saveData();
     alert("Deposit submitted. Awaiting admin approval.");
   } else {
-    alert("Amount must be between 1 and 1000.");
+    alert("Enter valid amount.");
   }
 }
 
 function saveWallet() {
-  let addr = document.getElementById("walletAddr").value;
+  let addr = document.getElementById("walletAddr").value.trim();
   if (addr.length > 10) {
     users[current].wallet = addr;
     saveData();
     alert("Wallet saved.");
   } else {
-    alert("Enter valid wallet.");
+    alert("Invalid wallet.");
   }
 }
 
-function withdraw() {
+function requestWithdrawal() {
   if (!withdrawals.includes(current)) {
     withdrawals.push(current);
     saveData();
-    alert("Withdrawal request sent.");
+    alert("Withdrawal requested.");
   } else {
     alert("Already requested.");
   }
 }
 
 function logout() {
-  localStorage.removeItem("currentUser");
+  localStorage.removeItem("ashirCurrent");
   location.reload();
 }
 
-function showTeam() {
-  alert("Referrals: " + (users[current].referrals || []).join(", "));
+function viewReferrals() {
+  alert("Your team: " + (users[current].referrals || []).join(", "));
 }
 
 function adminLogin() {
@@ -145,29 +157,33 @@ function adminLogin() {
   let p = document.getElementById("adminPass").value;
   if (u === "admin" && p === "admin123") {
     document.getElementById("adminPanel").classList.remove("hidden");
-    let depList = document.getElementById("depList");
-    let withdrawList = document.getElementById("withdrawList");
-    depList.innerHTML = "";
-    withdrawList.innerHTML = "";
-
-    for (let uid in users) {
-      if (!users[uid].approved && users[uid].deposit > 0) {
-        let li = document.createElement("li");
-        li.innerHTML = `${uid}: ${users[uid].deposit} USDT 
-        <button onclick="approveDeposit('${uid}')">Approve</button>`;
-        depList.appendChild(li);
-      }
-    }
-
-    withdrawals.forEach((uid, i) => {
-      let li = document.createElement("li");
-      li.innerHTML = `${uid} to ${users[uid].wallet} 
-      <button onclick="approveWithdraw(${i})">Approve</button>`;
-      withdrawList.appendChild(li);
-    });
+    showAdminData();
   } else {
-    alert("Wrong credentials.");
+    alert("Wrong credentials");
   }
+}
+
+function showAdminData() {
+  const depList = document.getElementById("depositList");
+  const wdList = document.getElementById("withdrawList");
+  depList.innerHTML = "";
+  wdList.innerHTML = "";
+
+  for (let uid in users) {
+    if (!users[uid].approved && users[uid].deposit > 0) {
+      let li = document.createElement("li");
+      li.innerHTML = uid + ": " + users[uid].deposit + " USDT " +
+        `<button onclick="approveDeposit('${uid}')">Approve</button>`;
+      depList.appendChild(li);
+    }
+  }
+
+  withdrawals.forEach((uid, i) => {
+    let li = document.createElement("li");
+    li.innerHTML = uid + " → " + users[uid].wallet + 
+      ` <button onclick="approveWithdraw(${i})">Approve</button>`;
+    wdList.appendChild(li);
+  });
 }
 
 function approveDeposit(uid) {
@@ -176,21 +192,22 @@ function approveDeposit(uid) {
   let ref = users[uid].refBy;
   if (users[ref]) users[ref].refAmt += users[uid].deposit * 0.10;
   saveData();
-  adminLogin();
+  showAdminData();
 }
 
 function approveWithdraw(i) {
-  alert("Withdrawal approved for: " + withdrawals[i]);
+  alert("Withdrawal approved: " + withdrawals[i]);
   withdrawals.splice(i, 1);
   saveData();
-  adminLogin();
+  showAdminData();
 }
 
-// Auto login
-(function() {
-  const r = new URLSearchParams(window.location.search).get("r");
-  if (current) loadDashboard();
-  else if (r) document.getElementById("refInput").value = r;
+// Auto-login
+(function(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get("r");
+  if (current) showDashboard();
+  else if (ref) document.getElementById("refInput").value = ref;
 })();
 </script>
 
