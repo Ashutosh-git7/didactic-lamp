@@ -3,196 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ashirwad Mini App</title>
+  <title>Ashirwad Signature App</title>
   <style>
-    body { font-family: sans-serif; background: #f1f1f1; padding: 20px; }
-    .card { background: #fff; border-radius: 10px; padding: 20px; max-width: 400px; margin: auto; box-shadow: 0 0 10px #ccc; }
-    input, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
-    button { background: #28a745; color: white; border: none; font-weight: bold; }
-    .link { color: blue; text-decoration: underline; cursor: pointer; font-size: 14px; }
-    .hide { display: none; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; padding: 10px; }
+    h2 { color: #333; }
+    input, button, select { padding: 10px; margin: 5px 0; width: 100%; max-width: 350px; }
+    .section { display: none; padding: 20px; background: white; border-radius: 10px; margin: auto; max-width: 400px; box-shadow: 0 0 10px #ccc; }
+    .visible { display: block; }
+    .hidden { display: none; }
+    .btn { background: #0066cc; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    .box { margin-bottom: 20px; }
+    .admin-section { background: #fefefe; padding: 15px; margin-top: 20px; border-radius: 10px; border: 1px solid #ddd; }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
+  <h2>Ashirwad Signature App</h2>
 
-<div id="login" class="card">
-  <h2>Login</h2>
-  <input id="login_id" placeholder="User ID or Admin ID">
-  <input type="password" id="login_pass" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <p class="link" onclick="show('register')">New user? Register here</p>
-</div>
+  <!-- Registration -->
+  <div id="registerSection" class="section visible">
+    <h3>Register</h3>
+    <input type="text" id="regName" placeholder="Your Name" required><br>
+    <input type="text" id="regWallet" placeholder="Your USDT BEP20 Wallet" required><br>
+    <button class="btn" onclick="register()">Register</button>
+    <p>Already have ID? <a href="#" onclick="showSection('loginSection')">Login here</a></p>
+  </div>
 
-<div id="register" class="card hide">
-  <h2>Register</h2>
-  <input id="ref" placeholder="Referral ID (optional)">
-  <input id="wallet" placeholder="Your BEP20 Wallet Address">
-  <input type="password" id="pass" placeholder="Set Password">
-  <button onclick="register()">Register</button>
-  <p class="link" onclick="show('login')">Back to Login</p>
-</div>
+  <!-- Login -->
+  <div id="loginSection" class="section">
+    <h3>Login</h3>
+    <input type="text" id="loginId" placeholder="Enter Your Ashirwad ID"><br>
+    <button class="btn" onclick="login()">Login</button>
+    <p>Don't have ID? <a href="#" onclick="showSection('registerSection')">Register</a></p>
+  </div>
 
-<div id="userPanel" class="card hide">
-  <h2>Welcome <span id="userName"></span></h2>
-  <p><b>Wallet:</b> <span id="userWallet"></span></p>
-  <p><b>Your Referral Link:</b><br><span id="refLink"></span></p>
+  <!-- User Dashboard -->
+  <div id="dashboardSection" class="section">
+    <h3>Welcome, <span id="userName"></span> (<span id="userId"></span>)</h3>
+    <p><b>Wallet:</b> <span id="userWallet"></span></p>
+    <p><b>Your Referral Link:</b> <span id="userReferral"></span></p>
+    <div class="box">
+      <h4>Make a Deposit</h4>
+      <p>Send USDT to wallet:</p>
+      <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
+      <input type="number" id="depositAmount" placeholder="Amount (10 - 1000)">
+      <button class="btn" onclick="makeDeposit()">Submit Deposit</button>
+    </div>
+    <div class="box">
+      <h4>Your Deposits</h4>
+      <div id="depositList"></div>
+    </div>
+    <div class="box">
+      <h4>Withdraw Earnings</h4>
+      <button class="btn" onclick="requestInterestWithdrawal()">Withdraw Interest</button><br>
+      <button class="btn" onclick="requestReferralWithdrawal()">Withdraw Referral</button>
+      <div id="withdrawalResult"></div>
+    </div>
+    <div class="box">
+      <button onclick="logout()" class="btn" style="background:red">Logout</button>
+    </div>
+  </div>
 
-  <h3>Deposit</h3>
-  <p><b>Send USDT (BEP20) to:</b><br>
-  <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code></p>
-  <input id="amount" type="number" placeholder="Amount ($10 - $1000)">
-  <button onclick="deposit()">I Have Deposited</button>
+  <!-- Admin Panel -->
+  <div id="adminLoginSection" class="section">
+    <h3>Admin Login</h3>
+    <input type="text" id="adminId" placeholder="Admin ID"><br>
+    <input type="password" id="adminPass" placeholder="Password"><br>
+    <button class="btn" onclick="adminLogin()">Login</button>
+  </div>
 
-  <h3>Your Deposits</h3>
-  <ul id="myDeposits"></ul>
-
-  <h3>Referral Income: $<span id="refIncome">0</span></h3>
-  <button onclick="withdraw('ref')">Withdraw Referral</button>
-
-  <h3>Interest Earned: $<span id="intIncome">0</span></h3>
-  <button onclick="withdraw('int')">Withdraw Interest</button>
-
-  <h3>Withdrawal History</h3>
-  <ul id="withdrawList"></ul>
-
-  <button onclick="logout()">Logout</button>
-</div>
-
-<div id="adminPanel" class="card hide">
-  <h2>Admin Panel</h2>
-  <ul id="allUsers"></ul>
-  <button onclick="logout()">Logout</button>
-</div>
-
-<script>
-let db = {
-  users: {},
-  deposits: [],
-  withdrawals: [],
-  refCount: 1,
-  admin: { id: 'admin', pass: 'admin123' }
-};
-
-let user = null;
-
-function show(id) {
-  ['login', 'register', 'userPanel', 'adminPanel'].forEach(p => {
-    document.getElementById(p).classList.add('hide');
-  });
-  document.getElementById(id).classList.remove('hide');
-}
-
-function generateID() {
-  let id = 'abc' + db.refCount++;
-  while (db.users[id]) id = 'abc' + db.refCount++;
-  return id;
-}
-
-function register() {
-  const ref = document.getElementById('ref').value.trim().toLowerCase();
-  const wallet = document.getElementById('wallet').value.trim();
-  const pass = document.getElementById('pass').value;
-  if (!wallet || !pass) return alert("All fields are required");
-  const id = generateID();
-  db.users[id] = {
-    id, wallet, pass, deposits: [], referrals: [], refBy: ref, refEarnings: 0, interest: 0, created: Date.now()
-  };
-  if (db.users[ref]) db.users[ref].referrals.push(id);
-  alert("Registered! Your ID: " + id);
-  show('login');
-}
-
-function login() {
-  const id = document.getElementById('login_id').value.trim();
-  const pass = document.getElementById('login_pass').value;
-  if (id === db.admin.id && pass === db.admin.pass) {
-    show('adminPanel');
-    loadAdmin();
-    return;
-  }
-  if (!db.users[id] || db.users[id].pass !== pass) return alert("Invalid login");
-  user = db.users[id];
-  show('userPanel');
-  document.getElementById('userName').innerText = user.id;
-  document.getElementById('userWallet').innerText = user.wallet;
-  document.getElementById('refLink').innerText = location.href.split('?')[0] + "?r=" + user.id;
-  loadUser();
-}
-
-function deposit() {
-  const amt = parseFloat(document.getElementById('amount').value);
-  if (amt < 10 || amt > 1000) return alert("Amount must be between 10 and 1000");
-  const d = { id: Date.now(), amt, user: user.id, date: Date.now(), approved: false };
-  db.deposits.push(d);
-  user.deposits.push(d.id);
-  if (user.refBy && db.users[user.refBy]) {
-    db.users[user.refBy].refEarnings += amt * 0.10;
-  }
-  alert("Deposit requested. Awaiting admin approval.");
-  loadUser();
-}
-
-function withdraw(type) {
-  if (type === 'ref') {
-    if (user.refEarnings < 1) return alert("Minimum $1 required");
-    db.withdrawals.push({ id: Date.now(), user: user.id, amt: user.refEarnings, type, date: Date.now(), approved: false });
-    user.refEarnings = 0;
-  } else if (type === 'int') {
-    if (user.interest < 1) return alert("Minimum $1 required");
-    db.withdrawals.push({ id: Date.now(), user: user.id, amt: user.interest, type, date: Date.now(), approved: false });
-    user.interest = 0;
-  }
-  alert("Withdrawal request submitted.");
-  loadUser();
-}
-
-function loadUser() {
-  const list = document.getElementById('myDeposits');
-  list.innerHTML = '';
-  user.deposits.forEach(did => {
-    const dep = db.deposits.find(d => d.id === did);
-    const days = Math.floor((Date.now() - dep.date) / (1000 * 60 * 60 * 24));
-    let info = `Amount: $${dep.amt} | Days: ${days}`;
-    if (dep.approved && days >= 30) {
-      const months = Math.floor(days / 30);
-      user.interest = months * dep.amt * 0.05;
-    }
-    list.innerHTML += `<li>${info} ${dep.approved ? "(Approved)" : "(Pending)"}</li>`;
-  });
-  document.getElementById('refIncome').innerText = user.refEarnings.toFixed(2);
-  document.getElementById('intIncome').innerText = user.interest.toFixed(2);
-
-  const wList = document.getElementById('withdrawList');
-  wList.innerHTML = '';
-  db.withdrawals.filter(w => w.user === user.id).forEach(w => {
-    wList.innerHTML += `<li>${w.type.toUpperCase()} - $${w.amt} (${w.approved ? "Paid" : "Pending"})</li>`;
-  });
-}
-
-function loadAdmin() {
-  const ul = document.getElementById('allUsers');
-  ul.innerHTML = '';
-  Object.values(db.users).forEach(u => {
-    ul.innerHTML += `<li><b>${u.id}</b> | Wallet: ${u.wallet} | Deposits: ${u.deposits.length} 
-    <button onclick="editUser('${u.id}')">Edit</button></li>`;
-  });
-}
-
-function editUser(id) {
-  const u = db.users[id];
-  const entry = prompt("Edit as: wallet,refEarnings,interest", `${u.wallet},${u.refEarnings},${u.interest}`);
-  const [w, r, i] = entry.split(',');
-  u.wallet = w;
-  u.refEarnings = parseFloat(r);
-  u.interest = parseFloat(i);
-  alert("User updated.");
-  loadAdmin();
-}
-
-function logout() {
-  user = null;
-  show('login');
-}
-</script>
-</body>
-</html>
+  <div id="adminPanelSection" class="section">
+    <h3>Admin Panel</h3>
+    <div id="userTable"></div>
+    <button onclick="logout()" class="btn" style="background:red">Logout</button>
+        </div>
