@@ -39,9 +39,6 @@
     .hidden {
       display: none;
     }
-    #dashboard {
-      margin-top: 20px;
-    }
     #walletBox {
       background: #f0fff0;
       padding: 15px;
@@ -51,6 +48,19 @@
       font-family: monospace;
       word-wrap: break-word;
       font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 5px;
+    }
+    th {
+      background-color: #e0ffe0;
     }
   </style>
 </head>
@@ -65,6 +75,7 @@
     <input type="text" id="regRef" placeholder="Referral Code (Optional)" />
     <button onclick="register()">Register</button>
     <p>Already registered? <a href="#" onclick="toggleLogin()">Login</a></p>
+    <p><a href="#" onclick="toggleAdminLogin()">👤 Admin Login</a></p>
   </div>
 
   <div id="loginBox" class="box hidden">
@@ -74,12 +85,20 @@
     <p>New user? <a href="#" onclick="toggleRegister()">Register</a></p>
   </div>
 
+  <div id="adminLoginBox" class="box hidden">
+    <h2>Admin Login</h2>
+    <input type="text" id="adminUser" placeholder="Admin ID" />
+    <input type="password" id="adminPass" placeholder="Password" />
+    <button onclick="adminLogin()">Login as Admin</button>
+    <p><a href="#" onclick="toggleRegister()">← Back</a></p>
+  </div>
+
   <div id="dashboard" class="box hidden">
     <h2>Welcome, <span id="userName"></span> 👋</h2>
     <p>📆 Monthly Deposit: ₹100 – ₹1000</p>
     <p>🎁 20% Return in 13th Month</p>
     <p>🔗 Referral Income: 5%</p>
-    
+
     <button onclick="showWallet()">Make Deposit</button>
 
     <div id="walletBox" class="hidden">
@@ -91,22 +110,51 @@
     <button onclick="logout()">Logout</button>
   </div>
 
+  <div id="adminPanel" class="box hidden">
+    <h2>👑 Admin Panel</h2>
+    <p>Registered Users:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Referral</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
+    <button onclick="adminLogout()">Logout</button>
+  </div>
+
   <script>
     function toggleLogin() {
       document.getElementById("authBox").classList.add("hidden");
       document.getElementById("loginBox").classList.remove("hidden");
+      document.getElementById("adminLoginBox").classList.add("hidden");
     }
 
     function toggleRegister() {
-      document.getElementById("loginBox").classList.add("hidden");
       document.getElementById("authBox").classList.remove("hidden");
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("adminLoginBox").classList.add("hidden");
+    }
+
+    function toggleAdminLogin() {
+      document.getElementById("authBox").classList.add("hidden");
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("adminLoginBox").classList.remove("hidden");
     }
 
     function register() {
       const name = document.getElementById("regName").value;
       const phone = document.getElementById("regPhone").value;
+      const ref = document.getElementById("regRef").value;
+
       if (!name || !phone) return alert("Fill all fields");
 
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      users.push({ name, phone, ref });
+      localStorage.setItem("users", JSON.stringify(users));
       localStorage.setItem("userName", name);
       localStorage.setItem("userPhone", phone);
       showDashboard();
@@ -114,29 +162,62 @@
 
     function login() {
       const phone = document.getElementById("loginPhone").value;
-      const storedPhone = localStorage.getItem("userPhone");
-      if (phone === storedPhone) {
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = users.find(u => u.phone === phone);
+      if (user) {
+        localStorage.setItem("userName", user.name);
+        localStorage.setItem("userPhone", user.phone);
         showDashboard();
       } else {
-        alert("Invalid Phone Number");
+        alert("User not found");
       }
     }
 
     function logout() {
       document.getElementById("dashboard").classList.add("hidden");
-      document.getElementById("loginBox").classList.remove("hidden");
+      toggleLogin();
     }
 
     function showDashboard() {
       document.getElementById("authBox").classList.add("hidden");
       document.getElementById("loginBox").classList.add("hidden");
       document.getElementById("dashboard").classList.remove("hidden");
-      document.getElementById("userName").innerText =
-        localStorage.getItem("userName") || "User";
+      document.getElementById("userName").innerText = localStorage.getItem("userName") || "User";
     }
 
     function showWallet() {
       document.getElementById("walletBox").classList.remove("hidden");
+    }
+
+    function adminLogin() {
+      const id = document.getElementById("adminUser").value;
+      const pass = document.getElementById("adminPass").value;
+
+      if (id === "admin" && pass === "admin123") {
+        showAdminPanel();
+      } else {
+        alert("Invalid admin credentials");
+      }
+    }
+
+    function showAdminPanel() {
+      document.getElementById("authBox").classList.add("hidden");
+      document.getElementById("adminLoginBox").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const list = document.getElementById("userList");
+      list.innerHTML = "";
+
+      users.forEach(u => {
+        const row = `<tr><td>${u.name}</td><td>${u.phone}</td><td>${u.ref || "-"}</td></tr>`;
+        list.innerHTML += row;
+      });
+    }
+
+    function adminLogout() {
+      document.getElementById("adminPanel").classList.add("hidden");
+      toggleRegister();
     }
 
     window.onload = () => {
