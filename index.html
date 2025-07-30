@@ -13,23 +13,16 @@
       margin: 0;
       color: #111827;
     }
-
     .card {
-      background: #ffffff;
+      background: #fff;
       padding: 20px;
       border-radius: 16px;
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       margin-bottom: 20px;
       max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: auto;
     }
-
-    h1, h2 {
-      text-align: center;
-      margin-top: 0;
-    }
-
+    h1, h2 { text-align: center; margin-top: 0; }
     input, button {
       width: 100%;
       padding: 10px;
@@ -38,54 +31,28 @@
       border: 1px solid #cbd5e1;
       border-radius: 8px;
     }
-
     button {
       background: #2563eb;
       color: white;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s ease;
+      transition: 0.3s ease;
     }
-
-    button:hover {
-      background: #1e40af;
-    }
-
-    label {
-      font-weight: 600;
-      display: block;
-      margin-top: 10px;
-    }
-
-    .admin-section {
-      display: none;
-    }
-
-    .divider {
-      border-top: 1px solid #e2e8f0;
-      margin: 20px 0;
-    }
-
-    .user-data p {
-      margin: 5px 0;
-    }
-
+    button:hover { background: #1e40af; }
+    label { font-weight: 600; display: block; margin-top: 10px; }
+    .admin-section { display: none; }
+    .divider { border-top: 1px solid #e2e8f0; margin: 20px 0; }
+    .user-data p { margin: 5px 0; }
     .ref-box {
       background: #fef3c7;
       padding: 10px;
       border-radius: 10px;
       font-size: 14px;
       word-break: break-word;
+      text-align: center;
     }
-
-    .wallet-section {
-      margin-top: 10px;
-    }
-
     @media screen and (max-width: 480px) {
-      input, button {
-        font-size: 15px;
-      }
+      input, button { font-size: 15px; }
     }
   </style>
 </head>
@@ -93,36 +60,32 @@
 
   <div class="card">
     <h1>💰 Ashirwad Mini App</h1>
-    <h2>User Login</h2>
-    <input type="text" id="userId" placeholder="Enter your User ID" />
+    <h2>User Register / Login</h2>
+    <input type="text" id="regId" placeholder="Create Your ID" />
+    <input type="password" id="regPass" placeholder="Create Password" />
+    <button onclick="registerUser()">Register</button>
+    <div class="divider"></div>
+    <input type="text" id="loginId" placeholder="Login ID" />
+    <input type="password" id="loginPass" placeholder="Password" />
     <button onclick="loginUser()">Login</button>
   </div>
 
   <div id="userSection" class="card" style="display:none">
     <h2>👤 Welcome, <span id="currentUser"></span></h2>
-
-    <label>Deposit Amount (USDT)</label>
-    <input type="number" id="depositAmount" min="10" max="1000" placeholder="Min $10 - Max $1000" />
+    <label>Deposit Amount ($10–$1000)</label>
+    <input type="number" id="depositAmount" />
     <button onclick="makeDeposit()">Deposit</button>
-
     <label>Your BEP20 Wallet (for returns)</label>
-    <input type="text" id="walletAddress" placeholder="Your USDT BEP20 wallet" />
+    <input type="text" id="walletAddress" />
     <button onclick="saveWallet()">Save Wallet</button>
-
-    <div class="wallet-section">
-      <label>Your Referral Link</label>
-      <div class="ref-box" id="refLink">Login to get your link</div>
-    </div>
-
+    <label>Your Referral Link</label>
+    <div class="ref-box" id="refLink">Login to get link</div>
     <div class="divider"></div>
-
     <h3>📊 Your Info</h3>
-    <div class="user-data">
-      <p><b>Total Deposit:</b> $<span id="depoAmt">0</span></p>
-      <p><b>Monthly 5% Return:</b> $<span id="monthlyProfit">0</span></p>
-      <p><b>Referral Earnings:</b> $<span id="refEarnings">0</span></p>
-      <p><b>Your Referrals:</b> <span id="teamList">None</span></p>
-    </div>
+    <p><b>Total Deposit:</b> $<span id="depoAmt">0</span></p>
+    <p><b>Monthly 5% Return:</b> $<span id="monthlyProfit">0</span></p>
+    <p><b>Referral Earnings:</b> $<span id="refEarnings">0</span></p>
+    <p><b>Your Referrals:</b> <span id="teamList">None</span></p>
   </div>
 
   <div class="card">
@@ -146,19 +109,35 @@
     const userDB = {};
     let currentUser = null;
 
-    function loginUser() {
-      const uid = document.getElementById("userId").value.trim();
+    function registerUser() {
+      const uid = document.getElementById("regId").value.trim();
+      const pass = document.getElementById("regPass").value.trim();
       const ref = new URLSearchParams(window.location.search).get("ref");
-      if (!userDB[uid]) {
-        userDB[uid] = { deposit: 0, wallet: "", refBy: ref || null, referrals: [], refEarn: 0 };
-        if (ref && userDB[ref]) {
-          userDB[ref].referrals.push(uid);
-        }
+
+      if (!uid || !pass) return alert("ID & password required.");
+      if (userDB[uid]) return alert("User already exists.");
+
+      userDB[uid] = { pass, deposit: 0, wallet: "", refBy: ref || null, referrals: [], refEarn: 0 };
+      if (ref && userDB[ref]) {
+        userDB[ref].referrals.push(uid);
       }
+      alert("Registered successfully! Now login.");
+    }
+
+    function loginUser() {
+      const uid = document.getElementById("loginId").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+      const user = userDB[uid];
+
+      if (!user || user.pass !== pass) {
+        alert("Invalid ID or password.");
+        return;
+      }
+
       currentUser = uid;
-      document.getElementById("currentUser").innerText = uid;
       document.getElementById("userSection").style.display = "block";
-      document.getElementById("refLink").innerText = window.location.href.split('?')[0] + "?ref=" + uid;
+      document.getElementById("currentUser").innerText = uid;
+      document.getElementById("refLink").innerText = "?ref=" + uid;
       updateUserData();
     }
 
@@ -171,9 +150,9 @@
           userDB[ref].refEarn += amt * 0.10;
         }
         updateUserData();
-        alert("Deposit recorded! Send USDT to the fixed address.");
+        alert("Deposit recorded. Send USDT to the deposit address.");
       } else {
-        alert("Enter an amount between $10 and $1000.");
+        alert("Enter $10 to $1000.");
       }
     }
 
