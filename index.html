@@ -3,228 +3,218 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ashirwad Mini App</title>
+  <title>Ashirwad Plan</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      text-align: center;
+      font-family: sans-serif;
+      background: #f1f1f1;
+      margin: 0;
       padding: 20px;
+      text-align: center;
     }
-    h1 {
-      color: #333;
-    }
-    .box {
+    .container {
+      max-width: 480px;
+      margin: auto;
       background: white;
       padding: 20px;
       border-radius: 12px;
-      max-width: 400px;
-      margin: 20px auto;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input,
-    button {
+    input, button {
       width: 90%;
-      padding: 10px;
       margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 10px;
+      font-size: 16px;
     }
-    button {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      font-weight: bold;
+    .section {
+      margin-top: 30px;
+      text-align: left;
     }
-    .hidden {
-      display: none;
+    .card {
+      background: #e6f7ff;
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 5px solid #1890ff;
     }
-    #walletBox {
-      background: #f0fff0;
-      padding: 15px;
-      border: 1px dashed #28a745;
-      border-radius: 10px;
-      margin-top: 15px;
-      font-family: monospace;
-      word-wrap: break-word;
-      font-size: 14px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #aaa;
-      padding: 5px;
-    }
-    th {
-      background-color: #e0ffe0;
+    .admin-section {
+      background: #fffbe6;
+      border-left: 5px solid #faad14;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>🌟 Ashirwad Plan</h2>
 
-  <h1>🪔 Ashirwad Plan</h1>
-
-  <div id="authBox" class="box">
-    <h2>Register</h2>
-    <input type="text" id="regName" placeholder="Your Name" />
-    <input type="text" id="regPhone" placeholder="Phone Number" />
-    <input type="text" id="regRef" placeholder="Referral Code (Optional)" />
-    <button onclick="register()">Register</button>
-    <p>Already registered? <a href="#" onclick="toggleLogin()">Login</a></p>
-    <p><a href="#" onclick="toggleAdminLogin()">👤 Admin Login</a></p>
-  </div>
-
-  <div id="loginBox" class="box hidden">
-    <h2>Login</h2>
-    <input type="text" id="loginPhone" placeholder="Phone Number" />
-    <button onclick="login()">Login</button>
-    <p>New user? <a href="#" onclick="toggleRegister()">Register</a></p>
-  </div>
-
-  <div id="adminLoginBox" class="box hidden">
-    <h2>Admin Login</h2>
-    <input type="text" id="adminUser" placeholder="Admin ID" />
-    <input type="password" id="adminPass" placeholder="Password" />
-    <button onclick="adminLogin()">Login as Admin</button>
-    <p><a href="#" onclick="toggleRegister()">← Back</a></p>
-  </div>
-
-  <div id="dashboard" class="box hidden">
-    <h2>Welcome, <span id="userName"></span> 👋</h2>
-    <p>📆 Monthly Deposit: ₹100 – ₹1000</p>
-    <p>🎁 20% Return in 13th Month</p>
-    <p>🔗 Referral Income: 5%</p>
-
-    <button onclick="showWallet()">Make Deposit</button>
-
-    <div id="walletBox" class="hidden">
-      <p><strong>Send USDT (BEP20)</strong> to:</p>
-      <p style="color: green;">0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p>
-      <p>⚠️ Minimum: $10 USDT</p>
+    <!-- Login & Registration -->
+    <div id="authSection">
+      <input type="text" id="username" placeholder="Your Name or 'admin'" />
+      <input type="password" id="password" placeholder="Password (for admin)" />
+      <input type="text" id="referral" placeholder="Referral Code (optional)" />
+      <button onclick="login()">Login / Register</button>
     </div>
 
-    <button onclick="logout()">Logout</button>
-  </div>
+    <!-- User Dashboard -->
+    <div id="userApp" style="display:none;">
+      <h3>Welcome, <span id="userDisplay"></span>!</h3>
+      <button onclick="logout()">Logout</button>
 
-  <div id="adminPanel" class="box hidden">
-    <h2>👑 Admin Panel</h2>
-    <p>Registered Users:</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Referral</th>
-        </tr>
-      </thead>
-      <tbody id="userList"></tbody>
-    </table>
-    <button onclick="adminLogout()">Logout</button>
+      <div class="section">
+        <h4>💸 Make Monthly Deposit</h4>
+        <input type="number" id="depositAmount" placeholder="Amount (100 - 1000)" />
+        <button onclick="makeDeposit()">Deposit</button>
+      </div>
+
+      <div class="section">
+        <h4>💰 My Deposits</h4>
+        <div id="depositList"></div>
+        <div class="card">Total Deposited: ₹<span id="totalDeposits">0</span></div>
+        <div class="card">Expected Return (13th Month): ₹<span id="expectedReturn">0</span></div>
+      </div>
+
+      <div class="section">
+        <h4>🔐 Save USDT Wallet</h4>
+        <input type="text" id="walletAddress" placeholder="Your USDT Wallet" />
+        <button onclick="saveWallet()">Save Wallet</button>
+        <div class="card">Saved Wallet: <span id="walletDisplay">Not saved</span></div>
+      </div>
+
+      <div class="section">
+        <h4>👥 My Referral Team</h4>
+        <div id="referralList"></div>
+      </div>
+
+      <div class="section">
+        <h4>💵 Referral Commission</h4>
+        <div class="card">Earned: ₹<span id="referralIncome">0</span></div>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" style="display:none;">
+      <h3>🛠 Admin Panel</h3>
+      <button onclick="logout()">Logout</button>
+      <div id="userList"></div>
+    </div>
   </div>
 
   <script>
-    function toggleLogin() {
-      document.getElementById("authBox").classList.add("hidden");
-      document.getElementById("loginBox").classList.remove("hidden");
-      document.getElementById("adminLoginBox").classList.add("hidden");
-    }
+    const adminCreds = { username: "admin", password: "admin123" };
+    const users = JSON.parse(localStorage.getItem("ashirwadUsers") || "{}");
+    let currentUser = localStorage.getItem("ashirwadUser");
 
-    function toggleRegister() {
-      document.getElementById("authBox").classList.remove("hidden");
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminLoginBox").classList.add("hidden");
-    }
-
-    function toggleAdminLogin() {
-      document.getElementById("authBox").classList.add("hidden");
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminLoginBox").classList.remove("hidden");
-    }
-
-    function register() {
-      const name = document.getElementById("regName").value;
-      const phone = document.getElementById("regPhone").value;
-      const ref = document.getElementById("regRef").value;
-
-      if (!name || !phone) return alert("Fill all fields");
-
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      users.push({ name, phone, ref });
-      localStorage.setItem("users", JSON.stringify(users));
-      localStorage.setItem("userName", name);
-      localStorage.setItem("userPhone", phone);
-      showDashboard();
+    if (currentUser) {
+      if (currentUser === "admin") showAdmin();
+      else showUser();
     }
 
     function login() {
-      const phone = document.getElementById("loginPhone").value;
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
-      const user = users.find(u => u.phone === phone);
-      if (user) {
-        localStorage.setItem("userName", user.name);
-        localStorage.setItem("userPhone", user.phone);
-        showDashboard();
-      } else {
-        alert("User not found");
+      const name = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const ref = document.getElementById("referral").value.trim();
+
+      if (!name) return alert("Enter username");
+
+      if (name === "admin") {
+        if (pass !== adminCreds.password) return alert("Wrong password!");
+        localStorage.setItem("ashirwadUser", "admin");
+        showAdmin();
+        return;
       }
+
+      if (!users[name]) {
+        users[name] = { deposits: [], wallet: "", referralBy: ref, team: [], commission: 0 };
+        if (ref && users[ref]) users[ref].team.push(name);
+      }
+      localStorage.setItem("ashirwadUsers", JSON.stringify(users));
+      localStorage.setItem("ashirwadUser", name);
+      showUser();
     }
 
     function logout() {
-      document.getElementById("dashboard").classList.add("hidden");
-      toggleLogin();
+      localStorage.removeItem("ashirwadUser");
+      location.reload();
     }
 
-    function showDashboard() {
-      document.getElementById("authBox").classList.add("hidden");
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("dashboard").classList.remove("hidden");
-      document.getElementById("userName").innerText = localStorage.getItem("userName") || "User";
+    function showUser() {
+      document.getElementById("authSection").style.display = "none";
+      document.getElementById("userApp").style.display = "block";
+      const u = localStorage.getItem("ashirwadUser");
+      document.getElementById("userDisplay").innerText = u;
+      loadDashboard(u);
     }
 
-    function showWallet() {
-      document.getElementById("walletBox").classList.remove("hidden");
+    function makeDeposit() {
+      const amt = parseInt(document.getElementById("depositAmount").value);
+      if (isNaN(amt) || amt < 100 || amt > 1000) return alert("Amount must be ₹100-₹1000");
+
+      const name = localStorage.getItem("ashirwadUser");
+      users[name].deposits.push({ amount: amt, month: new Date().toLocaleDateString() });
+
+      const ref = users[name].referralBy;
+      if (ref && users[ref]) users[ref].commission += Math.floor(amt * 0.05);
+
+      localStorage.setItem("ashirwadUsers", JSON.stringify(users));
+      loadDashboard(name);
     }
 
-    function adminLogin() {
-      const id = document.getElementById("adminUser").value;
-      const pass = document.getElementById("adminPass").value;
+    function loadDashboard(name) {
+      const user = users[name];
+      let total = 0;
+      let depositHTML = "";
+      user.deposits.forEach(d => {
+        total += d.amount;
+        depositHTML += `<div class="card">₹${d.amount} - ${d.month}</div>`;
+      });
 
-      if (id === "admin" && pass === "admin123") {
-        showAdminPanel();
-      } else {
-        alert("Invalid admin credentials");
-      }
+      document.getElementById("depositList").innerHTML = depositHTML || "No deposits yet";
+      document.getElementById("totalDeposits").innerText = total;
+      document.getElementById("expectedReturn").innerText = Math.floor(total * 1.2);
+      document.getElementById("walletDisplay").innerText = user.wallet || "Not saved";
+
+      // Referrals
+      document.getElementById("referralList").innerHTML =
+        user.team.length ? user.team.map(n => `<div class="card">${n}</div>`).join("") : "No team yet";
+      document.getElementById("referralIncome").innerText = user.commission;
     }
 
-    function showAdminPanel() {
-      document.getElementById("authBox").classList.add("hidden");
-      document.getElementById("adminLoginBox").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
+    function saveWallet() {
+      const wallet = document.getElementById("walletAddress").value.trim();
+      if (!wallet) return alert("Enter wallet");
+      const name = localStorage.getItem("ashirwadUser");
+      users[name].wallet = wallet;
+      localStorage.setItem("ashirwadUsers", JSON.stringify(users));
+      loadDashboard(name);
+    }
 
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
+    function showAdmin() {
+      document.getElementById("authSection").style.display = "none";
+      document.getElementById("adminPanel").style.display = "block";
+
       const list = document.getElementById("userList");
       list.innerHTML = "";
 
-      users.forEach(u => {
-        const row = `<tr><td>${u.name}</td><td>${u.phone}</td><td>${u.ref || "-"}</td></tr>`;
-        list.innerHTML += row;
+      Object.entries(users).forEach(([username, u]) => {
+        const total = u.deposits.reduce((sum, d) => sum + d.amount, 0);
+        const wallet = u.wallet || "N/A";
+        const team = u.team.length;
+        const ref = u.referralBy || "None";
+        const commission = u.commission;
+
+        const div = document.createElement("div");
+        div.className = "card admin-section";
+        div.innerHTML = `
+          <b>${username}</b><br>
+          🔁 Referral By: ${ref}<br>
+          👥 Team: ${team} | 💰 Deposits: ₹${total} | 💵 Commission: ₹${commission}<br>
+          💼 Wallet: ${wallet}<br>
+          📄 Deposits: ${u.deposits.map(d => `₹${d.amount} (${d.month})`).join(", ")}
+        `;
+        list.appendChild(div);
       });
     }
-
-    function adminLogout() {
-      document.getElementById("adminPanel").classList.add("hidden");
-      toggleRegister();
-    }
-
-    window.onload = () => {
-      if (localStorage.getItem("userName")) {
-        showDashboard();
-      }
-    };
-    </script>
+  </script>
 </body>
 </html>
+      
+      
