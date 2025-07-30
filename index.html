@@ -137,4 +137,62 @@
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Ashirwad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    input, button { margin: 5px; padding: 8px; }
+    .user-box { background: #fff; padding: 10px; margin: 10px 0; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Admin Login</h2>
+  <input type="text" id="adminId" placeholder="Admin ID"><br>
+  <input type="password" id="adminPass" placeholder="Password"><br>
+  <button onclick="adminLogin()">Login</button>
 
+  <div id="panel"></div>
+
+  <script>
+    const adminID = "admin";
+    const adminPASS = "admin123";
+
+    function adminLogin() {
+      let id = document.getElementById("adminId").value;
+      let pass = document.getElementById("adminPass").value;
+      if (id !== adminID || pass !== adminPASS) return alert("Wrong admin credentials");
+
+      let panel = document.getElementById("panel");
+      panel.innerHTML = "<h3>All Users</h3>";
+
+      for (let key in localStorage) {
+        if (key.startsWith("USR")) {
+          let user = JSON.parse(localStorage.getItem(key));
+          panel.innerHTML += `
+            <div class="user-box">
+              <strong>${user.name} (${user.userId})</strong><br>
+              Wallet: ${user.wallet || "N/A"}<br>
+              Deposits: $${user.deposits.reduce((a,b)=>a+b,0)}<br>
+              <button onclick='edit("${user.userId}")'>Edit</button>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function edit(uid) {
+      let user = JSON.parse(localStorage.getItem(uid));
+      let newName = prompt("Edit name", user.name);
+      if (newName) {
+        user.name = newName;
+        localStorage.setItem(uid, JSON.stringify(user));
+        alert("Updated");
+        adminLogin();
+      }
+    }
+  </script>
+</body>
+</html>
