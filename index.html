@@ -8,157 +8,170 @@
     body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
     .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
     h2 { color: #4CAF50; }
-    input, button, select { width: 100%; padding: 10px; margin: 10px 0; }
+    input, button, textarea { width: 100%; padding: 10px; margin: 10px 0; }
     #adminPanel, #userPanel, #loginPanel, #registerPanel { display: none; }
-    .ref { color: blue; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h4>👇 Select Role</h4>
-<button onclick="showPanel('login')">User Login</button>
-<button onclick="showAdminLogin()">Admin Login</button>
     <h2>Ashirwad Crowdfunding</h2>
-    
+
+    <!-- Role Selection -->
+    <h4>👇 Select Role</h4>
+    <button onclick="showPanel('login')">User Login</button>
+    <button onclick="showAdminLogin()">Admin Login</button>
+
+    <!-- User Login -->
     <div id="loginPanel">
-      <h3>Login</h3>
+      <h3>User Login</h3>
       <input type="text" id="loginID" placeholder="Your ID">
       <input type="password" id="loginPassword" placeholder="Password">
       <button onclick="login()">Login</button>
-      <p>New user? <a href="#" onclick="showPanel('register')">Register</a></p>
+      <p>New user? <a href="#" onclick="showPanel('register')">Register here</a></p>
     </div>
 
+    <!-- User Registration -->
     <div id="registerPanel">
-      <h3>Register</h3>
-      <input type="text" id="regName" placeholder="Name">
+      <h3>User Registration</h3>
+      <input type="text" id="regName" placeholder="Your Name">
       <input type="password" id="regPass" placeholder="Password">
       <input type="text" id="regRef" placeholder="Referral ID (optional)">
       <button onclick="register()">Register</button>
-      <p>Already have an account? <a href="#" onclick="showPanel('login')">Login</a></p>
+      <p>Already registered? <a href="#" onclick="showPanel('login')">Login</a></p>
     </div>
 
+    <!-- User Dashboard -->
     <div id="userPanel">
       <h3>Welcome, <span id="userName"></span></h3>
       <p>Your ID: <b><span id="userID"></span></b></p>
       <input type="text" id="usdtWallet" placeholder="Your USDT Wallet" onchange="saveWallet(this.value)">
-      <button onclick="deposit()">Make Monthly Deposit</button>
-      <p>Send USDT to: <b style="color:green;">0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+      <button onclick="deposit()">Make Monthly Deposit (100 USDT)</button>
+      <p><b>Send USDT to:</b> <span style="color:green;">0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</span></p>
       <p>Total Deposited: <span id="totalDeposited">0</span> USDT</p>
-      <p>Return in 13th Month: <span id="returnAmount">0</span> USDT</p>
+      <p>13th Month Return: <span id="returnAmount">0</span> USDT</p>
       <p>Referral Commission: <span id="refCommission">0</span> USDT</p>
       <h4>Your Team</h4>
       <ul id="refTeam"></ul>
       <button onclick="logout()">Logout</button>
     </div>
 
+    <!-- Admin Panel -->
     <div id="adminPanel">
       <h3>Admin Dashboard</h3>
-      <textarea id="allData" rows="15" style="width:100%;"></textarea>
+      <textarea id="allData" rows="25" style="white-space:pre; font-family:monospace;"></textarea>
+      <button onclick="copyAdminData()">Copy Data</button>
       <button onclick="logout()">Logout</button>
     </div>
   </div>
 
   <script>
-  let users = JSON.parse(localStorage.getItem('users') || '{}');
-  let currentUser = localStorage.getItem('currentUser') || null;
+    let users = JSON.parse(localStorage.getItem('users') || '{}');
+    let currentUser = localStorage.getItem('currentUser') || null;
 
-  function showPanel(panel) {
-    document.getElementById('loginPanel').style.display = panel === 'login' ? 'block' : 'none';
-    document.getElementById('registerPanel').style.display = panel === 'register' ? 'block' : 'none';
-    document.getElementById('userPanel').style.display = panel === 'user' ? 'block' : 'none';
-    document.getElementById('adminPanel').style.display = panel === 'admin' ? 'block' : 'none';
-    document.getElementById('adminLoginPanel')?.remove(); // admin form hide
-  }
-
-  function showAdminLogin() {
-    const div = document.createElement("div");
-    div.id = "adminLoginPanel";
-    div.innerHTML = `
-      <h3>Admin Login</h3>
-      <input type="text" id="adminID" placeholder="Admin ID">
-      <input type="password" id="adminPass" placeholder="Password">
-      <button onclick="adminLogin()">Login as Admin</button>
-    `;
-    document.querySelector(".container").appendChild(div);
-  }
-
-  function adminLogin() {
-    const id = document.getElementById('adminID').value;
-    const pass = document.getElementById('adminPass').value;
-    if (id === 'admin' && pass === 'admin123') {
-      showPanel('admin');
-      document.getElementById('allData').value = JSON.stringify(users, null, 2);
-    } else {
-      alert("Invalid admin credentials");
+    function showPanel(panel) {
+      document.getElementById('loginPanel').style.display = panel === 'login' ? 'block' : 'none';
+      document.getElementById('registerPanel').style.display = panel === 'register' ? 'block' : 'none';
+      document.getElementById('userPanel').style.display = panel === 'user' ? 'block' : 'none';
+      document.getElementById('adminPanel').style.display = panel === 'admin' ? 'block' : 'none';
+      document.getElementById('adminLoginPanel')?.remove();
     }
-  }
 
-  function register() {
-    const name = document.getElementById('regName').value;
-    const pass = document.getElementById('regPass').value;
-    const ref = document.getElementById('regRef').value;
-    const id = 'U' + Math.floor(Math.random() * 1000000);
-    users[id] = { name, pass, deposits: [], wallet: '', ref, commission: 0 };
-    if (ref && users[ref]) {
-      if (!users[ref].team) users[ref].team = [];
-      users[ref].team.push(id);
+    function showAdminLogin() {
+      const div = document.createElement("div");
+      div.id = "adminLoginPanel";
+      div.innerHTML = `
+        <h3>Admin Login</h3>
+        <input type="text" id="adminID" placeholder="Admin ID">
+        <input type="password" id="adminPass" placeholder="Password">
+        <button onclick="adminLogin()">Login as Admin</button>
+      `;
+      document.querySelector(".container").appendChild(div);
     }
-    localStorage.setItem('users', JSON.stringify(users));
-    alert('Registered! Your ID: ' + id);
-    showPanel('login');
-  }
 
-  function login() {
-    const id = document.getElementById('loginID').value;
-    const pass = document.getElementById('loginPassword').value;
-    if (users[id] && users[id].pass === pass) {
-      currentUser = id;
-      localStorage.setItem('currentUser', currentUser);
+    function adminLogin() {
+      const id = document.getElementById('adminID').value;
+      const pass = document.getElementById('adminPass').value;
+      if (id === 'admin' && pass === 'admin123') {
+        showPanel('admin');
+        document.getElementById('allData').value = JSON.stringify(users, null, 2);
+      } else {
+        alert("Invalid admin credentials");
+      }
+    }
+
+    function register() {
+      const name = document.getElementById('regName').value;
+      const pass = document.getElementById('regPass').value;
+      const ref = document.getElementById('regRef').value;
+      const id = 'U' + Math.floor(Math.random() * 1000000);
+      users[id] = { name, pass, deposits: [], wallet: '', ref, commission: 0 };
+      if (ref && users[ref]) {
+        if (!users[ref].team) users[ref].team = [];
+        users[ref].team.push(id);
+      }
+      localStorage.setItem('users', JSON.stringify(users));
+      alert('Registered! Your ID: ' + id);
+      showPanel('login');
+    }
+
+    function login() {
+      const id = document.getElementById('loginID').value;
+      const pass = document.getElementById('loginPassword').value;
+      if (users[id] && users[id].pass === pass) {
+        currentUser = id;
+        localStorage.setItem('currentUser', currentUser);
+        loadUserPanel();
+      } else {
+        alert('Invalid credentials');
+      }
+    }
+
+    function loadUserPanel() {
+      const u = users[currentUser];
+      document.getElementById('userName').textContent = u.name;
+      document.getElementById('userID').textContent = currentUser;
+      document.getElementById('usdtWallet').value = u.wallet || '';
+      const total = u.deposits.reduce((a, b) => a + b, 0);
+      document.getElementById('totalDeposited').textContent = total;
+      document.getElementById('returnAmount').textContent = (total * 1.2).toFixed(2);
+      document.getElementById('refCommission').textContent = u.commission.toFixed(2);
+      const team = u.team || [];
+      document.getElementById('refTeam').innerHTML = team.map(tid => `<li>${tid} - ${users[tid]?.name || ''}</li>`).join('');
+      showPanel('user');
+    }
+
+    function saveWallet(w) {
+      users[currentUser].wallet = w;
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+
+    function deposit() {
+      const amount = 100;
+      users[currentUser].deposits.push(amount);
+      const ref = users[currentUser].ref;
+      if (ref && users[ref]) users[ref].commission += amount * 0.05;
+      localStorage.setItem('users', JSON.stringify(users));
+      loadUserPanel();
+      alert("100 USDT deposit recorded. Please send it to the wallet above.");
+    }
+
+    function logout() {
+      localStorage.removeItem('currentUser');
+      location.reload();
+    }
+
+    function copyAdminData() {
+      const text = document.getElementById('allData');
+      text.select();
+      document.execCommand('copy');
+      alert("User data copied to clipboard.");
+    }
+
+    if (currentUser) {
       loadUserPanel();
     } else {
-      alert('Invalid credentials');
+      showPanel('');
     }
-  }
-
-  function loadUserPanel() {
-    const u = users[currentUser];
-    document.getElementById('userName').textContent = u.name;
-    document.getElementById('userID').textContent = currentUser;
-    document.getElementById('usdtWallet').value = u.wallet || '';
-    document.getElementById('totalDeposited').textContent = u.deposits.reduce((a, b) => a + b, 0);
-    const total = u.deposits.reduce((a, b) => a + b, 0);
-    document.getElementById('returnAmount').textContent = (total * 1.2).toFixed(2);
-    document.getElementById('refCommission').textContent = u.commission.toFixed(2);
-    const team = u.team || [];
-    document.getElementById('refTeam').innerHTML = team.map(tid => `<li>${tid} - ${users[tid]?.name || ''}</li>`).join('');
-    showPanel('user');
-  }
-
-  function saveWallet(w) {
-    users[currentUser].wallet = w;
-    localStorage.setItem('users', JSON.stringify(users));
-  }
-
-  function deposit() {
-    const amount = 100;
-    users[currentUser].deposits.push(amount);
-    const ref = users[currentUser].ref;
-    if (ref && users[ref]) users[ref].commission += amount * 0.05;
-    localStorage.setItem('users', JSON.stringify(users));
-    loadUserPanel();
-    alert("100 USDT deposit recorded. Send to the main wallet address.");
-  }
-
-  function logout() {
-    localStorage.removeItem('currentUser');
-    location.reload();
-  }
-
-  if (currentUser) {
-    loadUserPanel();
-  } else {
-    showPanel('');
-  }
-</script>
+  </script>
 </body>
 </html>
