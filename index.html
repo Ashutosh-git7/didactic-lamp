@@ -1,201 +1,211 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Register - Ashirwad App</title>
+  <title>Ashirwad Mini App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: Arial; text-align: center; background: #f2f2f2; }
-    .container { margin-top: 80px; padding: 20px; background: white; max-width: 400px; margin:auto; border-radius: 10px; }
-    input, button { width: 90%; padding: 10px; margin: 10px 0; }
+    body { font-family: Arial; background: #f4f4f4; padding: 20px; }
+    .card { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 0 5px #ccc; }
+    input, button { padding: 10px; width: 95%; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+    .btn { background: #28a745; color: white; font-weight: bold; }
+    .btn:hover { background: #218838; cursor: pointer; }
+    .admin { background: #ffc107; color: black; font-weight: bold; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Register</h2>
-    <input type="text" id="name" placeholder="Full Name" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button onclick="register()">Register</button>
-    <p>Already registered? <a href="login.html">Login here</a></p>
-  </div>
+
+  <div id="app"></div>
 
   <script>
-    function generateUserId() {
-      return 'USR' + Math.floor(10000 + Math.random() * 90000);
+    const adminID = "admin";
+    const adminPass = "admin123";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+
+    const show = (html) => document.getElementById("app").innerHTML = html;
+
+    const generateUserId = () => 'USR' + Math.floor(10000 + Math.random() * 90000);
+
+    const saveUser = (u) => localStorage.setItem(u.userId, JSON.stringify(u));
+    const getUser = (id) => JSON.parse(localStorage.getItem(id));
+    const getAllUsers = () => Object.keys(localStorage).filter(k => k.startsWith("USR")).map(k => getUser(k));
+
+    function home() {
+      show(`
+        <div class="card">
+          <h2>Welcome to Ashirwad</h2>
+          <button class="btn" onclick="showRegister()">Register</button>
+          <button class="btn" onclick="showLogin()">Login</button>
+          <button class="admin" onclick="showAdmin()">Admin Login</button>
+        </div>
+      `);
+    }
+
+    function showRegister() {
+      show(`
+        <div class="card">
+          <h3>Register</h3>
+          <input type="text" id="name" placeholder="Your Name">
+          <input type="password" id="password" placeholder="Password">
+          <button class="btn" onclick="register()">Register</button>
+          <button onclick="home()">Back</button>
+        </div>
+      `);
     }
 
     function register() {
       let name = document.getElementById("name").value;
       let password = document.getElementById("password").value;
-      if (!name || !password) return alert("Please fill all fields.");
-
+      if (!name || !password) return alert("Fill all fields.");
       let userId = generateUserId();
-      let user = { userId, name, password, deposits: [], wallet: '', referrals: [] };
+      let user = { userId, name, password, wallet: "", deposits: [], referrals: [], refBy: ref || "" };
+      saveUser(user);
 
-      localStorage.setItem(userId, JSON.stringify(user));
-      alert("Registered! Your User ID: " + userId);
-      location.href = "login.html?uid=" + userId;
+      if (ref) {
+        let r = getUser(ref);
+        if (r) {
+          r.referrals.push(userId);
+          saveUser(r);
+        }
+      }
+
+      localStorage.setItem("currentUser", userId);
+      dashboard();
     }
-  </script>
-</body>
-</html>
 
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Login - Ashirwad App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; text-align: center; background: #f2f2f2; }
-    .container { margin-top: 80px; padding: 20px; background: white; max-width: 400px; margin:auto; border-radius: 10px; }
-    input, button { width: 90%; padding: 10px; margin: 10px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>User Login</h2>
-    <input type="text" id="userId" placeholder="Your User ID">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p>New here? <a href="register.html">Register</a></p>
-  </div>
+    function showLogin() {
+      show(`
+        <div class="card">
+          <h3>Login</h3>
+          <input type="text" id="userId" placeholder="User ID">
+          <input type="password" id="password" placeholder="Password">
+          <button class="btn" onclick="login()">Login</button>
+          <button onclick="home()">Back</button>
+        </div>
+      `);
+    }
 
-  <script>
     function login() {
       let userId = document.getElementById("userId").value;
       let password = document.getElementById("password").value;
-
-      let data = localStorage.getItem(userId);
-      if (!data) return alert("Invalid ID");
-      let user = JSON.parse(data);
-      if (user.password !== password) return alert("Wrong password");
-
+      let user = getUser(userId);
+      if (!user || user.password !== password) return alert("Invalid credentials");
       localStorage.setItem("currentUser", userId);
-      location.href = "dashboard.html";
-    }
-  </script>
-</body>
-</html>
-
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dashboard - Ashirwad App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; background: #e9ecef; padding: 20px; }
-    .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-    button { padding: 10px; width: 100%; }
-  </style>
-</head>
-<body>
-  <div id="main"></div>
-  <button onclick="logout()">Logout</button>
-
-  <script>
-    let userId = localStorage.getItem("currentUser");
-    let user = JSON.parse(localStorage.getItem(userId));
-
-    if (!user) {
-      alert("Login first");
-      location.href = "login.html";
+      dashboard();
     }
 
-    let html = `
-      <div class="card">
-        <h3>Welcome, ${user.name}</h3>
-        <p><strong>User ID:</strong> ${user.userId}</p>
-        <p><strong>Wallet:</strong> ${user.wallet || 'Not set'}</p>
-        <p><strong>Total Deposits:</strong> $${user.deposits.reduce((a,b)=>a+b,0)}</p>
-        <p><strong>Referral Link:</strong><br><code>${location.origin + '/register.html?ref=' + user.userId}</code></p>
-        <button onclick="setWallet()">Set/Update Wallet</button>
-        <button onclick="makeDeposit()">Deposit</button>
-      </div>
-    `;
-    document.getElementById("main").innerHTML = html;
+    function dashboard() {
+      let uid = localStorage.getItem("currentUser");
+      let user = getUser(uid);
+      if (!user) return home();
 
-    function logout() {
-      localStorage.removeItem("currentUser");
-      location.href = "login.html";
+      let deposits = user.deposits.reduce((a, b) => a + b, 0);
+      let referralAmount = user.referrals.reduce((sum, id) => {
+        let u = getUser(id);
+        if (u) return sum + (u.deposits.reduce((a, b) => a + b, 0) * 0.10);
+        return sum;
+      }, 0);
+
+      let html = `
+        <div class="card">
+          <h3>Hello, ${user.name}</h3>
+          <p><b>User ID:</b> ${user.userId}</p>
+          <p><b>Your Wallet:</b> ${user.wallet || "Not Set"}</p>
+          <p><b>Total Deposits:</b> $${deposits}</p>
+          <p><b>Referral Earnings:</b> $${referralAmount.toFixed(2)}</p>
+          <p><b>Referral Link:</b><br><code>${location.origin + location.pathname}?ref=${user.userId}</code></p>
+          <button onclick="setWallet()">Set/Change Wallet</button>
+          <button onclick="addDeposit()">Make Deposit</button>
+          <button onclick="showTeam()">View Referral Team</button>
+          <button onclick="logout()">Logout</button>
+        </div>
+      `;
+      show(html);
     }
 
     function setWallet() {
-      let wallet = prompt("Enter your USDT (BEP20) wallet address:");
-      if (wallet) {
-        user.wallet = wallet;
-        localStorage.setItem(user.userId, JSON.stringify(user));
-        location.reload();
+      let uid = localStorage.getItem("currentUser");
+      let user = getUser(uid);
+      let w = prompt("Enter your BEP20 wallet address:", user.wallet || "");
+      if (w) {
+        user.wallet = w;
+        saveUser(user);
+        dashboard();
       }
     }
 
-    function makeDeposit() {
-      let amount = prompt("Enter deposit amount ($10-$1000):");
-      amount = parseFloat(amount);
-      if (isNaN(amount) || amount < 10 || amount > 1000) return alert("Invalid amount");
-      user.deposits.push(amount);
-      localStorage.setItem(user.userId, JSON.stringify(user));
-      alert("Deposit successful");
-      location.reload();
+    function addDeposit() {
+      let amt = prompt("Enter amount to deposit (10 - 1000 USDT):");
+      amt = parseFloat(amt);
+      if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Invalid amount");
+      let uid = localStorage.getItem("currentUser");
+      let user = getUser(uid);
+      user.deposits.push(amt);
+      saveUser(user);
+      alert("Deposit recorded!");
+      dashboard();
     }
-  </script>
-</body>
-</html>
 
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Admin Panel - Ashirwad</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-    input, button { margin: 5px; padding: 8px; }
-    .user-box { background: #fff; padding: 10px; margin: 10px 0; border-radius: 8px; }
-  </style>
-</head>
-<body>
-  <h2>Admin Login</h2>
-  <input type="text" id="adminId" placeholder="Admin ID"><br>
-  <input type="password" id="adminPass" placeholder="Password"><br>
-  <button onclick="adminLogin()">Login</button>
+    function showTeam() {
+      let uid = localStorage.getItem("currentUser");
+      let user = getUser(uid);
+      let team = user.referrals.map(id => {
+        let u = getUser(id);
+        return `<li>${u?.name || "Unknown"} (${id})</li>`;
+      }).join("");
+      show(`
+        <div class="card">
+          <h3>Your Referral Team</h3>
+          <ul>${team || "<li>No referrals yet.</li>"}</ul>
+          <button onclick="dashboard()">Back</button>
+        </div>
+      `);
+    }
 
-  <div id="panel"></div>
+    function logout() {
+      localStorage.removeItem("currentUser");
+      home();
+    }
 
-  <script>
-    const adminID = "admin";
-    const adminPASS = "admin123";
+    function showAdmin() {
+      show(`
+        <div class="card">
+          <h3>Admin Login</h3>
+          <input id="aid" placeholder="Admin ID"><br>
+          <input id="apass" placeholder="Password" type="password"><br>
+          <button class="admin" onclick="adminLogin()">Login</button>
+          <button onclick="home()">Back</button>
+        </div>
+      `);
+    }
 
     function adminLogin() {
-      let id = document.getElementById("adminId").value;
-      let pass = document.getElementById("adminPass").value;
-      if (id !== adminID || pass !== adminPASS) return alert("Wrong admin credentials");
+      let id = document.getElementById("aid").value;
+      let pass = document.getElementById("apass").value;
+      if (id !== adminID || pass !== adminPass) return alert("Wrong credentials");
 
-      let panel = document.getElementById("panel");
-      panel.innerHTML = "<h3>All Users</h3>";
-
-      for (let key in localStorage) {
-        if (key.startsWith("USR")) {
-          let user = JSON.parse(localStorage.getItem(key));
-          panel.innerHTML += `
-            <div class="user-box">
-              <strong>${user.name} (${user.userId})</strong><br>
-              Wallet: ${user.wallet || "N/A"}<br>
-              Deposits: $${user.deposits.reduce((a,b)=>a+b,0)}<br>
-              <button onclick='edit("${user.userId}")'>Edit</button>
-            </div>
-          `;
-        }
-      }
+      let users = getAllUsers();
+      let html = `<div class="card"><h3>All Users</h3>`;
+      users.forEach(u => {
+        let dep = u.deposits.reduce((a,b)=>a+b,0);
+        html += `
+          <div style="border-bottom:1px solid #ccc;margin-bottom:5px;">
+            <b>${u.name}</b> (${u.userId})<br>
+            Wallet: ${u.wallet || "N/A"}<br>
+            Deposits: $${dep}<br>
+            Referrals: ${u.referrals.length}
+          </div>
+        `;
+      });
+      html += `<button onclick="home()">Back</button></div>`;
+      show(html);
     }
 
-    function edit(uid) {
-      let user = JSON.parse(localStorage.getItem(uid));
-      let newName = prompt("Edit name", user.name);
-      if (newName) {
-        user.name = newName;
-        localStorage.setItem(uid, JSON.stringify(user));
-        alert("Updated");
-        adminLogin();
-      }
-    }
+    // Auto load home or dashboard
+    if (localStorage.getItem("currentUser")) dashboard();
+    else home();
   </script>
 </body>
 </html>
