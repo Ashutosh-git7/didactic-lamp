@@ -2,259 +2,184 @@
 <html>
 <head>
   <title>Ashirwad Mini App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: Arial; background: #f4f4f4; padding: 20px; }
-    .card { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 0 5px #ccc; }
-    input, button { padding: 10px; width: 95%; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
-    .btn { background: #28a745; color: white; font-weight: bold; }
-    .btn:hover { background: #218838; cursor: pointer; }
-    .admin { background: #ffc107; color: black; font-weight: bold; }
-    .pending { color: orange; }
-    .approved { color: green; }
-    .rejected { color: red; }
-    code { word-break: break-all; }
+    body { font-family: sans-serif; margin: 10px; padding: 0; background: #f4f4f4; }
+    .box { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 0 5px #ccc; }
+    input, button { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+    .hidden { display: none; }
+    .title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <div id="app"></div>
 
-  <script>
-    const adminID = "admin";
-    const adminPass = "admin123";
-    const usdtAddress = "0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B";
-    const ref = new URLSearchParams(window.location.search).get("ref");
+<div id="registerBox" class="box">
+  <div class="title">Register</div>
+  <input id="regName" placeholder="Enter name">
+  <input id="regPass" type="password" placeholder="Enter password">
+  <button onclick="register()">Register</button>
+  <p>Already registered? <a href="#" onclick="showLogin()">Login</a></p>
+</div>
 
-    const show = (html) => document.getElementById("app").innerHTML = html;
-    const genID = () => 'USR' + Math.floor(10000 + Math.random() * 90000);
-    const getUser = id => JSON.parse(localStorage.getItem(id));
-    const saveUser = u => localStorage.setItem(u.userId, JSON.stringify(u));
-    const getAllUsers = () => Object.keys(localStorage).filter(k => k.startsWith("USR")).map(k => getUser(k));
-    const setCurrentUser = id => localStorage.setItem("currentUser", id);
-    const getCurrentUser = () => getUser(localStorage.getItem("currentUser"));
+<div id="loginBox" class="box hidden">
+  <div class="title">Login</div>
+  <input id="logID" placeholder="Enter your User ID">
+  <input id="logPass" type="password" placeholder="Enter password">
+  <button onclick="login()">Login</button>
+</div>
 
-    function home() {
-      show(`
-        <div class="card">
-          <h2>Welcome to Ashirwad</h2>
-          <button class="btn" onclick="showRegister()">Register</button>
-          <button class="btn" onclick="showLogin()">Login</button>
-          <button class="admin" onclick="showAdmin()">Admin Login</button>
-        </div>
-      `);
+<div id="dashboard" class="box hidden">
+  <div class="title">Welcome, <span id="dashName"></span>!</div>
+  <p>Your ID: <b id="dashID"></b></p>
+  <p>Total Approved Deposit: $<span id="totalDeposit">0</span></p>
+  <p>Monthly Return (5%): $<span id="monthlyReturn">0</span></p>
+  <p>Total Referral Commission (10%): $<span id="refBonus">0</span></p>
+  <p><b>Your referral link:</b><br><span id="refLink"></span></p>
+  <input id="depositAmt" placeholder="Enter deposit amount ($10–1000)">
+  <button onclick="submitDeposit()">Deposit</button>
+  <p>Send USDT to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+  <p><b>Status:</b> <span id="depositStatus">None</span></p>
+  <button onclick="requestWithdrawal()">Request Withdrawal</button>
+  <br><br><button onclick="logout()">Logout</button>
+</div>
+
+<div id="adminBox" class="box hidden">
+  <div class="title">Admin Login</div>
+  <input id="adminID" placeholder="Admin ID">
+  <input id="adminPass" type="password" placeholder="Password">
+  <button onclick="adminLogin()">Login</button>
+</div>
+
+<div id="adminPanel" class="box hidden">
+  <div class="title">Admin Panel</div>
+  <div id="allDeposits"></div>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+  let users = JSON.parse(localStorage.getItem('users') || '{}');
+  let deposits = JSON.parse(localStorage.getItem('deposits') || '[]');
+  let currentUser = localStorage.getItem('currentUser');
+  const ref = new URLSearchParams(window.location.search).get("ref");
+
+  function save() {
+    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('deposits', JSON.stringify(deposits));
+  }
+
+  function register() {
+    const name = regName.value.trim();
+    const pass = regPass.value.trim();
+    if (!name || !pass) return alert("All fields required");
+    const id = 'USR' + (1000 + Object.keys(users).length + 1);
+    users[id] = { name, pass, deposit: 0, pending: 0, ref, refBonus: 0, withdraw: false };
+    save();
+    alert("Registered! Your ID: " + id);
+    showLogin();
+  }
+
+  function showLogin() {
+    registerBox.classList.add('hidden');
+    loginBox.classList.remove('hidden');
+  }
+
+  function login() {
+    const id = logID.value.trim();
+    const pass = logPass.value.trim();
+    if (users[id] && users[id].pass === pass) {
+      currentUser = id;
+      localStorage.setItem('currentUser', id);
+      showDashboard();
+    } else {
+      alert("Invalid login");
     }
+  }
 
-    function showRegister() {
-      show(`
-        <div class="card">
-          <h3>Register</h3>
-          <input type="text" id="name" placeholder="Your Name">
-          <input type="password" id="password" placeholder="Password">
-          <button class="btn" onclick="register()">Register</button>
-          <button onclick="home()">Back</button>
-        </div>
-      `);
+  function showDashboard() {
+    const u = users[currentUser];
+    if (!u) return;
+    dashName.innerText = u.name;
+    dashID.innerText = currentUser;
+    totalDeposit.innerText = u.deposit;
+    monthlyReturn.innerText = (u.deposit * 0.05).toFixed(2);
+    refBonus.innerText = u.refBonus || 0;
+    refLink.innerText = window.location.origin + window.location.pathname + '?ref=' + currentUser;
+    depositStatus.innerText = u.pending ? "Pending Approval: $" + u.pending : "Approved";
+    registerBox.classList.add('hidden');
+    loginBox.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    adminBox.classList.add('hidden');
+    adminPanel.classList.add('hidden');
+  }
+
+  function submitDeposit() {
+    const amt = parseFloat(depositAmt.value);
+    if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Amount must be $10-$1000");
+    const u = users[currentUser];
+    u.pending = amt;
+    deposits.push({ id: currentUser, amount: amt, status: 'pending' });
+    if (u.ref && users[u.ref]) {
+      users[u.ref].refBonus = (users[u.ref].refBonus || 0) + (amt * 0.1);
     }
+    save();
+    alert("Deposit submitted! Wait for admin approval.");
+    showDashboard();
+  }
 
-    function register() {
-      let name = document.getElementById("name").value;
-      let password = document.getElementById("password").value;
-      if (!name || !password) return alert("Fill all fields.");
-      let userId = genID();
-      let user = { userId, name, password, wallet: "", deposits: [], withdrawals: [], referrals: [], refBy: ref || "" };
-      saveUser(user);
+  function requestWithdrawal() {
+    const u = users[currentUser];
+    if (!u || u.deposit <= 0) return alert("No approved deposit.");
+    alert("Withdrawal request sent to admin.");
+    u.withdraw = true;
+    save();
+  }
 
-      if (ref) {
-        let r = getUser(ref);
-        if (r) { r.referrals.push(userId); saveUser(r); }
-      }
+  function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    location.reload();
+  }
 
-      setCurrentUser(userId);
-      dashboard();
+  function adminLogin() {
+    const id = adminID.value.trim();
+    const pass = adminPass.value.trim();
+    if (id === 'admin' && pass === 'admin123') {
+      showAdminPanel();
+    } else {
+      alert("Invalid admin login");
     }
+  }
 
-    function showLogin() {
-      show(`
-        <div class="card">
-          <h3>Login</h3>
-          <input type="text" id="userId" placeholder="User ID">
-          <input type="password" id="password" placeholder="Password">
-          <button class="btn" onclick="login()">Login</button>
-          <button onclick="home()">Back</button>
-        </div>
-      `);
+  function showAdminPanel() {
+    let html = '';
+    deposits.forEach((d, i) => {
+      html += `<div>
+        <b>${d.id}</b> - $${d.amount} - ${d.status}
+        ${d.status === 'pending' ? `<button onclick="approve(${i})">Approve</button>` : ''}
+      </div>`;
+    });
+    allDeposits.innerHTML = html || "No deposits yet.";
+    adminBox.classList.add('hidden');
+    adminPanel.classList.remove('hidden');
+  }
+
+  function approve(index) {
+    const d = deposits[index];
+    const u = users[d.id];
+    if (u) {
+      u.deposit += d.amount;
+      u.pending = 0;
+      deposits[index].status = 'approved';
+      save();
+      showAdminPanel();
     }
+  }
 
-    function login() {
-      let userId = document.getElementById("userId").value;
-      let password = document.getElementById("password").value;
-      let user = getUser(userId);
-      if (!user || user.password !== password) return alert("Invalid credentials");
-      setCurrentUser(userId);
-      dashboard();
-    }
-
-    function dashboard() {
-      let user = getCurrentUser();
-      if (!user) return home();
-
-      let approvedDeposits = user.deposits.filter(d => d.status === 'approved').map(d => d.amount);
-      let pendingDeposits = user.deposits.filter(d => d.status === 'pending');
-
-      let referralEarnings = user.referrals.reduce((sum, id) => {
-        let u = getUser(id);
-        if (u) {
-          let approved = u.deposits.filter(d => d.status === 'approved').reduce((a,b)=>a+b.amount,0);
-          return sum + (approved * 0.10);
-        }
-        return sum;
-      }, 0);
-
-      let withdrawalRequests = user.withdrawals.map(w => `<li>$${w.amount} - <span class="${w.status}">${w.status}</span></li>`).join("");
-
-      show(`
-        <div class="card">
-          <h3>Hello, ${user.name}</h3>
-          <p><b>User ID:</b> ${user.userId}</p>
-          <p><b>Wallet:</b> ${user.wallet || "Not set"}</p>
-          <p><b>USDT Deposit Address:</b><br><code>${usdtAddress}</code></p>
-          <p><b>Total Approved Deposits:</b> $${approvedDeposits.reduce((a,b)=>a+b,0)}</p>
-          <p><b>Referral Earnings:</b> $${referralEarnings.toFixed(2)}</p>
-          <p><b>Referral Link:</b><br><code>${location.origin + location.pathname}?ref=${user.userId}</code></p>
-          <button onclick="setWallet()">Set/Update Wallet</button>
-          <button onclick="makeDeposit()">Mark Deposit</button>
-          <button onclick="requestWithdraw()">Request Withdrawal</button>
-          <button onclick="viewReferrals()">View Referral Team</button>
-          <button onclick="logout()">Logout</button>
-        </div>
-
-        <div class="card">
-          <h4>Pending Deposits</h4>
-          <ul>${pendingDeposits.map(d => `<li>$${d.amount}</li>`).join("") || "None"}</ul>
-        </div>
-
-        <div class="card">
-          <h4>Withdrawals</h4>
-          <ul>${withdrawalRequests || "<li>No withdrawal yet</li>"}</ul>
-        </div>
-      `);
-    }
-
-    function setWallet() {
-      let user = getCurrentUser();
-      let w = prompt("Enter your USDT BEP20 wallet address:", user.wallet || "");
-      if (w) { user.wallet = w; saveUser(user); dashboard(); }
-    }
-
-    function makeDeposit() {
-      let amt = parseFloat(prompt("Enter deposit amount (10-1000 USDT):"));
-      if (isNaN(amt) || amt < 10 || amt > 1000) return alert("Invalid amount.");
-      let user = getCurrentUser();
-      user.deposits.push({ amount: amt, status: "pending" });
-      saveUser(user);
-      alert("Deposit marked as pending. Admin will approve.");
-      dashboard();
-    }
-
-    function requestWithdraw() {
-      let amt = parseFloat(prompt("Enter amount to withdraw (min $1):"));
-      if (isNaN(amt) || amt < 1) return alert("Invalid amount.");
-      let user = getCurrentUser();
-      user.withdrawals.push({ amount: amt, status: "pending" });
-      saveUser(user);
-      alert("Withdrawal requested. Admin will review.");
-      dashboard();
-    }
-
-    function viewReferrals() {
-      let user = getCurrentUser();
-      let team = user.referrals.map(id => {
-        let u = getUser(id);
-        return `<li>${u?.name || "Unknown"} (${id})</li>`;
-      }).join("");
-      show(`
-        <div class="card">
-          <h3>Your Referral Team</h3>
-          <ul>${team || "<li>No referrals yet.</li>"}</ul>
-          <button onclick="dashboard()">Back</button>
-        </div>
-      `);
-    }
-
-    function logout() {
-      localStorage.removeItem("currentUser");
-      home();
-    }
-
-    function showAdmin() {
-      show(`
-        <div class="card">
-          <h3>Admin Login</h3>
-          <input id="aid" placeholder="Admin ID"><br>
-          <input id="apass" placeholder="Password" type="password"><br>
-          <button class="admin" onclick="adminLogin()">Login</button>
-          <button onclick="home()">Back</button>
-        </div>
-      `);
-    }
-
-    function adminLogin() {
-      let id = document.getElementById("aid").value;
-      let pass = document.getElementById("apass").value;
-      if (id !== adminID || pass !== adminPass) return alert("Wrong credentials");
-
-      let html = `<div class="card"><h3>All Users</h3>`;
-      getAllUsers().forEach(u => {
-        html += `<div style="border-bottom:1px solid #ccc; padding:5px;">
-          <b>${u.name}</b> (${u.userId})<br>
-          Wallet: ${u.wallet || "N/A"}<br>
-          Deposits: $${u.deposits.filter(d => d.status === "approved").reduce((a,b)=>a+b.amount,0)}
-          <br>
-          <button onclick="adminApproveDeposits('${u.userId}')">Approve Deposits</button>
-          <button onclick="adminHandleWithdrawals('${u.userId}')">Review Withdrawals</button>
-        </div>`;
-      });
-      html += `<button onclick="home()">Logout</button></div>`;
-      show(html);
-    }
-
-    function adminApproveDeposits(uid) {
-      let u = getUser(uid);
-      let pending = u.deposits.filter(d => d.status === "pending");
-      if (pending.length === 0) return alert("No pending deposits.");
-      pending.forEach(d => d.status = "approved");
-      saveUser(u);
-      alert("All deposits approved.");
-      adminLogin();
-    }
-
-    function adminHandleWithdrawals(uid) {
-      let u = getUser(uid);
-      let list = u.withdrawals.map((w, i) => `
-        <li>
-          $${w.amount} - <span class="${w.status}">${w.status}</span>
-          ${w.status === "pending" ? `
-            <button onclick="markWithdrawal('${uid}', ${i}, 'approved')">Approve</button>
-            <button onclick="markWithdrawal('${uid}', ${i}, 'rejected')">Reject</button>` : ""}
-        </li>`).join("");
-      show(`
-        <div class="card">
-          <h3>Withdrawals for ${u.name}</h3>
-          <ul>${list}</ul>
-          <button onclick="adminLogin()">Back</button>
-        </div>
-      `);
-    }
-
-    function markWithdrawal(uid, index, status) {
-      let u = getUser(uid);
-      u.withdrawals[index].status = status;
-      saveUser(u);
-      adminHandleWithdrawals(uid);
-    }
-
-    // Auto launch
-    localStorage.getItem("currentUser") ? dashboard() : home();
-  </script>
+  if (currentUser && users[currentUser]) {
+    showDashboard();
+  } else {
+    registerBox.classList.remove('hidden');
+  }
+</script>
 </body>
 </html>
