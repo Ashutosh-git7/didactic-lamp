@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ashirwad Mini App</title>
   <style>
-    body { font-family: sans-serif; background: #f9f9f9; padding: 20px; }
-    .card { background: white; padding: 15px; margin: 10px auto; border-radius: 10px; max-width: 400px; box-shadow: 0 0 10px #ccc; }
-    input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
-    button { background: #28a745; color: white; border: none; }
-    .link { color: #007bff; text-decoration: none; font-size: 14px; }
+    body { font-family: sans-serif; background: #f1f1f1; padding: 20px; }
+    .card { background: #fff; border-radius: 10px; padding: 20px; max-width: 400px; margin: auto; box-shadow: 0 0 10px #ccc; }
+    input, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #28a745; color: white; border: none; font-weight: bold; }
+    .link { color: blue; text-decoration: underline; cursor: pointer; font-size: 14px; }
     .hide { display: none; }
   </style>
 </head>
@@ -17,35 +17,44 @@
 
 <div id="login" class="card">
   <h2>Login</h2>
-  <input type="text" id="login_id" placeholder="User ID or Admin ID">
+  <input id="login_id" placeholder="User ID or Admin ID">
   <input type="password" id="login_pass" placeholder="Password">
   <button onclick="login()">Login</button>
-  <p><a class="link" href="#" onclick="show('register')">New user? Register</a></p>
+  <p class="link" onclick="show('register')">New user? Register here</p>
 </div>
 
 <div id="register" class="card hide">
   <h2>Register</h2>
-  <input type="text" id="ref" placeholder="Referral code (optional)">
-  <input type="text" id="wallet" placeholder="Your BEP20 Wallet Address">
+  <input id="ref" placeholder="Referral ID (optional)">
+  <input id="wallet" placeholder="Your BEP20 Wallet Address">
   <input type="password" id="pass" placeholder="Set Password">
   <button onclick="register()">Register</button>
-  <p><a class="link" href="#" onclick="show('login')">Back to Login</a></p>
+  <p class="link" onclick="show('login')">Back to Login</p>
 </div>
 
 <div id="userPanel" class="card hide">
   <h2>Welcome <span id="userName"></span></h2>
-  <p>Your Wallet: <span id="userWallet"></span></p>
-  <p>Referral Link: <span id="refLink"></span></p>
-  <input type="number" id="amount" placeholder="Enter deposit (10 - 1000)">
-  <button onclick="deposit()">Make Deposit</button>
+  <p><b>Wallet:</b> <span id="userWallet"></span></p>
+  <p><b>Your Referral Link:</b><br><span id="refLink"></span></p>
+
+  <h3>Deposit</h3>
+  <p><b>Send USDT (BEP20) to:</b><br>
+  <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code></p>
+  <input id="amount" type="number" placeholder="Amount ($10 - $1000)">
+  <button onclick="deposit()">I Have Deposited</button>
+
   <h3>Your Deposits</h3>
   <ul id="myDeposits"></ul>
+
   <h3>Referral Income: $<span id="refIncome">0</span></h3>
   <button onclick="withdraw('ref')">Withdraw Referral</button>
+
   <h3>Interest Earned: $<span id="intIncome">0</span></h3>
   <button onclick="withdraw('int')">Withdraw Interest</button>
-  <h3>Deposit Withdrawals</h3>
+
+  <h3>Withdrawal History</h3>
   <ul id="withdrawList"></ul>
+
   <button onclick="logout()">Logout</button>
 </div>
 
@@ -125,16 +134,15 @@ function deposit() {
 
 function withdraw(type) {
   if (type === 'ref') {
-    if (user.refEarnings < 1) return alert("Min $1 to withdraw");
+    if (user.refEarnings < 1) return alert("Minimum $1 required");
     db.withdrawals.push({ id: Date.now(), user: user.id, amt: user.refEarnings, type, date: Date.now(), approved: false });
     user.refEarnings = 0;
-    alert("Referral withdrawal requested");
   } else if (type === 'int') {
-    if (user.interest < 1) return alert("Min $1 to withdraw");
+    if (user.interest < 1) return alert("Minimum $1 required");
     db.withdrawals.push({ id: Date.now(), user: user.id, amt: user.interest, type, date: Date.now(), approved: false });
     user.interest = 0;
-    alert("Interest withdrawal requested");
   }
+  alert("Withdrawal request submitted.");
   loadUser();
 }
 
@@ -144,10 +152,10 @@ function loadUser() {
   user.deposits.forEach(did => {
     const dep = db.deposits.find(d => d.id === did);
     const days = Math.floor((Date.now() - dep.date) / (1000 * 60 * 60 * 24));
-    let info = `Amount: $${dep.amt} | Day: ${days}`;
+    let info = `Amount: $${dep.amt} | Days: ${days}`;
     if (dep.approved && days >= 30) {
-      const monthly = Math.floor(days / 30);
-      user.interest = monthly * dep.amt * 0.05;
+      const months = Math.floor(days / 30);
+      user.interest = months * dep.amt * 0.05;
     }
     list.innerHTML += `<li>${info} ${dep.approved ? "(Approved)" : "(Pending)"}</li>`;
   });
@@ -157,7 +165,7 @@ function loadUser() {
   const wList = document.getElementById('withdrawList');
   wList.innerHTML = '';
   db.withdrawals.filter(w => w.user === user.id).forEach(w => {
-    wList.innerHTML += `<li>${w.type} - $${w.amt} (${w.approved ? "Paid" : "Pending"})</li>`;
+    wList.innerHTML += `<li>${w.type.toUpperCase()} - $${w.amt} (${w.approved ? "Paid" : "Pending"})</li>`;
   });
 }
 
@@ -165,18 +173,19 @@ function loadAdmin() {
   const ul = document.getElementById('allUsers');
   ul.innerHTML = '';
   Object.values(db.users).forEach(u => {
-    ul.innerHTML += `<li><b>${u.id}</b> Wallet: ${u.wallet} Deposits: ${u.deposits.length} <button onclick="editUser('${u.id}')">Edit</button></li>`;
+    ul.innerHTML += `<li><b>${u.id}</b> | Wallet: ${u.wallet} | Deposits: ${u.deposits.length} 
+    <button onclick="editUser('${u.id}')">Edit</button></li>`;
   });
 }
 
 function editUser(id) {
   const u = db.users[id];
-  const newVal = prompt("Edit: wallet,refEarnings,interest", `${u.wallet},${u.refEarnings},${u.interest}`);
-  const [w, r, i] = newVal.split(',');
+  const entry = prompt("Edit as: wallet,refEarnings,interest", `${u.wallet},${u.refEarnings},${u.interest}`);
+  const [w, r, i] = entry.split(',');
   u.wallet = w;
   u.refEarnings = parseFloat(r);
   u.interest = parseFloat(i);
-  alert("Updated");
+  alert("User updated.");
   loadAdmin();
 }
 
