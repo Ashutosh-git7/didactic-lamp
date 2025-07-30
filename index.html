@@ -1,209 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Ashirwad Mini App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>Register - Ashirwad App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f1f5f9;
-      padding: 20px;
-      margin: 0;
-      color: #111827;
-    }
-    .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    h1, h2 { text-align: center; margin-top: 0; }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      font-size: 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-    }
-    button {
-      background: #2563eb;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.3s ease;
-    }
-    button:hover { background: #1e40af; }
-    label { font-weight: 600; display: block; margin-top: 10px; }
-    .admin-section { display: none; }
-    .divider { border-top: 1px solid #e2e8f0; margin: 20px 0; }
-    .user-data p { margin: 5px 0; }
-    .ref-box {
-      background: #fef3c7;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 14px;
-      word-break: break-word;
-      text-align: center;
-    }
-    @media screen and (max-width: 480px) {
-      input, button { font-size: 15px; }
-    }
+    body { font-family: Arial; text-align: center; background: #f2f2f2; }
+    .container { margin-top: 80px; padding: 20px; background: white; max-width: 400px; margin:auto; border-radius: 10px; }
+    input, button { width: 90%; padding: 10px; margin: 10px 0; }
   </style>
 </head>
 <body>
-
-  <div class="card">
-    <h1>💰 Ashirwad Mini App</h1>
-    <h2>User Register / Login</h2>
-    <input type="text" id="regId" placeholder="Create Your ID" />
-    <input type="password" id="regPass" placeholder="Create Password" />
-    <button onclick="registerUser()">Register</button>
-    <div class="divider"></div>
-    <input type="text" id="loginId" placeholder="Login ID" />
-    <input type="password" id="loginPass" placeholder="Password" />
-    <button onclick="loginUser()">Login</button>
-  </div>
-
-  <div id="userSection" class="card" style="display:none">
-    <h2>👤 Welcome, <span id="currentUser"></span></h2>
-    <label>Deposit Amount ($10–$1000)</label>
-    <input type="number" id="depositAmount" />
-    <button onclick="makeDeposit()">Deposit</button>
-    <label>Your BEP20 Wallet (for returns)</label>
-    <input type="text" id="walletAddress" />
-    <button onclick="saveWallet()">Save Wallet</button>
-    <label>Your Referral Link</label>
-    <div class="ref-box" id="refLink">Login to get link</div>
-    <div class="divider"></div>
-    <h3>📊 Your Info</h3>
-    <p><b>Total Deposit:</b> $<span id="depoAmt">0</span></p>
-    <p><b>Monthly 5% Return:</b> $<span id="monthlyProfit">0</span></p>
-    <p><b>Referral Earnings:</b> $<span id="refEarnings">0</span></p>
-    <p><b>Your Referrals:</b> <span id="teamList">None</span></p>
-  </div>
-
-  <div class="card">
-    <h2>💸 Deposit Address</h2>
-    <p><b>USDT BEP20:</b><br> <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code></p>
-  </div>
-
-  <div class="card">
-    <h2>🔐 Admin Login</h2>
-    <input type="text" id="adminId" placeholder="Admin ID" />
-    <input type="password" id="adminPass" placeholder="Password" />
-    <button onclick="adminLogin()">Login as Admin</button>
-  </div>
-
-  <div class="card admin-section" id="adminPanel">
-    <h2>🛠️ Admin Panel</h2>
-    <div id="adminData"></div>
+  <div class="container">
+    <h2>Register</h2>
+    <input type="text" id="name" placeholder="Full Name" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button onclick="register()">Register</button>
+    <p>Already registered? <a href="login.html">Login here</a></p>
   </div>
 
   <script>
-    const userDB = {};
-    let currentUser = null;
-
-    function registerUser() {
-      const uid = document.getElementById("regId").value.trim();
-      const pass = document.getElementById("regPass").value.trim();
-      const ref = new URLSearchParams(window.location.search).get("ref");
-
-      if (!uid || !pass) return alert("ID & password required.");
-      if (userDB[uid]) return alert("User already exists.");
-
-      userDB[uid] = { pass, deposit: 0, wallet: "", refBy: ref || null, referrals: [], refEarn: 0 };
-      if (ref && userDB[ref]) {
-        userDB[ref].referrals.push(uid);
-      }
-      alert("Registered successfully! Now login.");
+    function generateUserId() {
+      return 'USR' + Math.floor(10000 + Math.random() * 90000);
     }
 
-    function loginUser() {
-      const uid = document.getElementById("loginId").value.trim();
-      const pass = document.getElementById("loginPass").value.trim();
-      const user = userDB[uid];
+    function register() {
+      let name = document.getElementById("name").value;
+      let password = document.getElementById("password").value;
+      if (!name || !password) return alert("Please fill all fields.");
 
-      if (!user || user.pass !== pass) {
-        alert("Invalid ID or password.");
-        return;
-      }
+      let userId = generateUserId();
+      let user = { userId, name, password, deposits: [], wallet: '', referrals: [] };
 
-      currentUser = uid;
-      document.getElementById("userSection").style.display = "block";
-      document.getElementById("currentUser").innerText = uid;
-      document.getElementById("refLink").innerText = "?ref=" + uid;
-      updateUserData();
-    }
-
-    function makeDeposit() {
-      const amt = parseFloat(document.getElementById("depositAmount").value);
-      if (amt >= 10 && amt <= 1000) {
-        userDB[currentUser].deposit += amt;
-        const ref = userDB[currentUser].refBy;
-        if (ref && userDB[ref]) {
-          userDB[ref].refEarn += amt * 0.10;
-        }
-        updateUserData();
-        alert("Deposit recorded. Send USDT to the deposit address.");
-      } else {
-        alert("Enter $10 to $1000.");
-      }
-    }
-
-    function saveWallet() {
-      const addr = document.getElementById("walletAddress").value.trim();
-      userDB[currentUser].wallet = addr;
-      alert("Wallet saved.");
-    }
-
-    function updateUserData() {
-      const u = userDB[currentUser];
-      document.getElementById("depoAmt").innerText = u.deposit.toFixed(2);
-      document.getElementById("monthlyProfit").innerText = (u.deposit * 0.05).toFixed(2);
-      document.getElementById("refEarnings").innerText = u.refEarn.toFixed(2);
-      document.getElementById("teamList").innerText = u.referrals.length ? u.referrals.join(", ") : "None";
-    }
-
-    function adminLogin() {
-      const id = document.getElementById("adminId").value.trim();
-      const pass = document.getElementById("adminPass").value.trim();
-      if (id === "admin" && pass === "1234") {
-        document.getElementById("adminPanel").style.display = "block";
-        showAdminData();
-      } else {
-        alert("Wrong admin credentials.");
-      }
-    }
-
-    function showAdminData() {
-      let html = "";
-      for (const uid in userDB) {
-        const u = userDB[uid];
-        html += `
-          <div style="border:1px solid #e5e7eb; padding:10px; margin-bottom:15px; border-radius:8px">
-            <b>ID:</b> ${uid}<br>
-            <label>Deposit: <input type="number" value="${u.deposit}" onchange="updateField('${uid}', 'deposit', this.value)" /></label><br>
-            <label>Wallet: <input type="text" value="${u.wallet}" onchange="updateField('${uid}', 'wallet', this.value)" /></label><br>
-            <label>Referral Earnings: <input type="number" value="${u.refEarn}" onchange="updateField('${uid}', 'refEarn', this.value)" /></label><br>
-            <small>Referrals: ${u.referrals.join(", ") || "None"}</small>
-          </div>`;
-      }
-      document.getElementById("adminData").innerHTML = html;
-    }
-
-    function updateField(uid, field, value) {
-      if (field === "deposit" || field === "refEarn") {
-        userDB[uid][field] = parseFloat(value);
-      } else {
-        userDB[uid][field] = value;
-      }
-      if (uid === currentUser) updateUserData();
+      localStorage.setItem(userId, JSON.stringify(user));
+      alert("Registered! Your User ID: " + userId);
+      location.href = "login.html?uid=" + userId;
     }
   </script>
 </body>
