@@ -59,89 +59,106 @@
   </div>
 
   <script>
-    let users = JSON.parse(localStorage.getItem('users') || '{}');
-    let currentUser = localStorage.getItem('currentUser') || null;
+  let users = JSON.parse(localStorage.getItem('users') || '{}');
+  let currentUser = localStorage.getItem('currentUser') || null;
 
-    function showPanel(panel) {
-      document.getElementById('loginPanel').style.display = panel === 'login' ? 'block' : 'none';
-      document.getElementById('registerPanel').style.display = panel === 'register' ? 'block' : 'none';
-      document.getElementById('userPanel').style.display = panel === 'user' ? 'block' : 'none';
-      document.getElementById('adminPanel').style.display = panel === 'admin' ? 'block' : 'none';
+  function showPanel(panel) {
+    document.getElementById('loginPanel').style.display = panel === 'login' ? 'block' : 'none';
+    document.getElementById('registerPanel').style.display = panel === 'register' ? 'block' : 'none';
+    document.getElementById('userPanel').style.display = panel === 'user' ? 'block' : 'none';
+    document.getElementById('adminPanel').style.display = panel === 'admin' ? 'block' : 'none';
+    document.getElementById('adminLoginPanel')?.remove(); // admin form hide
+  }
+
+  function showAdminLogin() {
+    const div = document.createElement("div");
+    div.id = "adminLoginPanel";
+    div.innerHTML = `
+      <h3>Admin Login</h3>
+      <input type="text" id="adminID" placeholder="Admin ID">
+      <input type="password" id="adminPass" placeholder="Password">
+      <button onclick="adminLogin()">Login as Admin</button>
+    `;
+    document.querySelector(".container").appendChild(div);
+  }
+
+  function adminLogin() {
+    const id = document.getElementById('adminID').value;
+    const pass = document.getElementById('adminPass').value;
+    if (id === 'admin' && pass === 'admin123') {
+      showPanel('admin');
+      document.getElementById('allData').value = JSON.stringify(users, null, 2);
+    } else {
+      alert("Invalid admin credentials");
     }
+  }
 
-    function register() {
-      const name = document.getElementById('regName').value;
-      const pass = document.getElementById('regPass').value;
-      const ref = document.getElementById('regRef').value;
-      const id = 'U' + Math.floor(Math.random() * 1000000);
-
-      users[id] = { name, pass, deposits: [], wallet: '', ref, commission: 0 };
-      if (ref && users[ref]) {
-        if (!users[ref].team) users[ref].team = [];
-        users[ref].team.push(id);
-      }
-      localStorage.setItem('users', JSON.stringify(users));
-      alert('Registered! Your ID: ' + id);
-      showPanel('login');
+  function register() {
+    const name = document.getElementById('regName').value;
+    const pass = document.getElementById('regPass').value;
+    const ref = document.getElementById('regRef').value;
+    const id = 'U' + Math.floor(Math.random() * 1000000);
+    users[id] = { name, pass, deposits: [], wallet: '', ref, commission: 0 };
+    if (ref && users[ref]) {
+      if (!users[ref].team) users[ref].team = [];
+      users[ref].team.push(id);
     }
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('Registered! Your ID: ' + id);
+    showPanel('login');
+  }
 
-    function login() {
-      const id = document.getElementById('loginID').value;
-      const pass = document.getElementById('loginPassword').value;
-      if (id === 'admin' && pass === 'admin123') {
-        showPanel('admin');
-        document.getElementById('allData').value = JSON.stringify(users, null, 2);
-        return;
-      }
-
-      if (users[id] && users[id].pass === pass) {
-        currentUser = id;
-        localStorage.setItem('currentUser', currentUser);
-        loadUserPanel();
-      } else {
-        alert('Invalid credentials');
-      }
-    }
-
-    function loadUserPanel() {
-      const u = users[currentUser];
-      document.getElementById('userName').textContent = u.name;
-      document.getElementById('userID').textContent = currentUser;
-      document.getElementById('usdtWallet').value = u.wallet || '';
-      document.getElementById('totalDeposited').textContent = u.deposits.reduce((a, b) => a + b, 0);
-      const total = u.deposits.reduce((a, b) => a + b, 0);
-      document.getElementById('returnAmount').textContent = (total * 1.2).toFixed(2);
-      document.getElementById('refCommission').textContent = u.commission.toFixed(2);
-      const team = u.team || [];
-      document.getElementById('refTeam').innerHTML = team.map(tid => `<li>${tid} - ${users[tid]?.name || ''}</li>`).join('');
-      showPanel('user');
-    }
-
-    function saveWallet(w) {
-      users[currentUser].wallet = w;
-      localStorage.setItem('users', JSON.stringify(users));
-    }
-
-    function deposit() {
-      const amount = 100; // Fixed monthly
-      users[currentUser].deposits.push(amount);
-      const ref = users[currentUser].ref;
-      if (ref && users[ref]) users[ref].commission += amount * 0.05;
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUserPanel();
-      alert("100 USDT deposit recorded. Send to the main wallet address.");
-    }
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      location.reload();
-    }
-
-    if (currentUser) {
+  function login() {
+    const id = document.getElementById('loginID').value;
+    const pass = document.getElementById('loginPassword').value;
+    if (users[id] && users[id].pass === pass) {
+      currentUser = id;
+      localStorage.setItem('currentUser', currentUser);
       loadUserPanel();
     } else {
-      showPanel('login');
+      alert('Invalid credentials');
     }
-  </script>
+  }
+
+  function loadUserPanel() {
+    const u = users[currentUser];
+    document.getElementById('userName').textContent = u.name;
+    document.getElementById('userID').textContent = currentUser;
+    document.getElementById('usdtWallet').value = u.wallet || '';
+    document.getElementById('totalDeposited').textContent = u.deposits.reduce((a, b) => a + b, 0);
+    const total = u.deposits.reduce((a, b) => a + b, 0);
+    document.getElementById('returnAmount').textContent = (total * 1.2).toFixed(2);
+    document.getElementById('refCommission').textContent = u.commission.toFixed(2);
+    const team = u.team || [];
+    document.getElementById('refTeam').innerHTML = team.map(tid => `<li>${tid} - ${users[tid]?.name || ''}</li>`).join('');
+    showPanel('user');
+  }
+
+  function saveWallet(w) {
+    users[currentUser].wallet = w;
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+
+  function deposit() {
+    const amount = 100;
+    users[currentUser].deposits.push(amount);
+    const ref = users[currentUser].ref;
+    if (ref && users[ref]) users[ref].commission += amount * 0.05;
+    localStorage.setItem('users', JSON.stringify(users));
+    loadUserPanel();
+    alert("100 USDT deposit recorded. Send to the main wallet address.");
+  }
+
+  function logout() {
+    localStorage.removeItem('currentUser');
+    location.reload();
+  }
+
+  if (currentUser) {
+    loadUserPanel();
+  } else {
+    showPanel('');
+  }
+</script>
 </body>
 </html>
