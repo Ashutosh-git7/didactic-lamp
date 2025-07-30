@@ -74,4 +74,67 @@
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - Ashirwad App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; background: #e9ecef; padding: 20px; }
+    .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+    button { padding: 10px; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="main"></div>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    let userId = localStorage.getItem("currentUser");
+    let user = JSON.parse(localStorage.getItem(userId));
+
+    if (!user) {
+      alert("Login first");
+      location.href = "login.html";
+    }
+
+    let html = `
+      <div class="card">
+        <h3>Welcome, ${user.name}</h3>
+        <p><strong>User ID:</strong> ${user.userId}</p>
+        <p><strong>Wallet:</strong> ${user.wallet || 'Not set'}</p>
+        <p><strong>Total Deposits:</strong> $${user.deposits.reduce((a,b)=>a+b,0)}</p>
+        <p><strong>Referral Link:</strong><br><code>${location.origin + '/register.html?ref=' + user.userId}</code></p>
+        <button onclick="setWallet()">Set/Update Wallet</button>
+        <button onclick="makeDeposit()">Deposit</button>
+      </div>
+    `;
+    document.getElementById("main").innerHTML = html;
+
+    function logout() {
+      localStorage.removeItem("currentUser");
+      location.href = "login.html";
+    }
+
+    function setWallet() {
+      let wallet = prompt("Enter your USDT (BEP20) wallet address:");
+      if (wallet) {
+        user.wallet = wallet;
+        localStorage.setItem(user.userId, JSON.stringify(user));
+        location.reload();
+      }
+    }
+
+    function makeDeposit() {
+      let amount = prompt("Enter deposit amount ($10-$1000):");
+      amount = parseFloat(amount);
+      if (isNaN(amount) || amount < 10 || amount > 1000) return alert("Invalid amount");
+      user.deposits.push(amount);
+      localStorage.setItem(user.userId, JSON.stringify(user));
+      alert("Deposit successful");
+      location.reload();
+    }
+  </script>
+</body>
+</html>
 
