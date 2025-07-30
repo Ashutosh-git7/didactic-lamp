@@ -1,113 +1,113 @@
+<?php
+session_start();
+
+// Set your admin credentials here
+$admin_id = "admin";
+$admin_pass = "123456";
+
+// Handle admin login
+if (isset($_POST['admin_login'])) {
+  if ($_POST['admin_id'] === $admin_id && $_POST['admin_pass'] === $admin_pass) {
+    $_SESSION['admin'] = true;
+  } else {
+    $error = "Invalid credentials";
+  }
+}
+
+// Handle admin logout
+if (isset($_GET['logout'])) {
+  session_destroy();
+  header("Location: index.php");
+  exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Ashirwad Mini App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ashirwad Telegram Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      max-width: 450px;
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    .box {
+      max-width: 500px;
       margin: auto;
       background: white;
       padding: 20px;
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 { color: #2e7d32; }
     input, button {
       width: 100%;
       padding: 10px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    .info-box {
-      background: #e8f5e9;
-      padding: 10px;
       margin: 10px 0;
       border-radius: 6px;
-      font-size: 14px;
+      border: 1px solid #ccc;
     }
-    .note {
-      font-size: 12px;
-      color: #777;
-      margin-top: 10px;
-    }
+    .info { background: #e0f7fa; padding: 10px; border-radius: 6px; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    .error { color: red; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🌟 Ashirwad Investment</h2>
 
-    <div class="info-box">
-      ✅ Invest: <b>$10 - $1000</b><br/>
-      💸 Monthly Return: <b>5% after 30 days</b><br/>
-      👥 Direct Referral Bonus: <b>10%</b><br/>
-      💼 Minimum Withdrawal: <b>$1</b>
-    </div>
+<div class="box">
+<?php if (!isset($_SESSION['admin'])): ?>
+  <h2>🌟 Ashirwad Investment</h2>
 
-    <p><b>USDT Deposit Address (BEP20):</b></p>
-    <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
-
-    <p>💳 Enter Your Deposit Amount ($):</p>
-    <input type="number" id="depositAmount" min="10" max="1000" placeholder="e.g. 50">
-
-    <p>🔐 Your USDT Wallet (for Withdrawal):</p>
-    <input type="text" id="usdtWallet" placeholder="Your BEP20 wallet address">
-
-    <button onclick="submitDeposit()">✅ Submit Deposit</button>
-
-    <div class="note">
-      Your referral link will be generated after deposit.<br/>
-      Referral earnings: 10% of direct referrals.
-    </div>
+  <div class="info">
+    ✅ Invest: <b>$10 - $1000</b><br>
+    💸 Monthly Return: <b>5% after 30 days</b><br>
+    👥 Referral Bonus: <b>10%</b><br>
+    💼 Min Withdrawal: <b>$1</b>
   </div>
 
-  <script>
-    Telegram.WebApp.ready();
+  <p><b>Deposit to this USDT (BEP20) Address:</b></p>
+  <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
 
-    const tgUser = Telegram.WebApp.initDataUnsafe?.user || { id: 0, first_name: 'Guest' };
-    console.log("Telegram User:", tgUser);
+  <p>💳 Enter Deposit Amount ($):</p>
+  <input type="number" min="10" max="1000" placeholder="e.g. 100" />
 
-    function submitDeposit() {
-      const amount = document.getElementById("depositAmount").value;
-      const wallet = document.getElementById("usdtWallet").value;
+  <p>🔐 Your USDT Wallet (for Withdrawal):</p>
+  <input type="text" placeholder="Your BEP20 Wallet Address" />
 
-      if (!amount || amount < 10 || amount > 1000) {
-        alert("Deposit amount must be between $10 and $1000.");
-        return;
-      }
-      if (!wallet || wallet.length < 10) {
-        alert("Please enter a valid USDT wallet address.");
-        return;
-      }
+  <button onclick="submitDeposit()">✅ Submit</button>
 
-      const payload = {
-        telegram_id: tgUser.id,
-        name: tgUser.first_name,
-        amount: amount,
-        wallet: wallet
-      };
+  <hr>
 
-      fetch("submit.php", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.text())
-      .then(data => {
-        alert("Deposit submitted! Admin will verify soon.");
-        Telegram.WebApp.close();
-      });
-    }
-  </script>
+  <h3>🔐 Admin Login</h3>
+  <?php if (isset($error)) echo "<p class='error'>$error</p>"; ?>
+  <form method="POST">
+    <input type="text" name="admin_id" placeholder="Admin ID" required />
+    <input type="password" name="admin_pass" placeholder="Password" required />
+    <button type="submit" name="admin_login">Login</button>
+  </form>
+<?php else: ?>
+  <h2>🔒 Admin Dashboard</h2>
+  <p>Welcome, Admin!</p>
+
+  <table>
+    <tr><th>Telegram ID</th><th>Name</th><th>Amount</th><th>Wallet</th></tr>
+    <tr><td>12345678</td><td>Demo User</td><td>$100</td><td>0xABCDEF1234</td></tr>
+    <!-- Add dynamic rows here when database is added -->
+  </table>
+
+  <br>
+  <a href="?logout=1"><button>🚪 Logout</button></a>
+<?php endif; ?>
+</div>
+
+<script>
+Telegram.WebApp.ready();
+
+function submitDeposit() {
+  alert("Deposit submitted! Admin will verify.");
+  Telegram.WebApp.close();
+}
+</script>
 </body>
 </html>
