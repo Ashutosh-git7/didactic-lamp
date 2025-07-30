@@ -1,149 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Neon Tic Tac Toe (vs Computer)</title>
+  <title>Ashirwad Support</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: black;
-      font-family: Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      flex-direction: column;
-      color: white;
+      font-family: sans-serif;
+      margin: 20px;
+      padding: 0;
+      background: #f0f8ff;
+      color: #333;
     }
-    #start-screen, #game-board { text-align: center; }
-    #start-button {
-      font-size: 24px;
-      padding: 15px 30px;
+    h1 {
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 12px 20px;
+      background: #2ecc71;
+      color: white;
       border: none;
-      background: #0ff;
-      color: #000;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 0 15px #0ff;
-      margin-top: 20px;
+      margin-top: 10px;
+      width: 100%;
     }
-    #game-board { display: none; margin-top: 20px; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 10px;
-      justify-content: center;
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
-    .cell {
-      width: 100px;
-      height: 100px;
-      font-size: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      border: 2px solid #0ff;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .cell:hover { background-color: rgba(0, 255, 255, 0.1); }
-    .x { color: red; text-shadow: 0 0 10px red; }
-    .o { color: cyan; text-shadow: 0 0 10px cyan; }
-    #status {
-      margin-top: 20px;
-      font-size: 24px;
-      text-shadow: 0 0 5px #0ff;
+    .note {
+      font-size: 0.9em;
+      color: #777;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Ashirwad Support</h1>
+    <p>Welcome to our community crowd funding platform. Support with ₹100, ₹500, or ₹1000.</p>
+    
+    <input type="text" id="referral" placeholder="Enter referral code (optional)" />
 
-  <div id="start-screen">
-    <h1>Neon Tic Tac Toe</h1>
-    <button id="start-button">Start Game</button>
-  </div>
+    <button class="btn" onclick="support(100)">Support ₹100</button>
+    <button class="btn" onclick="support(500)">Support ₹500</button>
+    <button class="btn" onclick="support(1000)">Support ₹1000</button>
 
-  <div id="game-board">
-    <div class="grid" id="grid">
-      <div class="cell" data-index="0"></div>
-      <div class="cell" data-index="1"></div>
-      <div class="cell" data-index="2"></div>
-      <div class="cell" data-index="3"></div>
-      <div class="cell" data-index="4"></div>
-      <div class="cell" data-index="5"></div>
-      <div class="cell" data-index="6"></div>
-      <div class="cell" data-index="7"></div>
-      <div class="cell" data-index="8"></div>
-    </div>
-    <div id="status"></div>
+    <p id="msg" class="note"></p>
   </div>
 
   <script>
-    const startButton = document.getElementById('start-button');
-    const startScreen = document.getElementById('start-screen');
-    const gameBoard = document.getElementById('game-board');
-    const grid = document.getElementById('grid');
-    const status = document.getElementById('status');
-    const cells = document.querySelectorAll('.cell');
-
-    let currentPlayer = 'X'; // user
-    let board = Array(9).fill('');
-    const winningCombos = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
-
-    startButton.onclick = () => {
-      startScreen.style.display = 'none';
-      gameBoard.style.display = 'block';
-      status.textContent = "Your Turn (X)";
-    };
-
-    cells.forEach(cell => {
-      cell.addEventListener('click', () => {
-        const index = cell.getAttribute('data-index');
-        if (board[index] === '' && currentPlayer === 'X' && !checkWinner()) {
-          makeMove(index, 'X');
-          if (!checkWinner() && board.includes('')) {
-            setTimeout(computerMove, 500);
-          }
-        }
-      });
-    });
-
-    function makeMove(index, player) {
-      board[index] = player;
-      cells[index].textContent = player;
-      cells[index].classList.add(player.toLowerCase());
-      if (checkWinner()) {
-        status.textContent = player === 'X' ? "You Win!" : "Computer Wins!";
-      } else if (!board.includes('')) {
-        status.textContent = "It's a Draw!";
-      } else {
-        currentPlayer = player === 'X' ? 'O' : 'X';
-        status.textContent = currentPlayer === 'X' ? "Your Turn (X)" : "Computer's Turn (O)";
-      }
-    }
-
-    function computerMove() {
-      let emptyIndices = board.map((val, idx) => val === '' ? idx : null).filter(v => v !== null);
-      let choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-      if (choice !== undefined) {
-        makeMove(choice, 'O');
-      }
-    }
-
-    function checkWinner() {
-      return winningCombos.some(combo => {
-        const [a, b, c] = combo;
-        return board[a] !== '' && board[a] === board[b] && board[a] === board[c];
-      });
+    function support(amount) {
+      const referral = document.getElementById('referral').value || 'none';
+      const msg = `Thank you for supporting ₹${amount}! Referral: ${referral}`;
+      document.getElementById('msg').innerText = msg;
+      // Placeholder for Telegram WebApp login/referral handling
+      console.log("Support received:", amount, "Referral:", referral);
     }
   </script>
-
 </body>
 </html>
