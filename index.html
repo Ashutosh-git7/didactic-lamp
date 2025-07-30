@@ -4,72 +4,141 @@
   <meta charset="UTF-8" />
   <title>Ashirwad Mini App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: sans-serif;
-      background: #f0f0f0;
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
       padding: 20px;
+      margin: 0;
+      color: #111827;
     }
-    .box {
-      background: white;
+
+    .card {
+      background: #ffffff;
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px #ccc;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       margin-bottom: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    input, button, select {
-      padding: 8px;
-      margin: 5px 0;
+
+    h1, h2 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    input, button {
       width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      font-size: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
     }
-    h2 { margin-top: 0; }
-    .admin-section { display: none; }
+
+    button {
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .admin-section {
+      display: none;
+    }
+
+    .divider {
+      border-top: 1px solid #e2e8f0;
+      margin: 20px 0;
+    }
+
+    .user-data p {
+      margin: 5px 0;
+    }
+
+    .ref-box {
+      background: #fef3c7;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      word-break: break-word;
+    }
+
+    .wallet-section {
+      margin-top: 10px;
+    }
+
+    @media screen and (max-width: 480px) {
+      input, button {
+        font-size: 15px;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <h1>Ashirwad Mini App</h1>
-
-  <div class="box">
-    <h2>User Registration / Login</h2>
-    <input type="text" id="userId" placeholder="Enter Your ID" />
+  <div class="card">
+    <h1>💰 Ashirwad Mini App</h1>
+    <h2>User Login</h2>
+    <input type="text" id="userId" placeholder="Enter your User ID" />
     <button onclick="loginUser()">Login</button>
   </div>
 
-  <div id="userSection" class="box" style="display:none">
-    <h2>Welcome, <span id="currentUser"></span></h2>
+  <div id="userSection" class="card" style="display:none">
+    <h2>👤 Welcome, <span id="currentUser"></span></h2>
 
-    <label>Deposit Amount ($10 - $1000)</label>
-    <input type="number" id="depositAmount" min="10" max="1000" />
-    <button onclick="makeDeposit()">Make Deposit</button>
+    <label>Deposit Amount (USDT)</label>
+    <input type="number" id="depositAmount" min="10" max="1000" placeholder="Min $10 - Max $1000" />
+    <button onclick="makeDeposit()">Deposit</button>
 
-    <label>Your USDT Wallet Address (for withdrawal)</label>
-    <input type="text" id="walletAddress" />
-    <button onclick="saveWallet()">Save Wallet Address</button>
+    <label>Your BEP20 Wallet (for returns)</label>
+    <input type="text" id="walletAddress" placeholder="Your USDT BEP20 wallet" />
+    <button onclick="saveWallet()">Save Wallet</button>
 
-    <p><b>Your Referral Link:</b><br><span id="refLink"></span></p>
+    <div class="wallet-section">
+      <label>Your Referral Link</label>
+      <div class="ref-box" id="refLink">Login to get your link</div>
+    </div>
 
-    <h3>📊 Your Data</h3>
-    <p>Deposit Amount: $<span id="depoAmt">0</span></p>
-    <p>Monthly 5% Dividend: $<span id="monthlyProfit">0</span></p>
-    <p>Referral Earnings: $<span id="refEarnings">0</span></p>
-    <p>Referred Users: <span id="teamList">None</span></p>
+    <div class="divider"></div>
+
+    <h3>📊 Your Info</h3>
+    <div class="user-data">
+      <p><b>Total Deposit:</b> $<span id="depoAmt">0</span></p>
+      <p><b>Monthly 5% Return:</b> $<span id="monthlyProfit">0</span></p>
+      <p><b>Referral Earnings:</b> $<span id="refEarnings">0</span></p>
+      <p><b>Your Referrals:</b> <span id="teamList">None</span></p>
+    </div>
   </div>
 
-  <div class="box">
-    <h2>USDT Deposit Address (Fixed)</h2>
-    <p><b>BEP20:</b> 0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p>
+  <div class="card">
+    <h2>💸 Deposit Address</h2>
+    <p><b>USDT BEP20:</b><br> <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code></p>
   </div>
 
-  <div class="box">
-    <h2>Admin Login</h2>
+  <div class="card">
+    <h2>🔐 Admin Login</h2>
     <input type="text" id="adminId" placeholder="Admin ID" />
     <input type="password" id="adminPass" placeholder="Password" />
     <button onclick="adminLogin()">Login as Admin</button>
   </div>
 
-  <div class="box admin-section" id="adminPanel">
-    <h2>🔐 Admin Panel</h2>
+  <div class="card admin-section" id="adminPanel">
+    <h2>🛠️ Admin Panel</h2>
     <div id="adminData"></div>
   </div>
 
@@ -102,24 +171,24 @@
           userDB[ref].refEarn += amt * 0.10;
         }
         updateUserData();
-        alert("Deposit recorded. Pay to the fixed USDT address.");
+        alert("Deposit recorded! Send USDT to the fixed address.");
       } else {
-        alert("Amount must be between $10 and $1000");
+        alert("Enter an amount between $10 and $1000.");
       }
     }
 
     function saveWallet() {
       const addr = document.getElementById("walletAddress").value.trim();
       userDB[currentUser].wallet = addr;
-      alert("Wallet address saved.");
+      alert("Wallet saved.");
     }
 
     function updateUserData() {
-      const user = userDB[currentUser];
-      document.getElementById("depoAmt").innerText = user.deposit.toFixed(2);
-      document.getElementById("monthlyProfit").innerText = (user.deposit * 0.05).toFixed(2);
-      document.getElementById("refEarnings").innerText = user.refEarn.toFixed(2);
-      document.getElementById("teamList").innerText = user.referrals.length ? user.referrals.join(", ") : "None";
+      const u = userDB[currentUser];
+      document.getElementById("depoAmt").innerText = u.deposit.toFixed(2);
+      document.getElementById("monthlyProfit").innerText = (u.deposit * 0.05).toFixed(2);
+      document.getElementById("refEarnings").innerText = u.refEarn.toFixed(2);
+      document.getElementById("teamList").innerText = u.referrals.length ? u.referrals.join(", ") : "None";
     }
 
     function adminLogin() {
@@ -129,7 +198,7 @@
         document.getElementById("adminPanel").style.display = "block";
         showAdminData();
       } else {
-        alert("Invalid admin credentials");
+        alert("Wrong admin credentials.");
       }
     }
 
@@ -138,7 +207,7 @@
       for (const uid in userDB) {
         const u = userDB[uid];
         html += `
-          <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px">
+          <div style="border:1px solid #e5e7eb; padding:10px; margin-bottom:15px; border-radius:8px">
             <b>ID:</b> ${uid}<br>
             <label>Deposit: <input type="number" value="${u.deposit}" onchange="updateField('${uid}', 'deposit', this.value)" /></label><br>
             <label>Wallet: <input type="text" value="${u.wallet}" onchange="updateField('${uid}', 'wallet', this.value)" /></label><br>
