@@ -5,157 +5,183 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    body { font-family: Arial; margin: 0; background: #f9f9f9; color: #333; }
+    body { font-family: Arial; margin: 0; background: #f0f0f0; color: #333; }
     header { background: #4CAF50; color: white; padding: 15px; text-align: center; }
     section, .card { padding: 15px; margin: 10px; background: white; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);}
-    input, button, select { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px;}
-    button { background: #4CAF50; color: white; border: none; font-weight: bold; cursor: pointer;}
-    .admin-only { display: none; }
-    nav { text-align: center; padding: 10px; background: #eee; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px;}
+    button { background: #4CAF50; color: white; font-weight: bold; border: none; cursor: pointer; }
     .hide { display: none; }
-    .success { color: green; }
+    textarea { width: 100%; height: 300px; }
+    nav { text-align: center; padding: 10px; background: #eee; }
   </style>
 </head>
 <body>
 
 <header>
-  <h2>Ashirwad 2X App</h2>
+  <h2>Ashirwad 2X Income App</h2>
 </header>
 
-<section id="auth">
+<!-- Login / Registration Section -->
+<section id="loginSection">
   <h3>Register / Login</h3>
-  <input id="userId" placeholder="Enter ID (e.g., ANS123)" />
+  <input id="userId" placeholder="Enter ID (start with ANS)" />
   <input id="wallet" placeholder="Enter BEP20 Wallet Address" />
-  <input id="referral" placeholder="Referral Code (optional)" />
-  <button onclick="register()">Register / Login</button>
-  <p id="authMsg"></p>
+  <input id="refCode" placeholder="Referral Code (optional)" />
+  <button onclick="loginUser()">Login / Register</button>
+  <p id="loginMsg"></p>
 </section>
 
+<!-- User Dashboard -->
 <section id="userPanel" class="hide">
-  <h3>Welcome, <span id="uid"></span></h3>
+  <h3>Welcome: <span id="currentId"></span></h3>
   <div class="card">
-    <h4>Deposit (50–500 USDT)</h4>
-    <p>Send USDT (BEP20) to:<br><b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
-    <input id="depAmt" placeholder="Enter amount (50–500)" />
-    <button onclick="deposit()">Submit Deposit</button>
+    <p><b>Wallet:</b> <span id="showWallet"></span></p>
+    <p><b>Total Deposit:</b> <span id="showDeposit">0</span> USDT</p>
+    <p><b>Total Paid:</b> <span id="showPaid">0</span> USDT</p>
+    <p><b>Referral Bonus:</b> <span id="showReferral">0</span> USDT</p>
+    <p><b>Agreement Status:</b> <span id="showAgreement">open</span></p>
   </div>
 
   <div class="card">
-    <h4>Your Stats</h4>
-    <p><b>Wallet:</b> <span id="walletSaved"></span></p>
-    <p><b>Total Deposit:</b> <span id="tDeposit">0</span> USDT</p>
-    <p><b>Total Paid:</b> <span id="tPaid">0</span> USDT</p>
-    <p><b>Referral Bonus:</b> <span id="rBonus">0</span> USDT</p>
-    <button onclick="withdraw()">Withdraw Referral/Profit</button>
+    <h4>Make a Deposit (50–500 USDT)</h4>
+    <p>Send USDT (BEP20) to:</p>
+    <p><b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+    <input id="depositAmt" placeholder="Enter amount (50–500)" />
+    <button onclick="makeDeposit()">Submit Deposit</button>
   </div>
 
   <div class="card">
-    <h4>Referral</h4>
-    <p>Your referral link:</p>
-    <input value="" id="refLink" readonly />
+    <h4>Withdraw Income</h4>
+    <button onclick="withdrawIncome()">Withdraw Referral / Profit</button>
+  </div>
+
+  <div class="card">
+    <h4>Your Referral Link</h4>
+    <input id="refLink" readonly />
   </div>
 </section>
 
-<section id="adminPanel" class="hide admin-only">
+<!-- Admin Login Section -->
+<section id="adminLoginSection">
+  <h3>Admin Login</h3>
+  <input id="adminId" placeholder="Admin ID" />
+  <input id="adminPass" type="password" placeholder="Admin Password" />
+  <button onclick="adminLogin()">Login as Admin</button>
+</section>
+
+<!-- Admin Panel -->
+<section id="adminPanel" class="hide">
   <h3>Admin Panel</h3>
-  <input id="adminUser" placeholder="Admin ID" />
-  <input id="adminPass" type="password" placeholder="Password" />
-  <button onclick="adminLogin()">Login</button>
-  <div id="adminTools" class="hide">
-    <textarea id="adminData" rows="10" style="width:100%"></textarea><br>
-    <button onclick="saveData()">Save Changes</button>
-  </div>
+  <textarea id="adminEditor"></textarea>
+  <button onclick="saveAdminData()">Save Changes</button>
 </section>
 
 <nav>
-  <small>&copy; 2025 Ashirwad Mart | 2X Income App</small>
+  <small>&copy; 2025 Ashirwad Mart</small>
 </nav>
 
 <script>
-let data = JSON.parse(localStorage.getItem("ashirwadData") || "{}");
+let db = JSON.parse(localStorage.getItem("ashirwadData") || "{}");
 let current = "";
 
-function save() {
-  localStorage.setItem("ashirwadData", JSON.stringify(data));
+// Save DB
+function saveDB() {
+  localStorage.setItem("ashirwadData", JSON.stringify(db));
 }
 
-function register() {
-  const id = document.getElementById("userId").value.trim();
+// Register/Login User
+function loginUser() {
+  const id = document.getElementById("userId").value.trim().toUpperCase();
   const wallet = document.getElementById("wallet").value.trim();
-  const ref = document.getElementById("referral").value.trim().toLowerCase();
+  const ref = document.getElementById("refCode").value.trim().toUpperCase();
 
-  if (!id.startsWith("ANS") || wallet.length < 10) {
-    document.getElementById("authMsg").innerText = "Invalid ID or wallet.";
+  if (!id.startsWith("ANS")) {
+    document.getElementById("loginMsg").innerText = "ID must start with ANS";
+    return;
+  }
+  if (!wallet.startsWith("0x") || wallet.length < 20) {
+    document.getElementById("loginMsg").innerText = "Invalid wallet address";
     return;
   }
 
-  if (!data[id]) {
-    data[id] = { wallet, deposit: 0, paid: 0, referral: 0, ref, agreement: "open" };
-    if (ref && data[ref]) data[ref].referral += 0.05; // dummy 5% credit
+  if (!db[id]) {
+    db[id] = { wallet, deposit: 0, paid: 0, referral: 0, agreement: "open", ref: ref || "" };
+    if (ref && db[ref]) {
+      db[ref].referral += 5; // 5% as USDT
+    }
   }
 
   current = id;
-  save();
-  showUser();
+  saveDB();
+  showUserPanel();
 }
 
-function showUser() {
-  document.getElementById("auth").classList.add("hide");
+// Display User Info
+function showUserPanel() {
+  document.getElementById("loginSection").classList.add("hide");
   document.getElementById("userPanel").classList.remove("hide");
-  document.getElementById("uid").innerText = current;
-  document.getElementById("walletSaved").innerText = data[current].wallet;
-  document.getElementById("tDeposit").innerText = data[current].deposit;
-  document.getElementById("tPaid").innerText = data[current].paid;
-  document.getElementById("rBonus").innerText = data[current].referral.toFixed(2);
+
+  const user = db[current];
+  document.getElementById("currentId").innerText = current;
+  document.getElementById("showWallet").innerText = user.wallet;
+  document.getElementById("showDeposit").innerText = user.deposit;
+  document.getElementById("showPaid").innerText = user.paid;
+  document.getElementById("showReferral").innerText = user.referral;
+  document.getElementById("showAgreement").innerText = user.agreement;
   document.getElementById("refLink").value = location.href.split("?")[0] + "?r=" + current.toLowerCase();
 }
 
-function deposit() {
-  const amt = parseFloat(document.getElementById("depAmt").value);
-  if (amt < 50 || amt > 500) return alert("Amount must be between 50 and 500");
-
-  data[current].deposit += amt;
-  // Optional: logic to check 2x limit
-  save();
-  showUser();
-  alert("Deposit submitted. Admin will verify.");
+// Deposit Function
+function makeDeposit() {
+  const amt = parseFloat(document.getElementById("depositAmt").value);
+  if (amt < 50 || amt > 500) return alert("Amount must be between 50–500");
+  db[current].deposit += amt;
+  saveDB();
+  alert("Deposit recorded. Admin approval required.");
+  showUserPanel();
 }
 
-function withdraw() {
-  const total = data[current].referral + (data[current].paid || 0);
+// Withdraw Function
+function withdrawIncome() {
+  const user = db[current];
+  const total = user.referral + user.paid;
   if (total < 1) return alert("Minimum 1 USDT required to withdraw.");
-  alert("Withdrawal request submitted.");
-  data[current].referral = 0;
-  save();
-  showUser();
+  alert("Withdrawal submitted.");
+  db[current].referral = 0;
+  saveDB();
+  showUserPanel();
 }
 
+// Admin Login
 function adminLogin() {
-  const u = document.getElementById("adminUser").value;
-  const p = document.getElementById("adminPass").value;
-  if (u === "Admin" && p === "Jaihanuman@7") {
-    document.getElementById("adminTools").classList.remove("hide");
-    document.getElementById("adminData").value = JSON.stringify(data, null, 2);
+  const id = document.getElementById("adminId").value.trim();
+  const pass = document.getElementById("adminPass").value.trim();
+  if (id === "Admin" && pass === "Jaihanuman@7") {
+    document.getElementById("adminPanel").classList.remove("hide");
+    document.getElementById("adminEditor").value = JSON.stringify(db, null, 2);
   } else {
-    alert("Invalid Admin Login");
+    alert("Invalid admin credentials.");
   }
 }
 
-function saveData() {
+// Admin Save Changes
+function saveAdminData() {
   try {
-    data = JSON.parse(document.getElementById("adminData").value);
-    save();
-    alert("Data saved.");
+    db = JSON.parse(document.getElementById("adminEditor").value);
+    saveDB();
+    alert("Database updated successfully.");
   } catch (e) {
-    alert("Invalid JSON");
+    alert("Invalid data.");
   }
 }
 
-window.onload = function () {
-  const params = new URLSearchParams(window.location.search);
-  const ref = params.get("r");
-  if (ref) document.getElementById("referral").value = ref;
+// Pre-fill referral from link
+window.onload = () => {
+  const url = new URLSearchParams(window.location.search);
+  const r = url.get("r");
+  if (r) document.getElementById("refCode").value = r;
 }
 </script>
+
 </body>
 </html>
