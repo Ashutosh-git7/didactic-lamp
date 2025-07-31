@@ -63,12 +63,18 @@
     function register() {
       const name = document.getElementById('regName').value.trim();
       const wallet = document.getElementById('regWallet').value.trim();
-      const id = 'ANS' + Math.floor(1000 + Math.random() * 9000);
       if (!name || !wallet) return alert("Please fill all fields");
+
+      const id = 'ANS' + Math.floor(1000 + Math.random() * 9000);
       if (Object.values(users).some(u => u.wallet === wallet)) return alert("Wallet already registered");
+
       users[id] = { name, wallet, deposit: 0, referral: 0, income: 0, withdraw: 0 };
       save();
-      alert("Registered! Your ID: " + id);
+      alert("Registration Successful! Your ID: " + id);
+      currentUser = id;
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('userPanel').classList.remove('hidden');
+      loadUser();
     }
 
     function login() {
@@ -112,7 +118,6 @@
       if (amount < 50 || amount > 500) return alert("Amount must be between 50 and 500");
       if (users[currentUser].deposit > 0) return alert("Deposit already exists");
       users[currentUser].deposit = amount;
-      // Referral bonus
       const ref = prompt("Enter referral ID (if any):");
       if (ref && users[ref]) {
         users[ref].referral += amount * 0.05;
@@ -127,6 +132,8 @@
       const total = u.income + u.referral;
       if (total < 1) return alert("Minimum $1 required to withdraw");
       alert("Withdrawal request submitted. Await admin approval.");
+      users[currentUser].withdraw = total;
+      save(); loadUser();
     }
 
     function loadAdmin() {
@@ -140,7 +147,7 @@
           <b>Deposit:</b> $${u.deposit}<br>
           <b>Referral:</b> $${u.referral}<br>
           <b>Income:</b> $${u.income}<br>
-          <b>Withdrawable:</b> $${u.withdraw}<br>
+          <b>Withdraw Request:</b> $${u.withdraw}<br>
           <button onclick="approveIncome('${id}')">+ Add Income</button>
           <button onclick="approveWithdraw('${id}')">Approve Withdraw</button>
           <button onclick="editUser('${id}')">Edit</button>
