@@ -17,18 +17,18 @@
 <body>
   <div class="container">
     <div id="loginSection">
-      <h2>Welcome to Ashirwad Mart</h2>
-      <input id="loginId" placeholder="Enter ID" />
+      <h2>Ashirwad Mart Login</h2>
+      <input id="loginId" placeholder="Enter User ID" />
       <input id="loginPass" placeholder="Enter Password" type="password" />
       <button onclick="login()">Login</button>
-      <p>Or <a href="#" onclick="showRegister()">Register</a></p>
+      <p><a href="#" onclick="showRegister()">Register</a> | <a href="#" onclick="showAdminLogin()">Admin</a></p>
     </div>
 
     <div id="registerSection" class="hidden">
       <h2>Register</h2>
       <input id="regName" placeholder="Full Name" />
       <input id="regMobile" placeholder="Mobile Number" />
-      <input id="regWallet" placeholder="BEP20 USDT Wallet Address" />
+      <input id="regWallet" placeholder="BEP20 Wallet Address" />
       <input id="regRef" placeholder="Referral Code (optional)" />
       <button onclick="register()">Create Account</button>
       <p><a href="#" onclick="showLogin()">Back to Login</a></p>
@@ -39,21 +39,26 @@
       <p><b>ID:</b> <span id="userId"></span></p>
       <p><b>Name:</b> <span id="userName"></span></p>
       <p><b>Wallet:</b> <span id="userWallet"></span></p>
-      <p><b>Deposited:</b> <span id="userDeposit">0</span> USDT</p>
+      <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
       <p><b>Income:</b> <span id="userIncome">0</span> USDT</p>
       <p><b>Referral:</b> <span id="userRefIncome">0</span> USDT</p>
-      <p><b>Status:</b> <span id="userStatus">Inactive</span></p>
-      <input id="depositAmt" type="number" min="50" max="500" placeholder="Enter amount (50-500 USDT)" />
-      <button onclick="deposit()">Deposit Now</button>
+      <p><b>Status:</b> <span id="userStatus"></span></p>
+      <input id="depositAmt" type="number" min="50" max="500" placeholder="Deposit (50–500 USDT)" />
+      <button onclick="deposit()">Deposit</button>
       <button onclick="withdraw()">Withdraw</button>
-      <button onclick="logout()">Logout</button>
+      <h3>Change Password</h3>
+      <input id="oldPass" type="password" placeholder="Old Password" />
+      <input id="newPass" type="password" placeholder="New Password" />
+      <button onclick="changePassword()">Update Password</button>
+      <br><br><button onclick="logout()">Logout</button>
     </div>
 
     <div id="adminLogin" class="hidden">
-      <h2>Admin Panel Login</h2>
+      <h2>Admin Login</h2>
       <input id="adminId" placeholder="Admin ID" />
       <input id="adminPass" placeholder="Admin Password" type="password" />
-      <button onclick="adminLogin()">Enter Admin Panel</button>
+      <button onclick="adminLogin()">Login</button>
+      <p><a href="#" onclick="showLogin()">Back</a></p>
     </div>
 
     <div id="adminSection" class="hidden">
@@ -61,7 +66,7 @@
       <textarea id="adminData" rows="10" style="width:100%"></textarea>
       <button onclick="approveDeposits()">Approve Deposits</button>
       <button onclick="addWeeklyIncome()">Add Weekly Income</button>
-      <button onclick="logout()">Logout Admin</button>
+      <button onclick="logout()">Logout</button>
     </div>
   </div>
 
@@ -74,14 +79,26 @@
     }
 
     function showLogin() {
+      hideAll();
       document.getElementById('loginSection').classList.remove('hidden');
-      document.getElementById('registerSection').classList.add('hidden');
-      document.getElementById('adminLogin').classList.add('hidden');
     }
 
     function showRegister() {
-      document.getElementById('loginSection').classList.add('hidden');
+      hideAll();
       document.getElementById('registerSection').classList.remove('hidden');
+    }
+
+    function showAdminLogin() {
+      hideAll();
+      document.getElementById('adminLogin').classList.remove('hidden');
+    }
+
+    function hideAll() {
+      ['loginSection','registerSection','userSection','adminLogin','adminSection'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    }
+
+    function generatePassword() {
+      return Math.random().toString(36).slice(-8);
     }
 
     function register() {
@@ -89,40 +106,42 @@
       const mobile = regMobile.value.trim();
       const wallet = regWallet.value.trim();
       const ref = regRef.value.trim().toLowerCase();
-      if (!name || !mobile || !wallet) return alert("Fill all fields");
+      if (!name || !mobile || !wallet) return alert("All fields required");
 
       const id = "ash" + Math.floor(Math.random() * 10000);
+      const password = generatePassword();
+
       users[id] = {
-        name, mobile, wallet, deposit: 0, income: 0, refIncome: 0, status: "Inactive", ref, history: []
+        name, mobile, wallet, deposit: 0, income: 0, refIncome: 0,
+        status: "Inactive", ref, password, history: []
       };
-      if (ref && users[ref]) {
-        users[ref].refIncome += 0; // Only adds on deposit
-      }
+
       saveUsers();
-      alert("Registered! Your ID is " + id);
+      alert(`Registered!\nYour ID: ${id}\nPassword: ${password}\nPlease save this.`);
       showLogin();
     }
 
     function login() {
       const id = loginId.value.trim().toLowerCase();
-      const pass = loginPass.value;
+      const pass = loginPass.value.trim();
       if (id === 'admin' && pass === 'Jaihanuman@7') {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('adminSection').classList.remove('hidden');
         showAdminData();
+        hideAll();
+        document.getElementById('adminSection').classList.remove('hidden');
         return;
       }
 
-      if (users[id]) {
+      if (users[id] && users[id].password === pass) {
         session = id;
         localStorage.setItem('session', id);
         showUser();
       } else {
-        alert("Invalid ID");
+        alert("Invalid ID or Password");
       }
     }
 
     function showUser() {
+      hideAll();
       const u = users[session];
       userId.textContent = session;
       userName.textContent = u.name;
@@ -131,13 +150,12 @@
       userIncome.textContent = u.income;
       userRefIncome.textContent = u.refIncome;
       userStatus.textContent = u.status;
-      document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('userSection').classList.remove('hidden');
     }
 
     function deposit() {
       const amt = parseFloat(depositAmt.value);
-      if (amt < 50 || amt > 500) return alert("Amount must be between 50 and 500");
+      if (amt < 50 || amt > 500) return alert("Amount must be 50–500 USDT");
       const u = users[session];
       if (u.deposit > 0) return alert("Already deposited");
       u.deposit = amt;
@@ -147,32 +165,40 @@
         users[u.ref].refIncome += amt * 0.05;
       }
       saveUsers();
-      alert("Deposit request submitted");
+      alert("Deposit submitted for approval");
       showUser();
     }
 
     function withdraw() {
       const u = users[session];
       if (u.income < 1 && u.refIncome < 1) return alert("Minimum 1 USDT required");
-      alert("Withdrawal request sent to admin");
       u.history.push({ action: "Withdrawal", income: u.income, referral: u.refIncome });
       u.income = 0;
       u.refIncome = 0;
+      alert("Withdrawal request sent to admin");
       saveUsers();
       showUser();
     }
 
-    function logout() {
-      session = null;
-      localStorage.removeItem('session');
-      location.reload();
+    function changePassword() {
+      const oldP = oldPass.value.trim();
+      const newP = newPass.value.trim();
+      if (!oldP || !newP) return alert("Fill both fields");
+      if (users[session].password !== oldP) return alert("Old password incorrect");
+      users[session].password = newP;
+      saveUsers();
+      alert("Password updated");
+      oldPass.value = "";
+      newPass.value = "";
     }
 
     function adminLogin() {
-      if (adminId.value === 'Admin' && adminPass.value === 'Jaihanuman@7') {
-        document.getElementById('adminLogin').classList.add('hidden');
-        document.getElementById('adminSection').classList.remove('hidden');
+      const id = adminId.value.trim();
+      const pass = adminPass.value.trim();
+      if (id === 'Admin' && pass === 'Jaihanuman@7') {
+        hideAll();
         showAdminData();
+        document.getElementById('adminSection').classList.remove('hidden');
       } else {
         alert("Invalid admin credentials");
       }
@@ -193,7 +219,7 @@
         if (u.status === "Pending") u.status = "Active";
       }
       saveUsers();
-      alert("Deposits Approved");
+      alert("Approved all pending deposits");
       showAdminData();
     }
 
@@ -201,14 +227,20 @@
       for (let id in users) {
         const u = users[id];
         if (u.status === "Active") {
-          const weekly = u.deposit * 0.1;
-          u.income += weekly;
+          const w = u.deposit * 0.1;
+          u.income += w;
           if (u.income >= u.deposit * 2) u.status = "Closed";
         }
       }
       saveUsers();
       alert("Weekly income added");
       showAdminData();
+    }
+
+    function logout() {
+      session = null;
+      localStorage.removeItem('session');
+      location.reload();
     }
 
     // Auto-login if session exists
