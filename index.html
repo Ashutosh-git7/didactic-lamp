@@ -2,233 +2,201 @@
 <html>
 <head>
   <title>Ashirwad Mart</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="module">
-    // Firebase SDKs
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBysNDv5s2VStATDEZWW0Q-4__KMb_AEKc",
-      authDomain: "ashirwadmart-6d657.firebaseapp.com",
-      databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
-      projectId: "ashirwadmart-6d657",
-      storageBucket: "ashirwadmart-6d657.appspot.com",
-      messagingSenderId: "765873367260",
-      appId: "1:765873367260:web:09376fa89be3d471b44579"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase();
-
-    let currentUser = null;
-    let isAdmin = false;
-
-    function generateUserID() {
-      return 'UID' + Math.floor(1000 + Math.random() * 9000);
-    }
-
-    function registerUser() {
-      const name = document.getElementById('regName').value;
-      const mobile = document.getElementById('regMobile').value;
-      const wallet = document.getElementById('regWallet').value;
-      const refCode = document.getElementById('regRef').value.trim();
-      const userID = generateUserID();
-
-      if (!name || !mobile || !wallet) {
-        alert("Fill all fields");
-        return;
-      }
-
-      const userRef = ref(db, 'users/' + userID);
-      set(userRef, {
-        name: name,
-        mobile: mobile,
-        wallet: wallet,
-        referrer: refCode || '',
-        deposit: 0,
-        income: 0,
-        referralIncome: 0,
-        totalIncome: 0,
-        status: 'pending'
-      }).then(() => {
-        alert('Registered! Your User ID: ' + userID);
-        localStorage.setItem('userID', userID);
-        showUserPanel(userID);
-      });
-    }
-
-    function loginUser() {
-      const userID = document.getElementById('loginID').value;
-      get(child(ref(db), 'users/' + userID)).then((snap) => {
-        if (snap.exists()) {
-          currentUser = userID;
-          localStorage.setItem('userID', userID);
-          showUserPanel(userID);
-        } else {
-          alert('User not found!');
-        }
-      });
-    }
-
-    function showUserPanel(uid) {
-      get(child(ref(db), 'users/' + uid)).then((snap) => {
-        const data = snap.val();
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('registerPage').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('userPanel').style.display = 'block';
-
-        document.getElementById('userInfo').innerHTML = `
-          <p><b>Name:</b> ${data.name}</p>
-          <p><b>Mobile:</b> ${data.mobile}</p>
-          <p><b>Wallet:</b> ${data.wallet}</p>
-          <p><b>Deposit:</b> ${data.deposit} USDT</p>
-          <p><b>Referral Income:</b> ${data.referralIncome} USDT</p>
-          <p><b>Income:</b> ${data.income} USDT</p>
-          <p><b>Status:</b> ${data.status}</p>
-        `;
-      });
-    }
-
-    function adminLogin() {
-      const id = document.getElementById('adminID').value;
-      const pass = document.getElementById('adminPass').value;
-      if (id === "Admin" && pass === "Jaihanuman@7") {
-        isAdmin = true;
-        showAdminPanel();
-      } else {
-        alert("Invalid admin credentials");
-      }
-    }
-
-    function showAdminPanel() {
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('registerPage').style.display = 'none';
-      document.getElementById('userPanel').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'block';
-
-      get(child(ref(db), 'users')).then((snap) => {
-        const allUsers = snap.val();
-        let html = '';
-        for (const id in allUsers) {
-          const u = allUsers[id];
-          html += `
-            <div style="border:1px solid #999;padding:10px;margin:10px;">
-              <b>ID:</b> ${id}<br>
-              <b>Name:</b> ${u.name}<br>
-              <b>Deposit:</b> ${u.deposit} USDT<br>
-              <b>Income:</b> ${u.income} USDT<br>
-              <b>Status:</b> ${u.status}<br>
-              <button onclick="approveDeposit('${id}')">Approve Deposit</button>
-              <button onclick="addWeeklyIncome('${id}')">+ Weekly Income</button>
-              <button onclick="closeAgreement('${id}')">Close</button>
-            </div>
-          `;
-        }
-        document.getElementById('adminUsers').innerHTML = html;
-      });
-    }
-
-    window.addWeeklyIncome = function (id) {
-      const uref = ref(db, 'users/' + id);
-      get(uref).then((snap) => {
-        const data = snap.val();
-        if (data.status === 'closed') return alert('Agreement closed.');
-        let newIncome = data.income + data.deposit * 0.1;
-        let total = data.deposit * 2;
-        if (newIncome >= total) {
-          newIncome = total;
-        }
-        update(uref, { income: newIncome });
-        showAdminPanel();
-      });
-    }
-
-    window.approveDeposit = function (id) {
-      const amount = prompt("Enter deposit amount (50-500 USDT):");
-      const amt = parseFloat(amount);
-      if (isNaN(amt) || amt < 50 || amt > 500) return alert("Invalid amount");
-
-      const uref = ref(db, 'users/' + id);
-      get(uref).then((snap) => {
-        const data = snap.val();
-        update(uref, { deposit: amt, status: 'active' });
-
-        // Referral bonus
-        if (data.referrer) {
-          const refRef = ref(db, 'users/' + data.referrer);
-          get(refRef).then((rSnap) => {
-            if (rSnap.exists()) {
-              const rData = rSnap.val();
-              const newRefIncome = rData.referralIncome + (amt * 0.05);
-              update(refRef, { referralIncome: newRefIncome });
-            }
-          });
-        }
-
-        showAdminPanel();
-      });
-    }
-
-    window.closeAgreement = function (id) {
-      const uref = ref(db, 'users/' + id);
-      update(uref, { status: 'closed' });
-      showAdminPanel();
-    }
-
-    function logout() {
-      localStorage.removeItem('userID');
-      location.reload();
-    }
-
-    window.onload = () => {
-      const uid = localStorage.getItem('userID');
-      if (uid) {
-        showUserPanel(uid);
-      }
-    }
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
+    .box { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 0 5px #ccc; }
+    input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
+    .admin-section { background: #ffe; }
+    .hidden { display: none; }
+  </style>
 </head>
-<body style="font-family:sans-serif;padding:20px;">
-  <h2>Ashirwad Mart</h2>
+<body>
 
-  <div id="registerPage">
-    <h3>Register</h3>
-    <input id="regName" placeholder="Full Name"><br><br>
-    <input id="regMobile" placeholder="Mobile Number"><br><br>
-    <input id="regWallet" placeholder="USDT BEP20 Wallet Address"><br><br>
-    <input id="regRef" placeholder="Referral ID (Optional)"><br><br>
-    <button onclick="registerUser()">Register</button>
-    <p>Already registered? <a href="#" onclick="document.getElementById('registerPage').style.display='none';document.getElementById('loginPage').style.display='block';">Login here</a></p>
-    <p>Admin? <a href="#" onclick="document.getElementById('registerPage').style.display='none';document.getElementById('adminLogin').style.display='block';">Admin Login</a></p>
-  </div>
+<h2>🛍️ Ashirwad Mart</h2>
 
-  <div id="loginPage" style="display:none;">
-    <h3>User Login</h3>
-    <input id="loginID" placeholder="Enter User ID"><br><br>
-    <button onclick="loginUser()">Login</button>
-    <p><a href="#" onclick="document.getElementById('loginPage').style.display='none';document.getElementById('registerPage').style.display='block';">Back to Register</a></p>
-  </div>
+<div id="loginBox" class="box">
+  <h3>🔐 Login</h3>
+  <input type="text" id="loginId" placeholder="Enter ID" />
+  <input type="password" id="loginPass" placeholder="Password (only for admin)" />
+  <button onclick="login()">Login</button>
+  <p>Don't have ID? <a href="#" onclick="showRegister()">Register</a></p>
+</div>
 
-  <div id="adminLogin" style="display:none;">
-    <h3>Admin Login</h3>
-    <input id="adminID" placeholder="Admin ID"><br><br>
-    <input id="adminPass" placeholder="Password" type="password"><br><br>
-    <button onclick="adminLogin()">Login</button>
-    <p><a href="#" onclick="document.getElementById('adminLogin').style.display='none';document.getElementById('registerPage').style.display='block';">Back</a></p>
-  </div>
+<div id="registerBox" class="box hidden">
+  <h3>📝 Register</h3>
+  <input type="text" id="regName" placeholder="Full Name" />
+  <input type="text" id="regMobile" placeholder="Mobile Number" />
+  <input type="text" id="regWallet" placeholder="Your BEP20 USDT Wallet Address" />
+  <input type="text" id="regRef" placeholder="Referral ID (optional)" />
+  <button onclick="register()">Register</button>
+</div>
 
-  <div id="userPanel" style="display:none;">
-    <h3>Your Dashboard</h3>
-    <div id="userInfo"></div><br>
-    <button onclick="logout()">Logout</button>
-  </div>
+<div id="userDashboard" class="box hidden">
+  <h3>👋 Welcome, <span id="userName"></span></h3>
+  <p>💳 Wallet: <span id="userWallet"></span></p>
+  <p>💰 Deposit: <span id="userDeposit">0</span> USDT</p>
+  <p>📈 Income: <span id="userIncome">0</span> USDT</p>
+  <p>👥 Referral Income: <span id="userReferral">0</span> USDT</p>
+  <p>📌 Status: <span id="userStatus">Pending</span></p>
 
-  <div id="adminPanel" style="display:none;">
-    <h3>Admin Panel</h3>
-    <div id="adminUsers">Loading users...</div>
-    <button onclick="logout()">Logout</button>
-  </div>
+  <h4>📥 Make a Deposit</h4>
+  <p>Send USDT (50–500) to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+  <input type="number" id="depAmount" placeholder="Enter amount (50-500)" />
+  <button onclick="submitDeposit()">Submit Deposit</button>
+
+  <h4>💸 Withdrawal Request</h4>
+  <input type="number" id="withAmt" placeholder="Min 1 USDT" />
+  <button onclick="requestWithdraw()">Request Withdrawal</button>
+
+  <h4>👨‍👩‍👧‍👦 Your Team</h4>
+  <button onclick="viewTeam()">View Team</button>
+  <div id="teamBox"></div>
+
+  <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div id="adminPanel" class="box admin-section hidden">
+  <h3>🛠️ Admin Panel</h3>
+  <div id="adminUsers"></div>
+  <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
+    authDomain: "ashirwadmart-6d657.firebaseapp.com",
+    databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
+    projectId: "ashirwadmart-6d657",
+    storageBucket: "ashirwadmart-6d657.appspot.com",
+    messagingSenderId: "1013585797321",
+    appId: "1:1013585797321:web:8a5c5fdb50c6aa7e7e57aa"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let currentId = "";
+
+  function showRegister() {
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('registerBox').classList.remove('hidden');
+  }
+
+  function login() {
+    const id = document.getElementById('loginId').value.trim();
+    const pass = document.getElementById('loginPass').value;
+
+    if (id === "Admin" && pass === "Jaihanuman@7") {
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("adminPanel").classList.remove("hidden");
+      loadAdmin();
+      return;
+    }
+
+    db.ref("users/" + id).once("value", snap => {
+      if (snap.exists()) {
+        currentId = id;
+        loadUser(id);
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("userDashboard").classList.remove("hidden");
+      } else {
+        alert("User ID not found.");
+      }
+    });
+  }
+
+  function register() {
+    const name = document.getElementById("regName").value.trim();
+    const mobile = document.getElementById("regMobile").value.trim();
+    const wallet = document.getElementById("regWallet").value.trim();
+    const ref = document.getElementById("regRef").value.trim();
+    if (!name || !mobile || !wallet) return alert("Please fill all fields");
+
+    const id = "U" + Math.floor(Math.random() * 100000);
+    const userData = {
+      name, mobile, wallet, deposit: 0, income: 0, refIncome: 0, status: "Pending", referredBy: ref
+    };
+    db.ref("users/" + id).set(userData).then(() => {
+      alert("Registered! Your ID: " + id);
+      location.reload();
+    });
+  }
+
+  function loadUser(id) {
+    db.ref("users/" + id).on("value", snap => {
+      const data = snap.val();
+      document.getElementById("userName").innerText = data.name;
+      document.getElementById("userWallet").innerText = data.wallet;
+      document.getElementById("userDeposit").innerText = data.deposit;
+      document.getElementById("userIncome").innerText = data.income;
+      document.getElementById("userReferral").innerText = data.refIncome || 0;
+      document.getElementById("userStatus").innerText = data.status;
+    });
+  }
+
+  function submitDeposit() {
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (amt < 50 || amt > 500) return alert("Invalid amount");
+
+    db.ref("users/" + currentId + "/deposit").set(amt);
+    db.ref("users/" + currentId + "/status").set("Pending");
+
+    // Add 5% referral if valid
+    db.ref("users/" + currentId).once("value", snap => {
+      const data = snap.val();
+      if (data.referredBy) {
+        const refAmt = amt * 0.05;
+        db.ref("users/" + data.referredBy + "/refIncome").once("value", s => {
+          const existing = s.val() || 0;
+          db.ref("users/" + data.referredBy + "/refIncome").set(existing + refAmt);
+        });
+      }
+    });
+
+    alert("Deposit submitted!");
+  }
+
+  function requestWithdraw() {
+    const amt = parseFloat(document.getElementById("withAmt").value);
+    if (amt < 1) return alert("Minimum 1 USDT");
+    db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
+    alert("Withdrawal requested!");
+  }
+
+  function viewTeam() {
+    db.ref("users").once("value", snap => {
+      let html = "<ul>";
+      snap.forEach(child => {
+        const data = child.val();
+        if (data.referredBy === currentId) {
+          html += `<li>${child.key}: ${data.name} - ${data.deposit} USDT - ${data.status}</li>`;
+        }
+      });
+      html += "</ul>";
+      document.getElementById("teamBox").innerHTML = html;
+    });
+  }
+
+  function loadAdmin() {
+    db.ref("users").once("value", snap => {
+      let html = "<h4>All Users</h4><table border='1' width='100%'><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th></tr>";
+      snap.forEach(child => {
+        const d = child.val();
+        html += `<tr><td>${child.key}</td><td>${d.name}</td><td>${d.deposit}</td><td>${d.income}</td><td>${d.status}</td></tr>`;
+      });
+      html += "</table>";
+      document.getElementById("adminUsers").innerHTML = html;
+    });
+  }
+
+  function logout() {
+    location.reload();
+  }
+</script>
+
 </body>
-</html>
+  </html>
