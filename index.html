@@ -12,6 +12,8 @@
     input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
     .admin-section { background: #ffe; }
     .hidden { display: none; }
+    table { border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 5px; border: 1px solid #ccc; text-align: center; }
   </style>
 </head>
 <body>
@@ -62,6 +64,12 @@
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Panel</h3>
   <div id="adminUsers"></div>
+
+  <h4>Add Weekly Income</h4>
+  <input type="text" id="incomeUserId" placeholder="User ID" />
+  <input type="number" id="incomeAmt" placeholder="Amount" />
+  <button onclick="addWeeklyIncome()">Add Income</button>
+
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
@@ -78,7 +86,6 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-
   let currentId = "";
 
   function showRegister() {
@@ -145,7 +152,6 @@
     db.ref("users/" + currentId + "/deposit").set(amt);
     db.ref("users/" + currentId + "/status").set("Pending");
 
-    // Add 5% referral if valid
     db.ref("users/" + currentId).once("value", snap => {
       const data = snap.val();
       if (data.referredBy) {
@@ -183,13 +189,72 @@
 
   function loadAdmin() {
     db.ref("users").once("value", snap => {
-      let html = "<h4>All Users</h4><table border='1' width='100%'><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th></tr>";
+      let html = "<h4>All Users</h4><table width='100%'><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
       snap.forEach(child => {
         const d = child.val();
-        html += `<tr><td>${child.key}</td><td>${d.name}</td><td>${d.deposit}</td><td>${d.income}</td><td>${d.status}</td></tr>`;
+        html += `<tr>
+          <td>${child.key}</td>
+          <td>${d.name}</td>
+          <td>${d.deposit}</td>
+          <td>${d.income}</td>
+          <td>${d.status}</td>
+          <td>
+            <button onclick="approveDeposit('${child.key}', ${d.deposit}, ${d.income || 0})">Start</button>
+            <button onclick="closeAgreement('${child.key}')">Close</button>
+          </td>
+        </tr>`;
       });
       html += "</table>";
       document.getElementById("adminUsers").innerHTML = html;
+    });
+
+    db.ref("withdrawals").once("value", snap => {
+      let html = "<h4>Pending Withdrawals</h4><table width='100%'><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+      snap.forEach(userSnap => {
+        const userId = userSnap.key;
+        userSnap.forEach(wSnap => {
+          const w = wSnap.val();
+          if (w.status === "Pending") {
+            html += `<tr>
+              <td>${userId}</td>
+              <td>${w.amount}</td>
+              <td>${w.status}</td>
+              <td><button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button></td>
+            </tr>`;
+          }
+        });
+      });
+      html += "</table>";
+      document.getElementById("adminUsers").innerHTML += html;
+    });
+  }
+
+  function approveDeposit(userId, deposit, currentIncome) {
+    if (deposit === 0) return alert("No deposit to approve.");
+    const newIncome = currentIncome + deposit * 0.05;
+    db.ref("users/" + userId + "/income").set(newIncome);
+    db.ref("users/" + userId + "/status").set("Active");
+    alert("Income added!");
+  }
+
+  function closeAgreement(userId) {
+    db.ref("users/" + userId + "/status").set("Closed");
+    alert("Agreement closed.");
+  }
+
+  function approveWithdraw(userId, withdrawId) {
+    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
+    alert("Withdrawal approved!");
+  }
+
+  function addWeeklyIncome() {
+    const uid = document.getElementById("incomeUserId").value.trim();
+    const amt = parseFloat(document.getElementById("incomeAmt").value);
+    if (!uid || isNaN(amt)) return alert("Enter valid input");
+    db.ref("users/" + uid + "/income").once("value", snap => {
+      const existing = snap.val() || 0;
+      db.ref("users/" + uid + "/income").set(existing + amt);
+      alert("Income added.");
     });
   }
 
@@ -199,4 +264,4 @@
 </script>
 
 </body>
-  </html>
+</html>
