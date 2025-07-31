@@ -2,17 +2,18 @@
 <html>
 <head>
   <title>Ashirwad 2X App</title>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial; background: #f2f2f2; margin: 0; padding: 0; }
-    header { background: #4CAF50; color: white; padding: 15px; text-align: center; }
+    body { font-family: Arial; background: #f4f4f4; margin: 0; padding: 0; }
+    header { background: #4CAF50; color: white; text-align: center; padding: 15px; }
     section, .card { background: white; margin: 15px; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);}
-    input, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-    button { background-color: #4CAF50; color: white; font-weight: bold; border: none; }
+    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+    button { background: #4CAF50; color: white; font-weight: bold; border: none; cursor: pointer; }
     .hide { display: none; }
-    textarea { width: 100%; height: 300px; }
-    nav { background: #eee; text-align: center; padding: 10px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: center; }
+    nav { background: #eee; text-align: center; padding: 10px; }
   </style>
 </head>
 <body>
@@ -22,7 +23,7 @@
 </header>
 
 <section id="loginSection">
-  <h3>Register / Login</h3>
+  <h3>User Login / Register</h3>
   <input id="userId" placeholder="User ID (e.g. ANS123)" />
   <input id="wallet" placeholder="Your BEP20 Wallet Address" />
   <input id="refCode" placeholder="Referral Code (optional)" />
@@ -34,10 +35,10 @@
   <h3>Welcome, <span id="currentUser"></span></h3>
   <div class="card">
     <p><b>Wallet:</b> <span id="userWallet"></span></p>
-    <p><b>Total Deposit:</b> <span id="userDeposit">0</span> USDT</p>
-    <p><b>Total Paid:</b> <span id="userPaid">0</span> USDT</p>
-    <p><b>Referral Bonus:</b> <span id="userReferral">0</span> USDT</p>
-    <p><b>Agreement:</b> <span id="userAgreement">open</span></p>
+    <p><b>Total Deposit:</b> <span id="userDeposit"></span> USDT</p>
+    <p><b>Total Paid:</b> <span id="userPaid"></span> USDT</p>
+    <p><b>Referral Bonus:</b> <span id="userReferral"></span> USDT</p>
+    <p><b>Agreement:</b> <span id="userAgreement"></span></p>
   </div>
 
   <div class="card">
@@ -67,8 +68,7 @@
 
 <section id="adminPanel" class="hide">
   <h3>Admin Panel</h3>
-  <textarea id="adminEditor"></textarea>
-  <button onclick="saveAdmin()">Save Changes</button>
+  <div id="adminTableArea"></div>
 </section>
 
 <nav>
@@ -88,20 +88,13 @@ function loginUser() {
   const wallet = document.getElementById("wallet").value.trim();
   const ref = document.getElementById("refCode").value.trim().toUpperCase();
 
-  if (!id.startsWith("ANS")) {
-    document.getElementById("loginMsg").innerText = "ID must start with ANS";
-    return;
-  }
+  if (!id.startsWith("ANS")) return alert("ID must start with ANS");
   if (!db[id]) {
-    if (!wallet.startsWith("0x") || wallet.length < 20) {
-      document.getElementById("loginMsg").innerText = "Invalid wallet address";
-      return;
-    }
+    if (!wallet.startsWith("0x") || wallet.length < 20) return alert("Invalid wallet");
     db[id] = { wallet, deposit: 0, paid: 0, referral: 0, agreement: "open", ref: ref || "" };
-    if (ref && db[ref]) {
-      db[ref].referral += 5;
-    }
+    if (ref && db[ref]) db[ref].referral += 5;
   }
+
   currentUser = id;
   saveDB();
   showUserPanel();
@@ -122,10 +115,10 @@ function showUserPanel() {
 
 function makeDeposit() {
   const amt = parseFloat(document.getElementById("depAmt").value);
-  if (amt < 50 || amt > 500) return alert("Deposit between 50–500 only.");
+  if (amt < 50 || amt > 500) return alert("Deposit must be between 50–500");
   db[currentUser].deposit += amt;
   saveDB();
-  alert("Deposit recorded. Admin will verify.");
+  alert("Deposit submitted.");
   showUserPanel();
 }
 
@@ -133,8 +126,8 @@ function withdraw() {
   const user = db[currentUser];
   const total = user.referral + user.paid;
   if (total < 1) return alert("Minimum 1 USDT required.");
-  alert("Withdraw request sent.");
-  db[currentUser].referral = 0;
+  alert("Withdrawal request sent.");
+  user.referral = 0;
   saveDB();
   showUserPanel();
 }
@@ -144,19 +137,52 @@ function adminLogin() {
   const pass = document.getElementById("adminPass").value;
   if (id === "Admin" && pass === "Jaihanuman@7") {
     document.getElementById("adminPanel").classList.remove("hide");
-    document.getElementById("adminEditor").value = JSON.stringify(db, null, 2);
+    document.getElementById("adminLoginSection").classList.add("hide");
+    showAdminTable();
   } else {
     alert("Invalid admin login.");
   }
 }
 
-function saveAdmin() {
-  try {
-    db = JSON.parse(document.getElementById("adminEditor").value);
+function showAdminTable() {
+  let html = `<table><tr><th>ID</th><th>Wallet</th><th>Deposit</th><th>Paid</th><th>Referral</th><th>Agreement</th><th>Action</th></tr>`;
+  for (let id in db) {
+    let u = db[id];
+    html += `<tr>
+      <td>${id}</td>
+      <td><input value="${u.wallet}" onchange="update('${id}','wallet',this.value)" /></td>
+      <td><input value="${u.deposit}" onchange="update('${id}','deposit',this.value)" /></td>
+      <td><input value="${u.paid}" onchange="update('${id}','paid',this.value)" /></td>
+      <td><input value="${u.referral}" onchange="update('${id}','referral',this.value)" /></td>
+      <td>
+        <select onchange="update('${id}','agreement',this.value)">
+          <option ${u.agreement==='open'?'selected':''}>open</option>
+          <option ${u.agreement==='closed'?'selected':''}>closed</option>
+        </select>
+      </td>
+      <td><button onclick="removeUser('${id}')">Delete</button></td>
+    </tr>`;
+  }
+  html += `</table>`;
+  document.getElementById("adminTableArea").innerHTML = html;
+}
+
+function update(id, field, value) {
+  if (!db[id]) return;
+  if (field === "deposit" || field === "paid" || field === "referral") {
+    db[id][field] = parseFloat(value) || 0;
+  } else {
+    db[id][field] = value;
+  }
+  saveDB();
+  showAdminTable();
+}
+
+function removeUser(id) {
+  if (confirm("Delete user " + id + "?")) {
+    delete db[id];
     saveDB();
-    alert("Saved successfully.");
-  } catch {
-    alert("Invalid data format.");
+    showAdminTable();
   }
 }
 
@@ -164,7 +190,7 @@ window.onload = () => {
   const url = new URLSearchParams(window.location.search);
   const r = url.get("r");
   if (r) document.getElementById("refCode").value = r;
-};
+}
 </script>
 
 </body>
