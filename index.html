@@ -2,249 +2,233 @@
 <html>
 <head>
   <title>Ashirwad Mart</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; background: #f0f8ff; margin: 0; padding: 0; }
-    .container { max-width: 500px; margin: auto; padding: 20px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 10px; margin-top: 20px; }
-    h2 { text-align: center; color: #2e8b57; }
-    input, select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #2e8b57; color: white; border: none; }
-    .hidden { display: none; }
-    .admin-section { background: #ffe4b5; padding: 10px; border-radius: 10px; margin-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div id="loginSection">
-      <h2>Ashirwad Mart Login</h2>
-      <input id="loginId" placeholder="Enter User ID" />
-      <input id="loginPass" placeholder="Enter Password" type="password" />
-      <button onclick="login()">Login</button>
-      <p><a href="#" onclick="showRegister()">Register</a> | <a href="#" onclick="showAdminLogin()">Admin</a></p>
-    </div>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="module">
+    // Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <div id="registerSection" class="hidden">
-      <h2>Register</h2>
-      <input id="regName" placeholder="Full Name" />
-      <input id="regMobile" placeholder="Mobile Number" />
-      <input id="regWallet" placeholder="BEP20 Wallet Address" />
-      <input id="regRef" placeholder="Referral Code (optional)" />
-      <button onclick="register()">Create Account</button>
-      <p><a href="#" onclick="showLogin()">Back to Login</a></p>
-    </div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBysNDv5s2VStATDEZWW0Q-4__KMb_AEKc",
+      authDomain: "ashirwadmart-6d657.firebaseapp.com",
+      databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
+      projectId: "ashirwadmart-6d657",
+      storageBucket: "ashirwadmart-6d657.appspot.com",
+      messagingSenderId: "765873367260",
+      appId: "1:765873367260:web:09376fa89be3d471b44579"
+    };
 
-    <div id="userSection" class="hidden">
-      <h2>User Dashboard</h2>
-      <p><b>ID:</b> <span id="userId"></span></p>
-      <p><b>Name:</b> <span id="userName"></span></p>
-      <p><b>Wallet:</b> <span id="userWallet"></span></p>
-      <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
-      <p><b>Income:</b> <span id="userIncome">0</span> USDT</p>
-      <p><b>Referral:</b> <span id="userRefIncome">0</span> USDT</p>
-      <p><b>Status:</b> <span id="userStatus"></span></p>
-      <input id="depositAmt" type="number" min="50" max="500" placeholder="Deposit (50–500 USDT)" />
-      <button onclick="deposit()">Deposit</button>
-      <button onclick="withdraw()">Withdraw</button>
-      <h3>Change Password</h3>
-      <input id="oldPass" type="password" placeholder="Old Password" />
-      <input id="newPass" type="password" placeholder="New Password" />
-      <button onclick="changePassword()">Update Password</button>
-      <br><br><button onclick="logout()">Logout</button>
-    </div>
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase();
 
-    <div id="adminLogin" class="hidden">
-      <h2>Admin Login</h2>
-      <input id="adminId" placeholder="Admin ID" />
-      <input id="adminPass" placeholder="Admin Password" type="password" />
-      <button onclick="adminLogin()">Login</button>
-      <p><a href="#" onclick="showLogin()">Back</a></p>
-    </div>
+    let currentUser = null;
+    let isAdmin = false;
 
-    <div id="adminSection" class="hidden">
-      <h2>Admin Panel</h2>
-      <textarea id="adminData" rows="10" style="width:100%"></textarea>
-      <button onclick="approveDeposits()">Approve Deposits</button>
-      <button onclick="addWeeklyIncome()">Add Weekly Income</button>
-      <button onclick="logout()">Logout</button>
-    </div>
-  </div>
-
-  <script>
-    let users = JSON.parse(localStorage.getItem('users') || '{}');
-    let session = localStorage.getItem('session');
-
-    function saveUsers() {
-      localStorage.setItem('users', JSON.stringify(users));
+    function generateUserID() {
+      return 'UID' + Math.floor(1000 + Math.random() * 9000);
     }
 
-    function showLogin() {
-      hideAll();
-      document.getElementById('loginSection').classList.remove('hidden');
-    }
+    function registerUser() {
+      const name = document.getElementById('regName').value;
+      const mobile = document.getElementById('regMobile').value;
+      const wallet = document.getElementById('regWallet').value;
+      const refCode = document.getElementById('regRef').value.trim();
+      const userID = generateUserID();
 
-    function showRegister() {
-      hideAll();
-      document.getElementById('registerSection').classList.remove('hidden');
-    }
-
-    function showAdminLogin() {
-      hideAll();
-      document.getElementById('adminLogin').classList.remove('hidden');
-    }
-
-    function hideAll() {
-      ['loginSection','registerSection','userSection','adminLogin','adminSection'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    }
-
-    function generatePassword() {
-      return Math.random().toString(36).slice(-8);
-    }
-
-    function register() {
-      const name = regName.value.trim();
-      const mobile = regMobile.value.trim();
-      const wallet = regWallet.value.trim();
-      const ref = regRef.value.trim().toLowerCase();
-      if (!name || !mobile || !wallet) return alert("All fields required");
-
-      const id = "ash" + Math.floor(Math.random() * 10000);
-      const password = generatePassword();
-
-      users[id] = {
-        name, mobile, wallet, deposit: 0, income: 0, refIncome: 0,
-        status: "Inactive", ref, password, history: []
-      };
-
-      saveUsers();
-      alert(`Registered!\nYour ID: ${id}\nPassword: ${password}\nPlease save this.`);
-      showLogin();
-    }
-
-    function login() {
-      const id = loginId.value.trim().toLowerCase();
-      const pass = loginPass.value.trim();
-      if (id === 'admin' && pass === 'Jaihanuman@7') {
-        showAdminData();
-        hideAll();
-        document.getElementById('adminSection').classList.remove('hidden');
+      if (!name || !mobile || !wallet) {
+        alert("Fill all fields");
         return;
       }
 
-      if (users[id] && users[id].password === pass) {
-        session = id;
-        localStorage.setItem('session', id);
-        showUser();
-      } else {
-        alert("Invalid ID or Password");
-      }
+      const userRef = ref(db, 'users/' + userID);
+      set(userRef, {
+        name: name,
+        mobile: mobile,
+        wallet: wallet,
+        referrer: refCode || '',
+        deposit: 0,
+        income: 0,
+        referralIncome: 0,
+        totalIncome: 0,
+        status: 'pending'
+      }).then(() => {
+        alert('Registered! Your User ID: ' + userID);
+        localStorage.setItem('userID', userID);
+        showUserPanel(userID);
+      });
     }
 
-    function showUser() {
-      hideAll();
-      const u = users[session];
-      userId.textContent = session;
-      userName.textContent = u.name;
-      userWallet.textContent = u.wallet;
-      userDeposit.textContent = u.deposit;
-      userIncome.textContent = u.income;
-      userRefIncome.textContent = u.refIncome;
-      userStatus.textContent = u.status;
-      document.getElementById('userSection').classList.remove('hidden');
+    function loginUser() {
+      const userID = document.getElementById('loginID').value;
+      get(child(ref(db), 'users/' + userID)).then((snap) => {
+        if (snap.exists()) {
+          currentUser = userID;
+          localStorage.setItem('userID', userID);
+          showUserPanel(userID);
+        } else {
+          alert('User not found!');
+        }
+      });
     }
 
-    function deposit() {
-      const amt = parseFloat(depositAmt.value);
-      if (amt < 50 || amt > 500) return alert("Amount must be 50–500 USDT");
-      const u = users[session];
-      if (u.deposit > 0) return alert("Already deposited");
-      u.deposit = amt;
-      u.status = "Pending";
-      u.history.push({ action: "Deposit", amount: amt });
-      if (u.ref && users[u.ref]) {
-        users[u.ref].refIncome += amt * 0.05;
-      }
-      saveUsers();
-      alert("Deposit submitted for approval");
-      showUser();
-    }
+    function showUserPanel(uid) {
+      get(child(ref(db), 'users/' + uid)).then((snap) => {
+        const data = snap.val();
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('registerPage').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('userPanel').style.display = 'block';
 
-    function withdraw() {
-      const u = users[session];
-      if (u.income < 1 && u.refIncome < 1) return alert("Minimum 1 USDT required");
-      u.history.push({ action: "Withdrawal", income: u.income, referral: u.refIncome });
-      u.income = 0;
-      u.refIncome = 0;
-      alert("Withdrawal request sent to admin");
-      saveUsers();
-      showUser();
-    }
-
-    function changePassword() {
-      const oldP = oldPass.value.trim();
-      const newP = newPass.value.trim();
-      if (!oldP || !newP) return alert("Fill both fields");
-      if (users[session].password !== oldP) return alert("Old password incorrect");
-      users[session].password = newP;
-      saveUsers();
-      alert("Password updated");
-      oldPass.value = "";
-      newPass.value = "";
+        document.getElementById('userInfo').innerHTML = `
+          <p><b>Name:</b> ${data.name}</p>
+          <p><b>Mobile:</b> ${data.mobile}</p>
+          <p><b>Wallet:</b> ${data.wallet}</p>
+          <p><b>Deposit:</b> ${data.deposit} USDT</p>
+          <p><b>Referral Income:</b> ${data.referralIncome} USDT</p>
+          <p><b>Income:</b> ${data.income} USDT</p>
+          <p><b>Status:</b> ${data.status}</p>
+        `;
+      });
     }
 
     function adminLogin() {
-      const id = adminId.value.trim();
-      const pass = adminPass.value.trim();
-      if (id === 'Admin' && pass === 'Jaihanuman@7') {
-        hideAll();
-        showAdminData();
-        document.getElementById('adminSection').classList.remove('hidden');
+      const id = document.getElementById('adminID').value;
+      const pass = document.getElementById('adminPass').value;
+      if (id === "Admin" && pass === "Jaihanuman@7") {
+        isAdmin = true;
+        showAdminPanel();
       } else {
         alert("Invalid admin credentials");
       }
     }
 
-    function showAdminData() {
-      let text = "";
-      for (let id in users) {
-        const u = users[id];
-        text += `${id} | ${u.name} | ${u.deposit} | ${u.income} | ${u.status}\n`;
-      }
-      adminData.value = text;
-    }
+    function showAdminPanel() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('registerPage').style.display = 'none';
+      document.getElementById('userPanel').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
 
-    function approveDeposits() {
-      for (let id in users) {
-        const u = users[id];
-        if (u.status === "Pending") u.status = "Active";
-      }
-      saveUsers();
-      alert("Approved all pending deposits");
-      showAdminData();
-    }
-
-    function addWeeklyIncome() {
-      for (let id in users) {
-        const u = users[id];
-        if (u.status === "Active") {
-          const w = u.deposit * 0.1;
-          u.income += w;
-          if (u.income >= u.deposit * 2) u.status = "Closed";
+      get(child(ref(db), 'users')).then((snap) => {
+        const allUsers = snap.val();
+        let html = '';
+        for (const id in allUsers) {
+          const u = allUsers[id];
+          html += `
+            <div style="border:1px solid #999;padding:10px;margin:10px;">
+              <b>ID:</b> ${id}<br>
+              <b>Name:</b> ${u.name}<br>
+              <b>Deposit:</b> ${u.deposit} USDT<br>
+              <b>Income:</b> ${u.income} USDT<br>
+              <b>Status:</b> ${u.status}<br>
+              <button onclick="approveDeposit('${id}')">Approve Deposit</button>
+              <button onclick="addWeeklyIncome('${id}')">+ Weekly Income</button>
+              <button onclick="closeAgreement('${id}')">Close</button>
+            </div>
+          `;
         }
-      }
-      saveUsers();
-      alert("Weekly income added");
-      showAdminData();
+        document.getElementById('adminUsers').innerHTML = html;
+      });
+    }
+
+    window.addWeeklyIncome = function (id) {
+      const uref = ref(db, 'users/' + id);
+      get(uref).then((snap) => {
+        const data = snap.val();
+        if (data.status === 'closed') return alert('Agreement closed.');
+        let newIncome = data.income + data.deposit * 0.1;
+        let total = data.deposit * 2;
+        if (newIncome >= total) {
+          newIncome = total;
+        }
+        update(uref, { income: newIncome });
+        showAdminPanel();
+      });
+    }
+
+    window.approveDeposit = function (id) {
+      const amount = prompt("Enter deposit amount (50-500 USDT):");
+      const amt = parseFloat(amount);
+      if (isNaN(amt) || amt < 50 || amt > 500) return alert("Invalid amount");
+
+      const uref = ref(db, 'users/' + id);
+      get(uref).then((snap) => {
+        const data = snap.val();
+        update(uref, { deposit: amt, status: 'active' });
+
+        // Referral bonus
+        if (data.referrer) {
+          const refRef = ref(db, 'users/' + data.referrer);
+          get(refRef).then((rSnap) => {
+            if (rSnap.exists()) {
+              const rData = rSnap.val();
+              const newRefIncome = rData.referralIncome + (amt * 0.05);
+              update(refRef, { referralIncome: newRefIncome });
+            }
+          });
+        }
+
+        showAdminPanel();
+      });
+    }
+
+    window.closeAgreement = function (id) {
+      const uref = ref(db, 'users/' + id);
+      update(uref, { status: 'closed' });
+      showAdminPanel();
     }
 
     function logout() {
-      session = null;
-      localStorage.removeItem('session');
+      localStorage.removeItem('userID');
       location.reload();
     }
 
-    // Auto-login if session exists
-    if (session && users[session]) showUser();
+    window.onload = () => {
+      const uid = localStorage.getItem('userID');
+      if (uid) {
+        showUserPanel(uid);
+      }
+    }
   </script>
+</head>
+<body style="font-family:sans-serif;padding:20px;">
+  <h2>Ashirwad Mart</h2>
+
+  <div id="registerPage">
+    <h3>Register</h3>
+    <input id="regName" placeholder="Full Name"><br><br>
+    <input id="regMobile" placeholder="Mobile Number"><br><br>
+    <input id="regWallet" placeholder="USDT BEP20 Wallet Address"><br><br>
+    <input id="regRef" placeholder="Referral ID (Optional)"><br><br>
+    <button onclick="registerUser()">Register</button>
+    <p>Already registered? <a href="#" onclick="document.getElementById('registerPage').style.display='none';document.getElementById('loginPage').style.display='block';">Login here</a></p>
+    <p>Admin? <a href="#" onclick="document.getElementById('registerPage').style.display='none';document.getElementById('adminLogin').style.display='block';">Admin Login</a></p>
+  </div>
+
+  <div id="loginPage" style="display:none;">
+    <h3>User Login</h3>
+    <input id="loginID" placeholder="Enter User ID"><br><br>
+    <button onclick="loginUser()">Login</button>
+    <p><a href="#" onclick="document.getElementById('loginPage').style.display='none';document.getElementById('registerPage').style.display='block';">Back to Register</a></p>
+  </div>
+
+  <div id="adminLogin" style="display:none;">
+    <h3>Admin Login</h3>
+    <input id="adminID" placeholder="Admin ID"><br><br>
+    <input id="adminPass" placeholder="Password" type="password"><br><br>
+    <button onclick="adminLogin()">Login</button>
+    <p><a href="#" onclick="document.getElementById('adminLogin').style.display='none';document.getElementById('registerPage').style.display='block';">Back</a></p>
+  </div>
+
+  <div id="userPanel" style="display:none;">
+    <h3>Your Dashboard</h3>
+    <div id="userInfo"></div><br>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <h3>Admin Panel</h3>
+    <div id="adminUsers">Loading users...</div>
+    <button onclick="logout()">Logout</button>
+  </div>
 </body>
 </html>
