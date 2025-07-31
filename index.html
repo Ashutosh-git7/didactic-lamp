@@ -5,179 +5,214 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
-    .container { max-width: 500px; margin: auto; padding: 20px; background: white; border-radius: 10px; margin-top: 20px; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
-    h2 { text-align: center; color: #4CAF50; }
+    body { font-family: sans-serif; background: #f0f8ff; margin: 0; padding: 0; }
+    .container { max-width: 500px; margin: auto; padding: 20px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 10px; margin-top: 20px; }
+    h2 { text-align: center; color: #2e8b57; }
+    input, select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #2e8b57; color: white; border: none; }
     .hidden { display: none; }
-    .logout { color: red; margin-top: 20px; text-align: center; cursor: pointer; }
-    .admin-card { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; margin-top: 15px; }
-    .btn { background: #4CAF50; color: white; border: none; }
+    .admin-section { background: #ffe4b5; padding: 10px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <div class="container" id="main">
-    <h2>Ashirwad Mart</h2>
-
-    <div id="auth">
-      <input id="loginMobile" placeholder="Enter Mobile Number or Admin" />
-      <input id="loginPass" placeholder="Enter Password (only for admin)" type="password" />
+  <div class="container">
+    <div id="loginSection">
+      <h2>Welcome to Ashirwad Mart</h2>
+      <input id="loginId" placeholder="Enter ID" />
+      <input id="loginPass" placeholder="Enter Password" type="password" />
       <button onclick="login()">Login</button>
-      <hr>
+      <p>Or <a href="#" onclick="showRegister()">Register</a></p>
+    </div>
+
+    <div id="registerSection" class="hidden">
+      <h2>Register</h2>
       <input id="regName" placeholder="Full Name" />
       <input id="regMobile" placeholder="Mobile Number" />
-      <input id="regWallet" placeholder="USDT BEP20 Wallet Address" />
-      <button onclick="register()">Register</button>
+      <input id="regWallet" placeholder="BEP20 USDT Wallet Address" />
+      <input id="regRef" placeholder="Referral Code (optional)" />
+      <button onclick="register()">Create Account</button>
+      <p><a href="#" onclick="showLogin()">Back to Login</a></p>
     </div>
 
-    <div id="userPanel" class="hidden">
-      <h3>Welcome, <span id="userName"></span></h3>
-      <p><b>Mobile:</b> <span id="userMobile"></span></p>
+    <div id="userSection" class="hidden">
+      <h2>User Dashboard</h2>
+      <p><b>ID:</b> <span id="userId"></span></p>
+      <p><b>Name:</b> <span id="userName"></span></p>
       <p><b>Wallet:</b> <span id="userWallet"></span></p>
-      <p><b>Deposit:</b> $<span id="userDeposit">0</span></p>
-      <p><b>Referral Bonus:</b> $<span id="userReferral">0</span></p>
-      <p><b>Income:</b> $<span id="userIncome">0</span></p>
-      <p><b>Withdrawable:</b> $<span id="userWithdraw">0</span></p>
-      <p><b>Fixed Deposit Address:</b><br><code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code></p>
-      <input id="newDeposit" placeholder="Enter deposit amount (50–500)" />
-      <button class="btn" onclick="makeDeposit()">Submit Deposit</button>
-      <button class="btn" onclick="requestWithdraw()">Request Withdrawal</button>
-      <div class="logout" onclick="logout()">🚪 Logout</div>
+      <p><b>Deposited:</b> <span id="userDeposit">0</span> USDT</p>
+      <p><b>Income:</b> <span id="userIncome">0</span> USDT</p>
+      <p><b>Referral:</b> <span id="userRefIncome">0</span> USDT</p>
+      <p><b>Status:</b> <span id="userStatus">Inactive</span></p>
+      <input id="depositAmt" type="number" min="50" max="500" placeholder="Enter amount (50-500 USDT)" />
+      <button onclick="deposit()">Deposit Now</button>
+      <button onclick="withdraw()">Withdraw</button>
+      <button onclick="logout()">Logout</button>
     </div>
 
-    <div id="adminPanel" class="hidden">
-      <h3>👨‍💼 Admin Dashboard</h3>
-      <div id="allUsers"></div>
-      <div class="logout" onclick="logout()">🚪 Logout</div>
+    <div id="adminLogin" class="hidden">
+      <h2>Admin Panel Login</h2>
+      <input id="adminId" placeholder="Admin ID" />
+      <input id="adminPass" placeholder="Admin Password" type="password" />
+      <button onclick="adminLogin()">Enter Admin Panel</button>
+    </div>
+
+    <div id="adminSection" class="hidden">
+      <h2>Admin Panel</h2>
+      <textarea id="adminData" rows="10" style="width:100%"></textarea>
+      <button onclick="approveDeposits()">Approve Deposits</button>
+      <button onclick="addWeeklyIncome()">Add Weekly Income</button>
+      <button onclick="logout()">Logout Admin</button>
     </div>
   </div>
 
   <script>
     let users = JSON.parse(localStorage.getItem('users') || '{}');
-    let currentUser = null;
+    let session = localStorage.getItem('session');
 
-    function save() {
+    function saveUsers() {
       localStorage.setItem('users', JSON.stringify(users));
     }
 
+    function showLogin() {
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('registerSection').classList.add('hidden');
+      document.getElementById('adminLogin').classList.add('hidden');
+    }
+
+    function showRegister() {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('registerSection').classList.remove('hidden');
+    }
+
     function register() {
-      const name = document.getElementById('regName').value.trim();
-      const mobile = document.getElementById('regMobile').value.trim();
-      const wallet = document.getElementById('regWallet').value.trim();
-      if (!name || !mobile || !wallet) return alert("All fields required");
-      if (users[mobile]) return alert("Mobile already registered");
-      if (Object.values(users).some(u => u.wallet === wallet)) return alert("Wallet already in use");
-      const id = 'ANS' + Math.floor(1000 + Math.random() * 9000);
-      users[mobile] = { id, name, mobile, wallet, deposit: 0, referral: 0, income: 0, withdraw: 0 };
-      save();
-      alert("Registered successfully. You can now login with your mobile number.");
+      const name = regName.value.trim();
+      const mobile = regMobile.value.trim();
+      const wallet = regWallet.value.trim();
+      const ref = regRef.value.trim().toLowerCase();
+      if (!name || !mobile || !wallet) return alert("Fill all fields");
+
+      const id = "ash" + Math.floor(Math.random() * 10000);
+      users[id] = {
+        name, mobile, wallet, deposit: 0, income: 0, refIncome: 0, status: "Inactive", ref, history: []
+      };
+      if (ref && users[ref]) {
+        users[ref].refIncome += 0; // Only adds on deposit
+      }
+      saveUsers();
+      alert("Registered! Your ID is " + id);
+      showLogin();
     }
 
     function login() {
-      const mobile = document.getElementById('loginMobile').value.trim();
-      const pass = document.getElementById('loginPass').value.trim();
+      const id = loginId.value.trim().toLowerCase();
+      const pass = loginPass.value;
+      if (id === 'admin' && pass === 'Jaihanuman@7') {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('adminSection').classList.remove('hidden');
+        showAdminData();
+        return;
+      }
 
-      if (mobile === 'Admin' && pass === 'Jaihanuman@7') {
-        currentUser = 'Admin';
-        document.getElementById('auth').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        loadAdmin();
-      } else if (users[mobile]) {
-        currentUser = mobile;
-        document.getElementById('auth').classList.add('hidden');
-        document.getElementById('userPanel').classList.remove('hidden');
-        loadUser();
+      if (users[id]) {
+        session = id;
+        localStorage.setItem('session', id);
+        showUser();
       } else {
-        alert("Invalid login");
+        alert("Invalid ID");
       }
     }
 
-    function loadUser() {
-      const u = users[currentUser];
-      document.getElementById('userName').innerText = u.name;
-      document.getElementById('userMobile').innerText = u.mobile;
-      document.getElementById('userWallet').innerText = u.wallet;
-      document.getElementById('userDeposit').innerText = u.deposit;
-      document.getElementById('userReferral').innerText = u.referral;
-      document.getElementById('userIncome').innerText = u.income;
-      document.getElementById('userWithdraw').innerText = u.withdraw;
+    function showUser() {
+      const u = users[session];
+      userId.textContent = session;
+      userName.textContent = u.name;
+      userWallet.textContent = u.wallet;
+      userDeposit.textContent = u.deposit;
+      userIncome.textContent = u.income;
+      userRefIncome.textContent = u.refIncome;
+      userStatus.textContent = u.status;
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('userSection').classList.remove('hidden');
+    }
+
+    function deposit() {
+      const amt = parseFloat(depositAmt.value);
+      if (amt < 50 || amt > 500) return alert("Amount must be between 50 and 500");
+      const u = users[session];
+      if (u.deposit > 0) return alert("Already deposited");
+      u.deposit = amt;
+      u.status = "Pending";
+      u.history.push({ action: "Deposit", amount: amt });
+      if (u.ref && users[u.ref]) {
+        users[u.ref].refIncome += amt * 0.05;
+      }
+      saveUsers();
+      alert("Deposit request submitted");
+      showUser();
+    }
+
+    function withdraw() {
+      const u = users[session];
+      if (u.income < 1 && u.refIncome < 1) return alert("Minimum 1 USDT required");
+      alert("Withdrawal request sent to admin");
+      u.history.push({ action: "Withdrawal", income: u.income, referral: u.refIncome });
+      u.income = 0;
+      u.refIncome = 0;
+      saveUsers();
+      showUser();
     }
 
     function logout() {
-      currentUser = null;
-      document.getElementById('auth').classList.remove('hidden');
-      document.getElementById('userPanel').classList.add('hidden');
-      document.getElementById('adminPanel').classList.add('hidden');
+      session = null;
+      localStorage.removeItem('session');
+      location.reload();
     }
 
-    function makeDeposit() {
-      const amount = parseFloat(document.getElementById('newDeposit').value);
-      if (amount < 50 || amount > 500) return alert("Deposit must be between 50 and 500");
-      if (users[currentUser].deposit > 0) return alert("Already deposited");
-      users[currentUser].deposit = amount;
-      const ref = prompt("Enter referral mobile (if any):");
-      if (ref && users[ref]) users[ref].referral += amount * 0.05;
-      save();
-      alert("Deposit recorded. Await admin approval.");
-      loadUser();
-    }
-
-    function requestWithdraw() {
-      const u = users[currentUser];
-      const total = u.income + u.referral;
-      if (total < 1) return alert("Minimum $1 required to withdraw");
-      u.withdraw = total;
-      save(); loadUser();
-      alert("Withdrawal request submitted");
-    }
-
-    function loadAdmin() {
-      let out = '';
-      for (let mob in users) {
-        const u = users[mob];
-        out += `<div class="admin-card">
-          <b>ID:</b> ${u.id}<br>
-          <b>Name:</b> ${u.name}<br>
-          <b>Mobile:</b> ${u.mobile}<br>
-          <b>Wallet:</b> ${u.wallet}<br>
-          <b>Deposit:</b> $${u.deposit}<br>
-          <b>Referral:</b> $${u.referral}<br>
-          <b>Income:</b> $${u.income}<br>
-          <b>Withdraw Request:</b> $${u.withdraw}<br>
-          <button onclick="addIncome('${mob}')">+ Add Income</button>
-          <button onclick="approveWithdraw('${mob}')">Approve Withdraw</button>
-          <button onclick="editUser('${mob}')">Edit</button>
-        </div>`;
-      }
-      document.getElementById('allUsers').innerHTML = out;
-    }
-
-    function addIncome(mobile) {
-      const amt = prompt("Enter amount to add:");
-      if (amt) {
-        users[mobile].income += parseFloat(amt);
-        save(); loadAdmin();
+    function adminLogin() {
+      if (adminId.value === 'Admin' && adminPass.value === 'Jaihanuman@7') {
+        document.getElementById('adminLogin').classList.add('hidden');
+        document.getElementById('adminSection').classList.remove('hidden');
+        showAdminData();
+      } else {
+        alert("Invalid admin credentials");
       }
     }
 
-    function approveWithdraw(mobile) {
-      users[mobile].withdraw = 0;
-      users[mobile].income = 0;
-      users[mobile].referral = 0;
-      save(); loadAdmin();
-      alert("Withdrawal approved");
+    function showAdminData() {
+      let text = "";
+      for (let id in users) {
+        const u = users[id];
+        text += `${id} | ${u.name} | ${u.deposit} | ${u.income} | ${u.status}\n`;
+      }
+      adminData.value = text;
     }
 
-    function editUser(mobile) {
-      const u = users[mobile];
-      const dep = prompt("Deposit", u.deposit);
-      const ref = prompt("Referral", u.referral);
-      const inc = prompt("Income", u.income);
-      users[mobile].deposit = parseFloat(dep);
-      users[mobile].referral = parseFloat(ref);
-      users[mobile].income = parseFloat(inc);
-      save(); loadAdmin();
+    function approveDeposits() {
+      for (let id in users) {
+        const u = users[id];
+        if (u.status === "Pending") u.status = "Active";
+      }
+      saveUsers();
+      alert("Deposits Approved");
+      showAdminData();
     }
+
+    function addWeeklyIncome() {
+      for (let id in users) {
+        const u = users[id];
+        if (u.status === "Active") {
+          const weekly = u.deposit * 0.1;
+          u.income += weekly;
+          if (u.income >= u.deposit * 2) u.status = "Closed";
+        }
+      }
+      saveUsers();
+      alert("Weekly income added");
+      showAdminData();
+    }
+
+    // Auto-login if session exists
+    if (session && users[session]) showUser();
   </script>
 </body>
 </html>
