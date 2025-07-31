@@ -1,251 +1,182 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>USDT 2X App</title>
+  <title>USDT 2X Plan App</title>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; margin: 0; background: #f2f2f2; }
-    .container { padding: 20px; max-width: 500px; margin: auto; }
-    h2, h3, h4 { text-align: center; color: #333; }
-    input, button {
-      width: 100%; padding: 10px; margin: 10px 0;
-      border-radius: 6px; border: 1px solid #ccc;
-    }
-    button { background-color: #28a745; color: white; border: none; }
-    .link { text-align: center; margin-top: 10px; }
-    .card { background: #fff; padding: 12px; border-radius: 8px; margin-top: 10px; }
+    body { font-family: sans-serif; margin: 0; padding: 0; background: #f0f2f5; }
+    .container { max-width: 400px; margin: auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px #ccc; margin-top: 30px; }
+    input, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background-color: #4CAF50; color: white; font-weight: bold; }
+    .admin-table { width: 100%; font-size: 12px; overflow-x: scroll; }
+    .admin-table th, .admin-table td { padding: 5px; border: 1px solid #ccc; }
     .hidden { display: none; }
-    .logout { background: #dc3545; }
-    .ref { font-size: 0.9em; color: #555; }
+    .referral { font-size: 12px; margin-top: 10px; word-break: break-word; }
+    .btn-small { font-size: 12px; padding: 5px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>USDT 2X App</h2>
 
-  <!-- Registration -->
-  <div id="registerDiv">
-    <h3>Register</h3>
-    <input id="regName" placeholder="Full Name" />
-    <input id="regPhone" placeholder="Phone Number" />
-    <input id="regPass" placeholder="Password" type="password" />
-    <input id="regWallet" placeholder="Your BEP20 Wallet (for withdrawals)" />
-    <input id="regRef" placeholder="Referral Code (optional)" />
-    <button onclick="register()">Register</button>
-    <div class="link">Already have account? <a href="#" onclick="showLogin()">Login</a></div>
-  </div>
+<div class="container" id="authSection">
+  <h2>Login / Register</h2>
+  <input type="text" id="userId" placeholder="Your ID (leave blank to register)" />
+  <input type="text" id="refCode" placeholder="Referral Code (optional)" />
+  <input type="text" id="wallet" placeholder="Your BEP20 Wallet (for registration)" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="login()">Login / Register</button>
+</div>
 
-  <!-- Login -->
-  <div id="loginDiv" class="hidden">
-    <h3>Login</h3>
-    <input id="loginPhone" placeholder="Phone Number / Admin ID" />
-    <input id="loginPass" placeholder="Password" type="password" />
-    <button onclick="login()">Login</button>
-    <div class="link">No account? <a href="#" onclick="showRegister()">Register</a></div>
-  </div>
+<div class="container hidden" id="userSection">
+  <h2>Welcome, <span id="loggedUser"></span></h2>
+  <p>Your Wallet: <span id="userWallet"></span></p>
+  <p>Referral Link: <span class="referral" id="refLink"></span></p>
+  <h3>Deposit (50–500 USDT)</h3>
+  <p>Send USDT to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+  <input type="number" id="depositAmount" placeholder="Enter Deposit Amount" />
+  <button onclick="makeDeposit()">Submit Deposit</button>
+  <h3>Withdraw</h3>
+  <input type="number" id="withdrawAmount" placeholder="Amount ≥ 1 USDT" />
+  <button onclick="requestWithdraw()">Request Withdraw</button>
+  <h3>Your Summary</h3>
+  <p>Deposit: <span id="userDeposit">0</span></p>
+  <p>Received: <span id="userReceived">0</span></p>
+  <p>Referral Bonus: <span id="userReferral">0</span></p>
+  <p>Withdrawn: <span id="userWithdraw">0</span></p>
+  <button onclick="logout()">Logout</button>
+</div>
 
-  <!-- Dashboard -->
-  <div id="dashboard" class="hidden">
-    <h3>Welcome, <span id="userName"></span></h3>
-    <p><strong>Your Wallet:</strong> <span id="userWallet"></span></p>
-    <p><strong>Referral Code:</strong> <span id="userID"></span></p>
-    <p class="ref">Referral Link: <span id="refLink"></span></p>
-
-    <h4>Deposit</h4>
-    <p>Send 50–500 USDT (BEP20) to:</p>
-    <p><strong>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</strong></p>
-    <input id="depositAmt" placeholder="Enter deposit amount" />
-    <button onclick="requestDeposit()">Submit Deposit</button>
-
-    <h4>Income & Withdraw</h4>
-    <p><strong>Total Income:</strong> <span id="totalIncome">0</span> USDT</p>
-    <p><strong>Referral Bonus:</strong> <span id="refBonus">0</span> USDT</p>
-    <p><strong>Withdrawable:</strong> <span id="withdrawable">0</span> USDT</p>
-    <input id="withdrawAmt" placeholder="Enter amount to withdraw" />
-    <button onclick="requestWithdraw()">Request Withdraw</button>
-
-    <h4>My Deposits</h4>
-    <div id="depositHistory"></div>
-
-    <button class="logout" onclick="logout()">Logout</button>
-  </div>
-
-  <!-- Admin Panel -->
-  <div id="adminPanel" class="hidden">
-    <h3>Admin Panel</h3>
-    <div id="allUsers"></div>
-    <button class="logout" onclick="logout()">Logout</button>
-  </div>
+<div class="container hidden" id="adminSection">
+  <h2>Admin Panel</h2>
+  <div id="adminData"></div>
+  <button onclick="logout()">Logout</button>
 </div>
 
 <script>
   let users = JSON.parse(localStorage.getItem("users") || "{}");
-  let current = null;
+  let currentUser = null;
 
-  function saveUsers() {
-    localStorage.setItem("users", JSON.stringify(users));
-  }
-
-  function showRegister() {
-    registerDiv.classList.remove("hidden");
-    loginDiv.classList.add("hidden");
-  }
-
-  function showLogin() {
-    registerDiv.classList.add("hidden");
-    loginDiv.classList.remove("hidden");
-  }
-
-  function generateID() {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let id = "";
-    for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
-    return id;
-  }
-
-  function register() {
-    let name = regName.value.trim();
-    let phone = regPhone.value.trim();
-    let pass = regPass.value;
-    let wallet = regWallet.value.trim();
-    let ref = regRef.value.trim().toLowerCase();
-
-    if (!name || !phone || !pass || !wallet) return alert("All fields required");
-
-    if (users[phone]) return alert("Already registered");
-    let id = generateID();
-
-    users[phone] = {
-      name, pass, wallet, phone, id,
-      deposits: [], income: 0, refBonus: 0, totalWithdrawn: 0,
-      refBy: ref, approved: false
-    };
-    saveUsers();
-    alert("Registered! Please login.");
-    showLogin();
+  function generateId() {
+    return 'u' + Math.random().toString(36).substring(2, 6);
   }
 
   function login() {
-    let phone = loginPhone.value.trim();
-    let pass = loginPass.value;
-    if (phone === "Admin" && pass === "Jaihanuman@7") {
-      showAdmin();
+    let id = document.getElementById("userId").value.trim();
+    let ref = document.getElementById("refCode").value.trim().toLowerCase();
+    let wallet = document.getElementById("wallet").value.trim();
+    let pass = document.getElementById("password").value;
+
+    if (id.toLowerCase() === "admin" && pass === "Jaihanuman@7") {
+      currentUser = "admin";
+      document.getElementById("authSection").classList.add("hidden");
+      document.getElementById("adminSection").classList.remove("hidden");
+      renderAdmin();
       return;
     }
-    if (!users[phone] || users[phone].pass !== pass) return alert("Invalid login");
-    current = phone;
-    showDashboard();
+
+    if (!id) {
+      id = generateId();
+      users[id] = { wallet, pass, deposit: 0, received: 0, referral: 0, withdraw: 0, refby: ref, active: false };
+    }
+
+    if (!users[id]) {
+      alert("User not found. Please register.");
+      return;
+    }
+
+    if (users[id].pass !== pass) {
+      alert("Wrong password");
+      return;
+    }
+
+    currentUser = id;
+    localStorage.setItem("users", JSON.stringify(users));
+    showUserDashboard();
   }
 
   function logout() {
-    current = null;
-    location.reload();
+    currentUser = null;
+    document.getElementById("authSection").classList.remove("hidden");
+    document.getElementById("userSection").classList.add("hidden");
+    document.getElementById("adminSection").classList.add("hidden");
   }
 
-  function showDashboard() {
-    const u = users[current];
-    loginDiv.classList.add("hidden");
-    registerDiv.classList.add("hidden");
-    dashboard.classList.remove("hidden");
-
-    userName.innerText = u.name;
-    userWallet.innerText = u.wallet;
-    userID.innerText = u.id;
-    refLink.innerText = location.href.split("?")[0] + "?r=" + u.id;
-
-    totalIncome.innerText = u.income.toFixed(2);
-    refBonus.innerText = u.refBonus.toFixed(2);
-    withdrawable.innerText = (u.income + u.refBonus - u.totalWithdrawn).toFixed(2);
-
-    let depHTML = u.deposits.map(d => `<div class='card'>
-      <b>Amount:</b> ${d.amt} <br>
-      <b>Status:</b> ${d.status} <br>
-      <b>Paid:</b> ${d.paid.toFixed(2)} / ${d.amt * 2}
-    </div>`).join("");
-    depositHistory.innerHTML = depHTML;
+  function showUserDashboard() {
+    document.getElementById("authSection").classList.add("hidden");
+    document.getElementById("userSection").classList.remove("hidden");
+    document.getElementById("loggedUser").innerText = currentUser;
+    document.getElementById("userWallet").innerText = users[currentUser].wallet;
+    document.getElementById("refLink").innerText = `${location.href.split("?")[0]}?r=${currentUser}`;
+    document.getElementById("userDeposit").innerText = users[currentUser].deposit;
+    document.getElementById("userReceived").innerText = users[currentUser].received;
+    document.getElementById("userReferral").innerText = users[currentUser].referral;
+    document.getElementById("userWithdraw").innerText = users[currentUser].withdraw;
   }
 
-  function requestDeposit() {
-    let amt = parseFloat(depositAmt.value);
-    if (isNaN(amt) || amt < 50 || amt > 500) return alert("Min 50, Max 500");
-    let u = users[current];
-    u.deposits.push({ amt, status: "pending", paid: 0 });
-    if (u.refBy) {
-      let refUser = Object.values(users).find(r => r.id === u.refBy);
-      if (refUser) refUser.refBonus += amt * 0.05;
+  function makeDeposit() {
+    let amt = parseFloat(document.getElementById("depositAmount").value);
+    if (amt < 50 || amt > 500) return alert("Deposit must be between 50 and 500");
+    users[currentUser].deposit += amt;
+    users[currentUser].active = false;
+    if (users[currentUser].refby && users[users[currentUser].refby]) {
+      users[users[currentUser].refby].referral += amt * 0.05;
     }
-    saveUsers();
-    showDashboard();
+    localStorage.setItem("users", JSON.stringify(users));
+    showUserDashboard();
     alert("Deposit submitted. Wait for admin approval.");
   }
 
   function requestWithdraw() {
-    let amt = parseFloat(withdrawAmt.value);
-    let u = users[current];
-    let available = u.income + u.refBonus - u.totalWithdrawn;
-    if (isNaN(amt) || amt < 1 || amt > available) return alert("Invalid amount");
-    u.totalWithdrawn += amt;
-    saveUsers();
-    showDashboard();
-    alert("Withdraw request submitted.");
+    let amt = parseFloat(document.getElementById("withdrawAmount").value);
+    if (amt < 1) return alert("Minimum withdraw is 1 USDT");
+    if ((users[currentUser].referral + users[currentUser].received) < amt)
+      return alert("Insufficient balance");
+    users[currentUser].withdraw += amt;
+    users[currentUser].referral = 0;
+    users[currentUser].received = 0;
+    localStorage.setItem("users", JSON.stringify(users));
+    showUserDashboard();
+    alert("Withdrawal requested");
   }
 
-  function showAdmin() {
-    loginDiv.classList.add("hidden");
-    registerDiv.classList.add("hidden");
-    adminPanel.classList.remove("hidden");
-
-    let html = Object.values(users).map(u => {
-      let deposits = u.deposits.map((dep, i) => `
-        <div style="border:1px solid #ccc; padding:10px; border-radius:8px; margin-bottom:10px;">
-          <b>Deposit ${i + 1}</b><br>
-          Amount: ${dep.amt} <br>
-          Status: ${dep.status} <br>
-          Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2} <br>
-          <button onclick="approveDeposit('${u.phone}', ${i})">Approve</button>
-          <button onclick="payWeekly('${u.phone}', ${i})">Pay Weekly</button>
-        </div>
-      `).join("");
-
-      return `
-        <div class="card">
-          <b>User:</b> ${u.name} (${u.phone})<br>
-          <b>Wallet:</b> ${u.wallet}<br>
-          <b>Referral Code:</b> ${u.id}<br>
-          <b>Referred By:</b> ${u.refBy || '-'}<br>
-          <b>Total Income:</b> ${u.income.toFixed(2)}<br>
-          <b>Referral Bonus:</b> ${u.refBonus.toFixed(2)}<br>
-          <b>Total Withdrawn:</b> ${u.totalWithdrawn.toFixed(2)}<br><br>
-          ${deposits || "<i>No deposits</i>"}
-        </div>
-      `;
-    }).join("");
-
-    allUsers.innerHTML = html;
+  function renderAdmin() {
+    let html = `<table class="admin-table"><tr><th>ID</th><th>Wallet</th><th>Deposit</th><th>Received</th><th>Referral</th><th>Withdraw</th><th>Status</th><th>Action</th></tr>`;
+    for (let id in users) {
+      let u = users[id];
+      html += `<tr>
+        <td>${id}</td><td>${u.wallet}</td><td>${u.deposit}</td><td>${u.received}</td>
+        <td>${u.referral}</td><td>${u.withdraw}</td>
+        <td>${u.active ? '✅' : '⏳'}</td>
+        <td>
+          ${!u.active && u.deposit > 0 ? `<button class="btn-small" onclick="approve('${id}')">Approve</button>` : ''}
+          ${u.active && u.received < u.deposit * 2 ? `<button class="btn-small" onclick="pay('${id}')">Pay</button>` : ''}
+        </td>
+      </tr>`;
+    }
+    html += `</table>`;
+    document.getElementById("adminData").innerHTML = html;
   }
 
-  function approveDeposit(phone, i) {
-    users[phone].deposits[i].status = "approved";
-    saveUsers();
-    showAdmin();
+  function approve(id) {
+    users[id].active = true;
+    localStorage.setItem("users", JSON.stringify(users));
+    renderAdmin();
   }
 
-  function payWeekly(phone, i) {
-    let dep = users[phone].deposits[i];
-    if (dep.status !== "approved") return alert("Not approved");
-    let weeklyPay = dep.amt * 0.1;
-    if (dep.paid + weeklyPay > dep.amt * 2) return alert("2X reached");
-    dep.paid += weeklyPay;
-    users[phone].income += weeklyPay;
-    saveUsers();
-    showAdmin();
+  function pay(id) {
+    let u = users[id];
+    if (u.received < u.deposit * 2) {
+      u.received += u.deposit * 0.10; // Weekly 10%
+      if (u.received > u.deposit * 2) u.received = u.deposit * 2;
+    }
+    localStorage.setItem("users", JSON.stringify(users));
+    renderAdmin();
   }
 
-  window.onload = () => {
-    const ref = new URLSearchParams(location.search).get('r');
-    if (ref) regRef.value = ref.toLowerCase();
+  if (location.search.includes("?r=")) {
+    document.getElementById("refCode").value = location.search.split("?r=")[1];
   }
 </script>
+
 </body>
 </html>
