@@ -96,14 +96,12 @@
   function login() {
     const id = document.getElementById('loginId').value.trim();
     const pass = document.getElementById('loginPass').value;
-
     if (id === "Admin" && pass === "Jaihanuman@7") {
       document.getElementById("loginBox").classList.add("hidden");
       document.getElementById("adminPanel").classList.remove("hidden");
       loadAdmin();
       return;
     }
-
     db.ref("users/" + id).once("value", snap => {
       if (snap.exists()) {
         currentId = id;
@@ -122,7 +120,6 @@
     const wallet = document.getElementById("regWallet").value.trim();
     const ref = document.getElementById("regRef").value.trim();
     if (!name || !mobile || !wallet) return alert("Please fill all fields");
-
     const id = "U" + Math.floor(Math.random() * 100000);
     const userData = {
       name, mobile, wallet, deposit: 0, income: 0, refIncome: 0, status: "Pending", referredBy: ref
@@ -148,10 +145,8 @@
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (amt < 50 || amt > 500) return alert("Invalid amount");
-
     db.ref("users/" + currentId + "/deposit").set(amt);
     db.ref("users/" + currentId + "/status").set("Pending");
-
     db.ref("users/" + currentId).once("value", snap => {
       const data = snap.val();
       if (data.referredBy) {
@@ -162,7 +157,6 @@
         });
       }
     });
-
     alert("Deposit submitted!");
   }
 
@@ -199,8 +193,9 @@
           <td>${d.income}</td>
           <td>${d.status}</td>
           <td>
-            <button onclick="approveDeposit('${child.key}', ${d.deposit}, ${d.income || 0})">Start</button>
-            <button onclick="closeAgreement('${child.key}')">Close</button>
+            <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
+            <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
+            <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
           </td>
         </tr>`;
       });
@@ -232,33 +227,36 @@
     });
   }
 
-  function approveDeposit(userId, deposit, currentIncome) {
-    if (deposit === 0) return alert("No deposit to approve.");
-    const newIncome = currentIncome + deposit * 0.05;
-    db.ref("users/" + userId + "/income").set(newIncome);
+  function approveDeposit(userId) {
     db.ref("users/" + userId + "/status").set("Active");
-    alert("Income added!");
+    alert("Deposit approved.");
+  }
+
+  function rejectDeposit(userId) {
+    db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" });
+    alert("Deposit rejected.");
   }
 
   function closeAgreement(userId) {
-    db.ref("users/" + userId + "/status").set("Closed");
+    db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0 });
     alert("Agreement closed.");
   }
 
   function approveWithdraw(userId, withdrawId) {
     db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
-
     db.ref("users/" + userId).once("value", snap => {
       const data = snap.val();
       const deposit = parseFloat(data.deposit || 0);
       const income = parseFloat(data.income || 0);
       if (deposit > 0 && income >= 2 * deposit) {
-        db.ref("users/" + userId + "/income").set(0);
-        db.ref("users/" + userId + "/status").set("Closed");
+        db.ref("users/" + userId).update({
+          income: 0,
+          deposit: 0,
+          status: "Closed"
+        });
       }
     });
-
-    alert("Withdrawal approved and income adjusted if 2x reached.");
+    alert("Withdrawal approved.");
   }
 
   function rejectWithdraw(userId, withdrawId) {
