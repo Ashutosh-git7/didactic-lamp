@@ -12,7 +12,7 @@
     input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
     .admin-section { background: #ffe; }
     .hidden { display: none; }
-    table { border-collapse: collapse; margin-top: 10px; }
+    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
     th, td { padding: 5px; border: 1px solid #ccc; text-align: center; }
   </style>
 </head>
@@ -189,7 +189,7 @@
 
   function loadAdmin() {
     db.ref("users").once("value", snap => {
-      let html = "<h4>All Users</h4><table width='100%'><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
       snap.forEach(child => {
         const d = child.val();
         html += `<tr>
@@ -209,7 +209,7 @@
     });
 
     db.ref("withdrawals").once("value", snap => {
-      let html = "<h4>Pending Withdrawals</h4><table width='100%'><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+      let html = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
       snap.forEach(userSnap => {
         const userId = userSnap.key;
         userSnap.forEach(wSnap => {
@@ -219,7 +219,10 @@
               <td>${userId}</td>
               <td>${w.amount}</td>
               <td>${w.status}</td>
-              <td><button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button></td>
+              <td>
+                <button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
+                <button onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
+              </td>
             </tr>`;
           }
         });
@@ -244,7 +247,23 @@
 
   function approveWithdraw(userId, withdrawId) {
     db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
-    alert("Withdrawal approved!");
+
+    db.ref("users/" + userId).once("value", snap => {
+      const data = snap.val();
+      const deposit = parseFloat(data.deposit || 0);
+      const income = parseFloat(data.income || 0);
+      if (deposit > 0 && income >= 2 * deposit) {
+        db.ref("users/" + userId + "/income").set(0);
+        db.ref("users/" + userId + "/status").set("Closed");
+      }
+    });
+
+    alert("Withdrawal approved and income adjusted if 2x reached.");
+  }
+
+  function rejectWithdraw(userId, withdrawId) {
+    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected");
+    alert("Withdrawal rejected.");
   }
 
   function addWeeklyIncome() {
