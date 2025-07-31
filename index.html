@@ -2,17 +2,17 @@
 <html>
 <head>
   <title>Ashirwad 2X App</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial; margin: 0; background: #f0f0f0; color: #333; }
+    body { font-family: Arial; background: #f2f2f2; margin: 0; padding: 0; }
     header { background: #4CAF50; color: white; padding: 15px; text-align: center; }
-    section, .card { padding: 15px; margin: 10px; background: white; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);}
-    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px;}
-    button { background: #4CAF50; color: white; font-weight: bold; border: none; cursor: pointer; }
+    section, .card { background: white; margin: 15px; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);}
+    input, button { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+    button { background-color: #4CAF50; color: white; font-weight: bold; border: none; }
     .hide { display: none; }
     textarea { width: 100%; height: 300px; }
-    nav { text-align: center; padding: 10px; background: #eee; }
+    nav { background: #eee; text-align: center; padding: 10px; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -21,38 +21,35 @@
   <h2>Ashirwad 2X Income App</h2>
 </header>
 
-<!-- Login / Registration Section -->
 <section id="loginSection">
   <h3>Register / Login</h3>
-  <input id="userId" placeholder="Enter ID (start with ANS)" />
-  <input id="wallet" placeholder="Enter BEP20 Wallet Address" />
+  <input id="userId" placeholder="User ID (e.g. ANS123)" />
+  <input id="wallet" placeholder="Your BEP20 Wallet Address" />
   <input id="refCode" placeholder="Referral Code (optional)" />
   <button onclick="loginUser()">Login / Register</button>
   <p id="loginMsg"></p>
 </section>
 
-<!-- User Dashboard -->
 <section id="userPanel" class="hide">
-  <h3>Welcome: <span id="currentId"></span></h3>
+  <h3>Welcome, <span id="currentUser"></span></h3>
   <div class="card">
-    <p><b>Wallet:</b> <span id="showWallet"></span></p>
-    <p><b>Total Deposit:</b> <span id="showDeposit">0</span> USDT</p>
-    <p><b>Total Paid:</b> <span id="showPaid">0</span> USDT</p>
-    <p><b>Referral Bonus:</b> <span id="showReferral">0</span> USDT</p>
-    <p><b>Agreement Status:</b> <span id="showAgreement">open</span></p>
+    <p><b>Wallet:</b> <span id="userWallet"></span></p>
+    <p><b>Total Deposit:</b> <span id="userDeposit">0</span> USDT</p>
+    <p><b>Total Paid:</b> <span id="userPaid">0</span> USDT</p>
+    <p><b>Referral Bonus:</b> <span id="userReferral">0</span> USDT</p>
+    <p><b>Agreement:</b> <span id="userAgreement">open</span></p>
   </div>
 
   <div class="card">
-    <h4>Make a Deposit (50–500 USDT)</h4>
-    <p>Send USDT (BEP20) to:</p>
-    <p><b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
-    <input id="depositAmt" placeholder="Enter amount (50–500)" />
+    <h4>Deposit (50–500 USDT)</h4>
+    <p>Send to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+    <input id="depAmt" placeholder="Enter amount" />
     <button onclick="makeDeposit()">Submit Deposit</button>
   </div>
 
   <div class="card">
-    <h4>Withdraw Income</h4>
-    <button onclick="withdrawIncome()">Withdraw Referral / Profit</button>
+    <h4>Withdraw</h4>
+    <button onclick="withdraw()">Withdraw Income/Referral</button>
   </div>
 
   <div class="card">
@@ -61,35 +58,31 @@
   </div>
 </section>
 
-<!-- Admin Login Section -->
 <section id="adminLoginSection">
   <h3>Admin Login</h3>
   <input id="adminId" placeholder="Admin ID" />
   <input id="adminPass" type="password" placeholder="Admin Password" />
-  <button onclick="adminLogin()">Login as Admin</button>
+  <button onclick="adminLogin()">Login</button>
 </section>
 
-<!-- Admin Panel -->
 <section id="adminPanel" class="hide">
   <h3>Admin Panel</h3>
   <textarea id="adminEditor"></textarea>
-  <button onclick="saveAdminData()">Save Changes</button>
+  <button onclick="saveAdmin()">Save Changes</button>
 </section>
 
 <nav>
-  <small>&copy; 2025 Ashirwad Mart</small>
+  &copy; 2025 Ashirwad Mart
 </nav>
 
 <script>
-let db = JSON.parse(localStorage.getItem("ashirwadData") || "{}");
-let current = "";
+let db = JSON.parse(localStorage.getItem("ashirwadDB") || "{}");
+let currentUser = "";
 
-// Save DB
 function saveDB() {
-  localStorage.setItem("ashirwadData", JSON.stringify(db));
+  localStorage.setItem("ashirwadDB", JSON.stringify(db));
 }
 
-// Register/Login User
 function loginUser() {
   const id = document.getElementById("userId").value.trim().toUpperCase();
   const wallet = document.getElementById("wallet").value.trim();
@@ -99,88 +92,79 @@ function loginUser() {
     document.getElementById("loginMsg").innerText = "ID must start with ANS";
     return;
   }
-  if (!wallet.startsWith("0x") || wallet.length < 20) {
-    document.getElementById("loginMsg").innerText = "Invalid wallet address";
-    return;
-  }
-
   if (!db[id]) {
+    if (!wallet.startsWith("0x") || wallet.length < 20) {
+      document.getElementById("loginMsg").innerText = "Invalid wallet address";
+      return;
+    }
     db[id] = { wallet, deposit: 0, paid: 0, referral: 0, agreement: "open", ref: ref || "" };
     if (ref && db[ref]) {
-      db[ref].referral += 5; // 5% as USDT
+      db[ref].referral += 5;
     }
   }
-
-  current = id;
+  currentUser = id;
   saveDB();
   showUserPanel();
 }
 
-// Display User Info
 function showUserPanel() {
+  const u = db[currentUser];
   document.getElementById("loginSection").classList.add("hide");
   document.getElementById("userPanel").classList.remove("hide");
-
-  const user = db[current];
-  document.getElementById("currentId").innerText = current;
-  document.getElementById("showWallet").innerText = user.wallet;
-  document.getElementById("showDeposit").innerText = user.deposit;
-  document.getElementById("showPaid").innerText = user.paid;
-  document.getElementById("showReferral").innerText = user.referral;
-  document.getElementById("showAgreement").innerText = user.agreement;
-  document.getElementById("refLink").value = location.href.split("?")[0] + "?r=" + current.toLowerCase();
+  document.getElementById("currentUser").innerText = currentUser;
+  document.getElementById("userWallet").innerText = u.wallet;
+  document.getElementById("userDeposit").innerText = u.deposit;
+  document.getElementById("userPaid").innerText = u.paid;
+  document.getElementById("userReferral").innerText = u.referral;
+  document.getElementById("userAgreement").innerText = u.agreement;
+  document.getElementById("refLink").value = location.href.split("?")[0] + "?r=" + currentUser.toLowerCase();
 }
 
-// Deposit Function
 function makeDeposit() {
-  const amt = parseFloat(document.getElementById("depositAmt").value);
-  if (amt < 50 || amt > 500) return alert("Amount must be between 50–500");
-  db[current].deposit += amt;
+  const amt = parseFloat(document.getElementById("depAmt").value);
+  if (amt < 50 || amt > 500) return alert("Deposit between 50–500 only.");
+  db[currentUser].deposit += amt;
   saveDB();
-  alert("Deposit recorded. Admin approval required.");
+  alert("Deposit recorded. Admin will verify.");
   showUserPanel();
 }
 
-// Withdraw Function
-function withdrawIncome() {
-  const user = db[current];
+function withdraw() {
+  const user = db[currentUser];
   const total = user.referral + user.paid;
-  if (total < 1) return alert("Minimum 1 USDT required to withdraw.");
-  alert("Withdrawal submitted.");
-  db[current].referral = 0;
+  if (total < 1) return alert("Minimum 1 USDT required.");
+  alert("Withdraw request sent.");
+  db[currentUser].referral = 0;
   saveDB();
   showUserPanel();
 }
 
-// Admin Login
 function adminLogin() {
-  const id = document.getElementById("adminId").value.trim();
-  const pass = document.getElementById("adminPass").value.trim();
+  const id = document.getElementById("adminId").value;
+  const pass = document.getElementById("adminPass").value;
   if (id === "Admin" && pass === "Jaihanuman@7") {
     document.getElementById("adminPanel").classList.remove("hide");
     document.getElementById("adminEditor").value = JSON.stringify(db, null, 2);
   } else {
-    alert("Invalid admin credentials.");
+    alert("Invalid admin login.");
   }
 }
 
-// Admin Save Changes
-function saveAdminData() {
+function saveAdmin() {
   try {
     db = JSON.parse(document.getElementById("adminEditor").value);
     saveDB();
-    alert("Database updated successfully.");
-  } catch (e) {
-    alert("Invalid data.");
+    alert("Saved successfully.");
+  } catch {
+    alert("Invalid data format.");
   }
 }
 
-// Pre-fill referral from link
 window.onload = () => {
   const url = new URLSearchParams(window.location.search);
   const r = url.get("r");
   if (r) document.getElementById("refCode").value = r;
-}
+};
 </script>
 
 </body>
