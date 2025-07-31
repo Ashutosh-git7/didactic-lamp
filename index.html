@@ -1,236 +1,236 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>2X USDT Income App</title>
+  <title>USDT 2X App</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; margin: 0; background: #f9f9f9; }
+    body { font-family: sans-serif; margin: 0; background: #f2f2f2; }
     .container { padding: 20px; max-width: 500px; margin: auto; }
-    h2 { text-align: center; color: #222; }
-    input, button, select {
+    h2, h3, h4 { text-align: center; color: #333; }
+    input, button {
       width: 100%; padding: 10px; margin: 10px 0;
       border-radius: 6px; border: 1px solid #ccc;
     }
     button { background-color: #28a745; color: white; border: none; }
     .link { text-align: center; margin-top: 10px; }
-    .admin-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; }
-    .card { background: #fff; padding: 15px; border-radius: 8px; margin-top: 10px; }
+    .card { background: #fff; padding: 12px; border-radius: 8px; margin-top: 10px; }
     .hidden { display: none; }
-    .ref { font-size: 0.9em; color: #555; }
     .logout { background: #dc3545; }
+    .ref { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>USDT 2X App</h2>
+<div class="container">
+  <h2>USDT 2X App</h2>
 
-    <!-- Registration -->
-    <div id="registerDiv">
-      <h3>Register</h3>
-      <input id="regName" placeholder="Full Name" />
-      <input id="regPhone" placeholder="Phone Number" />
-      <input id="regPass" placeholder="Password" type="password" />
-      <input id="regWallet" placeholder="Your BEP20 Wallet (for withdrawals)" />
-      <input id="regRef" placeholder="Referral Code (optional)" />
-      <button onclick="register()">Register</button>
-      <div class="link">Already have account? <a href="#" onclick="showLogin()">Login</a></div>
-    </div>
-
-    <!-- Login -->
-    <div id="loginDiv" class="hidden">
-      <h3>Login</h3>
-      <input id="loginPhone" placeholder="Phone Number" />
-      <input id="loginPass" placeholder="Password" type="password" />
-      <button onclick="login()">Login</button>
-      <div class="link">No account? <a href="#" onclick="showRegister()">Register</a></div>
-    </div>
-
-    <!-- Dashboard -->
-    <div id="dashboard" class="hidden">
-      <h3>Welcome, <span id="userName"></span></h3>
-      <p><strong>Your Wallet:</strong> <span id="userWallet"></span></p>
-      <p><strong>Referral Code:</strong> <span id="userID"></span></p>
-      <p class="ref">Referral Link: <span id="refLink"></span></p>
-
-      <h4>Deposit</h4>
-      <p>Send 50–500 USDT (BEP20) to:</p>
-      <p><strong>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</strong></p>
-      <input id="depositAmt" placeholder="Enter deposit amount" />
-      <button onclick="requestDeposit()">Submit Deposit</button>
-
-      <h4>Income & Withdraw</h4>
-      <p><strong>Total Income:</strong> <span id="totalIncome">0</span> USDT</p>
-      <p><strong>Referral Bonus:</strong> <span id="refBonus">0</span> USDT</p>
-      <p><strong>Withdrawable:</strong> <span id="withdrawable">0</span> USDT</p>
-      <input id="withdrawAmt" placeholder="Enter amount to withdraw" />
-      <button onclick="requestWithdraw()">Request Withdraw</button>
-
-      <h4>My Deposits</h4>
-      <div id="depositHistory"></div>
-
-      <button class="logout" onclick="logout()">Logout</button>
-    </div>
-
-    <!-- Admin Panel -->
-    <div id="adminPanel" class="hidden">
-      <h3>Admin Panel</h3>
-      <div id="allUsers"></div>
-      <button class="logout" onclick="logout()">Logout</button>
-    </div>
+  <!-- Registration -->
+  <div id="registerDiv">
+    <h3>Register</h3>
+    <input id="regName" placeholder="Full Name" />
+    <input id="regPhone" placeholder="Phone Number" />
+    <input id="regPass" placeholder="Password" type="password" />
+    <input id="regWallet" placeholder="Your BEP20 Wallet (for withdrawals)" />
+    <input id="regRef" placeholder="Referral Code (optional)" />
+    <button onclick="register()">Register</button>
+    <div class="link">Already have account? <a href="#" onclick="showLogin()">Login</a></div>
   </div>
 
-  <script>
-    let users = JSON.parse(localStorage.getItem("users") || "{}");
-    let current = null;
+  <!-- Login -->
+  <div id="loginDiv" class="hidden">
+    <h3>Login</h3>
+    <input id="loginPhone" placeholder="Phone Number / Admin ID" />
+    <input id="loginPass" placeholder="Password" type="password" />
+    <button onclick="login()">Login</button>
+    <div class="link">No account? <a href="#" onclick="showRegister()">Register</a></div>
+  </div>
 
-    function saveUsers() {
-      localStorage.setItem("users", JSON.stringify(users));
-    }
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden">
+    <h3>Welcome, <span id="userName"></span></h3>
+    <p><strong>Your Wallet:</strong> <span id="userWallet"></span></p>
+    <p><strong>Referral Code:</strong> <span id="userID"></span></p>
+    <p class="ref">Referral Link: <span id="refLink"></span></p>
 
-    function showRegister() {
-      document.getElementById("registerDiv").classList.remove("hidden");
-      document.getElementById("loginDiv").classList.add("hidden");
-    }
+    <h4>Deposit</h4>
+    <p>Send 50–500 USDT (BEP20) to:</p>
+    <p><strong>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</strong></p>
+    <input id="depositAmt" placeholder="Enter deposit amount" />
+    <button onclick="requestDeposit()">Submit Deposit</button>
 
-    function showLogin() {
-      document.getElementById("registerDiv").classList.add("hidden");
-      document.getElementById("loginDiv").classList.remove("hidden");
-    }
+    <h4>Income & Withdraw</h4>
+    <p><strong>Total Income:</strong> <span id="totalIncome">0</span> USDT</p>
+    <p><strong>Referral Bonus:</strong> <span id="refBonus">0</span> USDT</p>
+    <p><strong>Withdrawable:</strong> <span id="withdrawable">0</span> USDT</p>
+    <input id="withdrawAmt" placeholder="Enter amount to withdraw" />
+    <button onclick="requestWithdraw()">Request Withdraw</button>
 
-    function register() {
-      let name = regName.value.trim();
-      let phone = regPhone.value.trim();
-      let pass = regPass.value;
-      let wallet = regWallet.value.trim();
-      let ref = regRef.value.trim().toLowerCase();
-      if (!name || !phone || !pass || !wallet) return alert("All fields required");
+    <h4>My Deposits</h4>
+    <div id="depositHistory"></div>
 
-      if (users[phone]) return alert("Already registered");
-      let id = "id" + Math.floor(1000 + Math.random() * 8999).toString();
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
 
-      users[phone] = {
-        name, pass, wallet, phone, id,
-        deposits: [], income: 0, refBonus: 0, totalWithdrawn: 0,
-        refBy: ref, approved: false
-      };
-      if (ref && Object.values(users).find(u => u.id === ref)) {
-        let refUser = Object.values(users).find(u => u.id === ref);
-        refUser.refBonus += 0; // Only add when deposit happens
-      }
-      saveUsers();
-      alert("Registered! Please login.");
-      showLogin();
-    }
+  <!-- Admin Panel -->
+  <div id="adminPanel" class="hidden">
+    <h3>Admin Panel</h3>
+    <div id="allUsers"></div>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+</div>
 
-    function login() {
-      let phone = loginPhone.value.trim();
-      let pass = loginPass.value;
-      if (phone === "Admin" && pass === "Jaihanuman@7") {
-        showAdmin();
-        return;
-      }
-      if (!users[phone] || users[phone].pass !== pass) return alert("Invalid login");
-      current = phone;
-      showDashboard();
-    }
+<script>
+  let users = JSON.parse(localStorage.getItem("users") || "{}");
+  let current = null;
 
-    function logout() {
-      current = null;
-      location.reload();
-    }
+  function saveUsers() {
+    localStorage.setItem("users", JSON.stringify(users));
+  }
 
-    function showDashboard() {
-      let u = users[current];
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("registerDiv").classList.add("hidden");
-      document.getElementById("dashboard").classList.remove("hidden");
+  function showRegister() {
+    registerDiv.classList.remove("hidden");
+    loginDiv.classList.add("hidden");
+  }
 
-      userName.innerText = u.name;
-      userWallet.innerText = u.wallet;
-      userID.innerText = u.id;
-      refLink.innerText = location.href.split("?")[0] + "?r=" + u.id;
+  function showLogin() {
+    registerDiv.classList.add("hidden");
+    loginDiv.classList.remove("hidden");
+  }
 
-      totalIncome.innerText = u.income.toFixed(2);
-      refBonus.innerText = u.refBonus.toFixed(2);
-      withdrawable.innerText = (u.income + u.refBonus - u.totalWithdrawn).toFixed(2);
+  function generateID() {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let id = "";
+    for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+    return id;
+  }
 
-      let depHTML = u.deposits.map(d => `<div class='card'>
-        <b>Amount:</b> ${d.amt} <br>
-        <b>Status:</b> ${d.status} <br>
-        <b>Weekly Paid:</b> ${d.paid.toFixed(2)} / ${d.amt * 2}
-      </div>`).join("");
-      depositHistory.innerHTML = depHTML;
-    }
+  function register() {
+    let name = regName.value.trim();
+    let phone = regPhone.value.trim();
+    let pass = regPass.value;
+    let wallet = regWallet.value.trim();
+    let ref = regRef.value.trim().toLowerCase();
 
-    function requestDeposit() {
-      let amt = parseFloat(depositAmt.value);
-      if (isNaN(amt) || amt < 50 || amt > 500) return alert("Min 50, Max 500");
-      let u = users[current];
-      u.deposits.push({ amt, status: "pending", paid: 0 });
-      if (u.refBy) {
-        let refUser = Object.values(users).find(r => r.id === u.refBy);
-        if (refUser) refUser.refBonus += amt * 0.05;
-      }
-      saveUsers();
-      showDashboard();
-      alert("Deposit submitted. Wait for admin approval.");
-    }
+    if (!name || !phone || !pass || !wallet) return alert("All fields required");
 
-    function requestWithdraw() {
-      let amt = parseFloat(withdrawAmt.value);
-      let u = users[current];
-      let available = u.income + u.refBonus - u.totalWithdrawn;
-      if (isNaN(amt) || amt < 1 || amt > available) return alert("Invalid amount");
-      u.totalWithdrawn += amt;
-      saveUsers();
-      showDashboard();
-      alert("Withdraw request submitted.");
-    }
+    if (users[phone]) return alert("Already registered");
+    let id = generateID();
 
-    function showAdmin() {
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("registerDiv").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
+    users[phone] = {
+      name, pass, wallet, phone, id,
+      deposits: [], income: 0, refBonus: 0, totalWithdrawn: 0,
+      refBy: ref, approved: false
+    };
+    saveUsers();
+    alert("Registered! Please login.");
+    showLogin();
+  }
 
-      let html = Object.values(users).map(u => {
-        let d = u.deposits.map((dep, i) => {
-          return `<div class="card">
-            <b>${u.name} (${u.phone})</b><br>
-            Amount: ${dep.amt} | Status: ${dep.status}<br>
-            Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2}<br>
-            <button onclick="approveDeposit('${u.phone}',${i})">Approve</button>
-            <button onclick="payWeekly('${u.phone}',${i})">Pay Weekly</button>
-          </div>`;
-        }).join("");
-        return d;
-      }).join("");
-      allUsers.innerHTML = html;
-    }
-
-    function approveDeposit(phone, i) {
-      users[phone].deposits[i].status = "approved";
-      saveUsers();
+  function login() {
+    let phone = loginPhone.value.trim();
+    let pass = loginPass.value;
+    if (phone === "Admin" && pass === "Jaihanuman@7") {
       showAdmin();
+      return;
     }
+    if (!users[phone] || users[phone].pass !== pass) return alert("Invalid login");
+    current = phone;
+    showDashboard();
+  }
 
-    function payWeekly(phone, i) {
-      let dep = users[phone].deposits[i];
-      if (dep.status !== "approved") return alert("Not approved");
-      let weeklyPay = dep.amt * 0.1;
-      if (dep.paid + weeklyPay > dep.amt * 2) return alert("2X reached");
-      dep.paid += weeklyPay;
-      users[phone].income += weeklyPay;
-      saveUsers();
-      showAdmin();
-    }
+  function logout() {
+    current = null;
+    location.reload();
+  }
 
-    // Auto-refill referral
-    window.onload = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const ref = urlParams.get('r');
-      if (ref) regRef.value = ref;
+  function showDashboard() {
+    const u = users[current];
+    loginDiv.classList.add("hidden");
+    registerDiv.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+
+    userName.innerText = u.name;
+    userWallet.innerText = u.wallet;
+    userID.innerText = u.id;
+    refLink.innerText = location.href.split("?")[0] + "?r=" + u.id;
+
+    totalIncome.innerText = u.income.toFixed(2);
+    refBonus.innerText = u.refBonus.toFixed(2);
+    withdrawable.innerText = (u.income + u.refBonus - u.totalWithdrawn).toFixed(2);
+
+    let depHTML = u.deposits.map(d => `<div class='card'>
+      <b>Amount:</b> ${d.amt} <br>
+      <b>Status:</b> ${d.status} <br>
+      <b>Paid:</b> ${d.paid.toFixed(2)} / ${d.amt * 2}
+    </div>`).join("");
+    depositHistory.innerHTML = depHTML;
+  }
+
+  function requestDeposit() {
+    let amt = parseFloat(depositAmt.value);
+    if (isNaN(amt) || amt < 50 || amt > 500) return alert("Min 50, Max 500");
+    let u = users[current];
+    u.deposits.push({ amt, status: "pending", paid: 0 });
+    if (u.refBy) {
+      let refUser = Object.values(users).find(r => r.id === u.refBy);
+      if (refUser) refUser.refBonus += amt * 0.05;
     }
-  </script>
+    saveUsers();
+    showDashboard();
+    alert("Deposit submitted. Wait for admin approval.");
+  }
+
+  function requestWithdraw() {
+    let amt = parseFloat(withdrawAmt.value);
+    let u = users[current];
+    let available = u.income + u.refBonus - u.totalWithdrawn;
+    if (isNaN(amt) || amt < 1 || amt > available) return alert("Invalid amount");
+    u.totalWithdrawn += amt;
+    saveUsers();
+    showDashboard();
+    alert("Withdraw request submitted.");
+  }
+
+  function showAdmin() {
+    loginDiv.classList.add("hidden");
+    registerDiv.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+
+    let html = Object.values(users).map(u => {
+      return u.deposits.map((dep, i) => `
+        <div class="card">
+          <b>${u.name} (${u.phone})</b><br>
+          Amount: ${dep.amt} | Status: ${dep.status}<br>
+          Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2}<br>
+          <button onclick="approveDeposit('${u.phone}',${i})">Approve</button>
+          <button onclick="payWeekly('${u.phone}',${i})">Pay Weekly</button>
+        </div>
+      `).join("");
+    }).join("");
+    allUsers.innerHTML = html;
+  }
+
+  function approveDeposit(phone, i) {
+    users[phone].deposits[i].status = "approved";
+    saveUsers();
+    showAdmin();
+  }
+
+  function payWeekly(phone, i) {
+    let dep = users[phone].deposits[i];
+    if (dep.status !== "approved") return alert("Not approved");
+    let weeklyPay = dep.amt * 0.1;
+    if (dep.paid + weeklyPay > dep.amt * 2) return alert("2X reached");
+    dep.paid += weeklyPay;
+    users[phone].income += weeklyPay;
+    saveUsers();
+    showAdmin();
+  }
+
+  window.onload = () => {
+    const ref = new URLSearchParams(location.search).get('r');
+    if (ref) regRef.value = ref.toLowerCase();
+  }
+</script>
 </body>
 </html>
