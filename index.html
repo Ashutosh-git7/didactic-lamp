@@ -197,54 +197,38 @@
     adminPanel.classList.remove("hidden");
 
     let html = Object.values(users).map(u => {
-      return u.deposits.map((dep, i) => `
-        <div class="card">
-          <b>${u.name} (${u.phone})</b><br>
-          Amount: ${dep.amt} | Status: ${dep.status}<br>
-          Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2}<br>
-          <button onclick="approveDeposit('${u.phone}',${i})">Approve</button>
-          <button onclick="payWeekly('${u.phone}',${i})">Pay Weekly</button>
+      let deposits = u.deposits.map((dep, i) => `
+        <div style="border:1px solid #ccc; padding:10px; border-radius:8px; margin-bottom:10px;">
+          <b>Deposit ${i + 1}</b><br>
+          Amount: ${dep.amt} <br>
+          Status: ${dep.status} <br>
+          Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2} <br>
+          <button onclick="approveDeposit('${u.phone}', ${i})">Approve</button>
+          <button onclick="payWeekly('${u.phone}', ${i})">Pay Weekly</button>
         </div>
       `).join("");
+
+      return `
+        <div class="card">
+          <b>User:</b> ${u.name} (${u.phone})<br>
+          <b>Wallet:</b> ${u.wallet}<br>
+          <b>Referral Code:</b> ${u.id}<br>
+          <b>Referred By:</b> ${u.refBy || '-'}<br>
+          <b>Total Income:</b> ${u.income.toFixed(2)}<br>
+          <b>Referral Bonus:</b> ${u.refBonus.toFixed(2)}<br>
+          <b>Total Withdrawn:</b> ${u.totalWithdrawn.toFixed(2)}<br><br>
+          ${deposits || "<i>No deposits</i>"}
+        </div>
+      `;
     }).join("");
+
     allUsers.innerHTML = html;
   }
 
   function approveDeposit(phone, i) {
     users[phone].deposits[i].status = "approved";
     saveUsers();
-    showAdmin();function showAdmin() {
-  loginDiv.classList.add("hidden");
-  registerDiv.classList.add("hidden");
-  adminPanel.classList.remove("hidden");
-
-  let html = Object.values(users).map(u => {
-    let deposits = u.deposits.map((dep, i) => `
-      <div style="border:1px solid #ccc; padding:10px; border-radius:8px; margin-bottom:10px;">
-        <b>Deposit ${i + 1}</b><br>
-        Amount: ${dep.amt} <br>
-        Status: ${dep.status} <br>
-        Paid: ${dep.paid.toFixed(2)} / ${dep.amt * 2} <br>
-        <button onclick="approveDeposit('${u.phone}', ${i})">Approve</button>
-        <button onclick="payWeekly('${u.phone}', ${i})">Pay Weekly</button>
-      </div>
-    `).join("");
-    return `
-      <div class="card">
-        <b>User:</b> ${u.name} (${u.phone})<br>
-        <b>Wallet:</b> ${u.wallet}<br>
-        <b>Referral Code:</b> ${u.id}<br>
-        <b>Referred By:</b> ${u.refBy || '-'}<br>
-        <b>Total Income:</b> ${u.income.toFixed(2)}<br>
-        <b>Referral Bonus:</b> ${u.refBonus.toFixed(2)}<br>
-        <b>Total Withdrawn:</b> ${u.totalWithdrawn.toFixed(2)}<br><br>
-        ${deposits || "<i>No deposits</i>"}
-      </div>
-    `;
-  }).join("");
-
-  allUsers.innerHTML = html;
-}
+    showAdmin();
   }
 
   function payWeekly(phone, i) {
