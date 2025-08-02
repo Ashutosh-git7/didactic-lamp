@@ -1,71 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ashirwad Mart</title>
+  <title>🚀 Ashirwad Mart - Crypto Panel</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f2f2f2; }
-    .box { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; box-shadow: 0 0 5px #ccc; }
-    input, button, select { padding: 10px; margin: 5px 0; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
-    .admin-section { background: #ffe; }
-    .hidden { display: none; }
-    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
-    th, td { padding: 5px; border: 1px solid #ccc; text-align: center; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      padding: 15px;
+      margin: 0;
+    }
+    h2, h3, h4 {
+      color: #00ffe1;
+      text-align: center;
+    }
+    .box {
+      background: #1e1e1e;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00ffe170;
+    }
+    input, button, select {
+      padding: 12px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+    input {
+      background: #2a2a2a;
+      color: #fff;
+    }
+    button {
+      background: #00ffe1;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #00c7aa;
+    }
+    .hidden {
+      display: none;
+    }
+    .admin-section {
+      background: #2b1b1b;
+      border: 1px solid #ff5555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background-color: #222;
+      color: #00ffe1;
+    }
+    td {
+      background-color: #1c1c1c;
+    }
+    a {
+      color: #00ffe1;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    ul {
+      padding-left: 20px;
+    }
   </style>
 </head>
 <body>
 
-<h2>🛍️ Ashirwad Mart</h2>
+<h2>🚀 Ashirwad Mart - Crypto Panel</h2>
 
 <div id="loginBox" class="box">
   <h3>🔐 Login</h3>
   <input type="text" id="loginId" placeholder="Enter ID" />
-  <input type="password" id="loginPass" placeholder="Password (only for admin)" />
+  <input type="password" id="loginPass" placeholder="Admin Password (if admin)" />
   <button onclick="login()">Login</button>
-  <p>Don't have ID? <a href="#" onclick="showRegister()">Register</a></p>
+  <p>Don't have ID? <a onclick="showRegister()">Register here</a></p>
 </div>
 
 <div id="registerBox" class="box hidden">
-  <h3>📝 Register</h3>
+  <h3>📝 New Registration</h3>
   <input type="text" id="regName" placeholder="Full Name" />
   <input type="text" id="regMobile" placeholder="Mobile Number" />
-  <input type="text" id="regWallet" placeholder="Your BEP20 USDT Wallet Address" />
+  <input type="text" id="regWallet" placeholder="BEP20 USDT Wallet Address" />
   <input type="text" id="regRef" placeholder="Referral ID (optional)" />
-  <button onclick="register()">Register</button>
+  <button onclick="register()">Register Now</button>
 </div>
 
 <div id="userDashboard" class="box hidden">
-  <h3>👋 Welcome, <span id="userName"></span></h3>
-  <p>💳 Wallet: <span id="userWallet"></span></p>
-  <p>💰 Deposit: <span id="userDeposit">0</span> USDT</p>
-  <p>📈 Income: <span id="userIncome">0</span> USDT</p>
-  <p>👥 Referral Income: <span id="userReferral">0</span> USDT</p>
-  <p>📌 Status: <span id="userStatus">Pending</span></p>
+  <h3>👋 Hello, <span id="userName"></span></h3>
+  <p>💼 Wallet: <span id="userWallet"></span></p>
+  <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
+  <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
+  <p>👥 Referral Income: <b><span id="userReferral">0</span> USDT</b></p>
+  <p>🔒 Status: <span id="userStatus">Pending</span></p>
 
-  <h4>📥 Make a Deposit</h4>
-  <p>Send USDT (50–500) to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+  <hr />
+  <h4>📥 Deposit Funds</h4>
+  <p>Send 50–500 USDT to:</p>
+  <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
   <input type="number" id="depAmount" placeholder="Enter amount (50-500)" />
   <button onclick="submitDeposit()">Submit Deposit</button>
 
-  <h4>💸 Withdrawal Request</h4>
+  <hr />
+  <h4>💸 Request Withdrawal</h4>
   <input type="number" id="withAmt" placeholder="Min 1 USDT" />
   <button onclick="requestWithdraw()">Request Withdrawal</button>
 
-  <h4>👨‍👩‍👧‍👦 Your Team</h4>
-  <button onclick="viewTeam()">View Team</button>
+  <hr />
+  <h4>👨‍👩‍👧‍👦 Referral Team</h4>
+  <button onclick="viewTeam()">View Your Team</button>
   <div id="teamBox"></div>
 
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div id="adminPanel" class="box admin-section hidden">
-  <h3>🛠️ Admin Panel</h3>
+  <h3>🛠️ Admin Dashboard</h3>
   <div id="adminUsers"></div>
 
-  <h4>Add Weekly Income</h4>
+  <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
   <input type="number" id="incomeAmt" placeholder="Amount" />
   <button onclick="addWeeklyIncome()">Add Income</button>
@@ -281,4 +350,4 @@
 </script>
 
 </body>
-</html>
+  </html>
