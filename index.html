@@ -1,3 +1,4 @@
+<!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -107,7 +108,6 @@
   <p>💼 Wallet: <span id="userWallet"></span></p>
   <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
-  <p>👥 Referral Income: <b><span id="userReferral">0</span> USDT</b></p>
   <p>🔒 Status: <span id="userStatus">Pending</span></p>
 
   <hr />
@@ -126,6 +126,11 @@
   <h4>👨‍👩‍👧‍👦 Referral Team</h4>
   <button onclick="viewTeam()">View Your Team</button>
   <div id="teamBox"></div>
+
+  <hr />
+  <h4>📜 History</h4>
+  <button onclick="viewHistory()">View History</button>
+  <div id="historyBox"></div>
 
   <button onclick="logout()">🚪 Logout</button>
 </div>
@@ -191,7 +196,7 @@
     if (!name || !mobile || !wallet) return alert("Please fill all fields");
     const id = "U" + Math.floor(Math.random() * 100000);
     const userData = {
-      name, mobile, wallet, deposit: 0, income: 0, refIncome: 0, status: "Pending", referredBy: ref
+      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref
     };
     db.ref("users/" + id).set(userData).then(() => {
       alert("Registered! Your ID: " + id);
@@ -206,7 +211,6 @@
       document.getElementById("userWallet").innerText = data.wallet;
       document.getElementById("userDeposit").innerText = data.deposit;
       document.getElementById("userIncome").innerText = data.income;
-      document.getElementById("userReferral").innerText = data.refIncome || 0;
       document.getElementById("userStatus").innerText = data.status;
     });
   }
@@ -214,26 +218,38 @@
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (amt < 50 || amt > 500) return alert("Invalid amount");
-    db.ref("users/" + currentId + "/deposit").set(amt);
-    db.ref("users/" + currentId + "/status").set("Pending");
     db.ref("users/" + currentId).once("value", snap => {
       const data = snap.val();
+      db.ref("users/" + currentId + "/deposit").set(amt);
+      db.ref("users/" + currentId + "/status").set("Pending");
+
       if (data.referredBy) {
         const refAmt = amt * 0.05;
-        db.ref("users/" + data.referredBy + "/refIncome").once("value", s => {
-          const existing = s.val() || 0;
-          db.ref("users/" + data.referredBy + "/refIncome").set(existing + refAmt);
+        db.ref("users/" + data.referredBy).once("value", s => {
+          const refData = s.val();
+          const currentIncome = parseFloat(refData.income || 0);
+          const refDeposit = parseFloat(refData.deposit || 0);
+          const cap = refDeposit * 2;
+          const totalIncome = currentIncome + refAmt;
+          if (cap > 0 && totalIncome <= cap) {
+            db.ref("users/" + data.referredBy + "/income").set(totalIncome);
+          }
         });
       }
+      alert("Deposit submitted!");
     });
-    alert("Deposit submitted!");
   }
 
   function requestWithdraw() {
     const amt = parseFloat(document.getElementById("withAmt").value);
     if (amt < 1) return alert("Minimum 1 USDT");
-    db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-    alert("Withdrawal requested!");
+    db.ref("users/" + currentId).once("value", snap => {
+      const income = parseFloat(snap.val().income || 0);
+      if (amt > income) return alert("Insufficient income balance");
+      db.ref("users/" + currentId + "/income").set(income - amt);
+      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
+      alert("Withdrawal requested!");
+    });
   }
 
   function viewTeam() {
@@ -250,14 +266,27 @@
     });
   }
 
+  function viewHistory() {
+    let html = "<h5>Withdrawals:</h5><ul>";
+    db.ref("withdrawals/" + currentId).once("value", snap => {
+      snap.forEach(child => {
+        const d = child.val();
+        html += `<li>${d.amount} USDT - ${d.status}</li>`;
+      });
+      html += "</ul>";
+      document.getElementById("historyBox").innerHTML = html;
+    });
+  }
+
   function loadAdmin() {
     db.ref("users").once("value", snap => {
-      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
       snap.forEach(child => {
         const d = child.val();
         html += `<tr>
           <td>${child.key}</td>
           <td>${d.name}</td>
+          <td>${d.wallet}</td>
           <td>${d.deposit}</td>
           <td>${d.income}</td>
           <td>${d.status}</td>
@@ -337,9 +366,16 @@
     const uid = document.getElementById("incomeUserId").value.trim();
     const amt = parseFloat(document.getElementById("incomeAmt").value);
     if (!uid || isNaN(amt)) return alert("Enter valid input");
-    db.ref("users/" + uid + "/income").once("value", snap => {
-      const existing = snap.val() || 0;
-      db.ref("users/" + uid + "/income").set(existing + amt);
+
+    db.ref("users/" + uid).once("value", snap => {
+      const data = snap.val();
+      const deposit = parseFloat(data.deposit || 0);
+      const currentIncome = parseFloat(data.income || 0);
+      const cap = deposit * 2;
+
+      if (currentIncome >= cap) return alert("User already reached 2x cap");
+      const newIncome = Math.min(currentIncome + amt, cap);
+      db.ref("users/" + uid + "/income").set(newIncome);
       alert("Income added.");
     });
   }
@@ -348,6 +384,5 @@
     location.reload();
   }
 </script>
-
 </body>
-</html>
+  </html>
