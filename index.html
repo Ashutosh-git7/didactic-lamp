@@ -435,8 +435,12 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
   }
 
   function closeAgreement(userId) {
-db.ref("users/" + userId).update({ status: "Closed", deposit: 0 });
-
+  db.ref("users/" + userId).update({
+    status: "Closed",
+    deposit: 0
+  });
+  alert("Agreement closed.");
+}
   function approveWithdraw(userId, withdrawId) {
     db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
     db.ref("users/" + userId).once("value", snap => {
