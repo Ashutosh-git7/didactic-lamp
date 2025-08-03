@@ -322,33 +322,36 @@ if (data.referredBy) {
   if (amt < 1) return alert("Minimum 1 USDT");
 
   db.ref("users/" + currentId).once("value", snap => {
-    const income = parseFloat(snap.val().income || 0);
+    const data = snap.val();
+    const income = parseFloat(data.income || 0);
+    const withdrawn = parseFloat(data.withdrawn || 0);
+    const deposit = parseFloat(data.deposit || 0);
+    const target = deposit * 2;
+
     if (amt > income) return alert("Insufficient income balance");
 
     const newIncome = income - amt;
+    const newWithdrawn = withdrawn + amt;
+    const newRemaining = Math.max(target - (newIncome + newWithdrawn), 0);
 
-    // Update income and push withdrawal request
+    // Save updated income and withdrawn
     db.ref("users/" + currentId + "/income").set(newIncome);
+    db.ref("users/" + currentId + "/withdrawn").set(newWithdrawn);
     db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
 
-    // Update visible income and remaining 2x info on screen
+    // Update visible values
     document.getElementById("userIncome").innerText = newIncome.toFixed(2);
-
-    const deposit = parseFloat(snap.val().deposit || 0);
-    const target = deposit * 2;
-    const remaining = Math.max(target - newIncome, 0);
-
     const extra = document.getElementById("extraUserInfo");
     if (extra) {
       extra.innerHTML = `
         <p>🎯 <b>2x Target:</b> ${target.toFixed(2)} USDT</p>
-        <p>📉 <b>Remaining:</b> ${remaining.toFixed(2)} USDT</p>
+        <p>📉 <b>Remaining:</b> ${newRemaining.toFixed(2)} USDT</p>
       `;
     }
 
     alert("Withdrawal requested!");
   });
-  }
+}
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
