@@ -246,7 +246,14 @@ function submitDeposit() {
     const data = snap.val();
     db.ref("users/" + currentId + "/deposit").set(amt);
     db.ref("users/" + currentId + "/status").set("Pending");
-
+const targetIncome = depositAmount * 2;
+update(ref(db, 'users/' + userId), {
+  depositAmount: depositAmount,
+  targetIncome: targetIncome,
+  earnedIncome: 0,
+  withdrawnAmount: 0,
+  agreementClosed: false
+});
     // LEVEL 1 REFERRER
     if (data.referredBy) {
       db.ref("users/" + data.referredBy).once("value", snap1 => {
@@ -460,13 +467,25 @@ function submitDeposit() {
       const deposit = parseFloat(data.deposit || 0);
       const currentIncome = parseFloat(data.income || 0);
       const cap = deposit * 2;
+      const incomeToAdd = 10;
+get(ref(db, 'users/' + userId)).then(snapshot => {
+  const user = snapshot.val();
+  const newEarned = user.earnedIncome + incomeToAdd;
+  const newWallet = user.incomeWallet + incomeToAdd;
+  const agreementClosed = newEarned >= user.targetIncome;
+
+  update(ref(db, 'users/' + userId), {
+    earnedIncome: newEarned,
+    incomeWallet: newWallet,
+    agreementClosed: agreementClosed
+  });
+});
 
       if (currentIncome >= cap) return alert("User already reached 2x cap");
       const newIncome = Math.min(currentIncome + amt, cap);
       db.ref("users/" + uid + "/income").set(newIncome);
       alert("Income added.");
-    });
-  }
+    
 
   function logout() {
     location.reload();
