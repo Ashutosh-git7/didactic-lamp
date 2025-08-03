@@ -223,6 +223,7 @@
   status: "Pending",
   referredBy: ref
 };
+    const balance = parseFloat(data.walletBalance || 0);
 
     document.getElementById("userName").innerText = data.name;
     document.getElementById("userWallet").innerText = data.wallet;
@@ -234,7 +235,7 @@
     document.getElementById("userRemaining").innerText = remaining;
     document.getElementById("userIncome").innerText = income;
     document.getElementById("walletBalance").innerText = balance;
-
+    
     // Auto close agreement if income reaches 2x
     if (deposit > 0 && income >= cap && data.status !== "Closed") {
       db.ref("users/" + id).update({
