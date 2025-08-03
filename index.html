@@ -434,20 +434,22 @@
     if (!uid || isNaN(amt)) return alert("Enter valid input");
 
     db.ref("users/" + uid).once("value", snap => {
-  const data = snap.val();
-  const deposit = parseFloat(data.deposit || 0);
-  const income = parseFloat(data.income || 0);
-  const balance = parseFloat(data.walletBalance || 0);
-  const cap = deposit * 2;
+    const data = snap.val();
+    const deposit = parseFloat(data.deposit || 0);
+    const income = parseFloat(data.income || 0);
+    const balance = parseFloat(data.walletBalance || 0);
+    const cap = deposit * 2;
 
-  if (income >= cap) return alert("2x cap reached");
-  const newIncome = Math.min(income + amt, cap);
-  const actualAdded = newIncome - income;
-  db.ref("users/" + uid).update({
-    income: newIncome,
-    walletBalance: balance + actualAdded
-  });
-});
+    if (income >= cap) return alert("2x cap reached");
+    const newIncome = Math.min(income + amt, cap);
+    const actualAdded = newIncome - income;
+    db.ref("users/" + uid).update({
+      income: newIncome,
+      walletBalance: balance + actualAdded
+    });
+  }); // ✅ ← THIS LINE WAS MISSING
+
+} // ✅ ← CLOSE FUNCTION HERE
 
   function logout() {
     location.reload();
