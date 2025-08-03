@@ -297,16 +297,40 @@ update(ref(db, 'users/' + userId), {
   }
 
   function requestWithdraw() {
-    const withdrawAmount = 5;
-get(ref(db, 'users/' + userId)).then(snapshot => {
-  const user = snapshot.val();
-  if (user.incomeWallet >= withdrawAmount) {
-    update(ref(db, 'users/' + userId), {
-      incomeWallet: user.incomeWallet - withdrawAmount,
-      withdrawnAmount: user.withdrawnAmount + withdrawAmount
+  const amt = parseFloat(document.getElementById("withAmt").value);
+  if (isNaN(amt) || amt < 1) return alert("Minimum withdrawal is 1 USDT");
+
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    const income = parseFloat(data.income || 0);
+    const deposit = parseFloat(data.deposit || 0);
+    const cap = deposit * 2;
+
+    db.ref("withdrawals/" + currentId).once("value", wSnap => {
+      let withdrawn = 0;
+      wSnap.forEach(child => {
+        const w = child.val();
+        if (w.status === "Approved") withdrawn += parseFloat(w.amount || 0);
+      });
+
+      const earned = income + withdrawn;
+      const remaining = cap - earned;
+
+      if (amt > income || amt > remaining) {
+        alert("Insufficient balance");
+        return;
+      }
+
+      const refKey = db.ref().child("withdrawals").push().key;
+      db.ref("withdrawals/" + currentId + "/" + refKey).set({
+        amount: amt,
+        status: "Pending"
+      }).then(() => {
+        alert("Withdrawal request submitted");
+      });
     });
-  }
-});
+  });
+}
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
