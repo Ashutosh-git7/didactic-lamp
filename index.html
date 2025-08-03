@@ -208,15 +208,33 @@
   }
 
   function loadUser(id) {
-    db.ref("users/" + id).on("value", snap => {
-      const data = snap.val();
-      document.getElementById("userName").innerText = data.name;
-      document.getElementById("userWallet").innerText = data.wallet;
-      document.getElementById("userDeposit").innerText = data.deposit;
-      document.getElementById("userIncome").innerText = data.income;
-      document.getElementById("userStatus").innerText = data.status;
-    });
-  }
+  db.ref("users/" + id).on("value", snap => {
+    const data = snap.val();
+    const deposit = parseFloat(data.deposit || 0);
+    const income = parseFloat(data.income || 0);
+    const cap = deposit * 2;
+    const remaining = Math.max(0, cap - income);
+
+    document.getElementById("userName").innerText = data.name;
+    document.getElementById("userWallet").innerText = data.wallet;
+    document.getElementById("userDeposit").innerText = deposit;
+    document.getElementById("userIncome").innerText = income;
+    document.getElementById("userStatus").innerText = data.status;
+    document.getElementById("userWithdrawWallet").innerText = data.wallet;
+    document.getElementById("userTarget").innerText = cap;
+    document.getElementById("userRemaining").innerText = remaining;
+
+    // Auto close agreement if income reaches 2x
+    if (deposit > 0 && income >= cap && data.status !== "Closed") {
+      db.ref("users/" + id).update({
+        income: 0,
+        deposit: 0,
+        status: "Closed"
+      });
+      alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
+    }
+  });
+}
 
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
