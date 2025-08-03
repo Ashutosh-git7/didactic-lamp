@@ -458,27 +458,23 @@ get(ref(db, 'users/' + userId)).then(snapshot => {
 
   function addWeeklyIncome() {
     const uid = document.getElementById("incomeUserId").value.trim();
-    const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uid || isNaN(amt)) return alert("Enter valid input");
+  function addWeeklyIncome() {
+  const uid = document.getElementById("incomeUserId").value.trim();
+  const amt = parseFloat(document.getElementById("incomeAmt").value);
+  if (!uid || isNaN(amt)) return alert("Enter valid input");
 
-    db.ref("users/" + uid).once("value", snap => {
-      const data = snap.val();
-      const deposit = parseFloat(data.deposit || 0);
-      const currentIncome = parseFloat(data.income || 0);
-      const cap = deposit * 2;
-      const incomeToAdd = 10;
-get(ref(db, 'users/' + userId)).then(snapshot => {
-  const user = snapshot.val();
-  const newEarned = user.earnedIncome + incomeToAdd;
-  const newWallet = user.incomeWallet + incomeToAdd;
-  const agreementClosed = newEarned >= user.targetIncome;
+  db.ref("users/" + uid).once("value", snap => {
+    const data = snap.val();
+    const deposit = parseFloat(data.deposit || 0);
+    const currentIncome = parseFloat(data.income || 0);
+    const cap = deposit * 2;
 
-  update(ref(db, 'users/' + userId), {
-    earnedIncome: newEarned,
-    incomeWallet: newWallet,
-    agreementClosed: agreementClosed
+    if (currentIncome >= cap) return alert("User already reached 2x cap");
+    const newIncome = Math.min(currentIncome + amt, cap);
+    db.ref("users/" + uid + "/income").set(newIncome);
+    alert("Income added.");
   });
-});
+  }
 
       if (currentIncome >= cap) return alert("User already reached 2x cap");
       const newIncome = Math.min(currentIncome + amt, cap);
