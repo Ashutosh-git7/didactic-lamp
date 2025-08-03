@@ -442,37 +442,35 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
   alert("Agreement closed.");
 }
   function approveWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
-    db.ref("users/" + userId).once("value", snap => {
+  function approveWithdraw(userId, withdrawId) {
+  db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved").then(() => {
+    db.ref("users/" + userId).once("value").then(snap => {
       const data = snap.val();
       const deposit = parseFloat(data.deposit || 0);
       const income = parseFloat(data.income || 0);
-      db.ref("users/" + userId).once("value", snap => {
-  const data = snap.val();
-  const deposit = parseFloat(data.deposit || 0);
-  const income = parseFloat(data.income || 0);
 
-  db.ref("withdrawals/" + userId).once("value", wSnap => {
-    let withdrawn = 0;
-    wSnap.forEach(child => {
-      const w = child.val();
-      if (w.status === "Approved") {
-        withdrawn += parseFloat(w.amount || 0);
-      }
+      db.ref("withdrawals/" + userId).once("value").then(wSnap => {
+        let withdrawn = 0;
+        wSnap.forEach(child => {
+          const w = child.val();
+          if (w.status === "Approved") {
+            withdrawn += parseFloat(w.amount || 0);
+          }
+        });
+
+        const earned = income + withdrawn;
+        if (deposit > 0 && earned >= 2 * deposit) {
+          db.ref("users/" + userId).update({
+            deposit: 0,
+            status: "Closed"
+          });
+        }
+      });
     });
 
-    const earned = income + withdrawn;
-    if (deposit > 0 && earned >= 2 * deposit) {
-  db.ref("users/" + userId).update({
-    deposit: 0,
-    status: "Closed"
+    alert("Withdrawal approved.");
   });
 }
-  });
-});
-    });
-    alert("Withdrawal approved.");
-  }
 
   function rejectWithdraw(userId, withdrawId) {
     db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected");
