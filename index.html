@@ -423,11 +423,15 @@
   }
 
   function addWeeklyIncome() {
-    const uid = document.getElementById("incomeUserId").value.trim();
-    const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uid || isNaN(amt)) return alert("Enter valid input");
+  const uid = document.getElementById("incomeUserId").value.trim();
+  const amt = parseFloat(document.getElementById("incomeAmt").value);
+  if (!uid || isNaN(amt)) return alert("Enter valid input");
 
-    db.ref("users/" + uid).once("value", snap => {
+  db.ref("users/" + uid).once("value", snap => {
+    if (!snap.exists()) {
+      return alert("User ID not found!");
+    }
+
     const data = snap.val();
     const deposit = parseFloat(data.deposit || 0);
     const income = parseFloat(data.income || 0);
@@ -435,15 +439,18 @@
     const cap = deposit * 2;
 
     if (income >= cap) return alert("2x cap reached");
+
     const newIncome = Math.min(income + amt, cap);
     const actualAdded = newIncome - income;
+
     db.ref("users/" + uid).update({
       income: newIncome,
       walletBalance: balance + actualAdded
+    }).then(() => {
+      alert("✅ Income added successfully!");
     });
-  }); // ✅ ← THIS LINE WAS MISSING
-} // ✅ ← CLOSE FUNCTION HERE
-
+  });
+}
   function logout() {
     location.reload();
   }
