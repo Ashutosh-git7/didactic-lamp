@@ -190,20 +190,21 @@
   }
 
   function register() {
-    const name = document.getElementById("regName").value.trim();
-    const mobile = document.getElementById("regMobile").value.trim();
-    const wallet = document.getElementById("regWallet").value.trim();
-    const ref = document.getElementById("regRef").value.trim();
-    if (!name || !mobile || !wallet) return alert("Please fill all fields");
-    const id = "U" + Math.floor(Math.random() * 100000);
-    const userData = {
-      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref
-    };
-    db.ref("users/" + id).set(userData).then(() => {
-      alert("Registered! Your ID: " + id);
-      location.reload();
-    });
-  }
+  const name = document.getElementById("regName").value.trim();
+  const mobile = document.getElementById("regMobile").value.trim();
+  const wallet = document.getElementById("regWallet").value.trim();
+  const ref = document.getElementById("regRef").value.trim();
+  const pass = document.getElementById("regPass").value.trim() || "12345";
+  if (!name || !mobile || !wallet) return alert("Please fill all fields");
+  const id = "U" + Math.floor(Math.random() * 100000);
+  const userData = {
+    name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref, password: pass
+  };
+  db.ref("users/" + id).set(userData).then(() => {
+    alert("Registered! Your ID: " + id);
+    location.reload();
+  });
+}
 
   function loadUser(id) {
   db.ref("users/" + id).on("value", snap => {
