@@ -169,25 +169,33 @@
   }
 
   function login() {
-    const id = document.getElementById('loginId').value.trim();
-    const pass = document.getElementById('loginPass').value;
-    if (id === "Admin" && pass === "Jaihanuman@7") {
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
-      loadAdmin();
-      return;
-    }
-    db.ref("users/" + id).once("value", snap => {
-      if (snap.exists()) {
+  const id = document.getElementById('loginId').value.trim();
+  const pass = document.getElementById('loginPass').value;
+
+  if (id === "Admin" && pass === "Jaihanuman@7") {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("adminPanel").classList.remove("hidden");
+    loadAdmin();
+    return;
+  }
+
+  db.ref("users/" + id).once("value", snap => {
+    if (snap.exists()) {
+      const data = snap.val();
+      if (!data.password || data.password === pass) {
         currentId = id;
+        currentPassword = data.password || "12345";
         loadUser(id);
         document.getElementById("loginBox").classList.add("hidden");
         document.getElementById("userDashboard").classList.remove("hidden");
       } else {
-        alert("User ID not found.");
+        alert("Incorrect password.");
       }
-    });
-  }
+    } else {
+      alert("User ID not found.");
+    }
+  });
+}
 
   function register() {
   const name = document.getElementById("regName").value.trim();
