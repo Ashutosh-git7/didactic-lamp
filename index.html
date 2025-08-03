@@ -314,6 +314,11 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
         return;
       }
 
+      // Deduct from income immediately
+      const newIncome = income - amt;
+      db.ref("users/" + currentId + "/income").set(newIncome);
+
+      // Add withdrawal request
       const refKey = db.ref().child("withdrawals").push().key;
       db.ref("withdrawals/" + currentId + "/" + refKey).set({
         amount: amt,
