@@ -332,41 +332,25 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
   
   function loadAdmin() {  
   db.ref("users").once("value", snap => {  
-    let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Withdrawn</th><th>Target</th><th>Remaining</th><th>Status</th><th>Actions</th></tr>";  
-  
-    const userList = snap.val() || {};  
-    const promises = Object.keys(userList).map(uid => {  
-      return db.ref("withdrawals/" + uid).once("value").then(wSnap => {  
-        let withdrawn = 0;  
-        wSnap.forEach(w => {  
-          const d = w.val();  
-          if (d.status === "Approved") withdrawn += parseFloat(d.amount || 0);  
-        });  
-  
-        const u = userList[uid];  
-        const deposit = parseFloat(u.deposit || 0);  
-        const income = parseFloat(u.income || 0);  
-        const totalIncome = income + withdrawn;  
-const remaining = Math.max(0, target - totalIncome);  
-  
-        html += `<tr>  
-          <td>${uid}</td>  
-          <td>${u.name}</td>  
-          <td>${u.wallet}</td>  
-          <td>${deposit.toFixed(2)}</td>  
-          <td>${income.toFixed(2)}</td>  
-          <td>${withdrawn.toFixed(2)}</td>  
-          <td>${target.toFixed(2)}</td>  
-          <td>${remaining.toFixed(2)}</td>  
-          <td>${u.status}</td>  
-          <td>  
-            <button onclick="approveDeposit('${uid}')">✅ Accept</button>  
-            <button onclick="rejectDeposit('${uid}')">❌ Reject</button>  
-            <button onclick="closeAgreement('${uid}')">🔒 Close</button>  
-          </td>  
-        </tr>`;  
-      });  
-    });  
+    let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Referred By</th><th>Status</th><th>Actions</th></tr>";
+snap.forEach(child => {
+  const d = child.val();
+  html += `<tr>
+    <td>${child.key}</td>
+    <td>${d.name || '-'}</td>
+    <td>${d.mobile || '-'}</td>
+    <td>${d.wallet || '-'}</td>
+    <td>${d.deposit || 0}</td>
+    <td>${d.income || 0}</td>
+    <td>${d.referredBy || '-'}</td>
+    <td>${d.status || '-'}</td>
+    <td>
+      <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
+      <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
+      <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
+    </td>
+  </tr>`;
+});  
   
     Promise.all(promises).then(() => {  
       html += "</table>";  
