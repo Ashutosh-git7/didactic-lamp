@@ -195,11 +195,11 @@
     const mobile = document.getElementById("regMobile").value.trim();
     const wallet = document.getElementById("regWallet").value.trim();
     const ref = document.getElementById("regRef").value.trim();
+    const userData = {
+  name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref, password: "12345"
+};
     if (!name || !mobile || !wallet) return alert("Please fill all fields");
     const id = "U" + Math.floor(Math.random() * 100000);
-    const userData = {
-      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref
-    };
     db.ref("users/" + id).set(userData).then(() => {
       alert("Registered! Your ID: " + id);
       location.reload();
