@@ -355,10 +355,15 @@ function loadAdmin() {
     const promises = userIds.map(uid => {
       return db.ref("withdrawals/" + uid).once("value").then(wSnap => {
         let withdrawn = 0;
-        wSnap.forEach(child => {
-          const w = child.val();
-          if (w.status === "Approved") withdrawn += parseFloat(w.amount || 0);
-        });
+let pending = 0;
+wSnap.forEach(child => {
+  const w = child.val();
+  if (w.status === "Approved") withdrawn += parseFloat(w.amount || 0);
+  if (w.status === "Pending") pending += parseFloat(w.amount || 0);
+});
+
+const total = income + withdrawn + pending;
+const remaining = Math.max(0, cap - total);
 
         const d = users[uid];
         const deposit = parseFloat(d.deposit || 0);
