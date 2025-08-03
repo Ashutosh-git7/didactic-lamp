@@ -181,16 +181,17 @@
       return;
     }
     db.ref("users/" + id).once("value", snap => {
-      if (snap.exists()) {
-        currentId = id;
-        loadUser(id);
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("userDashboard").classList.remove("hidden");
-      } else {
-        alert("User ID not found.");
-      }
-    });
+  if (snap.exists()) {
+    const data = snap.val();
+    if (data.password !== pass) return alert("Incorrect password");
+    currentId = id;
+    loadUser(id);
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("userDashboard").classList.remove("hidden");
+  } else {
+    alert("User ID not found.");
   }
+});
 
   function register() {
     const name = document.getElementById("regName").value.trim();
