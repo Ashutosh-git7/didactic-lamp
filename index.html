@@ -312,10 +312,10 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
       const earned = income + withdrawn + pending;
       const remaining = cap - earned;
 
-      if (amt > income || amt > remaining) {
-        alert("Insufficient balance");
-        return;
-      }
+      if (income <= 0) {
+  alert("No income available to withdraw.");
+  return;
+}
 
       const newIncome = income - amt;
       db.ref("users/" + currentId + "/income").set(newIncome);
