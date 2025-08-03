@@ -392,10 +392,69 @@ const remaining = Math.max(0, cap - total);
       });
     });
 
+<script>
+function loadAdmin() {
+  let userHTML = `<h4>All Users</h4>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Mobile</th>
+      <th>Wallet</th>
+      <th>Deposit</th>
+      <th>Income</th>
+      <th>Withdrawn</th>
+      <th>Remaining</th>
+      <th>Status</th>
+      <th>Referrer</th>
+      <th>Actions</th>
+    </tr>`;
+
+  db.ref("users").once("value", snap => {
+    const users = snap.val() || {};
+    const userIds = Object.keys(users);
+    const promises = userIds.map(uid => {
+      const d = users[uid];
+      const deposit = parseFloat(d.deposit || 0);
+      const income = parseFloat(d.income || 0);
+      const cap = deposit * 2;
+
+      return db.ref("withdrawals/" + uid).once("value").then(wSnap => {
+        let withdrawn = 0;
+        wSnap.forEach(child => {
+          const w = child.val();
+          if (w.status === "Approved") {
+            withdrawn += parseFloat(w.amount || 0);
+          }
+        });
+
+        const total = income + withdrawn;
+        const remaining = Math.max(0, cap - total);
+
+        userHTML += `<tr>
+          <td>${uid}</td>
+          <td>${d.name || '-'}</td>
+          <td>${d.mobile || '-'}</td>
+          <td>${d.wallet || '-'}</td>
+          <td>${deposit.toFixed(2)}</td>
+          <td>${income.toFixed(2)}</td>
+          <td>${withdrawn.toFixed(2)}</td>
+          <td>${remaining.toFixed(2)}</td>
+          <td>${d.status || '-'}</td>
+          <td>${d.referredBy || '-'}</td>
+          <td>
+            <button onclick="approveDeposit('${uid}')">✅</button>
+            <button onclick="rejectDeposit('${uid}')">❌</button>
+            <button onclick="closeAgreement('${uid}')">🔒</button>
+          </td>
+        </tr>`;
+      });
+    });
+
     Promise.all(promises).then(() => {
       userHTML += "</table>";
 
-      // Withdrawals
+      // Load Withdrawals
       db.ref("withdrawals").once("value", withdrawSnap => {
         let withdrawHTML = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
         withdrawSnap.forEach(userSnap => {
@@ -417,13 +476,13 @@ const remaining = Math.max(0, cap - total);
         });
         withdrawHTML += "</table>";
 
-        // Final injection into HTML
+        // Final Output
         document.getElementById("adminUsers").innerHTML = userHTML + withdrawHTML;
       });
     });
   });
-}  
-  function approveDeposit(userId) {  
+}
+    function approveDeposit(userId) {  
     db.ref("users/" + userId + "/status").set("Active");  
     alert("Deposit approved.");  
   }  
