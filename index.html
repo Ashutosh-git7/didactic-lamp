@@ -242,7 +242,8 @@ const amt = parseFloat(document.getElementById("depAmount").value);
   if (amt < 50 || amt > 500) return alert("Invalid amount");
   db.ref("users/" + currentId).once("value", snap => {
     const data = snap.val();
-    db.ref("users/" + currentId + "/deposit").set(amt);
+    const newDeposit = (parseFloat(data.deposit || 0) + amt);
+db.ref("users/" + currentId + "/deposit").set(newDeposit);
     db.ref("users/" + currentId + "/status").set("Pending");
 
     // LEVEL 1 REFERRER
