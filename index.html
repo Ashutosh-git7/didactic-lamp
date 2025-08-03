@@ -318,15 +318,36 @@ if (data.referredBy) {
   }
 
   function requestWithdraw() {
-    const amt = parseFloat(document.getElementById("withAmt").value);
-    if (amt < 1) return alert("Minimum 1 USDT");
-    db.ref("users/" + currentId).once("value", snap => {
-      const income = parseFloat(snap.val().income || 0);
-      if (amt > income) return alert("Insufficient income balance");
-      db.ref("users/" + currentId + "/income").set(income - amt);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-      alert("Withdrawal requested!");
-    });
+  const amt = parseFloat(document.getElementById("withAmt").value);
+  if (amt < 1) return alert("Minimum 1 USDT");
+
+  db.ref("users/" + currentId).once("value", snap => {
+    const income = parseFloat(snap.val().income || 0);
+    if (amt > income) return alert("Insufficient income balance");
+
+    const newIncome = income - amt;
+
+    // Update income and push withdrawal request
+    db.ref("users/" + currentId + "/income").set(newIncome);
+    db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
+
+    // Update visible income and remaining 2x info on screen
+    document.getElementById("userIncome").innerText = newIncome.toFixed(2);
+
+    const deposit = parseFloat(snap.val().deposit || 0);
+    const target = deposit * 2;
+    const remaining = Math.max(target - newIncome, 0);
+
+    const extra = document.getElementById("extraUserInfo");
+    if (extra) {
+      extra.innerHTML = `
+        <p>🎯 <b>2x Target:</b> ${target.toFixed(2)} USDT</p>
+        <p>📉 <b>Remaining:</b> ${remaining.toFixed(2)} USDT</p>
+      `;
+    }
+
+    alert("Withdrawal requested!");
+  });
   }
 
   function viewTeam() {
