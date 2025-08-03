@@ -266,19 +266,53 @@
       db.ref("users/" + currentId + "/deposit").set(amt);
       db.ref("users/" + currentId + "/status").set("Pending");
 
-      if (data.referredBy) {
-        const refAmt = amt * 0.05;
-        db.ref("users/" + data.referredBy).once("value", s => {
-          const refData = s.val();
-          const currentIncome = parseFloat(refData.income || 0);
-          const refDeposit = parseFloat(refData.deposit || 0);
-          const cap = refDeposit * 2;
-          const totalIncome = currentIncome + refAmt;
-          if (cap > 0 && totalIncome <= cap) {
-            db.ref("users/" + data.referredBy + "/income").set(totalIncome);
-          }
-        });
-      }
+      // Distribute 3-level referral income on first deposit
+if (data.referredBy) {
+  const level1 = data.referredBy;
+  const level1Amt = amt * 0.05;
+
+  db.ref("users/" + level1).once("value", s1 => {
+    const d1 = s1.val();
+    const dep1 = parseFloat(d1.deposit || 0);
+    const inc1 = parseFloat(d1.income || 0);
+    const cap1 = dep1 * 2;
+    if (dep1 > 0 && inc1 + level1Amt <= cap1) {
+      db.ref("users/" + level1 + "/income").set(inc1 + level1Amt);
+    }
+
+    // Level 2
+    if (d1.referredBy) {
+      const level2 = d1.referredBy;
+      const level2Amt = amt * 0.03;
+
+      db.ref("users/" + level2).once("value", s2 => {
+        const d2 = s2.val();
+        const dep2 = parseFloat(d2.deposit || 0);
+        const inc2 = parseFloat(d2.income || 0);
+        const cap2 = dep2 * 2;
+        if (dep2 > 0 && inc2 + level2Amt <= cap2) {
+          db.ref("users/" + level2 + "/income").set(inc2 + level2Amt);
+        }
+
+        // Level 3
+        if (d2.referredBy) {
+          const level3 = d2.referredBy;
+          const level3Amt = amt * 0.02;
+
+          db.ref("users/" + level3).once("value", s3 => {
+            const d3 = s3.val();
+            const dep3 = parseFloat(d3.deposit || 0);
+            const inc3 = parseFloat(d3.income || 0);
+            const cap3 = dep3 * 2;
+            if (dep3 > 0 && inc3 + level3Amt <= cap3) {
+              db.ref("users/" + level3 + "/income").set(inc3 + level3Amt);
+            }
+          });
+        }
+      });
+    }
+  });
+}
       alert("Deposit submitted!");
     });
   }
