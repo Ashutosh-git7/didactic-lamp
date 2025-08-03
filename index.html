@@ -215,29 +215,55 @@
     });
   }
 
-  function submitDeposit() {
-    const amt = parseFloat(document.getElementById("depAmount").value);
-    if (amt < 50 || amt > 500) return alert("Invalid amount");
-    db.ref("users/" + currentId).once("value", snap => {
-      const data = snap.val();
-      db.ref("users/" + currentId + "/deposit").set(amt);
-      db.ref("users/" + currentId + "/status").set("Pending");
+function submitDeposit() {
+  const amt = parseFloat(document.getElementById("depAmount").value);
+  if (amt < 50 || amt > 500) return alert("Invalid amount");
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    db.ref("users/" + currentId + "/deposit").set(amt);
+    db.ref("users/" + currentId + "/status").set("Pending");
 
-      if (data.referredBy) {
-        const refAmt = amt * 0.05;
-        db.ref("users/" + data.referredBy).once("value", s => {
-          const refData = s.val();
-          const currentIncome = parseFloat(refData.income || 0);
-          const refDeposit = parseFloat(refData.deposit || 0);
-          const cap = refDeposit * 2;
-          const totalIncome = currentIncome + refAmt;
-          if (cap > 0 && totalIncome <= cap) {
-            db.ref("users/" + data.referredBy + "/income").set(totalIncome);
-          }
-        });
-      }
-      alert("Deposit submitted!");
-    });
+    // LEVEL 1 REFERRER
+    if (data.referredBy) {
+      db.ref("users/" + data.referredBy).once("value", snap1 => {
+        const ref1 = snap1.val();
+        const ref1Income = parseFloat(ref1.income || 0);
+        const ref1Deposit = parseFloat(ref1.deposit || 0);
+        const ref1Cap = ref1Deposit * 2;
+        const level1Income = amt * 0.05;
+        const updatedRef1Income = Math.min(ref1Income + level1Income, ref1Cap);
+        db.ref("users/" + data.referredBy + "/income").set(updatedRef1Income);
+
+        // LEVEL 2 REFERRER
+        if (ref1.referredBy) {
+          db.ref("users/" + ref1.referredBy).once("value", snap2 => {
+            const ref2 = snap2.val();
+            const ref2Income = parseFloat(ref2.income || 0);
+            const ref2Deposit = parseFloat(ref2.deposit || 0);
+            const ref2Cap = ref2Deposit * 2;
+            const level2Income = amt * 0.03;
+            const updatedRef2Income = Math.min(ref2Income + level2Income, ref2Cap);
+            db.ref("users/" + ref1.referredBy + "/income").set(updatedRef2Income);
+
+            // LEVEL 3 REFERRER
+            if (ref2.referredBy) {
+              db.ref("users/" + ref2.referredBy).once("value", snap3 => {
+                const ref3 = snap3.val();
+                const ref3Income = parseFloat(ref3.income || 0);
+                const ref3Deposit = parseFloat(ref3.deposit || 0);
+                const ref3Cap = ref3Deposit * 2;
+                const level3Income = amt * 0.02;
+                const updatedRef3Income = Math.min(ref3Income + level3Income, ref3Cap);
+                db.ref("users/" + ref2.referredBy + "/income").set(updatedRef3Income);
+              });
+            }
+          });
+        }
+      });
+    }
+
+    alert("Deposit submitted!");
+  });
   }
 
   function requestWithdraw() {
