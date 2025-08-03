@@ -169,6 +169,16 @@
   const db = firebase.database();
   let currentId = "";
 
+  function changePassword() {
+  const oldP = document.getElementById("oldPass").value;
+  const newP = document.getElementById("newPass").value;
+  if (oldP !== currentPassword) return alert("Old password incorrect");
+  if (newP.length < 4) return alert("Password too short");
+  db.ref("users/" + currentId + "/password").set(newP);
+  currentPassword = newP;
+  alert("Password updated.");
+  }
+
   function showRegister() {
     document.getElementById('loginBox').classList.add('hidden');
     document.getElementById('registerBox').classList.remove('hidden');
