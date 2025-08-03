@@ -1,182 +1,260 @@
-<!-- FULL FINAL HTML CODE FOR ASHIRWAD MART WITH LEVEL INCOME + REMAINING BALANCE + ADMIN PANEL -->
+<!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
 <!DOCTYPE html>
 <html>
 <head>
   <title>🚀 Ashirwad Mart - Grow Up Together</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Firebase & Script Links -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
-    body { font-family: Arial; padding: 10px; }
-    .section { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
-    input, button, select { padding: 6px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    .admin-only { display: none; background-color: #f0f0f0; padding: 10px; }
-    .highlight { font-weight: bold; color: green; }
+    body { font-family: Arial; padding: 10px; background: #f4f4f4; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    input, button, select { width: 100%; padding: 10px; margin: 5px 0; }
+    .hidden { display: none; }
+    .admin-only { background: #fffbe6; padding: 10px; border: 1px dashed #ccc; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>🚀 Ashirwad Mart - Grow Up Together</h2>
+  <div class="container">
+    <h2>🚀 Ashirwad Mart</h2>
+    <div id="authSection">
+      <input type="text" id="loginId" placeholder="User ID or Admin" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <hr />
+      <h3>Register</h3>
+      <input type="text" id="regName" placeholder="Full Name" />
+      <input type="text" id="regMobile" placeholder="Mobile Number" />
+      <input type="text" id="regWallet" placeholder="USDT BEP20 Address" />
+      <input type="password" id="regPassword" placeholder="Set Password" />
+      <input type="text" id="referralCode" placeholder="Referral Code (optional)" />
+      <button onclick="register()">Register</button>
+    </div>
 
-  <!-- LOGIN / REGISTER SECTION -->
-  <div id="authSection" class="section">
-    <h3>Login / Register</h3>
-    <input type="text" id="userId" placeholder="User ID" />
-    <input type="password" id="userPass" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <button onclick="register()">Register</button>
-  </div>
+    <div id="userPanel" class="hidden">
+      <h3>👋 Welcome, <span id="userName"></span></h3>
+      <p>ID: <span id="userId"></span></p>
+      <p>Wallet: <span id="userWallet"></span></p>
+      <p>Agreement: <span id="agreementStatus"></span></p>
+      <hr />
+      <h4>💰 Deposit</h4>
+      <p>Send USDT to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+      <input type="number" id="depositAmount" placeholder="Amount (50 - 500)" />
+      <button onclick="submitDeposit()">Submit Deposit</button>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard" class="section" style="display:none">
-    <h3>Welcome <span id="name"></span></h3>
-    <p>Deposit: <span id="depositAmount"></span> USDT</p>
-    <p>Income Wallet: <span id="incomeWallet"></span></p>
-    <p>Referral Wallet: <span id="refWallet"></span></p>
-    <p>Remaining: <span id="remainingBalance" class="highlight"></span></p>
-    <p>Status: <span id="agreementStatus"></span></p>
-    <button onclick="withdraw()">Withdraw</button>
-    <button onclick="logout()">Logout</button>
-  </div>
+      <h4>📈 Income</h4>
+      <p>Total Deposit: <span id="totalDeposit">0</span></p>
+      <p>Income Wallet: <span id="incomeWallet">0</span></p>
+      <p>Referral Wallet: <span id="refWallet">0</span></p>
+      <p>Remaining: <span id="remainingBalance">0</span></p>
+      <input type="number" id="withdrawAmount" placeholder="Withdraw Amount" />
+      <button onclick="requestWithdrawal()">Withdraw</button>
 
-  <!-- ADMIN PANEL -->
-  <div id="adminPanel" class="admin-only section">
-    <h3>Admin Panel</h3>
-    <div id="adminData"></div>
-    <button onclick="logout()">Logout Admin</button>
+      <h4>🤝 Referral Team</h4>
+      <ul id="teamList"></ul>
+
+      <h4>🔑 Change Password</h4>
+      <input type="password" id="oldPassword" placeholder="Old Password" />
+      <input type="password" id="newPassword" placeholder="New Password" />
+      <button onclick="changePassword()">Update Password</button>
+
+      <br /><button onclick="logout()">Logout</button>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <h3>🛠️ Admin Panel</h3>
+      <button onclick="loadUsers()">🔄 Refresh User List</button>
+      <div id="userList"></div>
+      <br /><button onclick="logout()">Logout</button>
+    </div>
   </div>
 
   <script>
+    // Your Firebase config
     const firebaseConfig = {
-      apiKey: "YOUR-API-KEY",
-      authDomain: "ashirwadmart.firebaseapp.com",
-      projectId: "ashirwadmart",
-      databaseURL: "https://ashirwadmart-default-rtdb.firebaseio.com",
-      storageBucket: "ashirwadmart.appspot.com",
-      messagingSenderId: "SENDER-ID",
-      appId: "APP-ID"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "ashirwadmart-6d657.firebaseapp.com",
+      databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
+      projectId: "ashirwadmart-6d657",
+      storageBucket: "ashirwadmart-6d657.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentUser = "";
+    let currentUser = null;
 
     function login() {
-      const id = document.getElementById("userId").value;
-      const pass = document.getElementById("userPass").value;
-      db.ref("users/" + id).once("value", snap => {
-        if (snap.exists() && snap.val().password === pass) {
-          currentUser = id;
-          if (id === "Admin") showAdmin();
-          else showDashboard(snap.val());
-        } else alert("Invalid credentials.");
-      });
+      const id = document.getElementById("loginId").value;
+      const pass = document.getElementById("loginPassword").value;
+      if (id === "Admin" && pass === "Jaihanuman@7") {
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+        loadUsers();
+      } else {
+        db.ref("users/" + id).once("value", (snap) => {
+          if (snap.exists()) {
+            const data = snap.val();
+            if (data.password === pass) {
+              currentUser = id;
+              showUserPanel(data);
+            } else {
+              alert("Wrong password");
+            }
+          } else {
+            alert("User not found");
+          }
+        });
+      }
     }
 
     function register() {
-      const id = document.getElementById("userId").value;
-      const pass = document.getElementById("userPass").value;
-      if (!id || !pass) return alert("Please enter ID & password");
-      db.ref("users/" + id).once("value", snap => {
-        if (snap.exists()) return alert("User already exists");
-        db.ref("users/" + id).set({
-          password: pass,
-          deposit: 0,
-          income: 0,
-          referral: 0,
-          remaining: 0,
-          status: "Active"
-        }).then(() => alert("Registered Successfully"));
+      const name = document.getElementById("regName").value;
+      const mobile = document.getElementById("regMobile").value;
+      const wallet = document.getElementById("regWallet").value;
+      const password = document.getElementById("regPassword").value;
+      const ref = document.getElementById("referralCode").value;
+      const userId = "ID" + Math.floor(Math.random() * 100000);
+
+      db.ref("users/" + userId).set({
+        name,
+        mobile,
+        wallet,
+        password,
+        deposit: 0,
+        income: 0,
+        refIncome: 0,
+        agreement: "active",
+        referrals: [],
+        history: [],
+        refBy: ref || ""
+      }).then(() => {
+        alert("Registered! Your ID: " + userId);
       });
     }
 
-    function showDashboard(data) {
-      document.getElementById("authSection").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      document.getElementById("name").innerText = currentUser;
-      document.getElementById("depositAmount").innerText = data.deposit || 0;
-      document.getElementById("incomeWallet").innerText = data.income || 0;
-      document.getElementById("refWallet").innerText = data.referral || 0;
-      document.getElementById("remainingBalance").innerText = data.remaining || 0;
-      document.getElementById("agreementStatus").innerText = data.status || "Active";
+    function showUserPanel(data) {
+      document.getElementById("authSection").classList.add("hidden");
+      document.getElementById("userPanel").classList.remove("hidden");
+      document.getElementById("userName").innerText = data.name;
+      document.getElementById("userId").innerText = currentUser;
+      document.getElementById("userWallet").innerText = data.wallet;
+      document.getElementById("agreementStatus").innerText = data.agreement;
+      document.getElementById("totalDeposit").innerText = data.deposit;
+      document.getElementById("incomeWallet").innerText = data.income;
+      document.getElementById("refWallet").innerText = data.refIncome;
+      const remaining = (data.deposit * 2) - (data.income + data.refIncome);
+      document.getElementById("remainingBalance").innerText = remaining;
+
+      // Load referral team
+      db.ref("users").once("value", (snap) => {
+        const teamList = document.getElementById("teamList");
+        teamList.innerHTML = "";
+        snap.forEach((child) => {
+          if (child.val().refBy === currentUser) {
+            const li = document.createElement("li");
+            li.innerText = child.key + " - " + child.val().name;
+            teamList.appendChild(li);
+          }
+        });
+      });
     }
 
     function logout() {
-      currentUser = "";
       location.reload();
     }
 
-    function withdraw() {
-      if (!currentUser) return;
-      db.ref("users/" + currentUser).once("value", snap => {
-        const data = snap.val();
-        if ((data.income || 0) < 1) return alert("Minimum 1 USDT required");
-        const newRemaining = (data.remaining || 0) - data.income;
-        db.ref("users/" + currentUser).update({
-          income: 0,
-          remaining: newRemaining < 0 ? 0 : newRemaining
-        }).then(() => {
-          alert("Withdrawal Requested");
-          location.reload();
-        });
-      });
-    }
-
-    function showAdmin() {
-      document.getElementById("authSection").style.display = "none";
-      document.getElementById("adminPanel").style.display = "block";
-      const container = document.getElementById("adminData");
-      container.innerHTML = "";
-      db.ref("users").once("value", snap => {
-        snap.forEach(user => {
-          const u = user.val();
-          const id = user.key;
-          const div = document.createElement("div");
-          div.className = "section";
-          div.innerHTML = `
-            <b>${id}</b><br/>
-            Deposit: ${u.deposit || 0}<br/>
-            Income: ${u.income || 0}<br/>
-            Referral: ${u.referral || 0}<br/>
-            Remaining: ${u.remaining || 0}<br/>
-            Status: ${u.status || "Active"}<br/>
-            <button onclick="addIncome('${id}')">Add Weekly Income</button>
-            <button onclick="closeAgreement('${id}')">Close 2x</button>
-          `;
-          container.appendChild(div);
-        });
-      });
-    }
-
-    function addIncome(id) {
-      db.ref("users/" + id).once("value", snap => {
-        const user = snap.val();
-        const newIncome = (user.income || 0) + 10; // Example income
-        const total = newIncome + (user.referral || 0);
-        const maxIncome = (user.deposit || 0) * 2;
-        if (total >= maxIncome) {
-          db.ref("users/" + id).update({ income: 0, remaining: 0, status: "Closed" });
+    function changePassword() {
+      const oldPass = document.getElementById("oldPassword").value;
+      const newPass = document.getElementById("newPassword").value;
+      db.ref("users/" + currentUser).once("value", (snap) => {
+        if (snap.exists() && snap.val().password === oldPass) {
+          db.ref("users/" + currentUser).update({ password: newPass });
+          alert("Password updated!");
         } else {
-          db.ref("users/" + id).update({
-            income: newIncome,
-            remaining: maxIncome - total
-          });
+          alert("Old password incorrect");
         }
-        alert("Income Updated");
-        showAdmin();
       });
     }
 
-    function closeAgreement(id) {
-      db.ref("users/" + id).once("value", snap => {
-        const d = snap.val().deposit || 0;
-        db.ref("users/" + id).update({
-          status: "Closed",
-          remaining: 0,
-          deposit: 0
-        }).then(() => showAdmin());
+    function submitDeposit() {
+      const amount = parseInt(document.getElementById("depositAmount").value);
+      if (amount >= 50 && amount <= 500) {
+        db.ref("users/" + currentUser + "/deposit").once("value", (snap) => {
+          const prev = snap.val() || 0;
+          db.ref("users/" + currentUser).update({ deposit: prev + amount });
+          // Referral income
+          db.ref("users/" + currentUser).once("value", (snap) => {
+            const refId = snap.val().refBy;
+            if (refId) {
+              db.ref("users/" + refId).once("value", (s1) => {
+                const level1 = (amount * 5) / 100;
+                db.ref("users/" + refId + "/refIncome").transaction(val => (val || 0) + level1);
+                const ref2 = s1.val().refBy;
+                if (ref2) {
+                  const level2 = (amount * 3) / 100;
+                  db.ref("users/" + ref2 + "/refIncome").transaction(val => (val || 0) + level2);
+                  db.ref("users/" + ref2).once("value", (s2) => {
+                    const ref3 = s2.val().refBy;
+                    if (ref3) {
+                      const level3 = (amount * 2) / 100;
+                      db.ref("users/" + ref3 + "/refIncome").transaction(val => (val || 0) + level3);
+                    }
+                  });
+                }
+              });
+            }
+          });
+          alert("Deposit submitted!");
+        });
+      } else {
+        alert("Amount must be between 50 and 500 USDT");
+      }
+    }
+
+    function requestWithdrawal() {
+      const amount = parseInt(document.getElementById("withdrawAmount").value);
+      db.ref("users/" + currentUser).once("value", (snap) => {
+        const data = snap.val();
+        const total = data.income + data.refIncome;
+        const remaining = (data.deposit * 2) - total;
+        if (amount >= 1 && amount <= total) {
+          const newHistory = data.history || [];
+          newHistory.push({ type: "withdrawal", amount: amount, date: new Date().toLocaleString() });
+          db.ref("users/" + currentUser).update({
+            income: data.income - amount,
+            history: newHistory
+          });
+          alert("Withdrawal requested!");
+        } else {
+          alert("Invalid amount");
+        }
+      });
+    }
+
+    function loadUsers() {
+      const listDiv = document.getElementById("userList");
+      listDiv.innerHTML = "";
+      db.ref("users").once("value", (snap) => {
+        snap.forEach((child) => {
+          const d = child.val();
+          const rem = (d.deposit * 2) - (d.income + d.refIncome);
+          const div = document.createElement("div");
+          div.className = "admin-only";
+          div.innerHTML = `
+            <b>${child.key}</b> - ${d.name}<br/>
+            📱 ${d.mobile} | 💼 ${d.wallet}<br/>
+            💰 Deposit: ${d.deposit}, Income: ${d.income}, Ref: ${d.refIncome}<br/>
+            🔁 Remaining: ${rem} | Agreement: ${d.agreement}
+          `;
+          listDiv.appendChild(div);
+        });
       });
     }
   </script>
 </body>
-</html>
+  </html>
