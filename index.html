@@ -291,7 +291,7 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
 
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
-  if (isNaN(amt) || amt > 1) return alert("Minimum withdrawal is 1 USDT");
+  if (isNaN(amt) || amt < 1) return alert("Minimum withdrawal is 1 USDT");
 
   db.ref("users/" + currentId).once("value", snap => {
     const data = snap.val();
