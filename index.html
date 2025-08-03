@@ -231,12 +231,14 @@
 }
 
   function loadUser(id) {
+  function loadUser(id) {
   db.ref("users/" + id).on("value", snap => {
     const data = snap.val();
     const deposit = parseFloat(data.deposit || 0);
     const income = parseFloat(data.income || 0);
+    const withdrawn = parseFloat(data.withdrawn || 0);
     const target = deposit * 2;
-    const remaining = Math.max(target - income, 0);
+    const remaining = Math.max(target - (income + withdrawn), 0);
 
     document.getElementById("userName").innerText = data.name;
     document.getElementById("userWallet").innerText = data.wallet;
@@ -244,19 +246,19 @@
     document.getElementById("userIncome").innerText = income.toFixed(2);
     document.getElementById("userStatus").innerText = data.status;
 
-    // 2x target income and remaining
     let extra = document.getElementById("extraUserInfo");
     if (!extra) {
       extra = document.createElement("div");
       extra.id = "extraUserInfo";
       document.getElementById("userDashboard").appendChild(extra);
     }
+
     extra.innerHTML = `
       <p>🎯 <b>2x Target:</b> ${target.toFixed(2)} USDT</p>
       <p>📉 <b>Remaining:</b> ${remaining.toFixed(2)} USDT</p>
     `;
   });
-}
+  }
 
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
