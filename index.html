@@ -181,35 +181,37 @@
     });  
   }  
   
-  function loadUser(id) {  
-  db.ref("users/" + id).on("value", snap => {  
-    const data = snap.val();  
-    const deposit = parseFloat(data.deposit || 0);  
-    const income = parseFloat(data.income || 0);  
-  
-    db.ref("withdrawals/" + id).once("value", wSnap => {  
-      let withdrawn = 0;  
-      wSnap.forEach(child => {  
-        const w = child.val();  
-        if (w.status === "Approved") {  
-          withdrawn += parseFloat(w.amount || 0);  
-        }  
-      });  
-  
-      const totalIncome = income + withdrawn;  
-const remaining = Math.max(0, target - totalIncome);  
-  
-      document.getElementById("userName").innerText = data.name;  
-      document.getElementById("userWallet").innerText = data.wallet;  
-      document.getElementById("userDeposit").innerText = deposit.toFixed(2);  
-      document.getElementById("userIncome").innerText = income.toFixed(2);  
-      document.getElementById("userWithdrawn").innerText = withdrawn.toFixed(2);  
-      document.getElementById("userTarget").innerText = target.toFixed(2);  
-      document.getElementById("userRemaining").innerText = remaining.toFixed(2);  
-      document.getElementById("userStatus").innerText = data.status;  
-    });  
-  });  
-}  
+  function loadUser(id) {
+  db.ref("users/" + id).on("value", snap => {
+    const data = snap.val();
+    const deposit = parseFloat(data.deposit || 0);
+    const income = parseFloat(data.income || 0);
+    const target = deposit * 2; // ✅ REQUIRED for calculations
+
+    db.ref("withdrawals/" + id).once("value", wSnap => {
+      let withdrawn = 0;
+      wSnap.forEach(child => {
+        const w = child.val();
+        if (w.status === "Approved") {
+          withdrawn += parseFloat(w.amount || 0);
+        }
+      });
+
+      const totalIncome = income + withdrawn;
+      const remaining = Math.max(0, target - totalIncome);
+
+      // ✅ Update User Panel Fields
+      document.getElementById("userName").innerText = data.name || "-";
+      document.getElementById("userWallet").innerText = data.wallet || "-";
+      document.getElementById("userDeposit").innerText = deposit.toFixed(2);
+      document.getElementById("userIncome").innerText = income.toFixed(2);
+      document.getElementById("userWithdrawn").innerText = withdrawn.toFixed(2);
+      document.getElementById("userTarget").innerText = target.toFixed(2);
+      document.getElementById("userRemaining").innerText = remaining.toFixed(2);
+      document.getElementById("userStatus").innerText = data.status || "Pending";
+    });
+  });
+}
   
 function submitDeposit() {  
 const amt = parseFloat(document.getElementById("depAmount").value);  
