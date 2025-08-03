@@ -215,14 +215,7 @@
     const income = parseFloat(data.income || 0);
     const cap = deposit * 2;
     const remaining = Math.max(0, cap - income);
-    const userData = {
-  name, mobile, wallet,
-  deposit: 0,
-  income: 0,
-  walletBalance: 0,
-  status: "Pending",
-  referredBy: ref
-};
+    // remove this block completely — it's unused and causes error
     const balance = parseFloat(data.walletBalance || 0);
 
     document.getElementById("userName").innerText = data.name;
@@ -234,7 +227,6 @@
     document.getElementById("userTarget").innerText = cap;
     document.getElementById("userRemaining").innerText = remaining;
     document.getElementById("walletBalance").innerText = balance;
-    
     // Auto close agreement if income reaches 2x
     if (deposit > 0 && income >= cap && data.status !== "Closed") {
       db.ref("users/" + id).update({
