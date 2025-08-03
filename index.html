@@ -294,16 +294,19 @@
   }
 
   function requestWithdraw() {
-    const amt = parseFloat(document.getElementById("withAmt").value);
-    if (amt < 1) return alert("Minimum 1 USDT");
-    db.ref("users/" + currentId).once("value", snap => {
-      const income = parseFloat(snap.val().income || 0);
-      if (amt > income) return alert("Insufficient income balance");
-      db.ref("users/" + currentId + "/income").set(income - amt);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-      alert("Withdrawal requested!");
-    });
-  }
+  const amt = parseFloat(document.getElementById("withAmt").value);
+  if (amt < 1) return alert("Minimum 1 USDT");
+
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    const walletBalance = parseFloat(data.walletBalance || 0);
+    if (amt > walletBalance) return alert("Insufficient wallet balance");
+
+    db.ref("users/" + currentId + "/walletBalance").set(walletBalance - amt);
+    db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
+    alert("Withdrawal requested!");
+  });
+}
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
