@@ -290,23 +290,27 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
   }
 
   function requestWithdraw() {
+  function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
   if (isNaN(amt) || amt < 1) return alert("Minimum withdrawal is 1 USDT");
 
   db.ref("users/" + currentId).once("value", snap => {
     const data = snap.val();
-    const income = parseFloat(data.income || 0);
     const deposit = parseFloat(data.deposit || 0);
+    const income = parseFloat(data.income || 0);
     const cap = deposit * 2;
 
     db.ref("withdrawals/" + currentId).once("value", wSnap => {
       let withdrawn = 0;
+      let pending = 0;
+
       wSnap.forEach(child => {
         const w = child.val();
         if (w.status === "Approved") withdrawn += parseFloat(w.amount || 0);
+        if (w.status === "Pending") pending += parseFloat(w.amount || 0);
       });
 
-      const earned = income + withdrawn;
+      const earned = income + withdrawn + pending;
       const remaining = cap - earned;
 
       if (amt > income || amt > remaining) {
@@ -314,11 +318,9 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
         return;
       }
 
-      // Deduct from income immediately
       const newIncome = income - amt;
       db.ref("users/" + currentId + "/income").set(newIncome);
 
-      // Add withdrawal request
       const refKey = db.ref().child("withdrawals").push().key;
       db.ref("withdrawals/" + currentId + "/" + refKey).set({
         amount: amt,
@@ -329,7 +331,6 @@ db.ref("users/" + currentId + "/deposit").set(newDeposit);
     });
   });
 }
-
   function viewTeam() {
     db.ref("users").once("value", snap => {
       let html = "<ul>";
