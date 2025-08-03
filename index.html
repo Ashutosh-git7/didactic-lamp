@@ -298,16 +298,16 @@ update(ref(db, 'users/' + userId), {
   }
 
   function requestWithdraw() {
-    const amt = parseFloat(document.getElementById("withAmt").value);
-    if (amt < 1) return alert("Minimum 1 USDT");
-    db.ref("users/" + currentId).once("value", snap => {
-      const income = parseFloat(snap.val().income || 0);
-      if (amt > income) return alert("Insufficient income balance");
-      db.ref("users/" + currentId + "/income").set(income - amt);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-      alert("Withdrawal requested!");
+    const withdrawAmount = 5;
+get(ref(db, 'users/' + userId)).then(snapshot => {
+  const user = snapshot.val();
+  if (user.incomeWallet >= withdrawAmount) {
+    update(ref(db, 'users/' + userId), {
+      incomeWallet: user.incomeWallet - withdrawAmount,
+      withdrawnAmount: user.withdrawnAmount + withdrawAmount
     });
   }
+});
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
