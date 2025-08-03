@@ -218,7 +218,24 @@
       document.getElementById("userStatus").innerText = data.status;
     });
   }
+function changePassword() {
+  const oldP = document.getElementById("oldPass").value;
+  const newP = document.getElementById("newPass").value;
+  if (!oldP || !newP) return alert("Please fill both fields");
 
+  db.ref("users/" + currentId).once("value", snap => {
+    const user = snap.val();
+    if (user.password === oldP) {
+      db.ref("users/" + currentId + "/password").set(newP).then(() => {
+        alert("Password changed successfully.");
+        document.getElementById("oldPass").value = "";
+        document.getElementById("newPass").value = "";
+      });
+    } else {
+      alert("Current password is incorrect.");
+    }
+  });
+  }
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (amt < 50 || amt > 500) return alert("Invalid amount");
