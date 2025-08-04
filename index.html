@@ -461,7 +461,29 @@
     });
   });
 }
-  function logout() {
+  function changePassword() {
+  const oldP = document.getElementById("oldPass").value;
+  const newP = document.getElementById("newPass").value;
+  const confirmP = document.getElementById("confirmPass").value;
+
+  if (!oldP || !newP || !confirmP) return alert("All fields are required");
+  if (newP !== confirmP) return alert("New passwords do not match");
+
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    if (data.password !== oldP) {
+      alert("Incorrect current password");
+    } else {
+      db.ref("users/" + currentId + "/password").set(newP).then(() => {
+        alert("✅ Password updated successfully!");
+        document.getElementById("oldPass").value = "";
+        document.getElementById("newPass").value = "";
+        document.getElementById("confirmPass").value = "";
+      });
+    }
+  });
+  }
+    function logout() {
     location.reload();
   }
 </script>
