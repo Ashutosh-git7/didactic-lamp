@@ -471,28 +471,59 @@ document.getElementById("userDashboard").classList.remove("hidden");
     });
   });
 }
-  function changePassword() {
-  const oldP = document.getElementById("oldPass").value;
-  const newP = document.getElementById("newPass").value;
-  const confirmP = document.getElementById("confirmPass").value;
+  let confirmationResultGlobal = null;
 
-  if (!oldP || !newP || !confirmP) return alert("All fields are required");
-  if (newP !== confirmP) return alert("New passwords do not match");
+function sendOTP() {
+  const mobile = document.getElementById("otpMobile").value.trim();
+  if (!mobile) return alert("Enter your registered mobile number");
 
-  db.ref("users/" + currentId).once("value", snap => {
-    const data = snap.val();
-    if (data.password !== oldP) {
-      alert("Incorrect current password");
-    } else {
-      db.ref("users/" + currentId + "/password").set(newP).then(() => {
-        alert("✅ Password updated successfully!");
-        document.getElementById("oldPass").value = "";
-        document.getElementById("newPass").value = "";
-        document.getElementById("confirmPass").value = "";
-      });
+  const fullNumber = "+91" + mobile; // Change as per your country code
+
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    'size': 'normal',
+    'callback': function(response) {
+      // reCAPTCHA solved
     }
   });
-  }
+
+  firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
+    .then(function (confirmationResult) {
+      confirmationResultGlobal = confirmationResult;
+      alert("OTP sent successfully");
+    })
+    .catch(function (error) {
+      alert("Error sending OTP: " + error.message);
+    });
+}
+
+function verifyOTP() {
+  const code = document.getElementById("otpCode").value.trim();
+  const newPass = document.getElementById("otpNewPass").value.trim();
+  const mobile = document.getElementById("otpMobile").value.trim();
+
+  if (!code || !newPass) return alert("Please enter all fields");
+
+  confirmationResultGlobal.confirm(code).then(function (result) {
+    // User signed in via OTP
+    const phone = result.user.phoneNumber;
+
+    // Find user by phone
+    db.ref("users").once("value", snap => {
+      let found = false;
+      snap.forEach(child => {
+        const data = child.val();
+        if (data.mobile === mobile) {
+          db.ref("users/" + child.key + "/password").set(newPass);
+          alert("✅ Password changed successfully!");
+          found = true;
+        }
+      });
+      if (!found) alert("Mobile number not found");
+    });
+  }).catch(function (error) {
+    alert("OTP verification failed: " + error.message);
+  });
+}
     function logout() {
     location.reload();
   }
