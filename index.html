@@ -354,15 +354,23 @@ document.getElementById("userDashboard").classList.remove("hidden");
 
   function loadAdmin() {
     db.ref("users").once("value", snap => {
-      let html = `
-<h4>All Users</h4>
-<table>
-<tr>
-  <th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th>
-  <th>Referral By</th><th>Deposit</th><th>Income</th><th>Remaining</th>
-  <th>Wallet Bal</th><th>Status</th><th>Actions</th>
-</tr>
-`;
+      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+      snap.forEach(child => {
+        const d = child.val();
+        html += `<tr>
+          <td>${child.key}</td>
+          <td>${d.name}</td>
+          <td>${d.wallet}</td>
+          <td>${d.deposit}</td>
+          <td>${d.income}</td>
+          <td>${d.status}</td>
+          <td>
+            <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
+            <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
+            <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
+          </td>
+        </tr>`;
+      });
       html += "</table>";
       document.getElementById("adminUsers").innerHTML = html;
     });
@@ -484,4 +492,4 @@ document.getElementById("userDashboard").classList.remove("hidden");
   }
 </script>
 </body>
-</html>
+  </html>
