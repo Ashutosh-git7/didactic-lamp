@@ -236,6 +236,66 @@ const userData = {
     });
   }
 
+function showForgotPassword() {
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("forgotBox").classList.remove("hidden");
+}
+
+function showLogin() {
+  document.getElementById("forgotBox").classList.add("hidden");
+  document.getElementById("loginBox").classList.remove("hidden");
+}
+
+let otpConfirmForgot = null;
+
+function sendOTPLogin() {
+  const mobile = document.getElementById("otpMobileLogin").value.trim();
+  if (!mobile) return alert("Enter registered mobile number");
+
+  const fullNumber = "+91" + mobile;
+
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container-login', {
+    'size': 'normal',
+    'callback': function(response) {}
+  });
+
+  firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
+    .then(function (confirmationResult) {
+      otpConfirmForgot = confirmationResult;
+      alert("OTP sent successfully");
+    })
+    .catch(function (error) {
+      alert("Error sending OTP: " + error.message);
+    });
+}
+
+function verifyOTPLogin() {
+  const code = document.getElementById("otpCodeLogin").value.trim();
+  const newPass = document.getElementById("otpNewPassLogin").value.trim();
+  const mobile = document.getElementById("otpMobileLogin").value.trim();
+
+  if (!code || !newPass) return alert("Please enter all fields");
+
+  otpConfirmForgot.confirm(code).then(function (result) {
+    const phone = result.user.phoneNumber;
+    db.ref("users").once("value", snap => {
+      let found = false;
+      snap.forEach(child => {
+        const data = child.val();
+        if (data.mobile === mobile) {
+          db.ref("users/" + child.key + "/password").set(newPass);
+          alert("✅ Password changed successfully!");
+          found = true;
+          showLogin(); // redirect to login
+        }
+      });
+      if (!found) alert("Mobile number not found");
+    });
+  }).catch(function (error) {
+    alert("OTP verification failed: " + error.message);
+  });
+}
+
   function loadUser(id) {
   db.ref("users/" + id).on("value", snap => {
     const data = snap.val();
