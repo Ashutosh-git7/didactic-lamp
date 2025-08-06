@@ -166,6 +166,10 @@
   
   <h3>🔐 User ID & Password Controls</h3>
 <div id="userControlList"></div>
+  
+  <h3>Change Admin Password</h3>
+<input type="password" id="newAdminPassword" placeholder="New Admin Password" />
+<button onclick="changeAdminPassword()">Change Password</button>
 
   <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
@@ -591,6 +595,13 @@ function deleteUser(uid) {
     loadUserControls(); // refresh list
   });
 }
+  function changeAdminPassword() {
+  const newPass = document.getElementById("newAdminPassword").value;
+  if (!newPass) return alert("Enter new password");
+  firebase.database().ref("admin").update({ password: newPass }).then(() => {
+    alert("Admin password changed!");
+  });
+            }
     function logout() {
     location.reload();
   }
