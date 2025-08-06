@@ -163,13 +163,6 @@
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Dashboard</h3>
   <div id="adminUsers"></div>
-  
-  <h3>🔐 User ID & Password Controls</h3>
-<div id="userControlList"></div>
-  
-  <h3>Change Admin Password</h3>
-<input type="password" id="newAdminPassword" placeholder="New Admin Password" />
-<button onclick="changeAdminPassword()">Change Password</button>
 
   <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
@@ -552,58 +545,9 @@ function verifyOTP() {
     alert("OTP verification failed: " + error.message);
   });
 }
-  function loadUserControls() {
-  const container = document.getElementById("userControlList");
-  container.innerHTML = "<b>Loading users...</b>";
-
-  firebase.database().ref("users").once("value", (snapshot) => {
-    const users = snapshot.val();
-    if (!users) {
-      container.innerHTML = "No users found.";
-      return;
-    }
-
-    let html = "";
-    Object.entries(users).forEach(([uid, user]) => {
-      html += `
-        <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-          <b>ID:</b> ${uid} <br/>
-          <b>Name:</b> ${user.name || ""} <br/>
-          <input type="text" id="pass-${uid}" placeholder="New Password" />
-          <button onclick="updateUserPassword('${uid}')">Reset Password</button>
-          <button onclick="deleteUser('${uid}')">❌ Delete User</button>
-        </div>
-      `;
-    });
-    container.innerHTML = html;
-  });
-}
-
-function updateUserPassword(uid) {
-  const newPass = document.getElementById(`pass-${uid}`).value;
-  if (!newPass) return alert("Enter a new password.");
-
-  firebase.database().ref("users/" + uid).update({ password: newPass }).then(() => {
-    alert("Password updated successfully.");
-  });
-}
-function deleteUser(uid) {
-  if (!confirm("Are you sure you want to delete this user?")) return;
-  firebase.database().ref("users/" + uid).remove().then(() => {
-    alert("User deleted.");
-    loadUserControls(); // refresh list
-  });
-}
-  function changeAdminPassword() {
-  const newPass = document.getElementById("newAdminPassword").value;
-  if (!newPass) return alert("Enter new password");
-  firebase.database().ref("admin").update({ password: newPass }).then(() => {
-    alert("Admin password changed!");
-  });
-            }
     function logout() {
     location.reload();
   }
 </script>
 </body>
-  </html>
+    </html>
