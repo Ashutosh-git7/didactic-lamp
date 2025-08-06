@@ -293,14 +293,21 @@ document.getElementById("userDashboard").classList.remove("hidden");
 }
 
   function submitDeposit() {
-  const amt = parseFloat(document.getElementById("depAmount").value);
-  if (amt < 50 || amt > 500) return alert("Invalid amount");
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    if (data.status === "Active") {
+      return alert("Deposit is locked until agreement is closed.");
+    }
 
-  db.ref("users/" + currentId).update({
-    deposit: amt,
-    status: "Pending"
-  }).then(() => {
-    alert("Deposit submitted! Waiting for admin approval.");
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (amt < 50 || amt > 500) return alert("Invalid amount");
+
+    db.ref("users/" + currentId).update({
+      deposit: amt,
+      status: "Pending"
+    }).then(() => {
+      alert("Deposit submitted! Waiting for admin approval.");
+    });
   });
 }
 
