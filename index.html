@@ -330,7 +330,10 @@ document.getElementById("userDashboard").classList.remove("hidden");
                   const currentIncome3 = parseFloat(d3.income || 0);
                   const bonus3 = amt * 0.02;
                   const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
-                  db.ref("users/" + ref3 + "/income").set(newIncome3);
+                  db.ref("users/" + ref3).update({
+  income: newIncome3,
+  walletBalance: (parseFloat(d3.walletBalance || 0) + bonus3)
+});
                 }
               });
             }
