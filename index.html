@@ -283,45 +283,15 @@ document.getElementById("userDashboard").classList.remove("hidden");
 }
 
   function submitDeposit() {
-  const amt = parseFloat(document.getElementById("depAmount").value);
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (amt < 50 || amt > 500) return alert("Invalid amount");
 
-  // Check if amount is valid
-  if (isNaN(amt) || amt < 50 || amt > 500) {
-    return alert("Invalid amount. Deposit must be between 50 and 500 USDT.");
-  }
+    db.ref("users/" + currentId).once("value", snap => {
+      const data = snap.val();
 
-  // Get current user data
-  db.ref("users/" + currentId).once("value").then(snap => {
-    const data = snap.val();
-
-    // Prevent re-submission if already pending or approved
-    if (data.status === "Pending") {
-      return alert("Deposit already submitted and pending admin approval.");
-    }
-    if (data.status === "Approved") {
-      return alert("Your deposit has already been approved.");
-    }
-
-    // Save deposit details with status = Pending
-    const updates = {
-      deposit: amt,
-      status: "Pending",
-      depositTime: Date.now(),
-      income: 0,
-      referralIncome: 0,
-      incomeWallet: 0,
-      withdrawWallet: 0,
-      totalIncome: 0,
-      target: amt * 2,
-      remaining: amt * 2
-    };
-
-    db.ref("users/" + currentId).update(updates);
-
-    alert("Deposit submitted successfully. Waiting for admin approval.");
-    document.getElementById("depAmount").value = "";
-  });
-  }
+      // Save deposit and status
+      db.ref("users/" + currentId + "/deposit").set(amt);
+      db.ref("users/" + currentId + "/status").set("Pending");
 
       // Referral income distribution
       if (data.referredBy) {
