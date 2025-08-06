@@ -290,8 +290,13 @@ document.getElementById("userDashboard").classList.remove("hidden");
       const data = snap.val();
 
       // Save deposit and status
-      db.ref("users/" + currentId + "/deposit").set(amt);
-      db.ref("users/" + currentId + "/status").set("Pending");
+      db.ref("pendingDeposits/" + currentId).set({
+  amount: amt,
+  timestamp: Date.now()
+}).then(() => {
+  db.ref("users/" + currentId + "/status").set("Pending");
+  alert("Deposit submitted and pending admin approval.");
+});
 
       // Referral income distribution
       if (data.referredBy) {
