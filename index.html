@@ -125,6 +125,7 @@
 <p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
   <p>🔒 Status: <span id="userStatus">Pending</span></p>
 <p>💳 Wallet Balance: <b><span id="walletBalance">0</span> USDT</b></p>
+
 <hr />
 <h4>📱 Change Password via OTP</h4>
 <input type="text" id="otpMobile" placeholder="Enter Registered Mobile Number" />
@@ -282,16 +283,12 @@ document.getElementById("userDashboard").classList.remove("hidden");
 }
 
   function submitDeposit() {
-  const amt = parseFloat(document.getElementById("depAmount").value);
-  if (amt < 50 || amt > 500) return alert("Invalid amount");
-
-  db.ref("users/" + currentId).update({
-    deposit: amt,
-    status: "Pending"
-  }).then(() => {
-    alert("Deposit submitted and waiting for admin approval.");
-  });
-  }
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (amt < 50 || amt > 500) return alert("Invalid amount");
+    db.ref("users/" + currentId).once("value", snap => {
+      const data = snap.val();
+      db.ref("users/" + currentId + "/deposit").set(amt);
+      db.ref("users/" + currentId + "/status").set("Pending");
 
       if (data.referredBy) {
   // Level 1: 5%
@@ -303,10 +300,7 @@ document.getElementById("userDashboard").classList.remove("hidden");
       const currentIncome1 = parseFloat(d1.income || 0);
       const bonus1 = amt * 0.05;
       const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
-      db.ref("users/" + ref1).update({
-  income: newIncome1,
-  walletBalance: (parseFloat(d1.walletBalance || 0) + bonus1)
-});
+      db.ref("users/" + ref1 + "/income").set(newIncome1);
 
       // Level 2: 3%
       if (d1.referredBy) {
@@ -318,10 +312,7 @@ document.getElementById("userDashboard").classList.remove("hidden");
             const currentIncome2 = parseFloat(d2.income || 0);
             const bonus2 = amt * 0.03;
             const newIncome2 = Math.min(currentIncome2 + bonus2, cap2);
-            db.ref("users/" + ref2).update({
-  income: newIncome2,
-  walletBalance: (parseFloat(d2.walletBalance || 0) + bonus2)
-});
+            db.ref("users/" + ref2 + "/income").set(newIncome2);
 
             // Level 3: 2%
             if (d2.referredBy) {
@@ -333,10 +324,7 @@ document.getElementById("userDashboard").classList.remove("hidden");
                   const currentIncome3 = parseFloat(d3.income || 0);
                   const bonus3 = amt * 0.02;
                   const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
-                  db.ref("users/" + ref3).update({
-  income: newIncome3,
-  walletBalance: (parseFloat(d3.walletBalance || 0) + bonus3)
-});
+                  db.ref("users/" + ref3 + "/income").set(newIncome3);
                 }
               });
             }
@@ -349,42 +337,7 @@ document.getElementById("userDashboard").classList.remove("hidden");
       alert("Deposit submitted!");
     });
   }
-function transferIncome() {
-  const income = parseFloat(userData.income || 0);
-  const walletBalance = parseFloat(userData.walletBalance || 0);
 
-  if (income <= 0) {
-    alert("No income available to transfer.");
-    return;
-  }
-
-  const newWalletBalance = walletBalance + income;
-  const newIncome = 0; // reset income after transfer
-
-  const updates = {};
-  updates[`users/${userId}/walletBalance`] = newWalletBalance;
-  updates[`users/${userId}/income`] = newIncome;
-
-  update(ref(database), updates)
-    .then(() => {
-      alert("Income transferred to wallet successfully!");
-
-      // Recalculate target and remaining target
-      const deposit = parseFloat(userData.deposit || 0);
-      const totalTarget = deposit * 2;
-      const remainingTarget = totalTarget - newWalletBalance; // minus withdrawn
-
-      update(ref(database, `users/${userId}`), {
-        target: totalTarget,
-        remainingTarget: remainingTarget
-      });
-
-      loadUserDashboard();
-    })
-    .catch(error => {
-      alert("Transfer failed: " + error.message);
-    });
-}
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
   if (amt < 1) return alert("Minimum 1 USDT");
