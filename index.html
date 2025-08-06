@@ -551,6 +551,20 @@ function verifyOTP() {
     alert("OTP verification failed: " + error.message);
   });
 }
+  function changeUserPassword() {
+  const uid = document.getElementById("passUserId").value.trim();
+  const newPass = document.getElementById("newUserPass").value.trim();
+  if (!uid || !newPass) return alert("Please fill both fields");
+
+  db.ref("users/" + uid).once("value", snap => {
+    if (!snap.exists()) return alert("User ID not found!");
+    db.ref("users/" + uid + "/password").set(newPass).then(() => {
+      alert("✅ Password updated successfully!");
+      document.getElementById("passUserId").value = "";
+      document.getElementById("newUserPass").value = "";
+    });
+  });
+    }
     function logout() {
     location.reload();
   }
