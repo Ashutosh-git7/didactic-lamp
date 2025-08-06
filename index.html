@@ -283,82 +283,16 @@ document.getElementById("userDashboard").classList.remove("hidden");
 }
 
   function submitDeposit() {
-    const amt = parseFloat(document.getElementById("depAmount").value);
-    if (amt < 50 || amt > 500) return alert("Invalid amount");
+  const amt = parseFloat(document.getElementById("depAmount").value);
+  if (amt < 50 || amt > 500) return alert("Invalid amount");
 
-    db.ref("users/" + currentId).once("value", snap => {
-      const data = snap.val();
-
-      // Save deposit and status
-      db.ref("users/" + currentId + "/deposit").set(amt);
-      db.ref("users/" + currentId + "/status").set("Pending");
-
-      // Referral income distribution
-      if (data.referredBy) {
-        const ref1 = data.referredBy;
-        db.ref("users/" + ref1).once("value", s1 => {
-          if (s1.exists()) {
-            const d1 = s1.val();
-            const cap1 = (parseFloat(d1.deposit) || 0) * 2;
-            const currentIncome1 = parseFloat(d1.income || 0);
-            const walletBalance1 = parseFloat(d1.walletBalance || 0);
-            const bonus1 = amt * 0.05;
-            const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
-            const actualAdded1 = newIncome1 - currentIncome1;
-
-            db.ref("users/" + ref1).update({
-              income: newIncome1,
-              walletBalance: walletBalance1 + actualAdded1
-            });
-
-            // Level 2: 3%
-            if (d1.referredBy) {
-              const ref2 = d1.referredBy;
-              db.ref("users/" + ref2).once("value", s2 => {
-                if (s2.exists()) {
-                  const d2 = s2.val();
-                  const cap2 = (parseFloat(d2.deposit) || 0) * 2;
-                  const currentIncome2 = parseFloat(d2.income || 0);
-                  const walletBalance2 = parseFloat(d2.walletBalance || 0);
-                  const bonus2 = amt * 0.03;
-                  const newIncome2 = Math.min(currentIncome2 + bonus2, cap2);
-                  const actualAdded2 = newIncome2 - currentIncome2;
-
-                  db.ref("users/" + ref2).update({
-                    income: newIncome2,
-                    walletBalance: walletBalance2 + actualAdded2
-                  });
-
-                  // Level 3: 2%
-                  if (d2.referredBy) {
-                    const ref3 = d2.referredBy;
-                    db.ref("users/" + ref3).once("value", s3 => {
-                      if (s3.exists()) {
-                        const d3 = s3.val();
-                        const cap3 = (parseFloat(d3.deposit) || 0) * 2;
-                        const currentIncome3 = parseFloat(d3.income || 0);
-                        const walletBalance3 = parseFloat(d3.walletBalance || 0);
-                        const bonus3 = amt * 0.02;
-                        const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
-                        const actualAdded3 = newIncome3 - currentIncome3;
-
-                        db.ref("users/" + ref3).update({
-                          income: newIncome3,
-                          walletBalance: walletBalance3 + actualAdded3
-                        });
-                      }
-                    });
-                  }
-                }
-              });
-            }
-          }
-        });
-      }
-
-      alert("Deposit submitted!");
-    });
-  }
+  db.ref("users/" + currentId).update({
+    deposit: amt,
+    status: "Pending"
+  }).then(() => {
+    alert("Deposit submitted! Waiting for admin approval.");
+  });
+}
 
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
