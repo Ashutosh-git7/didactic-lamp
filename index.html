@@ -348,7 +348,20 @@ document.getElementById("userDashboard").classList.remove("hidden");
       alert("Deposit submitted!");
     });
   }
-
+function transferIncome() {
+  db.ref("users/" + currentId).once("value", snap => {
+    const data = snap.val();
+    const income = parseFloat(data.income || 0);
+    const wallet = parseFloat(data.walletBalance || 0);
+    if (income <= 0) return alert("No income available to transfer.");
+    db.ref("users/" + currentId).update({
+      income: 0,
+      walletBalance: wallet + income
+    }).then(() => {
+      alert("Income transferred to wallet successfully!");
+    });
+  });
+  }
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
   if (amt < 1) return alert("Minimum 1 USDT");
