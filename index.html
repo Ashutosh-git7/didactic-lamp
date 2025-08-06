@@ -349,19 +349,41 @@ document.getElementById("userDashboard").classList.remove("hidden");
     });
   }
 function transferIncome() {
-  db.ref("users/" + currentId).once("value", snap => {
-    const data = snap.val();
-    const income = parseFloat(data.income || 0);
-    const wallet = parseFloat(data.walletBalance || 0);
-    if (income <= 0) return alert("No income available to transfer.");
-    db.ref("users/" + currentId).update({
-      income: 0,
-      walletBalance: wallet + income
-    }).then(() => {
-      alert("Income transferred to wallet successfully!");
-    });
-  });
+  const income = parseFloat(userData.income || 0);
+  const walletBalance = parseFloat(userData.walletBalance || 0);
+
+  if (income <= 0) {
+    alert("No income available to transfer.");
+    return;
   }
+
+  const newWalletBalance = walletBalance + income;
+  const newIncome = 0; // reset income after transfer
+
+  const updates = {};
+  updates[`users/${userId}/walletBalance`] = newWalletBalance;
+  updates[`users/${userId}/income`] = newIncome;
+
+  update(ref(database), updates)
+    .then(() => {
+      alert("Income transferred to wallet successfully!");
+
+      // Recalculate target and remaining target
+      const deposit = parseFloat(userData.deposit || 0);
+      const totalTarget = deposit * 2;
+      const remainingTarget = totalTarget - newWalletBalance; // minus withdrawn
+
+      update(ref(database, `users/${userId}`), {
+        target: totalTarget,
+        remainingTarget: remainingTarget
+      });
+
+      loadUserDashboard();
+    })
+    .catch(error => {
+      alert("Transfer failed: " + error.message);
+    });
+}
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
   if (amt < 1) return alert("Minimum 1 USDT");
