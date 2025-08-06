@@ -300,7 +300,10 @@ document.getElementById("userDashboard").classList.remove("hidden");
       const currentIncome1 = parseFloat(d1.income || 0);
       const bonus1 = amt * 0.05;
       const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
-      db.ref("users/" + ref1 + "/income").set(newIncome1);
+      db.ref("users/" + ref1).update({
+  income: newIncome1,
+  walletBalance: (parseFloat(d1.walletBalance || 0) + bonus1)
+});
 
       // Level 2: 3%
       if (d1.referredBy) {
