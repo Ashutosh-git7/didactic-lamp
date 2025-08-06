@@ -219,6 +219,16 @@ function backToLogin() {
       currentId = id;
       loadUser(id);
       document.getElementById("loginBox").classList.add("hidden");
+      // Disable deposit button if agreement is active
+if (data.status === "Active" && deposit > 0) {
+  document.getElementById("depAmount").disabled = true;
+  document.querySelector("button[onclick='submitDeposit()']").disabled = true;
+  document.querySelector("button[onclick='submitDeposit()']").innerText = "Deposit Locked (Active)";
+} else {
+  document.getElementById("depAmount").disabled = false;
+  document.querySelector("button[onclick='submitDeposit()']").disabled = false;
+  document.querySelector("button[onclick='submitDeposit()']").innerText = "Submit Deposit";
+}
       document.getElementById("userDashboard").classList.remove("hidden");
     } else {
       alert("User ID not found.");
