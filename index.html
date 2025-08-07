@@ -577,15 +577,17 @@ function verifyOTP() {
       snap.forEach(child => {
         const data = child.val();
         if (data.mobile === mobile) {
-          db.ref("users/" + child.key + "/password").set(newPass);
-          alert("✅ Password changed successfully!");
+          db.ref("users/" + child.key + "/password").set(newPass).then(() => {
+            alert("Password updated successfully!");
+            location.reload();
+          });
           found = true;
         }
       });
-      if (!found) alert("Mobile number not found");
+      if (!found) alert("No user found with this mobile number.");
     });
   }).catch(function (error) {
-    alert("OTP verification failed: " + error.message);
+    alert("Incorrect OTP or expired. Try again.");
   });
 }
     function logout() {
