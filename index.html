@@ -565,7 +565,7 @@ function verifyOTP() {
   const newPass = document.getElementById("otpNewPass").value.trim();
   const mobile = document.getElementById("otpMobile").value.trim();
 
-  if (!code || !newPass || !mobile) return alert("Please enter all fields");
+  if (!code || !newPass) return alert("Please enter all fields");
 
   confirmationResultGlobal.confirm(code).then(function (result) {
     // OTP verified successfully
@@ -577,20 +577,17 @@ function verifyOTP() {
       snap.forEach(child => {
         const data = child.val();
         if (data.mobile === mobile) {
-          found = true;
-          db.ref("users/" + child.key).update({
-            password: newPass
-          }).then(() => {
-            alert("✅ Password updated successfully!");
-            location.reload();
+          db.ref("users/" + child.key + "/password").set(newPass).then(() => {
+            alert("Password updated successfully!");
+            location.reload(); // Redirect to login
           });
+          found = true;
         }
       });
-
       if (!found) alert("Mobile number not registered.");
     });
   }).catch(function (error) {
-    alert("Invalid OTP: " + error.message);
+    alert("Invalid OTP or error verifying: " + error.message);
   });
 }
    }    function logout() {
