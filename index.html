@@ -579,18 +579,17 @@ function verifyOTP() {
         if (data.mobile === mobile) {
           db.ref("users/" + child.key + "/password").set(newPass).then(() => {
             alert("Password updated successfully!");
-            window.location.reload(); // or redirect to login
+            location.reload();
           });
           found = true;
         }
       });
-
       if (!found) {
-        alert("Mobile number not registered.");
+        alert("No user found with this mobile number.");
       }
     });
   }).catch(function (error) {
-    alert("Invalid OTP or expired. Try again.");
+    alert("Invalid OTP or verification failed: " + error.message);
   });
 }
     function logout() {
