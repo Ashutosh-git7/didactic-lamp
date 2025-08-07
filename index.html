@@ -568,29 +568,27 @@ function verifyOTP() {
   if (!code || !newPass) return alert("Please enter all fields");
 
   confirmationResultGlobal.confirm(code).then(function (result) {
-    // OTP verified successfully
+    // User signed in via OTP
     const phone = result.user.phoneNumber;
 
-    // Find user by registered mobile
+    // Find user by phone
     db.ref("users").once("value", snap => {
       let found = false;
       snap.forEach(child => {
         const data = child.val();
         if (data.mobile === mobile) {
-          db.ref("users/" + child.key + "/password").set(newPass).then(() => {
-            alert("Password updated successfully!");
-            location.reload(); // Redirect to login
-          });
+          db.ref("users/" + child.key + "/password").set(newPass);
+          alert("✅ Password changed successfully!");
           found = true;
         }
       });
-      if (!found) alert("Mobile number not registered.");
+      if (!found) alert("Mobile number not found");
     });
   }).catch(function (error) {
-    alert("Invalid OTP or error verifying: " + error.message);
+    alert("OTP verification failed: " + error.message);
   });
 }
-   }    function logout() {
+    function logout() {
     location.reload();
   }
 </script>
