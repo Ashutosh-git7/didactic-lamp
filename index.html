@@ -399,7 +399,16 @@ document.getElementById("userDashboard").classList.remove("hidden");
       document.getElementById("adminUsers").innerHTML += html;
     });
   }
-
+function deleteUser(userId) {
+  if (confirm("⚠️ Are you sure you want to delete this user? This action cannot be undone.")) {
+    db.ref("users/" + userId).remove().then(() => {
+      alert("🗑️ User deleted successfully.");
+      loadAdmin(); // refresh admin panel
+    }).catch(err => {
+      alert("Error deleting user: " + err.message);
+    });
+  }
+  
   function approveDeposit(userId) {
   db.ref("users/" + userId).once("value", snap => {
     const data = snap.val();
