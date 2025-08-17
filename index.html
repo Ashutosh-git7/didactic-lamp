@@ -591,6 +591,15 @@ function verifyOTP() {
     alert("Incorrect OTP or expired. Try again.");
   });
 }
+  function deleteUser(userId) {
+  if (confirm("Are you sure you want to delete user " + userId + "?")) {
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User " + userId + " deleted successfully.");
+      loadAdmin(); // Refresh admin panel after deletion
+    }).catch(err => {
+      alert("Error deleting user: " + err.message);
+    });
+  }
     function logout() {
     location.reload();
   }
