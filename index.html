@@ -1,5 +1,5 @@
 <!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html>
 <head>
   <title>🚀 Ashirwad Mart - Grow Up Together</title>
@@ -8,209 +8,227 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f9; margin:0; padding:0; }
-    header { background:#2c3e50; color:white; padding:15px; text-align:center; font-size:20px; font-weight:bold; }
+    body { font-family: Arial, sans-serif; background: #f4f7fa; margin:0; padding:0; }
+    header { background:#4CAF50; color:#fff; padding:15px; text-align:center; }
     .container { padding:20px; }
-    .card { background:white; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
-    input, button, select { width:100%; padding:10px; margin-top:10px; border-radius:8px; border:1px solid #ccc; }
-    button { background:#2980b9; color:white; font-weight:bold; cursor:pointer; }
-    button:hover { background:#1f6391; }
+    .card { background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); margin-bottom:20px; }
+    button { background:#4CAF50; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; }
+    button:hover { background:#45a049; }
+    input, select { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:5px; }
     .hidden { display:none; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th, td { border:1px solid #ddd; padding:8px; text-align:center; font-size:14px; }
-    th { background:#2980b9; color:white; }
-    .logout { background:#e74c3c; }
-    .delete-btn { background:#e74c3c; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
-    .delete-btn:hover { background:#c0392b; }
+    .nav { display:flex; justify-content:space-around; background:#333; padding:10px; position:fixed; bottom:0; width:100%; }
+    .nav button { background:none; color:#fff; border:none; font-size:16px; }
+    .nav button.active { color:#4CAF50; font-weight:bold; }
+    table { width:100%; border-collapse:collapse; }
+    table, th, td { border:1px solid #ddd; }
+    th, td { padding:8px; text-align:left; }
+    th { background:#f2f2f2; }
   </style>
 </head>
 <body>
-  <header>🚀 Ashirwad Mart - Grow Up Together</header>
-
+  <header>
+    <h2>🚀 Ashirwad Mart</h2>
+    <p>Grow Up Together</p>
+  </header>
   <div class="container">
-
-    <!-- Registration -->
-    <div id="registerDiv" class="card">
-      <h3>New Registration</h3>
-      <input type="text" id="regName" placeholder="Full Name" />
-      <input type="text" id="regMobile" placeholder="Mobile Number" />
-      <input type="text" id="regWallet" placeholder="Your USDT (BEP20) Wallet Address" />
-      <input type="password" id="regPassword" placeholder="Password" />
-      <button onclick="register()">Register</button>
-      <p>Already have account? <a href="#" onclick="showLogin()">Login</a></p>
-    </div>
-
+    
     <!-- Login -->
-    <div id="loginDiv" class="card hidden">
+    <div id="loginPage" class="card">
       <h3>Login</h3>
-      <input type="text" id="loginMobile" placeholder="Mobile Number" />
+      <input type="text" id="loginId" placeholder="User ID" />
       <input type="password" id="loginPassword" placeholder="Password" />
       <button onclick="login()">Login</button>
-      <p>No account? <a href="#" onclick="showRegister()">Register</a></p>
+      <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
+      <p><a href="#" onclick="showReset()">Forgot Password?</a></p>
     </div>
-
-    <!-- User Dashboard -->
-    <div id="userDiv" class="hidden">
+    
+    <!-- Register -->
+    <div id="registerPage" class="card hidden">
+      <h3>Register</h3>
+      <input type="text" id="regName" placeholder="Full Name" />
+      <input type="text" id="regMobile" placeholder="Mobile Number" />
+      <input type="password" id="regPassword" placeholder="Password" />
+      <input type="text" id="regWallet" placeholder="Your BEP20 USDT Wallet Address" />
+      <input type="text" id="regRef" placeholder="Referral Code (optional)" />
+      <button onclick="register()">Register</button>
+      <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+    </div>
+    
+    <!-- Reset Password -->
+    <div id="resetPage" class="card hidden">
+      <h3>Reset Password</h3>
+      <input type="text" id="resetMobile" placeholder="Registered Mobile" />
+      <input type="password" id="newPassword" placeholder="New Password" />
+      <button onclick="resetPassword()">Reset</button>
+      <p><a href="#" onclick="showLogin()">Back to Login</a></p>
+    </div>
+    
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
       <div class="card">
         <h3>Welcome, <span id="userName"></span></h3>
-        <p><b>Wallet:</b> <span id="userWallet"></span></p>
-        <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
-        <p><b>Income Wallet:</b> <span id="userIncome">0</span> USDT</p>
-        <p><b>Referral Wallet:</b> <span id="userReferral">0</span> USDT</p>
-        <button onclick="logout()" class="logout">Logout</button>
+        <p>User ID: <span id="userId"></span></p>
+        <p>Wallet: <span id="userWallet"></span></p>
+        <p>Deposit: <span id="userDeposit">0</span> USDT</p>
+        <p>Income Wallet: <span id="incomeWallet">0</span> USDT</p>
+        <p>Referral Wallet: <span id="refWallet">0</span> USDT</p>
+      </div>
+      
+      <div class="card" id="depositPage">
+        <h3>Make a Deposit</h3>
+        <p>Send USDT (BEP20) to:</p>
+        <p><b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+        <input type="number" id="depositAmount" placeholder="Enter Amount (50-500)" />
+        <button onclick="makeDeposit()">Submit Deposit</button>
+      </div>
+      
+      <div class="card" id="withdrawPage">
+        <h3>Request Withdrawal</h3>
+        <input type="number" id="withdrawAmount" placeholder="Enter Amount" />
+        <button onclick="requestWithdrawal()">Withdraw</button>
+      </div>
+      
+      <div class="card" id="teamPage">
+        <h3>My Team</h3>
+        <ul id="teamList"></ul>
       </div>
     </div>
-
-    <!-- Admin Login -->
-    <div id="adminLoginDiv" class="card hidden">
-      <h3>Admin Login</h3>
-      <input type="text" id="adminId" placeholder="Admin ID" />
-      <input type="password" id="adminPass" placeholder="Password" />
-      <button onclick="adminLogin()">Login</button>
-    </div>
-
+    
     <!-- Admin Panel -->
-    <div id="adminDiv" class="hidden">
-      <div class="card">
-        <h3>📊 Admin Panel</h3>
-        <button onclick="logoutAdmin()" class="logout">Logout</button>
-        <table id="userTable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Mobile</th>
-              <th>Wallet</th>
-              <th>Deposit</th>
-              <th>Income</th>
-              <th>Referral</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+    <div id="adminPage" class="card hidden">
+      <h3>Admin Panel</h3>
+      <input type="text" id="adminId" placeholder="Admin ID" />
+      <input type="password" id="adminPass" placeholder="Admin Password" />
+      <button onclick="adminLogin()">Login</button>
+      <div id="adminControls" class="hidden">
+        <h4>All Users</h4>
+        <table id="usersTable">
+          <thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Deposit</th><th>Wallet</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-
+    
   </div>
-
+  
+  <div class="nav hidden" id="navBar">
+    <button onclick="showTab('depositPage')">Deposit</button>
+    <button onclick="showTab('withdrawPage')">Withdraw</button>
+    <button onclick="showTab('teamPage')">Team</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+  
   <script>
     // Firebase Config
     const firebaseConfig = {
-      apiKey: "AIzaSyCVajz3nSlVxwTk-dsC8a2",
+      apiKey: "AIzaSyDpjVST-xxxx",
       authDomain: "ashirwadmart-6d657.firebaseapp.com",
       databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
       projectId: "ashirwadmart-6d657",
       storageBucket: "ashirwadmart-6d657.appspot.com",
-      messagingSenderId: "248517086147",
-      appId: "1:248517086147:web:d93f883db84c36a5f36eae"
+      messagingSenderId: "1021xxxx",
+      appId: "1:1021xxxx:web:xxxx"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // Show functions
-    function showRegister(){ document.getElementById('registerDiv').classList.remove('hidden'); document.getElementById('loginDiv').classList.add('hidden'); }
-    function showLogin(){ document.getElementById('loginDiv').classList.remove('hidden'); document.getElementById('registerDiv').classList.add('hidden'); }
-
-    // Register
+    
+    let currentUser = null;
+    
+    function showLogin(){ hideAll(); document.getElementById('loginPage').classList.remove('hidden'); }
+    function showRegister(){ hideAll(); document.getElementById('registerPage').classList.remove('hidden'); }
+    function showReset(){ hideAll(); document.getElementById('resetPage').classList.remove('hidden'); }
+    function showDashboard(){ hideAll(); document.getElementById('dashboard').classList.remove('hidden'); document.getElementById('navBar').classList.remove('hidden'); }
+    function hideAll(){ document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden')); document.getElementById('navBar').classList.add('hidden'); }
+    
     function register(){
-      let name = document.getElementById('regName').value;
-      let mobile = document.getElementById('regMobile').value;
-      let wallet = document.getElementById('regWallet').value;
-      let pass = document.getElementById('regPassword').value;
-      if(!name || !mobile || !wallet || !pass){ alert("Fill all fields"); return; }
-      db.ref("users/"+mobile).set({
-        name:name, mobile:mobile, wallet:wallet, pass:pass,
-        deposit:0, income:0, referral:0
-      });
-      alert("Registered Successfully");
+      const name = document.getElementById('regName').value;
+      const mobile = document.getElementById('regMobile').value;
+      const pass = document.getElementById('regPassword').value;
+      const wallet = document.getElementById('regWallet').value;
+      const ref = document.getElementById('regRef').value || '';
+      if(!name || !mobile || !pass || !wallet){ alert("All fields required"); return; }
+      const userId = "U" + Date.now();
+      db.ref("users/"+userId).set({name, mobile, pass, wallet, deposit:0, income:0, refIncome:0, ref});
+      alert("Registered! Your ID: "+userId);
       showLogin();
     }
-
-    // Login
+    
     function login(){
-      let mobile = document.getElementById('loginMobile').value;
-      let pass = document.getElementById('loginPassword').value;
-      db.ref("users/"+mobile).get().then(s=>{
-        if(!s.exists()){ alert("No User Found"); return; }
-        let data = s.val();
-        if(data.pass!==pass){ alert("Wrong Password"); return; }
-        localStorage.setItem("loggedUser",mobile);
-        loadUser();
+      const id = document.getElementById('loginId').value;
+      const pass = document.getElementById('loginPassword').value;
+      db.ref("users/"+id).once("value").then(snap=>{
+        if(snap.exists() && snap.val().pass===pass){
+          currentUser = id;
+          document.getElementById('userName').innerText = snap.val().name;
+          document.getElementById('userId').innerText = id;
+          document.getElementById('userWallet').innerText = snap.val().wallet;
+          document.getElementById('userDeposit').innerText = snap.val().deposit;
+          document.getElementById('incomeWallet').innerText = snap.val().income;
+          document.getElementById('refWallet').innerText = snap.val().refIncome;
+          showDashboard();
+        } else { alert("Invalid Login"); }
       });
     }
-
-    // Load User
-    function loadUser(){
-      let mobile = localStorage.getItem("loggedUser");
-      if(!mobile){ return; }
-      db.ref("users/"+mobile).on("value",snap=>{
-        let d = snap.val(); if(!d){ return; }
-        document.getElementById("registerDiv").classList.add("hidden");
-        document.getElementById("loginDiv").classList.add("hidden");
-        document.getElementById("userDiv").classList.remove("hidden");
-        document.getElementById("adminLoginDiv").classList.add("hidden");
-        document.getElementById("adminDiv").classList.add("hidden");
-        document.getElementById("userName").innerText = d.name;
-        document.getElementById("userWallet").innerText = d.wallet;
-        document.getElementById("userDeposit").innerText = d.deposit;
-        document.getElementById("userIncome").innerText = d.income;
-        document.getElementById("userReferral").innerText = d.referral;
+    
+    function resetPassword(){
+      const mobile = document.getElementById('resetMobile').value;
+      const newPass = document.getElementById('newPassword').value;
+      db.ref("users").once("value").then(snap=>{
+        let found = false;
+        snap.forEach(child=>{
+          if(child.val().mobile===mobile){
+            db.ref("users/"+child.key+"/pass").set(newPass);
+            alert("Password reset successful");
+            found=true;
+            showLogin();
+          }
+        });
+        if(!found) alert("Mobile not found");
       });
     }
-
-    function logout(){ localStorage.removeItem("loggedUser"); location.reload(); }
-
-    // Admin Login
+    
+    function makeDeposit(){
+      const amt = parseInt(document.getElementById('depositAmount').value);
+      if(amt<50 || amt>500){ alert("Deposit between 50-500"); return; }
+      db.ref("users/"+currentUser+"/deposit").set(amt);
+      alert("Deposit submitted");
+    }
+    
+    function requestWithdrawal(){
+      const amt = parseInt(document.getElementById('withdrawAmount').value);
+      db.ref("withdrawals/"+currentUser).push({amt,status:"pending"});
+      alert("Withdrawal requested");
+    }
+    
+    function showTab(tabId){
+      document.querySelectorAll('#dashboard .card').forEach(c=>c.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+    }
+    
+    function logout(){ currentUser=null; hideAll(); showLogin(); }
+    
+    // Admin
     function adminLogin(){
-      let id = document.getElementById('adminId').value;
-      let pass = document.getElementById('adminPass').value;
+      const id = document.getElementById('adminId').value;
+      const pass = document.getElementById('adminPass').value;
       if(id==="Admin" && pass==="Jaihanuman@7"){
-        localStorage.setItem("isAdmin","true");
-        loadAdmin();
-      } else { alert("Wrong Admin Credentials"); }
+        document.getElementById('adminControls').classList.remove('hidden');
+        loadUsers();
+      } else { alert("Invalid Admin"); }
     }
-
-    function loadAdmin(){
-      document.getElementById("registerDiv").classList.add("hidden");
-      document.getElementById("loginDiv").classList.add("hidden");
-      document.getElementById("userDiv").classList.add("hidden");
-      document.getElementById("adminLoginDiv").classList.add("hidden");
-      document.getElementById("adminDiv").classList.remove("hidden");
-
-      let tbody = document.querySelector("#userTable tbody");
-      db.ref("users").on("value",snap=>{
-        tbody.innerHTML="";
-        snap.forEach(c=>{
-          let d=c.val();
-          let tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td>${d.name}</td>
-            <td>${d.mobile}</td>
-            <td>${d.wallet}</td>
-            <td>${d.deposit}</td>
-            <td>${d.income}</td>
-            <td>${d.referral}</td>
-            <td><button class="delete-btn" onclick="deleteUser('${d.mobile}')">Delete</button></td>`;
-          tbody.appendChild(tr);
+    
+    function loadUsers(){
+      const tbody=document.querySelector("#usersTable tbody");
+      tbody.innerHTML="";
+      db.ref("users").once("value").then(snap=>{
+        snap.forEach(child=>{
+          const u=child.val();
+          tbody.innerHTML+=`<tr><td>${child.key}</td><td>${u.name}</td><td>${u.mobile}</td><td>${u.deposit}</td><td>${u.wallet}</td></tr>`;
         });
       });
     }
-
-    function deleteUser(mobile){
-      if(confirm("Are you sure to delete this user?")){
-        db.ref("users/"+mobile).remove();
-        alert("User Deleted");
-      }
-    }
-
-    function logoutAdmin(){ localStorage.removeItem("isAdmin"); location.reload(); }
-
-    // Auto check
-    window.onload=()=>{
-      if(localStorage.getItem("loggedUser")){ loadUser(); }
-      else if(localStorage.getItem("isAdmin")){ loadAdmin(); }
-      else { showRegister(); document.getElementById("adminLoginDiv").classList.remove("hidden"); }
-    }
+    
+    showLogin();
   </script>
 </body>
 </html>
