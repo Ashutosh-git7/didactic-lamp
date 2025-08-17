@@ -1,5 +1,5 @@
 <!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
   <title>🚀 Ashirwad Mart - Grow Up Together</title>
@@ -8,280 +8,208 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:0; padding:0; }
-    .container { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-    h2 { text-align: center; color:#333; }
-    input, button, select { width:100%; padding:10px; margin:8px 0; border-radius:5px; border:1px solid #ccc; }
-    button { background:#007bff; color:#fff; border:none; cursor:pointer; }
-    button:hover { background:#0056b3; }
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin:0; padding:0; }
+    header { background:#2c3e50; color:white; padding:15px; text-align:center; font-size:20px; font-weight:bold; }
+    .container { padding:20px; }
+    .card { background:white; border-radius:10px; padding:15px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+    input, button, select { width:100%; padding:10px; margin-top:10px; border-radius:8px; border:1px solid #ccc; }
+    button { background:#2980b9; color:white; font-weight:bold; cursor:pointer; }
+    button:hover { background:#1f6391; }
     .hidden { display:none; }
-    .nav { display:flex; justify-content:space-around; margin-bottom:15px; }
-    .nav button { flex:1; margin:0 5px; }
-    table { width:100%; border-collapse: collapse; margin-top:10px;}
-    table, th, td { border:1px solid #ddd; }
-    th, td { padding:8px; text-align:left; }
-    .logout-btn { background:red; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; font-size:14px; }
+    th { background:#2980b9; color:white; }
+    .logout { background:#e74c3c; }
+    .delete-btn { background:#e74c3c; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; }
+    .delete-btn:hover { background:#c0392b; }
   </style>
 </head>
 <body>
+  <header>🚀 Ashirwad Mart - Grow Up Together</header>
 
-  <div class="container" id="authSection">
-    <h2>🚀 Ashirwad Mart</h2>
-    <input type="text" id="regName" placeholder="Full Name" />
-    <input type="text" id="regMobile" placeholder="Mobile Number" />
-    <input type="text" id="regWallet" placeholder="USDT BEP20 Wallet Address" />
-    <input type="password" id="regPassword" placeholder="Password" />
-    <input type="text" id="regReferral" placeholder="Referral Code (optional)" />
-    <button onclick="register()">Register</button>
-    <hr/>
-    <input type="text" id="loginMobile" placeholder="Mobile Number" />
-    <input type="password" id="loginPassword" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <hr/>
-    <input type="text" id="adminId" placeholder="Admin ID" />
-    <input type="password" id="adminPass" placeholder="Admin Password" />
-    <button onclick="adminLogin()">Admin Login</button>
-  </div>
+  <div class="container">
 
-  <div class="container hidden" id="userSection">
-    <h2>👤 User Dashboard</h2>
-    <div class="nav">
-      <button onclick="showPage('depositPage')">Deposit</button>
-      <button onclick="showPage('incomePage')">Income</button>
-      <button onclick="showPage('withdrawPage')">Withdraw</button>
-      <button onclick="showPage('teamPage')">Team</button>
+    <!-- Registration -->
+    <div id="registerDiv" class="card">
+      <h3>New Registration</h3>
+      <input type="text" id="regName" placeholder="Full Name" />
+      <input type="text" id="regMobile" placeholder="Mobile Number" />
+      <input type="text" id="regWallet" placeholder="Your USDT (BEP20) Wallet Address" />
+      <input type="password" id="regPassword" placeholder="Password" />
+      <button onclick="register()">Register</button>
+      <p>Already have account? <a href="#" onclick="showLogin()">Login</a></p>
     </div>
-    <div id="depositPage" class="page">
-      <h3>Make a Deposit</h3>
-      <p>Send USDT (BEP20) to:</p>
-      <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b>
-      <input type="number" id="depositAmount" placeholder="Enter Amount (50 - 500 USDT)" />
-      <button onclick="submitDeposit()">Submit Deposit</button>
-    </div>
-    <div id="incomePage" class="page hidden">
-      <h3>Income Wallet</h3>
-      <p id="incomeBalance">Balance: 0 USDT</p>
-      <p id="referralBalance">Referral Income: 0 USDT</p>
-    </div>
-    <div id="withdrawPage" class="page hidden">
-      <h3>Withdrawal Request</h3>
-      <input type="number" id="withdrawAmount" placeholder="Enter Amount" />
-      <button onclick="requestWithdrawal()">Request Withdraw</button>
-      <h4>History</h4>
-      <table id="withdrawHistory"><tr><th>Amount</th><th>Status</th></tr></table>
-    </div>
-    <div id="teamPage" class="page hidden">
-      <h3>My Team</h3>
-      <ul id="teamList"></ul>
-    </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
 
-  <div class="container hidden" id="adminSection">
-    <h2>🔐 Admin Panel</h2>
-    <div class="nav">
-      <button onclick="showAdminPage('usersPage')">Users</button>
-      <button onclick="showAdminPage('depositsPage')">Deposits</button>
-      <button onclick="showAdminPage('withdrawalsPage')">Withdrawals</button>
+    <!-- Login -->
+    <div id="loginDiv" class="card hidden">
+      <h3>Login</h3>
+      <input type="text" id="loginMobile" placeholder="Mobile Number" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p>No account? <a href="#" onclick="showRegister()">Register</a></p>
     </div>
-    <div id="usersPage" class="adminPage">
-      <h3>All Users</h3>
-      <table id="usersTable"><tr><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th></tr></table>
+
+    <!-- User Dashboard -->
+    <div id="userDiv" class="hidden">
+      <div class="card">
+        <h3>Welcome, <span id="userName"></span></h3>
+        <p><b>Wallet:</b> <span id="userWallet"></span></p>
+        <p><b>Deposit:</b> <span id="userDeposit">0</span> USDT</p>
+        <p><b>Income Wallet:</b> <span id="userIncome">0</span> USDT</p>
+        <p><b>Referral Wallet:</b> <span id="userReferral">0</span> USDT</p>
+        <button onclick="logout()" class="logout">Logout</button>
+      </div>
     </div>
-    <div id="depositsPage" class="adminPage hidden">
-      <h3>Pending Deposits</h3>
-      <table id="depositsTable"><tr><th>User</th><th>Amount</th><th>Action</th></tr></table>
+
+    <!-- Admin Login -->
+    <div id="adminLoginDiv" class="card hidden">
+      <h3>Admin Login</h3>
+      <input type="text" id="adminId" placeholder="Admin ID" />
+      <input type="password" id="adminPass" placeholder="Password" />
+      <button onclick="adminLogin()">Login</button>
     </div>
-    <div id="withdrawalsPage" class="adminPage hidden">
-      <h3>Withdrawal Requests</h3>
-      <table id="withdrawalsTable"><tr><th>User</th><th>Amount</th><th>Wallet</th><th>Action</th></tr></table>
+
+    <!-- Admin Panel -->
+    <div id="adminDiv" class="hidden">
+      <div class="card">
+        <h3>📊 Admin Panel</h3>
+        <button onclick="logoutAdmin()" class="logout">Logout</button>
+        <table id="userTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Mobile</th>
+              <th>Wallet</th>
+              <th>Deposit</th>
+              <th>Income</th>
+              <th>Referral</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-    <button class="logout-btn" onclick="adminLogout()">Logout</button>
+
   </div>
 
   <script>
     // Firebase Config
     const firebaseConfig = {
-      apiKey: "AIzaSyDQH-XhzMwHL6a6L7Ulbp1FclFmg2ljGcI",
+      apiKey: "AIzaSyCVajz3nSlVxwTk-dsC8a2",
       authDomain: "ashirwadmart-6d657.firebaseapp.com",
       databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
       projectId: "ashirwadmart-6d657",
       storageBucket: "ashirwadmart-6d657.appspot.com",
-      messagingSenderId: "159471179192",
-      appId: "1:159471179192:web:79fdd6b7aa5c2a3a7a0d3b"
+      messagingSenderId: "248517086147",
+      appId: "1:248517086147:web:d93f883db84c36a5f36eae"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let currentUser = null;
+    // Show functions
+    function showRegister(){ document.getElementById('registerDiv').classList.remove('hidden'); document.getElementById('loginDiv').classList.add('hidden'); }
+    function showLogin(){ document.getElementById('loginDiv').classList.remove('hidden'); document.getElementById('registerDiv').classList.add('hidden'); }
 
-    function register() {
-      const name = document.getElementById('regName').value;
-      const mobile = document.getElementById('regMobile').value;
-      const wallet = document.getElementById('regWallet').value;
-      const password = document.getElementById('regPassword').value;
-      const referral = document.getElementById('regReferral').value;
+    // Register
+    function register(){
+      let name = document.getElementById('regName').value;
+      let mobile = document.getElementById('regMobile').value;
+      let wallet = document.getElementById('regWallet').value;
+      let pass = document.getElementById('regPassword').value;
+      if(!name || !mobile || !wallet || !pass){ alert("Fill all fields"); return; }
+      db.ref("users/"+mobile).set({
+        name:name, mobile:mobile, wallet:wallet, pass:pass,
+        deposit:0, income:0, referral:0
+      });
+      alert("Registered Successfully");
+      showLogin();
+    }
 
-      if (!name || !mobile || !wallet || !password) {
-        alert("Fill all fields");
-        return;
-      }
-
-      const userId = "U" + Date.now();
-      const newUser = {
-        id: userId,
-        name, mobile, wallet, password,
-        deposit: 0,
-        income: 0,
-        referralIncome: 0,
-        team: [],
-        referrals: referral || null
-      };
-
-      db.ref("users/" + mobile).set(newUser, () => {
-        alert("Registered Successfully");
+    // Login
+    function login(){
+      let mobile = document.getElementById('loginMobile').value;
+      let pass = document.getElementById('loginPassword').value;
+      db.ref("users/"+mobile).get().then(s=>{
+        if(!s.exists()){ alert("No User Found"); return; }
+        let data = s.val();
+        if(data.pass!==pass){ alert("Wrong Password"); return; }
+        localStorage.setItem("loggedUser",mobile);
+        loadUser();
       });
     }
 
-    function login() {
-      const mobile = document.getElementById('loginMobile').value;
-      const password = document.getElementById('loginPassword').value;
-
-      db.ref("users/" + mobile).once("value", snap => {
-        if (snap.exists() && snap.val().password === password) {
-          currentUser = snap.val();
-          document.getElementById("authSection").classList.add("hidden");
-          document.getElementById("userSection").classList.remove("hidden");
-          loadUserDashboard();
-        } else {
-          alert("Invalid Credentials");
-        }
+    // Load User
+    function loadUser(){
+      let mobile = localStorage.getItem("loggedUser");
+      if(!mobile){ return; }
+      db.ref("users/"+mobile).on("value",snap=>{
+        let d = snap.val(); if(!d){ return; }
+        document.getElementById("registerDiv").classList.add("hidden");
+        document.getElementById("loginDiv").classList.add("hidden");
+        document.getElementById("userDiv").classList.remove("hidden");
+        document.getElementById("adminLoginDiv").classList.add("hidden");
+        document.getElementById("adminDiv").classList.add("hidden");
+        document.getElementById("userName").innerText = d.name;
+        document.getElementById("userWallet").innerText = d.wallet;
+        document.getElementById("userDeposit").innerText = d.deposit;
+        document.getElementById("userIncome").innerText = d.income;
+        document.getElementById("userReferral").innerText = d.referral;
       });
     }
 
-    function loadUserDashboard() {
-      document.getElementById("incomeBalance").innerText = "Balance: " + currentUser.income + " USDT";
-      document.getElementById("referralBalance").innerText = "Referral Income: " + currentUser.referralIncome + " USDT";
-      if (currentUser.team) {
-        document.getElementById("teamList").innerHTML = "";
-        currentUser.team.forEach(m => {
-          const li = document.createElement("li");
-          li.innerText = m;
-          document.getElementById("teamList").appendChild(li);
-        });
-      }
+    function logout(){ localStorage.removeItem("loggedUser"); location.reload(); }
+
+    // Admin Login
+    function adminLogin(){
+      let id = document.getElementById('adminId').value;
+      let pass = document.getElementById('adminPass').value;
+      if(id==="Admin" && pass==="Jaihanuman@7"){
+        localStorage.setItem("isAdmin","true");
+        loadAdmin();
+      } else { alert("Wrong Admin Credentials"); }
     }
 
-    function submitDeposit() {
-      const amount = parseInt(document.getElementById("depositAmount").value);
-      if (amount < 50 || amount > 500) {
-        alert("Deposit must be between 50 and 500 USDT");
-        return;
-      }
-      db.ref("deposits").push({
-        user: currentUser.mobile,
-        amount,
-        status: "pending"
-      });
-      alert("Deposit Submitted, Wait for Admin Approval");
-    }
+    function loadAdmin(){
+      document.getElementById("registerDiv").classList.add("hidden");
+      document.getElementById("loginDiv").classList.add("hidden");
+      document.getElementById("userDiv").classList.add("hidden");
+      document.getElementById("adminLoginDiv").classList.add("hidden");
+      document.getElementById("adminDiv").classList.remove("hidden");
 
-    function requestWithdrawal() {
-      const amount = parseInt(document.getElementById("withdrawAmount").value);
-      if (amount < 1) {
-        alert("Minimum withdrawal is 1 USDT");
-        return;
-      }
-      db.ref("withdrawals").push({
-        user: currentUser.mobile,
-        amount,
-        wallet: currentUser.wallet,
-        status: "pending"
-      });
-      alert("Withdrawal Request Submitted");
-    }
-
-    function logout() {
-      currentUser = null;
-      document.getElementById("userSection").classList.add("hidden");
-      document.getElementById("authSection").classList.remove("hidden");
-    }
-
-    // Admin
-    function adminLogin() {
-      const id = document.getElementById("adminId").value;
-      const pass = document.getElementById("adminPass").value;
-      if (id === "Admin" && pass === "Jaihanuman@7") {
-        document.getElementById("authSection").classList.add("hidden");
-        document.getElementById("adminSection").classList.remove("hidden");
-        loadAdminPanel();
-      } else {
-        alert("Invalid Admin Credentials");
-      }
-    }
-
-    function loadAdminPanel() {
-      // Load Users
-      db.ref("users").once("value", snap => {
-        const table = document.getElementById("usersTable");
-        table.innerHTML = "<tr><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th></tr>";
-        snap.forEach(user => {
-          const u = user.val();
-          const row = `<tr><td>${u.name}</td><td>${u.mobile}</td><td>${u.wallet}</td><td>${u.deposit}</td></tr>`;
-          table.innerHTML += row;
-        });
-      });
-
-      // Load Deposits
-      db.ref("deposits").once("value", snap => {
-        const table = document.getElementById("depositsTable");
-        table.innerHTML = "<tr><th>User</th><th>Amount</th><th>Action</th></tr>";
-        snap.forEach(dep => {
-          const d = dep.val();
-          const row = `<tr><td>${d.user}</td><td>${d.amount}</td><td><button onclick="approveDeposit('${dep.key}', '${d.user}', ${d.amount})">Approve</button></td></tr>`;
-          table.innerHTML += row;
-        });
-      });
-
-      // Load Withdrawals
-      db.ref("withdrawals").once("value", snap => {
-        const table = document.getElementById("withdrawalsTable");
-        table.innerHTML = "<tr><th>User</th><th>Amount</th><th>Wallet</th><th>Action</th></tr>";
-        snap.forEach(wd => {
-          const w = wd.val();
-          const row = `<tr><td>${w.user}</td><td>${w.amount}</td><td>${w.wallet}</td><td><button onclick="approveWithdrawal('${wd.key}')">Approve</button></td></tr>`;
-          table.innerHTML += row;
+      let tbody = document.querySelector("#userTable tbody");
+      db.ref("users").on("value",snap=>{
+        tbody.innerHTML="";
+        snap.forEach(c=>{
+          let d=c.val();
+          let tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td>${d.name}</td>
+            <td>${d.mobile}</td>
+            <td>${d.wallet}</td>
+            <td>${d.deposit}</td>
+            <td>${d.income}</td>
+            <td>${d.referral}</td>
+            <td><button class="delete-btn" onclick="deleteUser('${d.mobile}')">Delete</button></td>`;
+          tbody.appendChild(tr);
         });
       });
     }
 
-    function approveDeposit(key, userMobile, amount) {
-      db.ref("deposits/" + key + "/status").set("approved");
-      db.ref("users/" + userMobile + "/deposit").transaction(d => (d || 0) + amount);
-      alert("Deposit Approved");
-      loadAdminPanel();
+    function deleteUser(mobile){
+      if(confirm("Are you sure to delete this user?")){
+        db.ref("users/"+mobile).remove();
+        alert("User Deleted");
+      }
     }
 
-    function approveWithdrawal(key) {
-      db.ref("withdrawals/" + key + "/status").set("approved");
-      alert("Withdrawal Approved");
-      loadAdminPanel();
-    }
+    function logoutAdmin(){ localStorage.removeItem("isAdmin"); location.reload(); }
 
-    function adminLogout() {
-      document.getElementById("adminSection").classList.add("hidden");
-      document.getElementById("authSection").classList.remove("hidden");
-    }
-
-    // Page Switching
-    function showPage(id) {
-      document.querySelectorAll("#userSection .page").forEach(p => p.classList.add("hidden"));
-      document.getElementById(id).classList.remove("hidden");
-    }
-
-    function showAdminPage(id) {
-      document.querySelectorAll("#adminSection .adminPage").forEach(p => p.classList.add("hidden"));
-      document.getElementById(id).classList.remove("hidden");
+    // Auto check
+    window.onload=()=>{
+      if(localStorage.getItem("loggedUser")){ loadUser(); }
+      else if(localStorage.getItem("isAdmin")){ loadAdmin(); }
+      else { showRegister(); document.getElementById("adminLoginDiv").classList.remove("hidden"); }
     }
   </script>
 </body>
