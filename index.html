@@ -1,5 +1,5 @@
 <!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
   <title>🚀 Ashirwad Mart - Grow Up Together</title>
@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f7fb; margin:0; padding:0; }
-    .container { max-width: 420px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 30px; }
+    .container { max-width: 480px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-top: 20px; }
     h2 { text-align: center; color: #333; }
     input, select, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; }
     button { background: #007bff; color: #fff; border: none; cursor: pointer; font-weight: bold; }
@@ -17,13 +17,15 @@
     .link { color: #007bff; cursor:pointer; text-align:center; display:block; margin-top:10px; }
     .hidden { display: none; }
     .dashboard { text-align:center; }
-    .card { background:#f9f9f9; padding:15px; margin:10px 0; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
-    table { width:100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding:8px; border:1px solid #ccc; font-size:14px; }
+    .card { background:#f9f9f9; padding:12px; margin:10px 0; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; font-size:14px; }
+    th, td { padding:6px; border:1px solid #ccc; }
     th { background:#eee; }
+    .section { margin-top:20px; }
   </style>
 </head>
 <body>
+  <!-- AUTH SECTION -->
   <div class="container" id="authSection">
     <h2>🚀 Ashirwad Mart</h2>
     <div id="registerBox">
@@ -44,18 +46,39 @@
     </div>
   </div>
 
+  <!-- USER DASHBOARD -->
   <div class="container hidden" id="dashboard">
     <h2>📊 Dashboard</h2>
     <div class="dashboard">
       <div class="card">Name: <span id="userName"></span></div>
       <div class="card">Wallet: <span id="userWallet"></span></div>
       <div class="card">Deposit: <span id="userDeposit">0</span> USDT</div>
-      <div class="card">Income: <span id="userIncome">0</span> USDT</div>
-      <div class="card">Referral: <span id="userReferral">0</span> USDT</div>
-      <button onclick="logout()">Logout</button>
+      <div class="card">Income Wallet: <span id="userIncome">0</span> USDT</div>
+      <div class="card">Referral Wallet: <span id="userReferral">0</span> USDT</div>
     </div>
+
+    <div class="section">
+      <h3>💵 Make Deposit</h3>
+      <input type="number" id="depositAmt" placeholder="Enter Amount (50 - 500 USDT)" />
+      <button onclick="makeDeposit()">Deposit</button>
+      <p>Send USDT to: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
+    </div>
+
+    <div class="section">
+      <h3>📤 Withdraw Request</h3>
+      <input type="number" id="withdrawAmt" placeholder="Enter Amount (min 1 USDT)" />
+      <button onclick="requestWithdraw()">Request Withdraw</button>
+    </div>
+
+    <div class="section">
+      <h3>👥 My Team</h3>
+      <ul id="teamList"></ul>
+    </div>
+
+    <button onclick="logout()">Logout</button>
   </div>
 
+  <!-- ADMIN PANEL -->
   <div class="container hidden" id="adminPanel">
     <h2>⚙️ Admin Panel</h2>
     <div id="adminLoginBox">
@@ -65,15 +88,21 @@
     </div>
     <div id="adminDashboard" class="hidden">
       <h3>All Users</h3>
-      <table id="usersTable">
-        <tr><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Referral</th></tr>
-      </table>
+      <table id="usersTable"></table>
+      <div class="section">
+        <h3>Approve Deposits</h3>
+        <table id="pendingDeposits"></table>
+      </div>
+      <div class="section">
+        <h3>Approve Withdrawals</h3>
+        <table id="pendingWithdrawals"></table>
+      </div>
       <button onclick="adminLogout()">Logout</button>
     </div>
   </div>
 
 <script>
-  // Firebase Config (Replace with yours)
+  // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyD12345",
     authDomain: "ashirwadmart-6d657.firebaseapp.com",
@@ -87,50 +116,37 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  function showLogin() {
-    document.getElementById('registerBox').classList.add('hidden');
-    document.getElementById('loginBox').classList.remove('hidden');
-  }
-  function showRegister() {
-    document.getElementById('loginBox').classList.add('hidden');
-    document.getElementById('registerBox').classList.remove('hidden');
-  }
+  function showLogin(){ document.getElementById('registerBox').classList.add('hidden'); document.getElementById('loginBox').classList.remove('hidden'); }
+  function showRegister(){ document.getElementById('loginBox').classList.add('hidden'); document.getElementById('registerBox').classList.remove('hidden'); }
 
-  function register() {
-    let name = document.getElementById("regName").value;
-    let mobile = document.getElementById("regMobile").value;
-    let wallet = document.getElementById("regWallet").value;
-    let pass = document.getElementById("regPassword").value;
-
+  function register(){
+    let name=document.getElementById("regName").value;
+    let mobile=document.getElementById("regMobile").value;
+    let wallet=document.getElementById("regWallet").value;
+    let pass=document.getElementById("regPassword").value;
     if(name && mobile && wallet && pass){
-      db.ref("users/"+mobile).set({
-        name:name, wallet:wallet, password:pass, deposit:0, income:0, referral:0
-      });
+      db.ref("users/"+mobile).set({name, wallet, password:pass, deposit:0, income:0, referral:0, team:{}});
       alert("Registration Successful!");
       showLogin();
-    } else {
-      alert("Fill all details");
-    }
+    } else { alert("Fill all details"); }
   }
 
-  function login() {
-    let mobile = document.getElementById("loginMobile").value;
-    let pass = document.getElementById("loginPassword").value;
-
-    db.ref("users/"+mobile).once("value", snapshot=>{
-      if(snapshot.exists() && snapshot.val().password===pass){
-        let data = snapshot.val();
+  function login(){
+    let mobile=document.getElementById("loginMobile").value;
+    let pass=document.getElementById("loginPassword").value;
+    db.ref("users/"+mobile).once("value", snap=>{
+      if(snap.exists() && snap.val().password===pass){
+        let u=snap.val();
         localStorage.setItem("user", mobile);
         document.getElementById("authSection").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
-        document.getElementById("userName").innerText=data.name;
-        document.getElementById("userWallet").innerText=data.wallet;
-        document.getElementById("userDeposit").innerText=data.deposit;
-        document.getElementById("userIncome").innerText=data.income;
-        document.getElementById("userReferral").innerText=data.referral;
-      } else {
-        alert("Invalid login");
-      }
+        document.getElementById("userName").innerText=u.name;
+        document.getElementById("userWallet").innerText=u.wallet;
+        document.getElementById("userDeposit").innerText=u.deposit;
+        document.getElementById("userIncome").innerText=u.income;
+        document.getElementById("userReferral").innerText=u.referral;
+        loadTeam(mobile);
+      } else { alert("Invalid login"); }
     });
   }
 
@@ -140,18 +156,42 @@
     document.getElementById("authSection").classList.remove("hidden");
   }
 
+  function makeDeposit(){
+    let user=localStorage.getItem("user");
+    let amt=parseInt(document.getElementById("depositAmt").value);
+    if(!amt || amt<50 || amt>500){ alert("Enter between 50-500"); return; }
+    db.ref("deposits").push({user, amt, status:"pending"});
+    alert("Deposit request submitted!");
+  }
+
+  function requestWithdraw(){
+    let user=localStorage.getItem("user");
+    let amt=parseInt(document.getElementById("withdrawAmt").value);
+    if(!amt || amt<1){ alert("Min 1 USDT"); return; }
+    db.ref("withdrawals").push({user, amt, status:"pending"});
+    alert("Withdrawal request submitted!");
+  }
+
+  function loadTeam(mobile){
+    db.ref("users/"+mobile+"/team").once("value", snap=>{
+      let list=document.getElementById("teamList"); list.innerHTML="";
+      snap.forEach(child=>{
+        let u=child.val();
+        list.innerHTML+="<li>"+u+"</li>";
+      });
+    });
+  }
+
+  // ADMIN
   function adminLogin(){
     let id=document.getElementById("adminId").value;
     let pass=document.getElementById("adminPass").value;
     if(id==="Admin" && pass==="Jaihanuman@7"){
       document.getElementById("adminLoginBox").classList.add("hidden");
       document.getElementById("adminDashboard").classList.remove("hidden");
-      loadUsers();
-    } else {
-      alert("Invalid Admin Credentials");
-    }
+      loadUsers(); loadDeposits(); loadWithdrawals();
+    } else { alert("Invalid Admin Credentials"); }
   }
-
   function adminLogout(){
     document.getElementById("adminDashboard").classList.add("hidden");
     document.getElementById("adminLoginBox").classList.remove("hidden");
@@ -160,14 +200,61 @@
   function loadUsers(){
     let table=document.getElementById("usersTable");
     table.innerHTML="<tr><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Referral</th></tr>";
-    db.ref("users").once("value", snapshot=>{
-      snapshot.forEach(child=>{
-        let u=child.val();
-        let row="<tr><td>"+u.name+"</td><td>"+child.key+"</td><td>"+u.wallet+"</td><td>"+u.deposit+"</td><td>"+u.income+"</td><td>"+u.referral+"</td></tr>";
-        table.innerHTML+=row;
+    db.ref("users").once("value", snap=>{
+      snap.forEach(c=>{
+        let u=c.val();
+        table.innerHTML+="<tr><td>"+u.name+"</td><td>"+c.key+"</td><td>"+u.wallet+"</td><td>"+u.deposit+"</td><td>"+u.income+"</td><td>"+u.referral+"</td></tr>";
       });
+    });
+  }
+
+  function loadDeposits(){
+    let table=document.getElementById("pendingDeposits");
+    table.innerHTML="<tr><th>User</th><th>Amount</th><th>Action</th></tr>";
+    db.ref("deposits").once("value", snap=>{
+      snap.forEach(c=>{
+        let d=c.val();
+        if(d.status==="pending"){
+          table.innerHTML+="<tr><td>"+d.user+"</td><td>"+d.amt+"</td><td><button onclick='approveDeposit(\""+c.key+"\",\""+d.user+"\","+d.amt+")'>Approve</button></td></tr>";
+        }
+      });
+    });
+  }
+
+  function approveDeposit(id,user,amt){
+    db.ref("users/"+user).once("value", snap=>{
+      let u=snap.val();
+      db.ref("users/"+user).update({deposit:u.deposit+amt});
+      db.ref("deposits/"+id).update({status:"approved"});
+      alert("Deposit approved!");
+      loadUsers(); loadDeposits();
+    });
+  }
+
+  function loadWithdrawals(){
+    let table=document.getElementById("pendingWithdrawals");
+    table.innerHTML="<tr><th>User</th><th>Amount</th><th>Action</th></tr>";
+    db.ref("withdrawals").once("value", snap=>{
+      snap.forEach(c=>{
+        let w=c.val();
+        if(w.status==="pending"){
+          table.innerHTML+="<tr><td>"+w.user+"</td><td>"+w.amt+"</td><td><button onclick='approveWithdraw(\""+c.key+"\",\""+w.user+"\","+w.amt+")'>Approve</button></td></tr>";
+        }
+      });
+    });
+  }
+
+  function approveWithdraw(id,user,amt){
+    db.ref("users/"+user).once("value", snap=>{
+      let u=snap.val();
+      if(u.income>=amt){
+        db.ref("users/"+user).update({income:u.income-amt});
+        db.ref("withdrawals/"+id).update({status:"approved"});
+        alert("Withdrawal approved!");
+        loadUsers(); loadWithdrawals();
+      } else { alert("Insufficient balance"); }
     });
   }
 </script>
 </body>
-      </html>
+  </html>
