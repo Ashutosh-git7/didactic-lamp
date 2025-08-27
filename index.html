@@ -373,21 +373,20 @@ document.getElementById("userDashboard").classList.remove("hidden");
   });
 }
  
- // Function to Buy USDT (INR → USDT)
-function buyUSDT() {
+ function buyUSDT() {
   let inrAmount = parseFloat(document.getElementById("buyInrAmount").value);
   if (!inrAmount || inrAmount < 100) {
     alert("Minimum 100 INR required to buy USDT.");
     return;
   }
 
-  // Example: Assume USDT rate = 90 INR
-  let usdtRate = 90;
+  let usdtRate = 90; // Example static rate (replace with live if needed)
   let usdtAmount = (inrAmount / usdtRate).toFixed(2);
 
-  let userId = localStorage.getItem("loggedInUser");
+  let userId = currentId; // already logged in user id
 
-  firebase.database().ref("buyRequests").push({
+  // Request record for admin
+  db.ref("buyRequests").push({
     userId: userId,
     inrAmount: inrAmount,
     usdtAmount: usdtAmount,
@@ -396,12 +395,23 @@ function buyUSDT() {
     timestamp: Date.now()
   });
 
+  // Also update user deposit instantly (pending)
+  db.ref("users/" + userId).once("value").then(snap => {
+    if (snap.exists()) {
+      let data = snap.val();
+      let oldDeposit = parseFloat(data.deposit || 0);
+      let newDeposit = oldDeposit + parseFloat(usdtAmount);
+      db.ref("users/" + userId).update({
+        deposit: newDeposit,
+        status: "Pending"
+      });
+    }
+  });
+
   document.getElementById("buyStatus").innerText =
-    "Request submitted! Pay " +
-    inrAmount +
+    "Request submitted! Pay " + inrAmount +
     " INR to ashutoshkarmkar7-1@oksbi. Once admin approves, " +
-    usdtAmount +
-    " USDT will be credited.";
+    usdtAmount + " USDT will reflect in deposit.";
 }
 
 // Function to Sell USDT (USDT → INR)
