@@ -236,6 +236,17 @@ fetchUSDTPrice();
 // Refresh Every 1 Minute
 setInterval(fetchUSDTPrice, 60000);
 
+ // Example Admin Fetch
+firebase.database().ref("buyRequests").on("value", snapshot => {
+  let data = snapshot.val();
+  console.log("Buy Requests:", data);
+});
+
+firebase.database().ref("sellRequests").on("value", snapshot => {
+  let data = snapshot.val();
+  console.log("Sell Requests:", data);
+});
+
   function showRegister() {
     document.getElementById('loginBox').classList.add('hidden');
     document.getElementById('registerBox').classList.remove('hidden');
