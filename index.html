@@ -193,6 +193,29 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   let currentId = "";
+ 
+async function fetchUSDTPrice() {
+  try {
+    let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr");
+    let data = await res.json();
+    let market = data.tether.inr;
+
+    // Profit Adjustment
+    let buy = (market * 1.02).toFixed(2);   // 2% extra
+    let sell = (market * 0.98).toFixed(2);  // 2% less
+
+    document.getElementById("marketPrice").innerText = market.toFixed(2);
+    document.getElementById("buyPrice").innerText = buy;
+    document.getElementById("sellPrice").innerText = sell;
+  } catch (e) {
+    console.error("Price fetch error:", e);
+  }
+}
+
+// First Call
+fetchUSDTPrice();
+// Refresh Every 1 Minute
+setInterval(fetchUSDTPrice, 60000);
 
   function showRegister() {
     document.getElementById('loginBox').classList.add('hidden');
