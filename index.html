@@ -427,8 +427,18 @@ function sellUSDT() {
     return;
   }
 
-  let usdtRate = 90; // Example rate
-  let inrAmount = (usdtAmount * usdtRate).toFixed(2);
+  // Get live market price from the span where you display it
+let market = parseFloat(document.getElementById("marketPrice").innerText);
+if (!market || market <= 0) {
+  alert("Market price not available. Try again later.");
+  return;
+}
+
+// Apply 2% less for sell
+let usdtRate = market * 0.98;
+
+// Calculate INR amount
+let inrAmount = (usdtAmount * usdtRate).toFixed(2);
   let userId = currentId;
 
   // Check user balance
