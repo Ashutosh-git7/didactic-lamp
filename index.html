@@ -505,53 +505,52 @@ function sellUSDT() {
   }
 
   function loadAdmin() {
-    db.ref("users").once("value", snap => {
-      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
-      snap.forEach(child => {
-        const d = child.val();
-        html += `<tr>
-          <td>${child.key}</td>
-          <td>${d.name}</td>
-          <td>${d.wallet}</td>
-          <td>${d.deposit}</td>
-          <td>${d.income}</td>
-          <td>${d.status}</td>
-          <td>
-            <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
-            <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
-            <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
-          </td>
-        </tr>`;
-      });
-      html += "</table>";
-      document.getElementById("adminUsers").innerHTML = html;
+  // --- Show Users ---
+  db.ref("users").once("value", snap => {
+    let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+    snap.forEach(child => {
+      const d = child.val();
+      html += `<tr>
+        <td>${child.key}</td>
+        <td>${d.name}</td>
+        <td>${d.wallet}</td>
+        <td>${d.deposit}</td>
+        <td>${d.income}</td>
+        <td>${d.status}</td>
+        <td>
+          <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
+          <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
+          <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
+        </td>
+      </tr>`;
     });
+    html += "</table>";
+    document.getElementById("adminUsers").innerHTML = html;
+  });
 
-    db.ref("withdrawals").once("value", snap => {
-      let html = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
-      snap.forEach(userSnap => {
-        const userId = userSnap.key;
-        userSnap.forEach(wSnap => {
-          const w = wSnap.val();
-          if (w.status === "Pending") {
-            html += `<tr>
-              <td>${userId}</td>
-              <td>${w.amount}</td>
-              <td>${w.status}</td>
-              <td>
-                <button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
-                <button onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
-              </td>
-            </tr>`;
-          }
-        });
+  // --- Show Withdrawals ---
+  db.ref("withdrawals").once("value", snap => {
+    let html = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(userSnap => {
+      const userId = userSnap.key;
+      userSnap.forEach(wSnap => {
+        const w = wSnap.val();
+        if (w.status === "Pending") {
+          html += `<tr>
+            <td>${userId}</td>
+            <td>${w.amount}</td>
+            <td>${w.status}</td>
+            <td>
+              <button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
+              <button onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
+            </td>
+          </tr>`;
+        }
       });
-      html += "</table>";
-      document.getElementById("adminUsers").innerHTML += html;
     });
-  }
- function loadAdmin() {
-  // Existing code (users + withdrawals)
+    html += "</table>";
+    document.getElementById("adminUsers").innerHTML += html;
+  });
 
   // --- Show Buy Requests ---
   db.ref("buyRequests").once("value", snap => {
@@ -594,7 +593,7 @@ function sellUSDT() {
     html += "</table>";
     document.getElementById("adminUsers").innerHTML += html;
   });
-}
+ }
 
   function approveDeposit(userId) {
   db.ref("users/" + userId).once("value", snap => {
