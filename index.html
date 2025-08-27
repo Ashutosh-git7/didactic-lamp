@@ -550,6 +550,51 @@ function sellUSDT() {
       document.getElementById("adminUsers").innerHTML += html;
     });
   }
+ function loadAdmin() {
+  // Existing code (users + withdrawals)
+
+  // --- Show Buy Requests ---
+  db.ref("buyRequests").once("value", snap => {
+    let html = "<h4>Buy Requests</h4><table><tr><th>User</th><th>INR</th><th>USDT</th><th>UPI</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(req => {
+      let r = req.val();
+      html += `<tr>
+        <td>${r.userId}</td>
+        <td>${r.inrAmount}</td>
+        <td>${r.usdtAmount}</td>
+        <td>${r.upi}</td>
+        <td>${r.status}</td>
+        <td>
+          <button onclick="approveBuy('${req.key}')">✅ Approve</button>
+          <button onclick="rejectBuy('${req.key}')">❌ Reject</button>
+        </td>
+      </tr>`;
+    });
+    html += "</table>";
+    document.getElementById("adminUsers").innerHTML += html;
+  });
+
+  // --- Show Sell Requests ---
+  db.ref("sellRequests").once("value", snap => {
+    let html = "<h4>Sell Requests</h4><table><tr><th>User</th><th>USDT</th><th>INR</th><th>UPI</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(req => {
+      let r = req.val();
+      html += `<tr>
+        <td>${r.userId}</td>
+        <td>${r.usdtAmount}</td>
+        <td>${r.inrAmount}</td>
+        <td>${r.upiId}</td>
+        <td>${r.status}</td>
+        <td>
+          <button onclick="approveSell('${req.key}')">✅ Approve</button>
+          <button onclick="rejectSell('${req.key}')">❌ Reject</button>
+        </td>
+      </tr>`;
+    });
+    html += "</table>";
+    document.getElementById("adminUsers").innerHTML += html;
+  });
+}
 
   function approveDeposit(userId) {
   db.ref("users/" + userId).once("value", snap => {
