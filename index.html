@@ -414,7 +414,6 @@ document.getElementById("userDashboard").classList.remove("hidden");
     usdtAmount + " USDT will reflect in deposit.";
 }
 
-// Function to Sell USDT (USDT → INR)
 function sellUSDT() {
   let usdtAmount = parseFloat(document.getElementById("sellUsdtAmount").value);
   let upiId = document.getElementById("sellUpiId").value.trim();
@@ -428,27 +427,40 @@ function sellUSDT() {
     return;
   }
 
-  // Example: Assume USDT rate = 90 INR
-  let usdtRate = 90;
+  let usdtRate = 90; // Example rate
   let inrAmount = (usdtAmount * usdtRate).toFixed(2);
+  let userId = currentId;
 
-  let userId = localStorage.getItem("loggedInUser");
+  // Check user balance
+  db.ref("users/" + userId).once("value").then(snap => {
+    if (!snap.exists()) return;
+    let data = snap.val();
+    let balance = parseFloat(data.walletBalance || 0);
 
-  firebase.database().ref("sellRequests").push({
-    userId: userId,
-    usdtAmount: usdtAmount,
-    inrAmount: inrAmount,
-    upiId: upiId,
-    status: "pending",
-    timestamp: Date.now()
+    if (usdtAmount > balance) {
+      alert("Insufficient wallet balance!");
+      return;
+    }
+
+    // Deduct instantly
+    db.ref("users/" + userId).update({
+      walletBalance: balance - usdtAmount
+    });
+
+    // Push request for admin
+    db.ref("sellRequests").push({
+      userId: userId,
+      usdtAmount: usdtAmount,
+      inrAmount: inrAmount,
+      upiId: upiId,
+      status: "pending",
+      timestamp: Date.now()
+    });
+
+    document.getElementById("sellStatus").innerText =
+      "Request submitted! You will receive " + inrAmount +
+      " INR in UPI: " + upiId + " once admin approves.";
   });
-
-  document.getElementById("sellStatus").innerText =
-    "Request submitted! You will receive " +
-    inrAmount +
-    " INR in UPI: " +
-    upiId +
-    " once admin approves.";
 }
 
   function requestWithdraw() {
