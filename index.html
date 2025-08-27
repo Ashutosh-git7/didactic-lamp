@@ -361,6 +361,73 @@ document.getElementById("userDashboard").classList.remove("hidden");
     });
   });
 }
+ // Function to Buy USDT (INR → USDT)
+function buyUSDT() {
+  let inrAmount = parseFloat(document.getElementById("buyInrAmount").value);
+  if (!inrAmount || inrAmount < 100) {
+    alert("Minimum 100 INR required to buy USDT.");
+    return;
+  }
+
+  // Example: Assume USDT rate = 90 INR
+  let usdtRate = 90;
+  let usdtAmount = (inrAmount / usdtRate).toFixed(2);
+
+  let userId = localStorage.getItem("loggedInUser");
+
+  firebase.database().ref("buyRequests").push({
+    userId: userId,
+    inrAmount: inrAmount,
+    usdtAmount: usdtAmount,
+    status: "pending",
+    upi: "ashutoshkarmkar7-1@oksbi",
+    timestamp: Date.now()
+  });
+
+  document.getElementById("buyStatus").innerText =
+    "Request submitted! Pay " +
+    inrAmount +
+    " INR to ashutoshkarmkar7-1@oksbi. Once admin approves, " +
+    usdtAmount +
+    " USDT will be credited.";
+}
+
+// Function to Sell USDT (USDT → INR)
+function sellUSDT() {
+  let usdtAmount = parseFloat(document.getElementById("sellUsdtAmount").value);
+  let upiId = document.getElementById("sellUpiId").value.trim();
+
+  if (!usdtAmount || usdtAmount < 1) {
+    alert("Minimum 1 USDT required to sell.");
+    return;
+  }
+  if (!upiId) {
+    alert("Enter your UPI ID.");
+    return;
+  }
+
+  // Example: Assume USDT rate = 90 INR
+  let usdtRate = 90;
+  let inrAmount = (usdtAmount * usdtRate).toFixed(2);
+
+  let userId = localStorage.getItem("loggedInUser");
+
+  firebase.database().ref("sellRequests").push({
+    userId: userId,
+    usdtAmount: usdtAmount,
+    inrAmount: inrAmount,
+    upiId: upiId,
+    status: "pending",
+    timestamp: Date.now()
+  });
+
+  document.getElementById("sellStatus").innerText =
+    "Request submitted! You will receive " +
+    inrAmount +
+    " INR in UPI: " +
+    upiId +
+    " once admin approves.";
+}
 
   function requestWithdraw() {
   const amt = parseFloat(document.getElementById("withAmt").value);
