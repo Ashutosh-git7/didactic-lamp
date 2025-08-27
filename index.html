@@ -477,6 +477,30 @@ function sellUSDT() {
     alert("Withdrawal requested!");
   });
 }
+ 
+ function approveBuy(reqId) {
+  db.ref("buyRequests/" + reqId).update({ status: "approved" });
+  alert("✅ Buy Request Approved!");
+  loadAdmin();
+}
+
+function rejectBuy(reqId) {
+  db.ref("buyRequests/" + reqId).update({ status: "rejected" });
+  alert("❌ Buy Request Rejected!");
+  loadAdmin();
+}
+
+function approveSell(reqId) {
+  db.ref("sellRequests/" + reqId).update({ status: "approved" });
+  alert("✅ Sell Request Approved!");
+  loadAdmin();
+}
+
+function rejectSell(reqId) {
+  db.ref("sellRequests/" + reqId).update({ status: "rejected" });
+  alert("❌ Sell Request Rejected!");
+  loadAdmin();
+}
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
