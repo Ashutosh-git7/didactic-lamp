@@ -552,6 +552,43 @@ function rejectSell(reqId) {
     html += "</table>";
     document.getElementById("adminUsers").innerHTML = html;
   });
+   // Show Buy Requests
+db.ref("buyRequests").once("value", snap => {
+  let html = "<h4>Buy Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+  snap.forEach(child => {
+    let r = child.val();
+    html += `<tr>
+      <td>${r.userId}</td>
+      <td>${r.amount}</td>
+      <td>${r.status}</td>
+      <td>
+        <button onclick="approveBuy('${child.key}')">Approve</button>
+        <button onclick="rejectBuy('${child.key}')">Reject</button>
+      </td>
+    </tr>`;
+  });
+  html += "</table>";
+  document.getElementById("adminPanel").innerHTML += html;
+});
+
+// Show Sell Requests
+db.ref("sellRequests").once("value", snap => {
+  let html = "<h4>Sell Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+  snap.forEach(child => {
+    let r = child.val();
+    html += `<tr>
+      <td>${r.userId}</td>
+      <td>${r.amount}</td>
+      <td>${r.status}</td>
+      <td>
+        <button onclick="approveSell('${child.key}')">Approve</button>
+        <button onclick="rejectSell('${child.key}')">Reject</button>
+      </td>
+    </tr>`;
+  });
+  html += "</table>";
+  document.getElementById("adminPanel").innerHTML += html;
+});
 
   // --- Pending Withdrawals ---
   db.ref("withdrawals").once("value", snap => {
