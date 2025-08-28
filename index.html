@@ -368,8 +368,9 @@ function buyUSDT() {
     return;
   }
 
-  let buyPrice = currentMarketPrice * 1.05; // 5% extra
-  let usdtAmount = (inrAmount / buyPrice).toFixed(5);
+  // Example: Assume USDT rate = 90 INR
+  let usdtRate = 90;
+  let usdtAmount = (inrAmount / usdtRate).toFixed(5);
 
   let userId = localStorage.getItem("loggedInUser");
 
@@ -383,9 +384,11 @@ function buyUSDT() {
   });
 
   document.getElementById("buyStatus").innerText =
-    "Request submitted! Pay " + inrAmount +
+    "Request submitted! Pay " +
+    inrAmount +
     " INR to ashutoshkarmkar7-1@oksbi. Once admin approves, " +
-    usdtAmount + " USDT will be credited.";
+    usdtAmount +
+    " USDT will be credited.";
 }
 
 // Function to Sell USDT (USDT → INR)
@@ -570,141 +573,4 @@ function sellUSDT() {
                       const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
                       const actualAdded3 = newIncome3 - currentIncome3;
 
-                      db.ref("users/" + ref3).update({
-                        income: newIncome3,
-                        walletBalance: walletBalance3 + actualAdded3
-                      });
-                    }
-                  });
-                }
-              }
-            });
-          }
-        }
-      });
-    }
-
-    alert("Deposit approved and referral income distributed.");
-  });
-}
-
-  function rejectDeposit(userId) {
-    db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" });
-    alert("Deposit rejected.");
-  }
-
-  function closeAgreement(userId) {
-    db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0 });
-    alert("Agreement closed.");
-  }
-
-  function approveWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
-    db.ref("users/" + userId).once("value", snap => {
-      const data = snap.val();
-      const deposit = parseFloat(data.deposit || 0);
-      const income = parseFloat(data.income || 0);
-      if (deposit > 0 && income >= 2 * deposit) {
-        db.ref("users/" + userId).update({
-          income: 0,
-          deposit: 0,
-          status: "Closed"
-        });
-      }
-    });
-    alert("Withdrawal approved.");
-  }
-
-  function rejectWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected");
-    alert("Withdrawal rejected.");
-  }
-
-  function addWeeklyIncome() {
-  const uid = document.getElementById("incomeUserId").value.trim();
-  const amt = parseFloat(document.getElementById("incomeAmt").value);
-  if (!uid || isNaN(amt)) return alert("Enter valid input");
-
-  db.ref("users/" + uid).once("value", snap => {
-    if (!snap.exists()) {
-      return alert("User ID not found!");
-    }
-
-    const data = snap.val();
-    const deposit = parseFloat(data.deposit || 0);
-    const income = parseFloat(data.income || 0);
-    const balance = parseFloat(data.walletBalance || 0);
-    const cap = deposit * 2;
-
-    if (income >= cap) return alert("2x cap reached");
-
-    const newIncome = Math.min(income + amt, cap);
-    const actualAdded = newIncome - income;
-
-    db.ref("users/" + uid).update({
-      income: newIncome,
-      walletBalance: balance + actualAdded
-    }).then(() => {
-      alert("✅ Income added successfully!");
-    });
-  });
-}
-  let confirmationResultGlobal = null;
-
-function sendOTP() {
-  const mobile = document.getElementById("otpMobile").value.trim();
-  if (!mobile) return alert("Enter your registered mobile number");
-
-  const fullNumber = "+91" + mobile; // Change as per your country code
-
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-    'size': 'normal',
-    'callback': function(response) {
-      // reCAPTCHA solved
-    }
-  });
-
-  firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
-    .then(function (confirmationResult) {
-      confirmationResultGlobal = confirmationResult;
-      alert("OTP sent successfully");
-    })
-    .catch(function (error) {
-      alert("Error sending OTP: " + error.message);
-    });
-}
-
-function verifyOTP() {
-  const code = document.getElementById("otpCode").value.trim();
-  const newPass = document.getElementById("otpNewPass").value.trim();
-  const mobile = document.getElementById("otpMobile").value.trim();
-
-  if (!code || !newPass) return alert("Please enter all fields");
-
-  confirmationResultGlobal.confirm(code).then(function (result) {
-    // User signed in via OTP
-    const phone = result.user.phoneNumber;
-
-    // Find user by phone
-    db.ref("users").once("value", snap => {
-      let found = false;
-      snap.forEach(child => {
-        const data = child.val();
-        if (data.mobile === mobile) {
-          db.ref("users/" + child.key + "/password").set(newPass);
-          alert("✅ Password changed successfully!");
-          found = true;
-        }
-      });
-      if (!found) alert("Mobile number not found");
-    });
-  }).catch(function (error) {
-    alert("OTP verification failed: " + error.message);
-  });
-}
-    function logout() {
-    location.reload();
-  }
-</script>
-</body>
-  </html>
+   
