@@ -545,16 +545,20 @@ function rejectSell(reqId) {
   function loadAdmin() {
   // --- All Users ---
   db.ref("users").once("value", snap => {
-    let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+    let usersHtml = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Total Income</th><th>Target (2x)</th><th>Status</th><th>Actions</th></tr>";
     snap.forEach(child => {
       const d = child.val();
-      html += `
+      const deposit = parseFloat(d.deposit || 0);
+      const income = parseFloat(d.income || 0);
+      const cap = deposit * 2; // 2x target
+      usersHtml += `
         <tr>
           <td>${child.key}</td>
           <td>${d.name}</td>
           <td>${d.wallet}</td>
-          <td>${d.deposit || 0}</td>
-          <td>${d.income || 0}</td>
+          <td>${deposit}</td>
+          <td>${income}</td>
+          <td>${cap}</td>
           <td>${d.status}</td>
           <td>
             <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
@@ -563,40 +567,72 @@ function rejectSell(reqId) {
           </td>
         </tr>`;
     });
-    html += "</table>";
+    usersHtml += "</table>";
     document.getElementById("adminUsersContainer").innerHTML = usersHtml;
-document.getElementById("buyRequestsContainer").innerHTML = buyHtml;
-document.getElementById("sellRequestsContainer").innerHTML = sellHtml;
-document.getElementById("withdrawalsContainer").innerHTML = withdrawalHtml;
   });
-   // Show Buy Requests
-db.ref("buyRequests").once("value", snap => {
-  let html = "<h4>Buy Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
-  snap.forEach(child => {
-    let r = child.val();
-    html += `<tr>
-  <td>${r.userId}</td>
-  <td>${r.inrAmount} INR → ${r.usdtAmount} USDT</td>
-  <td>${r.status}</td>
-  <td>
-    <button onclick="approveBuy('${child.key}')">Approve</button>
-    <button onclick="rejectBuy('${child.key}')">Reject</button>
-  </td>
-</tr>`;
-  });
-  html += "</table>";
-  document.getElementById("adminPanel").innerHTML += html;
-});
 
-// Show Sell Requests
-db.ref("sellRequests").once("value", snap => {
-  let html = "<h4>Sell Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
-  snap.forEach(child => {
-    let r = child.val();
-    html += `<tr>
-  <td>${r.userId}</td>
-  <td>${r.usdtAmount} USDT → ${r.inrAmount} INR</td>
-  <td>${r.upiId ? r.upiId : "Not Provided"}</td>
+  // --- Buy Requests ---
+  db.ref("buyRequests").once("value", snap => {
+    let buyHtml = "<h4>Buy Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(child => {
+      let r = child.val();
+      buyHtml += `<tr>
+        <td>${r.userId}</td>
+        <td>${r.inrAmount} INR → ${r.usdtAmount} USDT</td>
+        <td>${r.status}</td>
+        <td>
+          <button onclick="approveBuy('${child.key}')">✅ Approve</button>
+          <button onclick="rejectBuy('${child.key}')">❌ Reject</button>
+        </td>
+      </tr>`;
+    });
+    buyHtml += "</table>";
+    document.getElementById("buyRequestsContainer").innerHTML = buyHtml;
+  });
+
+  // --- Sell Requests ---
+  db.ref("sellRequests").once("value", snap => {
+    let sellHtml = "<h4>Sell Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>UPI</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(child => {
+      let r = child.val();
+      sellHtml += `<tr>
+        <td>${r.userId}</td>
+        <td>${r.usdtAmount} USDT → ${r.inrAmount} INR</td>
+        <td>${r.upiId ? r.upiId : "Not Provided"}</td>
+        <td>${r.status}</td>
+        <td>
+          <button onclick="approveSell('${child.key}')">✅ Approve</button>
+          <button onclick="rejectSell('${child.key}')">❌ Reject</button>
+        </td>
+      </tr>`;
+    });
+    sellHtml += "</table>";
+    document.getElementById("sellRequestsContainer").innerHTML = sellHtml;
+  });
+
+  // --- Withdrawals ---
+  db.ref("withdrawals").once("value", snap => {
+    let withdrawalHtml = "<h4>Withdrawal Requests</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
+    snap.forEach(child => {
+      let uid = child.key;
+      let requests = child.val();
+      for (let rKey in requests) {
+        let r = requests[rKey];
+        withdrawalHtml += `<tr>
+          <td>${uid}</td>
+          <td>${r.amount}</td>
+          <td>${r.status}</td>
+          <td>
+            <button onclick="approveWithdrawal('${rKey}','${uid}',${r.amount})">✅ Approve</button>
+            <button onclick="rejectWithdrawal('${rKey}')">❌ Reject</button>
+          </td>
+        </tr>`;
+      }
+    });
+    withdrawalHtml += "</table>";
+    document.getElementById("withdrawalsContainer").innerHTML = withdrawalHtml;
+  });
+}
   <td>${r.status}</td>
   <td>
     <button onclick="approveSell('${child.key}')">Approve</button>
