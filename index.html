@@ -609,29 +609,35 @@ db.ref("sellRequests").once("value", snap => {
 });
 
   // --- Pending Withdrawals ---
-  db.ref("withdrawals").once("value", snap => {
-    let html = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
-    snap.forEach(userSnap => {
-      const userId = userSnap.key;
-      userSnap.forEach(wSnap => {
-        const w = wSnap.val();
-        if (w.status === "Pending") {
-          html += `
-            <tr>
-              <td>${userId}</td>
-              <td>${w.amount}</td>
-              <td>${w.status}</td>
-              <td>
-                <button onclick="approveWithdraw('${userId}', '${wSnap.key}', ${w.amount})">Approve</button>
-                <button onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
-              </td>
-            </tr>`;
-        }
-      });
-    });
-    html += "</table>";
-    document.getElementById("adminUsers").innerHTML += html;
-  });
+  function approveWithdrawal(userId, reqId) {
+  db.ref(`withdrawals/${userId}/${reqId}`).update({ status: "Approved" });
+  alert("Withdrawal approved!");
+  loadAdmin();
+}
+
+function rejectWithdrawal(userId, reqId) {
+  db.ref(`withdrawals/${userId}/${reqId}`).update({ status: "Rejected" });
+  alert("Withdrawal rejected!");
+  loadAdmin();
+}
+
+function approveDeposit(userId) {
+  db.ref(`users/${userId}`).update({ status: "Active" });
+  alert("Deposit approved!");
+  loadAdmin();
+}
+
+function rejectDeposit(userId) {
+  db.ref(`users/${userId}`).update({ status: "Rejected", deposit: 0 });
+  alert("Deposit rejected!");
+  loadAdmin();
+}
+
+function closeAgreement(userId) {
+  db.ref(`users/${userId}`).update({ status: "Closed", income: 0, deposit: 0 });
+  alert("Agreement closed!");
+  loadAdmin();
+}
 
   // --- Buy Requests ---
   db.ref("buyRequests").once("value", snap => {
