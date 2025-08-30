@@ -151,36 +151,7 @@
   <h4>👨‍👩‍👧‍👦 Referral Team</h4>
   <button onclick="viewTeam()">View Your Team</button>
   <div id="teamBox"></div>
-<!-- === USDT BUY/SELL BOX (paste inside #userDashboard, History section se pehle) === -->
-<hr />
-<div class="box">
-  <h4>🪙 USDT Buy / Sell</h4>
 
-  <div style="display:flex; gap:10px;">
-    <button id="tabBuy" onclick="switchTrade('buy')">Buy USDT</button>
-    <button id="tabSell" onclick="switchTrade('sell')">Sell USDT</button>
-  </div>
-
-  <div id="buyBox" style="margin-top:10px;">
-    <p>🔐 Payment via UPI: <b>ashutoshkarmkar7-1@oksbi</b></p>
-    <p>💱 Buy Price (per USDT): <b><span id="buyPriceInr">—</span> INR</b> (includes +5%)</p>
-    <input type="number" id="buyAmtUsdt" placeholder="USDT amount e.g. 100" />
-    <input type="text" id="buyWallet" placeholder="Your BEP20 USDT wallet to receive" />
-    <input type="text" id="buyUpiRef" placeholder="UPI Payment Reference (optional)" />
-    <p>🧮 You will pay: <b><span id="buyTotalInr">0</span> INR</b></p>
-    <button onclick="submitBuy()">Submit Buy Request</button>
-  </div>
-
-  <div id="sellBox" class="hidden" style="margin-top:10px;">
-    <p>📤 Send USDT to BEP20: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
-    <p>💱 Sell Price (per USDT): <b><span id="sellPriceInr">—</span> INR</b> (includes −5%)</p>
-    <input type="number" id="sellAmtUsdt" placeholder="USDT amount e.g. 100" />
-    <input type="text" id="sellUpi" placeholder="Your UPI ID to receive INR" />
-    <input type="text" id="sellTxHash" placeholder="Transaction Hash / Remark (optional)" />
-    <p>🧮 You will receive: <b><span id="sellTotalInr">0</span> INR</b></p>
-    <button onclick="submitSell()">Submit Sell Request</button>
-  </div>
-      </div>
   <hr />
   <h4>📜 History</h4>
   <button onclick="viewHistory()">View History</button>
@@ -191,13 +162,6 @@
 
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Dashboard</h3>
-  <!-- === ADMIN: Market Price Control & Buy/Sell Requests === -->
-<h4>⚙️ Market Price (USDT → INR) — hidden from users</h4>
-<input type="number" id="adminMarketPrice" step="0.01" placeholder="e.g. 90.00" />
-<button onclick="saveMarketPrice()">Save Price</button>
-<p>Current Market Price: <b><span id="currentMarketPrice">—</span> INR</b></p>
-
-<div id="adminTrades"></div>
   <div id="adminUsers"></div>
 
   <h4>➕ Add Weekly Income</h4>
@@ -555,38 +519,20 @@ document.getElementById("userDashboard").classList.remove("hidden");
     const data = snap.val();
     const deposit = parseFloat(data.deposit || 0);
     const income = parseFloat(data.income || 0);
-    const walletBalance = parseFloat(data.walletBalance || 0);
+    const balance = parseFloat(data.walletBalance || 0);
     const cap = deposit * 2;
 
-    // अगर income पहले से 2x हो चुका है तो income नहीं जोड़ेगा
-    if (deposit > 0 && income >= cap) {
-      db.ref("users/" + uid).update({
-        status: "Closed",
-        deposit: 0,
-        income: 0
-      });
-      return alert("User already reached 2x. Agreement closed.");
-    }
+    if (income >= cap) return alert("2x cap reached");
 
     const newIncome = Math.min(income + amt, cap);
     const actualAdded = newIncome - income;
 
     db.ref("users/" + uid).update({
       income: newIncome,
-      walletBalance: walletBalance + actualAdded
+      walletBalance: balance + actualAdded
+    }).then(() => {
+      alert("✅ Income added successfully!");
     });
-
-    // Auto close जब 2x पूरा हो जाए
-    if (newIncome >= cap) {
-      db.ref("users/" + uid).update({
-        status: "Closed",
-        deposit: 0,
-        income: 0
-      });
-      alert("🎉 Income added. User reached 2x, agreement closed.");
-    } else {
-      alert("✅ Weekly income added successfully!");
-    }
   });
 }
   let confirmationResultGlobal = null;
@@ -642,263 +588,6 @@ function verifyOTP() {
     alert("OTP verification failed: " + error.message);
   });
 }
-  
-/* ===== USDT BUY/SELL LOGIC ===== */
-let MARKET_PRICE = 0; // INR per USDT (admin sets in /config/marketPrice)
-
-function watchMarketPrice() {
-  db.ref("config/marketPrice").on("value", snap => {
-    MARKET_PRICE = parseFloat(snap.val() || 0);
-    const el = document.getElementById("currentMarketPrice");
-    if (el) el.innerText = MARKET_PRICE ? MARKET_PRICE.toFixed(2) : "—";
-    updateTradePrices();
-  });
-}
-
-function saveMarketPrice() {
-  const v = parseFloat(document.getElementById("adminMarketPrice").value);
-  if (isNaN(v) || v <= 0) return alert("Enter valid market price (INR)");
-  db.ref("config/marketPrice").set(v).then(()=>alert("Market price saved."));
-}
-
-function switchTrade(tab) {
-  const buyBox = document.getElementById("buyBox");
-  const sellBox = document.getElementById("sellBox");
-  const tabBuy = document.getElementById("tabBuy");
-  const tabSell = document.getElementById("tabSell");
-  if (tab === "buy") {
-    buyBox.classList.remove("hidden");
-    sellBox.classList.add("hidden");
-    tabBuy.style.opacity = "1";
-    tabSell.style.opacity = "0.7";
-  } else {
-    sellBox.classList.remove("hidden");
-    buyBox.classList.add("hidden");
-    tabSell.style.opacity = "1";
-    tabBuy.style.opacity = "0.7";
-  }
-  updateTradePrices();
-}
-
-function updateTradePrices() {
-  const buyPrice = MARKET_PRICE ? MARKET_PRICE * 1.05 : 0;
-  const sellPrice = MARKET_PRICE ? MARKET_PRICE * 0.95 : 0;
-
-  const buySpan = document.getElementById("buyPriceInr");
-  const sellSpan = document.getElementById("sellPriceInr");
-  if (buySpan) buySpan.innerText = buyPrice ? buyPrice.toFixed(2) : "—";
-  if (sellSpan) sellSpan.innerText = sellPrice ? sellPrice.toFixed(2) : "—";
-
-  // Totals
-  const buyAmt = parseFloat(document.getElementById("buyAmtUsdt")?.value || 0);
-  const sellAmt = parseFloat(document.getElementById("sellAmtUsdt")?.value || 0);
-
-  const buyTotal = (buyPrice * buyAmt) || 0;
-  const sellTotal = (sellPrice * sellAmt) || 0;
-
-  const buyTotalEl = document.getElementById("buyTotalInr");
-  const sellTotalEl = document.getElementById("sellTotalInr");
-  if (buyTotalEl) buyTotalEl.innerText = Math.round(buyTotal).toString();
-  if (sellTotalEl) sellTotalEl.innerText = Math.round(sellTotal).toString();
-}
-
-// Recalculate totals when user types amounts
-document.addEventListener("input", (e) => {
-  if (["buyAmtUsdt","sellAmtUsdt"].includes(e.target.id)) updateTradePrices();
-});
-
-// Prefill buy wallet from user profile when dashboard loads
-function prefFillTradeFields(userData) {
-  const w = document.getElementById("buyWallet");
-  if (w && userData?.wallet) w.value = userData.wallet;
-}
-
-// Override/extend existing loadUser to prefill & prices (call after your existing UI updates)
-const __orig_loadUser = loadUser;
-loadUser = function(id) {
-  db.ref("users/" + id).on("value", snap => {
-    const data = snap.val();
-
-    // call your existing UI updater (from your original loadUser)
-    // We re-run same logic as you had:
-    const deposit = parseFloat(data.deposit || 0);
-    const income = parseFloat(data.income || 0);
-    const cap = deposit * 2;
-    const remaining = Math.max(0, cap - income);
-    const balance = parseFloat(data.walletBalance || 0);
-
-    document.getElementById("userName").innerText = data.name;
-    document.getElementById("userWallet").innerText = data.wallet;
-    document.getElementById("userDeposit").innerText = deposit;
-    document.getElementById("userIncome").innerText = income;
-    document.getElementById("userStatus").innerText = data.status;
-    document.getElementById("userWithdrawWallet").innerText = data.wallet;
-    document.getElementById("userTarget").innerText = cap;
-    document.getElementById("userRemaining").innerText = remaining;
-    document.getElementById("walletBalance").innerText = balance;
-    document.getElementById("userDashboard").classList.remove("hidden");
-
-    if (deposit > 0 && income >= cap && data.status !== "Closed") {
-      db.ref("users/" + id).update({ income: 0, deposit: 0, status: "Closed" });
-      alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
-    }
-
-    // NEW: trade prefill
-    prefFillTradeFields(data);
-    updateTradePrices();
-  });
-};
-
-// Submit Buy
-function submitBuy() {
-  if (!currentId) return alert("Please login first.");
-  if (!MARKET_PRICE) return alert("Market price not set by admin yet.");
-
-  const amt = parseFloat(document.getElementById("buyAmtUsdt").value);
-  const recvWallet = document.getElementById("buyWallet").value.trim();
-  const upiRef = document.getElementById("buyUpiRef").value.trim();
-
-  if (isNaN(amt) || amt <= 0) return alert("Enter valid USDT amount.");
-  if (!recvWallet) return alert("Enter your BEP20 USDT wallet address.");
-
-  const price = MARKET_PRICE * 1.05;
-  const totalInr = Math.round(price * amt);
-
-  const payload = {
-    userId: currentId,
-    type: "BUY",
-    amountUSDT: amt,
-    priceINR: parseFloat(price.toFixed(2)),
-    totalINR: totalInr,
-    payToUPI: "ashutoshkarmkar7-1@oksbi",
-    userWalletBEP20: recvWallet,
-    upiReference: upiRef || "",
-    status: "Pending",
-    createdAt: Date.now()
-  };
-
-  const ref = db.ref("buyRequests").push();
-  ref.set(payload).then(()=>{
-    // also store under user history
-    db.ref(`users/${currentId}/orders/${ref.key}`).set(payload);
-    alert("✅ Buy request submitted! Pay via UPI shown and wait for admin approval.");
-  });
-}
-
-// Submit Sell
-function submitSell() {
-  if (!currentId) return alert("Please login first.");
-  if (!MARKET_PRICE) return alert("Market price not set by admin yet.");
-
-  const amt = parseFloat(document.getElementById("sellAmtUsdt").value);
-  const userUpi = document.getElementById("sellUpi").value.trim();
-  const tx = document.getElementById("sellTxHash").value.trim();
-
-  if (isNaN(amt) || amt <= 0) return alert("Enter valid USDT amount.");
-  if (!userUpi) return alert("Enter your UPI ID to receive INR.");
-
-  const price = MARKET_PRICE * 0.95;
-  const totalInr = Math.round(price * amt);
-
-  const payload = {
-    userId: currentId,
-    type: "SELL",
-    amountUSDT: amt,
-    priceINR: parseFloat(price.toFixed(2)),
-    totalINR: totalInr,
-    sendUSDTToBEP20: "0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B",
-    userUPI: userUpi,
-    txHash: tx || "",
-    status: "Pending",
-    createdAt: Date.now()
-  };
-
-  const ref = db.ref("sellRequests").push();
-  ref.set(payload).then(()=>{
-    db.ref(`users/${currentId}/orders/${ref.key}`).set(payload);
-    alert("✅ Sell request submitted! Send USDT to shown address and wait for admin approval.");
-  });
-}
-
-/* ===== ADMIN LISTING & ACTIONS ===== */
-function loadTradesForAdmin() {
-  // Auto-refresh lists
-  db.ref("buyRequests").on("value", snap => {
-    let html = "<h4>🛒 Buy Requests</h4><table><tr><th>ID</th><th>User</th><th>USDT</th><th>Price (INR)</th><th>Total (INR)</th><th>BEP20</th><th>UPI Ref</th><th>Status</th><th>Action</th></tr>";
-    snap.forEach(child => {
-      const d = child.val();
-      html += `<tr>
-        <td>${child.key}</td>
-        <td>${d.userId}</td>
-        <td>${d.amountUSDT}</td>
-        <td>${d.priceINR}</td>
-        <td>${d.totalINR}</td>
-        <td>${d.userWalletBEP20 || "-"}</td>
-        <td>${d.upiReference || "-"}</td>
-        <td>${d.status}</td>
-        <td>
-          <button onclick="approveBuy('${child.key}')">Approve</button>
-          <button onclick="rejectBuy('${child.key}')">Reject</button>
-        </td>
-      </tr>`;
-    });
-    html += "</table>";
-    document.getElementById("adminTrades").innerHTML = html;
-  });
-
-  db.ref("sellRequests").on("value", snap => {
-    let html = document.getElementById("adminTrades").innerHTML;
-    html += "<h4>💼 Sell Requests</h4><table><tr><th>ID</th><th>User</th><th>USDT</th><th>Price (INR)</th><th>Total (INR)</th><th>User UPI</th><th>TX/Remark</th><th>Status</th><th>Action</th></tr>";
-    snap.forEach(child => {
-      const d = child.val();
-      html += `<tr>
-        <td>${child.key}</td>
-        <td>${d.userId}</td>
-        <td>${d.amountUSDT}</td>
-        <td>${d.priceINR}</td>
-        <td>${d.totalINR}</td>
-        <td>${d.userUPI || "-"}</td>
-        <td>${d.txHash || "-"}</td>
-        <td>${d.status}</td>
-        <td>
-          <button onclick="approveSell('${child.key}')">Approve</button>
-          <button onclick="rejectSell('${child.key}')">Reject</button>
-        </td>
-      </tr>`;
-    });
-    html += "</table>";
-    document.getElementById("adminTrades").innerHTML = html;
-  });
-}
-
-function approveBuy(reqId) {
-  db.ref("buyRequests/" + reqId).update({ status: "Approved", approvedAt: Date.now() });
-  alert("✅ Buy approved.");
-}
-function rejectBuy(reqId) {
-  db.ref("buyRequests/" + reqId).update({ status: "Rejected", rejectedAt: Date.now() });
-  alert("❌ Buy rejected.");
-}
-function approveSell(reqId) {
-  db.ref("sellRequests/" + reqId).update({ status: "Approved", approvedAt: Date.now() });
-  alert("✅ Sell approved.");
-}
-function rejectSell(reqId) {
-  db.ref("sellRequests/" + reqId).update({ status: "Rejected", rejectedAt: Date.now() });
-  alert("❌ Sell rejected.");
-}
-
-/* ===== HOOK INTO EXISTING FLOWS ===== */
-// Call these when app starts / admin logs in
-(function initTradeModule(){
-  watchMarketPrice();
-  // If admin panel becomes visible, load trades
-  const observer = new MutationObserver(() => {
-    const adminVisible = !document.getElementById("adminPanel").classList.contains("hidden");
-    if (adminVisible) loadTradesForAdmin();
-  });
-  observer.observe(document.body, { attributes:true, childList:true, subtree:true });
-})();
     function logout() {
     location.reload();
   }
