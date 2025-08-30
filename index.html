@@ -555,20 +555,38 @@ document.getElementById("userDashboard").classList.remove("hidden");
     const data = snap.val();
     const deposit = parseFloat(data.deposit || 0);
     const income = parseFloat(data.income || 0);
-    const balance = parseFloat(data.walletBalance || 0);
+    const walletBalance = parseFloat(data.walletBalance || 0);
     const cap = deposit * 2;
 
-    if (income >= cap) return alert("2x cap reached");
+    // अगर income पहले से 2x हो चुका है तो income नहीं जोड़ेगा
+    if (deposit > 0 && income >= cap) {
+      db.ref("users/" + uid).update({
+        status: "Closed",
+        deposit: 0,
+        income: 0
+      });
+      return alert("User already reached 2x. Agreement closed.");
+    }
 
     const newIncome = Math.min(income + amt, cap);
     const actualAdded = newIncome - income;
 
     db.ref("users/" + uid).update({
       income: newIncome,
-      walletBalance: balance + actualAdded
-    }).then(() => {
-      alert("✅ Income added successfully!");
+      walletBalance: walletBalance + actualAdded
     });
+
+    // Auto close जब 2x पूरा हो जाए
+    if (newIncome >= cap) {
+      db.ref("users/" + uid).update({
+        status: "Closed",
+        deposit: 0,
+        income: 0
+      });
+      alert("🎉 Income added. User reached 2x, agreement closed.");
+    } else {
+      alert("✅ Weekly income added successfully!");
+    }
   });
 }
   let confirmationResultGlobal = null;
