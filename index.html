@@ -7,8 +7,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* General Styles */
+    /* General and reuse previous styles */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
@@ -33,7 +34,7 @@
       border-radius: 12px;
       box-shadow: 0 0 18px #00ffe170;
       width: 100%;
-      max-width: 600px;
+      max-width: 650px;
       box-sizing: border-box;
     }
     input, button, select, textarea {
@@ -97,12 +98,13 @@
     }
     td {
       background-color: #1c1c1c;
+      word-break: break-word;
     }
     /* Admin Panel Section */
     .admin-section {
       background: #2b1b1b;
       border: 2px solid #ff5555;
-      max-width: 900px;
+      max-width: 980px;
     }
     .admin-section h3 {
       margin-top: 0;
@@ -146,12 +148,23 @@
     }
     /* User Dashboard */
     #userDashboard {
-      max-width: 600px;
+      max-width: 650px;
       text-align: left;
     }
     #userDashboard p, #userDashboard code {
       margin: 6px 0;
       font-size: 15px;
+    }
+    #profitChartContainer {
+      margin-top: 20px;
+      background: #272727;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px #00ffe1bb;
+    }
+    #profitChart {
+      width: 100% !important;
+      max-height: 250px;
     }
     code {
       display: inline-block;
@@ -254,6 +267,7 @@
   <h3>👋 Hello, <span id="userName"></span></h3>
   <p>💼 Wallet: <span id="userWallet"></span></p>
   <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
+  <p><small><em>Deposit Time: <span id="userDepositTime">N/A</span></em></small></p>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
@@ -274,6 +288,12 @@
   <button onclick="requestWithdraw()">Request Withdrawal</button>
 
   <hr />
+  <h4>🔑 Change Password</h4>
+  <input type="password" id="changePassCurrent" placeholder="Current Password" />
+  <input type="password" id="changePassNew" placeholder="New Password" />
+  <button onclick="changePasswordNormal()">Change Password</button>
+  
+  <hr/>
   <h4>👨‍👩‍👧‍👦 Referral Team</h4>
   <button onclick="viewTeam()">View Your Team</button>
   <div id="teamBox"></div>
@@ -283,11 +303,21 @@
   <button onclick="viewHistory()">View History</button>
   <div id="historyBox"></div>
 
+  <div id="profitChartContainer" class="hidden">
+    <h4>📊 Profit Graph (Deposit vs Income)</h4>
+    <canvas id="profitChart"></canvas>
+  </div>
+
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Dashboard</h3>
+
+  <div style="margin-bottom:15px; font-size: 16px; color: #00ffe1;">
+    <b>Total Deposit Balance:</b> <span id="totalDepositBalance">0</span> USDT &nbsp;&nbsp;&nbsp;
+    <b>Total Wallet Balance:</b> <span id="totalWalletBalance">0</span> USDT
+  </div>
 
   <div id="adminUsersContainer"></div>
 
@@ -321,6 +351,7 @@
     <input type="number" id="editDeposit" placeholder="Deposit" min="0" step="any" />
     <input type="number" id="editIncome" placeholder="Income" min="0" step="any" />
     <input type="number" id="editWalletBalance" placeholder="Wallet Balance" min="0" step="any" />
+    <input type="text" id="editDepositTime" placeholder="Deposit Time (ISO format)" />
     <button onclick="saveUserChanges()">Save Changes</button>
   </div>
 </div>
@@ -344,25 +375,20 @@
   let confirmationResultGlobal = null;
   let editingUserKey = null;
 
-  // Show/hide elements helpers
-  function show(element) { element.classList.remove('hidden'); }
-  function hide(element) { element.classList.add('hidden'); }
+  // Helper show/hide
+  function show(ele) { ele.classList.remove('hidden'); }
+  function hide(ele) { ele.classList.add('hidden'); }
 
-  // Show registration
   function showRegister() {
     hide(document.getElementById('loginBox'));
     show(document.getElementById('registerBox'));
     hide(document.getElementById('forgotBox'));
   }
-
-  // Show forgot password
   function showForgot() {
     hide(document.getElementById('loginBox'));
     hide(document.getElementById('registerBox'));
     show(document.getElementById('forgotBox'));
   }
-
-  // Back to login
   function backToLogin() {
     hide(document.getElementById('forgotBox'));
     hide(document.getElementById('registerBox'));
@@ -410,8 +436,10 @@
     }
     const id = "U" + Math.floor(Math.random() * 100000);
 
+    // Set initial depositTime null on registration
     const userData = {
-      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref || "", password, walletBalance: 0
+      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref || "", password,
+      walletBalance: 0, depositTime: null
     };
     db.ref("users/" + id).set(userData).then(() => {
       alert(`Registered! Your ID: ${id}`);
@@ -419,7 +447,7 @@
     }).catch(err => alert("Error during registration: " + err.message));
   }
 
-  // Load user details for user dashboard
+  // Load user details and profit chart
   function loadUser(id) {
     db.ref("users/" + id).on("value", snap => {
       if (!snap.exists()) {
@@ -428,15 +456,19 @@
         return;
       }
       const data = snap.val();
+
       const deposit = parseFloat(data.deposit || 0);
       const income = parseFloat(data.income || 0);
       const cap = deposit * 2;
       const remaining = Math.max(0, cap - income);
       const balance = parseFloat(data.walletBalance || 0);
+      // Show deposit time formatted
+      const depositTimeStr = data.depositTime ? new Date(data.depositTime).toLocaleString() : "N/A";
 
       document.getElementById("userName").innerText = data.name;
       document.getElementById("userWallet").innerText = data.wallet;
       document.getElementById("userDeposit").innerText = deposit.toFixed(2);
+      document.getElementById("userDepositTime").innerText = depositTimeStr;
       document.getElementById("userIncome").innerText = income.toFixed(2);
       document.getElementById("userStatus").innerText = data.status;
       document.getElementById("userWithdrawWallet").innerText = data.wallet;
@@ -448,14 +480,18 @@
         db.ref("users/" + id).update({
           income: 0,
           deposit: 0,
-          status: "Closed"
+          status: "Closed",
+          depositTime: null
         });
         alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
       }
+
+      // Show profit graph
+      loadProfitChart(deposit, income);
     });
   }
 
-  // Submit deposit request
+  // Deposit submit with time
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (isNaN(amt) || amt < 100 || amt > 1000) {
@@ -467,9 +503,12 @@
       const data = snap.val();
       if (data.status === "Active") return alert("Deposit is locked until agreement is closed.");
 
+      const nowISOString = new Date().toISOString();
+
       db.ref("users/" + currentId).update({
         deposit: amt,
-        status: "Pending"
+        status: "Pending",
+        depositTime: nowISOString
       }).then(() => {
         alert("Deposit submitted! Waiting for admin approval.");
         document.getElementById("depAmount").value = "";
@@ -477,7 +516,7 @@
     });
   }
 
-  // Request withdrawal
+  // Withdrawal
   function requestWithdraw() {
     const amt = parseFloat(document.getElementById("withAmt").value);
     if (isNaN(amt) || amt < 5) return alert("Minimum withdrawal amount is 5 USDT");
@@ -498,7 +537,25 @@
     });
   }
 
-  // View referral team
+  // Normal password change for user
+  function changePasswordNormal() {
+    const currentPass = document.getElementById("changePassCurrent").value;
+    const newPass = document.getElementById("changePassNew").value;
+    if (!currentPass || !newPass) return alert("Please fill both current and new password");
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+      const data = snap.val();
+      if (data.password !== currentPass) return alert("Current password is incorrect");
+
+      db.ref("users/" + currentId + "/password").set(newPass).then(() => {
+        alert("Password changed successfully. Please login again.");
+        logout();
+      });
+    }).catch(err => alert("Error changing password: " + err.message));
+  }
+
+  // Referral team
   function viewTeam() {
     db.ref("users").once("value", snap => {
       let html = "<ul>";
@@ -513,7 +570,7 @@
     });
   }
 
-  // View history (withdrawals)
+  // History withdrawals
   function viewHistory() {
     db.ref("withdrawals/" + currentId).once("value", snap => {
       let html = "<h5>Withdrawals:</h5><ul>";
@@ -526,28 +583,101 @@
     });
   }
 
-  // Load admin panel users and withdrawals
+  // Profit chart variables
+  let profitChartInstance = null;
+
+  // Load profit chart with current deposit and income for user
+  function loadProfitChart(deposit, income) {
+    const container = document.getElementById("profitChartContainer");
+    if (deposit <= 0) {
+      container.classList.add("hidden");
+      return;
+    }
+    container.classList.remove("hidden");
+
+    const ctx = document.getElementById("profitChart").getContext('2d');
+
+    // Destroy old chart if any
+    if (profitChartInstance) {
+      profitChartInstance.destroy();
+    }
+
+    profitChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Start', 'Now'],
+        datasets: [
+          {
+            label: 'Deposit',
+            data: [deposit, deposit],
+            borderColor: '#00C7AA',
+            backgroundColor: 'rgba(0, 199, 170, 0.2)',
+            fill: true,
+            tension: 0.2
+          },
+          {
+            label: 'Income',
+            data: [0, income],
+            borderColor: '#00FFE1',
+            backgroundColor: 'rgba(0, 255, 225, 0.3)',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {display: true, text: 'USDT'}
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: {color: '#00ffe1'} },
+          tooltip: { enabled: true, mode: 'index', intersect: false }
+        }
+      }
+    });
+  }
+
+  // Load admin panel with totals and remaining target
   function loadAdmin() {
     const container = document.getElementById("adminUsersContainer");
     container.innerHTML = "<p>Loading users...</p>";
+
+    let totalDeposit = 0;
+    let totalWallet = 0;
 
     db.ref("users").once("value").then(snap => {
       let html = `<h4>All Users</h4><table>
         <thead>
           <tr>
-            <th>User ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th>
+            <th>User ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th>
+            <th>Remaining Target</th><th>Status</th><th>Deposit Time</th><th>Actions</th>
           </tr>
         </thead><tbody>`;
       snap.forEach(child => {
         const d = child.val();
+        const deposit = parseFloat(d.deposit || 0);
+        const income = parseFloat(d.income || 0);
+        const cap = deposit * 2;
+        const remaining = Math.max(0, cap - income);
+        totalDeposit += deposit;
+        totalWallet += parseFloat(d.walletBalance || 0);
+
+        const dtStr = d.depositTime ? new Date(d.depositTime).toLocaleString() : "-";
+
         html += `<tr id="row-${child.key}">
           <td>${child.key}</td>
           <td>${escapeHtml(d.name)}</td>
           <td>${escapeHtml(d.mobile)}</td>
           <td>${escapeHtml(d.wallet)}</td>
-          <td>${parseFloat(d.deposit || 0).toFixed(2)}</td>
-          <td>${parseFloat(d.income || 0).toFixed(2)}</td>
+          <td>${deposit.toFixed(2)}</td>
+          <td>${income.toFixed(2)}</td>
+          <td>${remaining.toFixed(2)}</td>
           <td>${d.status}</td>
+          <td>${dtStr}</td>
           <td>
             <button class="btn-table btn-accept btn-small" onclick="approveDeposit('${child.key}')">Accept</button>
             <button class="btn-table btn-reject btn-small" onclick="rejectDeposit('${child.key}')">Reject</button>
@@ -558,6 +688,10 @@
         </tr>`;
       });
       html += "</tbody></table>";
+
+      // Show total deposit and wallet balance aggregated
+      document.getElementById("totalDepositBalance").innerText = totalDeposit.toFixed(2);
+      document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
 
       // Pending withdrawals
       html += "<h4>Pending Withdrawals</h4>";
@@ -591,7 +725,7 @@
     });
   }
 
-  // Approve deposit and distribute referral income
+  // Approve deposit with referral income distribution
   function approveDeposit(userId) {
     db.ref("users/" + userId).once("value").then(snap => {
       if (!snap.exists()) return alert("User not found");
@@ -601,7 +735,6 @@
 
       db.ref("users/" + userId + "/status").set("Active");
 
-      // Distribute referral income: 3 levels
       if (data.referredBy) {
         const ref1 = data.referredBy;
         db.ref("users/" + ref1).once("value").then(s1 => {
@@ -669,7 +802,7 @@
   // Reject deposit
   function rejectDeposit(userId) {
     if (confirm("Are you sure you want to reject this user's deposit?")) {
-      db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" }).then(() => {
+      db.ref("users/" + userId).update({ deposit: 0, status: "Rejected", depositTime: null }).then(() => {
         alert("Deposit rejected.");
         loadAdmin();
       }).catch(err => alert("Error rejecting deposit: " + err.message));
@@ -679,7 +812,7 @@
   // Close agreement
   function closeAgreement(userId) {
     if (confirm("Are you sure you want to close this agreement?")) {
-      db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0 }).then(() => {
+      db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0, depositTime: null }).then(() => {
         alert("Agreement closed.");
         loadAdmin();
       }).catch(err => alert("Error closing agreement: " + err.message));
@@ -697,7 +830,8 @@
           db.ref("users/" + userId).update({
             income: 0,
             deposit: 0,
-            status: "Closed"
+            status: "Closed",
+            depositTime: null
           });
         }
         alert("Withdrawal approved.");
@@ -756,6 +890,7 @@
     hide(document.getElementById("userDashboard"));
     hide(document.getElementById("adminPanel"));
     hide(document.getElementById("editUserModal"));
+    hide(document.getElementById("profitChartContainer"));
     show(document.getElementById("loginBox"));
   }
 
@@ -781,6 +916,7 @@
       document.getElementById("editDeposit").value = parseFloat(data.deposit || 0).toFixed(2);
       document.getElementById("editIncome").value = parseFloat(data.income || 0).toFixed(2);
       document.getElementById("editWalletBalance").value = parseFloat(data.walletBalance || 0).toFixed(2);
+      document.getElementById("editDepositTime").value = data.depositTime || "";
 
       show(document.getElementById("editUserModal"));
     }).catch(err => alert("Error loading user data: " + err.message));
@@ -805,9 +941,14 @@
     const deposit = parseFloat(document.getElementById("editDeposit").value);
     const income = parseFloat(document.getElementById("editIncome").value);
     const walletBalance = parseFloat(document.getElementById("editWalletBalance").value);
+    const depositTime = document.getElementById("editDepositTime").value.trim();
 
     if (!name || !mobile || !wallet || isNaN(deposit) || isNaN(income) || isNaN(walletBalance)) {
       alert("Please fill all fields correctly");
+      return;
+    }
+    if (depositTime && isNaN(Date.parse(depositTime))) {
+      alert("Deposit time must be valid ISO datetime string or empty");
       return;
     }
 
@@ -815,7 +956,8 @@
       name, mobile, wallet, referredBy, status,
       deposit: deposit < 0 ? 0 : deposit,
       income: income < 0 ? 0 : income,
-      walletBalance: walletBalance < 0 ? 0 : walletBalance
+      walletBalance: walletBalance < 0 ? 0 : walletBalance,
+      depositTime: depositTime || null
     };
     if (password) {
       updateData.password = password;
