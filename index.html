@@ -1,4 +1,3 @@
-<!-- FULL FINAL HTML CODE FOR ASHIRWAD MART -->
 <!DOCTYPE html> 
 <html>
 <head>
@@ -7,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -101,10 +101,11 @@
   <input type="text" id="regMobile" placeholder="Mobile Number" />
   <input type="text" id="regWallet" placeholder="BEP20 USDT Wallet Address" />
   <input type="password" id="regPassword" placeholder="Set Password" />
-<input type="text" id="regRef" placeholder="Referral ID (optional)" />
+  <input type="text" id="regRef" placeholder="Referral ID (optional)" />
   <button onclick="register()">Register Now</button>
-  
-</div><div id="forgotBox" class="box hidden">
+</div>
+
+<div id="forgotBox" class="box hidden">
   <h3>🔑 Reset Password via OTP</h3>
   <input type="text" id="otpMobile" placeholder="Enter Registered Mobile Number" />
   <div id="recaptcha-container"></div>
@@ -121,20 +122,11 @@
   <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
-<p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
-<p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
+  <p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
+  <p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
   <p>🔒 Status: <span id="userStatus">Pending</span></p>
-<p>💳 Wallet Balance: <b><span id="walletBalance">0</span> USDT</b></p>
+  <p>💳 Wallet Balance: <b><span id="walletBalance">0</span> USDT</b></p>
 
-<hr />
-<h4>📱 Change Password via OTP</h4>
-<input type="text" id="otpMobile" placeholder="Enter Registered Mobile Number" />
-<div id="recaptcha-container"></div>
-<button onclick="sendOTP()">Send OTP</button>
-<input type="text" id="otpCode" placeholder="Enter OTP" />
-<input type="password" id="otpNewPass" placeholder="New Password" />
-<button onclick="verifyOTP()">Verify & Change Password</button>
-  
   <hr />
   <h4>📥 Deposit Funds</h4>
   <p>Send 100–1000 USDT to:</p>
@@ -186,54 +178,45 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   let currentId = "";
+  let confirmationResultGlobal = null;
 
   function showRegister() {
     document.getElementById('loginBox').classList.add('hidden');
     document.getElementById('registerBox').classList.remove('hidden');
   }
 
-function showForgot() {
-  document.getElementById('loginBox').classList.add('hidden');
-  document.getElementById('registerBox').classList.add('hidden');
-  document.getElementById('forgotBox').classList.remove('hidden');
-}
+  function showForgot() {
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('registerBox').classList.add('hidden');
+    document.getElementById('forgotBox').classList.remove('hidden');
+  }
 
-function backToLogin() {
-  document.getElementById('forgotBox').classList.add('hidden');
-  document.getElementById('loginBox').classList.remove('hidden');
-}
+  function backToLogin() {
+    document.getElementById('forgotBox').classList.add('hidden');
+    document.getElementById('loginBox').classList.remove('hidden');
+  }
 
   function login() {
-  const id = document.getElementById('loginId').value.trim();
-  const pass = document.getElementById('loginPass').value;
-  if (id === "Admin" && pass === "Jaihanuman@7") {
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("adminPanel").classList.remove("hidden");
-    loadAdmin();
-    return;
-  }
-  db.ref("users/" + id).once("value", snap => {
-    if (snap.exists()) {
-      const data = snap.val();
-      if (data.password !== pass) return alert("Incorrect password");
-      currentId = id;
-      loadUser(id);
+    const id = document.getElementById('loginId').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (id === "Admin" && pass === "Jaihanuman@7") {
       document.getElementById("loginBox").classList.add("hidden");
-      // Disable deposit button if agreement is active
-if (data.status === "Active" && deposit > 0) {
-  document.getElementById("depAmount").disabled = true;
-  document.querySelector("button[onclick='submitDeposit()']").disabled = true;
-  document.querySelector("button[onclick='submitDeposit()']").innerText = "Deposit Locked (Active)";
-} else {
-  document.getElementById("depAmount").disabled = false;
-  document.querySelector("button[onclick='submitDeposit()']").disabled = false;
-  document.querySelector("button[onclick='submitDeposit()']").innerText = "Submit Deposit";
-}
-      document.getElementById("userDashboard").classList.remove("hidden");
-    } else {
-      alert("User ID not found.");
+      document.getElementById("adminPanel").classList.remove("hidden");
+      loadAdmin();
+      return;
     }
-  });
+    db.ref("users/" + id).once("value", snap => {
+      if (snap.exists()) {
+        const data = snap.val();
+        if (data.password !== pass) return alert("Incorrect password");
+        currentId = id;
+        loadUser(id);
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("userDashboard").classList.remove("hidden");
+      } else {
+        alert("User ID not found.");
+      }
+    });
   }
 
   function register() {
@@ -243,13 +226,13 @@ if (data.status === "Active" && deposit > 0) {
     const ref = document.getElementById("regRef").value.trim();
     if (!name || !mobile || !wallet) return alert("Please fill all fields");
     const id = "U" + Math.floor(Math.random() * 100000);
-    
-    const password = document.getElementById("regPassword").value.trim();
-if (!password) return alert("Please set a password");
 
-const userData = {
-  name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref, password, walletBalance: 0
-};
+    const password = document.getElementById("regPassword").value.trim();
+    if (!password) return alert("Please set a password");
+
+    const userData = {
+      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref, password, walletBalance: 0
+    };
     db.ref("users/" + id).set(userData).then(() => {
       alert("Registered! Your ID: " + id);
       location.reload();
@@ -257,74 +240,69 @@ const userData = {
   }
 
   function loadUser(id) {
-  db.ref("users/" + id).on("value", snap => {
-    const data = snap.val();
-    const deposit = parseFloat(data.deposit || 0);
-    const income = parseFloat(data.income || 0);
-    const cap = deposit * 2;
-    const remaining = Math.max(0, cap - income);
-  
-    // remove this block completely — it's unused and causes error
-    
-    const balance = parseFloat(data.walletBalance || 0);
+    db.ref("users/" + id).on("value", snap => {
+      const data = snap.val();
+      const deposit = parseFloat(data.deposit || 0);
+      const income = parseFloat(data.income || 0);
+      const cap = deposit * 2;
+      const remaining = Math.max(0, cap - income);
+      const balance = parseFloat(data.walletBalance || 0);
 
-    document.getElementById("userName").innerText = data.name;
-    document.getElementById("userWallet").innerText = data.wallet;
-    document.getElementById("userDeposit").innerText = deposit;
-    document.getElementById("userIncome").innerText = income;
-    document.getElementById("userStatus").innerText = data.status;
-    document.getElementById("userWithdrawWallet").innerText = data.wallet;
-    document.getElementById("userTarget").innerText = cap;
-    document.getElementById("userRemaining").innerText = remaining;
-    document.getElementById("walletBalance").innerText = balance;
-    document.getElementById("walletBalance").innerText = balance;
-document.getElementById("userDashboard").classList.remove("hidden");
-    // Auto close agreement if income reaches 2x
-    
-    if (deposit > 0 && income >= cap && data.status !== "Closed") {
-      db.ref("users/" + id).update({
-        income: 0,
-        deposit: 0,
-        status: "Closed"
-      });
-      alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
-    }
-  });
-}
+      document.getElementById("userName").innerText = data.name;
+      document.getElementById("userWallet").innerText = data.wallet;
+      document.getElementById("userDeposit").innerText = deposit;
+      document.getElementById("userIncome").innerText = income;
+      document.getElementById("userStatus").innerText = data.status;
+      document.getElementById("userWithdrawWallet").innerText = data.wallet;
+      document.getElementById("userTarget").innerText = cap;
+      document.getElementById("userRemaining").innerText = remaining;
+      document.getElementById("walletBalance").innerText = balance;
+      document.getElementById("userDashboard").classList.remove("hidden");
+
+      if (deposit > 0 && income >= cap && data.status !== "Closed") {
+        db.ref("users/" + id).update({
+          income: 0,
+          deposit: 0,
+          status: "Closed"
+        });
+        alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
+      }
+    });
+  }
 
   function submitDeposit() {
-  db.ref("users/" + currentId).once("value", snap => {
-    const data = snap.val();
-    if (data.status === "Active") {
-      return alert("Deposit is locked until agreement is closed.");
-    }
+    db.ref("users/" + currentId).once("value", snap => {
+      const data = snap.val();
+      if (data.status === "Active") {
+        return alert("Deposit is locked until agreement is closed.");
+      }
 
-    const amt = parseFloat(document.getElementById("depAmount").value);
-    if (amt < 100 || amt > 1000) return alert("Invalid amount");
+      const amt = parseFloat(document.getElementById("depAmount").value);
+      if (amt < 100 || amt > 1000) return alert("Invalid amount");
 
-    db.ref("users/" + currentId).update({
-      deposit: amt,
-      status: "Pending"
-    }).then(() => {
-      alert("Deposit submitted! Waiting for admin approval.");
+      db.ref("users/" + currentId).update({
+        deposit: amt,
+        status: "Pending"
+      }).then(() => {
+        alert("Deposit submitted! Waiting for admin approval.");
+      });
     });
-  });
-}
+  }
 
   function requestWithdraw() {
-  const amt = parseFloat(document.getElementById("withAmt").value);
-  if (amt < 5) return alert("Minimum 5 USDT");
+    const amt = parseFloat(document.getElementById("withAmt").value);
+    if (amt < 5) return alert("Minimum 5 USDT");
 
-  db.ref("users/" + currentId).once("value", snap => {
-    const data = snap.val();
-    const walletBalance = parseFloat(data.walletBalance || 0);
-    if (amt > walletBalance) return alert("Insufficient wallet balance");
+    db.ref("users/" + currentId).once("value", snap => {
+      const data = snap.val();
+      const walletBalance = parseFloat(data.walletBalance || 0);
+      if (amt > walletBalance) return alert("Insufficient wallet balance");
 
-    db.ref("users/" + currentId + "/walletBalance").set(walletBalance - amt);
-    db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-    alert("Withdrawal requested!");
-  });
-}
+      db.ref("users/" + currentId + "/walletBalance").set(walletBalance - amt);
+      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
+      alert("Withdrawal requested!");
+    });
+  }
 
   function viewTeam() {
     db.ref("users").once("value", snap => {
@@ -400,79 +378,75 @@ document.getElementById("userDashboard").classList.remove("hidden");
   }
 
   function approveDeposit(userId) {
-  db.ref("users/" + userId).once("value", snap => {
-    const data = snap.val();
-    const amt = parseFloat(data.deposit || 0);
+    db.ref("users/" + userId).once("value", snap => {
+      const data = snap.val();
+      const amt = parseFloat(data.deposit || 0);
 
-    // Mark deposit as active
-    db.ref("users/" + userId + "/status").set("Active");
+      db.ref("users/" + userId + "/status").set("Active");
 
-    // Referral income distribution (only after approval)
-    if (data.referredBy) {
-      const ref1 = data.referredBy;
-      db.ref("users/" + ref1).once("value", s1 => {
-        if (s1.exists()) {
-          const d1 = s1.val();
-          const cap1 = (parseFloat(d1.deposit) || 0) * 2;
-          const currentIncome1 = parseFloat(d1.income || 0);
-          const walletBalance1 = parseFloat(d1.walletBalance || 0);
-          const bonus1 = amt * 0.05;
-          const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
-          const actualAdded1 = newIncome1 - currentIncome1;
+      if (data.referredBy) {
+        const ref1 = data.referredBy;
+        db.ref("users/" + ref1).once("value", s1 => {
+          if (s1.exists()) {
+            const d1 = s1.val();
+            const cap1 = (parseFloat(d1.deposit) || 0) * 2;
+            const currentIncome1 = parseFloat(d1.income || 0);
+            const walletBalance1 = parseFloat(d1.walletBalance || 0);
+            const bonus1 = amt * 0.05;
+            const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
+            const actualAdded1 = newIncome1 - currentIncome1;
 
-          db.ref("users/" + ref1).update({
-            income: newIncome1,
-            walletBalance: walletBalance1 + actualAdded1
-          });
-
-          // Level 2: 3%
-          if (d1.referredBy) {
-            const ref2 = d1.referredBy;
-            db.ref("users/" + ref2).once("value", s2 => {
-              if (s2.exists()) {
-                const d2 = s2.val();
-                const cap2 = (parseFloat(d2.deposit) || 0) * 2;
-                const currentIncome2 = parseFloat(d2.income || 0);
-                const walletBalance2 = parseFloat(d2.walletBalance || 0);
-                const bonus2 = amt * 0.03;
-                const newIncome2 = Math.min(currentIncome2 + bonus2, cap2);
-                const actualAdded2 = newIncome2 - currentIncome2;
-
-                db.ref("users/" + ref2).update({
-                  income: newIncome2,
-                  walletBalance: walletBalance2 + actualAdded2
-                });
-
-                // Level 3: 2%
-                if (d2.referredBy) {
-                  const ref3 = d2.referredBy;
-                  db.ref("users/" + ref3).once("value", s3 => {
-                    if (s3.exists()) {
-                      const d3 = s3.val();
-                      const cap3 = (parseFloat(d3.deposit) || 0) * 2;
-                      const currentIncome3 = parseFloat(d3.income || 0);
-                      const walletBalance3 = parseFloat(d3.walletBalance || 0);
-                      const bonus3 = amt * 0.02;
-                      const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
-                      const actualAdded3 = newIncome3 - currentIncome3;
-
-                      db.ref("users/" + ref3).update({
-                        income: newIncome3,
-                        walletBalance: walletBalance3 + actualAdded3
-                      });
-                    }
-                  });
-                }
-              }
+            db.ref("users/" + ref1).update({
+              income: newIncome1,
+              walletBalance: walletBalance1 + actualAdded1
             });
-          }
-        }
-      });
-    }
 
-    alert("Deposit approved and referral income distributed.");
-  });
-}
+            if (d1.referredBy) {
+              const ref2 = d1.referredBy;
+              db.ref("users/" + ref2).once("value", s2 => {
+                if (s2.exists()) {
+                  const d2 = s2.val();
+                  const cap2 = (parseFloat(d2.deposit) || 0) * 2;
+                  const currentIncome2 = parseFloat(d2.income || 0);
+                  const walletBalance2 = parseFloat(d2.walletBalance || 0);
+                  const bonus2 = amt * 0.03;
+                  const newIncome2 = Math.min(currentIncome2 + bonus2, cap2);
+                  const actualAdded2 = newIncome2 - currentIncome2;
+
+                  db.ref("users/" + ref2).update({
+                    income: newIncome2,
+                    walletBalance: walletBalance2 + actualAdded2
+                  });
+
+                  if (d2.referredBy) {
+                    const ref3 = d2.referredBy;
+                    db.ref("users/" + ref3).once("value", s3 => {
+                      if (s3.exists()) {
+                        const d3 = s3.val();
+                        const cap3 = (parseFloat(d3.deposit) || 0) * 2;
+                        const currentIncome3 = parseFloat(d3.income || 0);
+                        const walletBalance3 = parseFloat(d3.walletBalance || 0);
+                        const bonus3 = amt * 0.02;
+                        const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
+                        const actualAdded3 = newIncome3 - currentIncome3;
+
+                        db.ref("users/" + ref3).update({
+                          income: newIncome3,
+                          walletBalance: walletBalance3 + actualAdded3
+                        });
+                      }
+                    });
+                  }
+                }
+              });
+            }
+          }
+        });
+      }
+
+      alert("Deposit approved and referral income distributed.");
+    });
+  }
 
   function rejectDeposit(userId) {
     db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" });
@@ -507,90 +481,94 @@ document.getElementById("userDashboard").classList.remove("hidden");
   }
 
   function addWeeklyIncome() {
-  const uid = document.getElementById("incomeUserId").value.trim();
-  const amt = parseFloat(document.getElementById("incomeAmt").value);
-  if (!uid || isNaN(amt)) return alert("Enter valid input");
+    const uid = document.getElementById("incomeUserId").value.trim();
+    const amt = parseFloat(document.getElementById("incomeAmt").value);
+    if (!uid || isNaN(amt)) return alert("Enter valid input");
 
-  db.ref("users/" + uid).once("value", snap => {
-    if (!snap.exists()) {
-      return alert("User ID not found!");
-    }
+    db.ref("users/" + uid).once("value", snap => {
+      if (!snap.exists()) {
+        return alert("User ID not found!");
+      }
 
-    const data = snap.val();
-    const deposit = parseFloat(data.deposit || 0);
-    const income = parseFloat(data.income || 0);
-    const balance = parseFloat(data.walletBalance || 0);
-    const cap = deposit * 2;
+      const data = snap.val();
+      const deposit = parseFloat(data.deposit || 0);
+      const income = parseFloat(data.income || 0);
+      const balance = parseFloat(data.walletBalance || 0);
+      const cap = deposit * 2;
 
-    if (income >= cap) return alert("2x cap reached");
+      if (income >= cap) return alert("2x cap reached");
 
-    const newIncome = Math.min(income + amt, cap);
-    const actualAdded = newIncome - income;
+      const newIncome = Math.min(income + amt, cap);
+      const actualAdded = newIncome - income;
 
-    db.ref("users/" + uid).update({
-      income: newIncome,
-      walletBalance: balance + actualAdded
-    }).then(() => {
-      alert("✅ Income added successfully!");
+      db.ref("users/" + uid).update({
+        income: newIncome,
+        walletBalance: balance + actualAdded
+      }).then(() => {
+        alert("✅ Income added successfully!");
+      });
     });
-  });
-}
-  let confirmationResultGlobal = null;
+  }
 
-function sendOTP() {
-  const mobile = document.getElementById("otpMobile").value.trim();
-  if (!mobile) return alert("Enter your registered mobile number");
+  function sendOTP() {
+    const mobile = document.getElementById("otpMobile").value.trim();
+    if (!mobile) return alert("Enter your registered mobile number");
 
-  const fullNumber = "+91" + mobile; // Change as per your country code
+    const fullNumber = "+91" + mobile; 
 
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-    'size': 'normal',
-    'callback': function(response) {
-      // reCAPTCHA solved
-    }
-  });
-
-  firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
-    .then(function (confirmationResult) {
-      confirmationResultGlobal = confirmationResult;
-      alert("OTP sent successfully");
-    })
-    .catch(function (error) {
-      alert("Error sending OTP: " + error.message);
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      'size': 'normal',
+      'callback': function(response) {
+      }
     });
-}
 
-function verifyOTP() {
-  const code = document.getElementById("otpCode").value.trim();
-  const newPass = document.getElementById("otpNewPass").value.trim();
-  const mobile = document.getElementById("otpMobile").value.trim();
+    firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
+      .then(function (confirmationResult) {
+        confirmationResultGlobal = confirmationResult;
+        alert("OTP sent successfully");
+      })
+      .catch(function (error) {
+        alert("Error sending OTP: " + error.message);
+      });
+  }
 
-  if (!code || !newPass) return alert("Please enter all fields");
+  function verifyOTP() {
+    const code = document.getElementById("otpCode").value.trim();
+    const newPass = document.getElementById("otpNewPass").value.trim();
+    const mobile = document.getElementById("otpMobile").value.trim();
 
-  confirmationResultGlobal.confirm(code).then(function (result) {
-    // User signed in via OTP
-    const phone = result.user.phoneNumber;
+    if (!code || !newPass) return alert("Please enter all fields");
 
-    // Find user by phone
-    db.ref("users").once("value", snap => {
-      let found = false;
-      snap.forEach(child => {
-        const data = child.val();
-        if (data.mobile === mobile) {
-          db.ref("users/" + child.key + "/password").set(newPass);
-          alert("✅ Password changed successfully!");
-          found = true;
+    confirmationResultGlobal.confirm(code).then(function (result) {
+      db.ref("users").once("value", snap => {
+        let found = false;
+        snap.forEach(child => {
+          const data = child.val();
+          if (data.mobile === mobile) {
+            found = true;
+            db.ref("users/" + child.key + "/password").set(newPass).then(() => {
+              alert("Password updated successfully. Please login with new password.");
+              location.reload();
+            });
+          }
+        });
+        if (!found) {
+          alert("Mobile number not registered.");
         }
       });
-      if (!found) alert("Mobile number not found");
+    }).catch(function (error) {
+      alert("OTP verification failed: " + error.message);
     });
-  }).catch(function (error) {
-    alert("OTP verification failed: " + error.message);
-  });
-}
-    function logout() {
-    location.reload();
+  }
+
+  function logout() {
+    currentId = "";
+    document.getElementById("userDashboard").classList.add("hidden");
+    document.getElementById("adminPanel").classList.add("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
   }
 </script>
+
 </body>
-  </html>
+                                              </html>
+  
