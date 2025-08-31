@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
   <title>🚀 Ashirwad Mart - Grow Up Together</title>
@@ -8,77 +8,211 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
+    /* General Styles */
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
       color: #e0e0e0;
-      padding: 15px;
       margin: 0;
+      padding: 15px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    h2, h3, h4 {
+    h2, h3, h4, h5 {
       color: #00ffe1;
       text-align: center;
+      margin: 12px 0 8px;
+      font-weight: 600;
     }
     .box {
       background: #1e1e1e;
-      padding: 20px;
-      margin: 15px 0;
+      padding: 24px 30px;
+      margin: 20px 0;
       border-radius: 12px;
-      box-shadow: 0 0 10px #00ffe170;
+      box-shadow: 0 0 18px #00ffe170;
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
     }
-    input, button, select {
-      padding: 12px;
-      margin: 10px 0;
+    input, button, select, textarea {
+      padding: 12px 15px;
+      margin: 10px 0 20px 0;
       width: 100%;
       border-radius: 6px;
       border: none;
       font-size: 16px;
-    }
-    input {
       background: #2a2a2a;
       color: #fff;
+      box-sizing: border-box;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      background-color: #393939;
+      box-shadow: 0 0 6px #00ffe1aa;
     }
     button {
       background: #00ffe1;
       color: #000;
-      font-weight: bold;
+      font-weight: 700;
       cursor: pointer;
-      transition: 0.3s;
+      border: none;
+      transition: background 0.3s ease;
+      user-select: none;
     }
-    button:hover {
+    button:hover, button:focus {
       background: #00c7aa;
-    }
-    .hidden {
-      display: none;
-    }
-    .admin-section {
-      background: #2b1b1b;
-      border: 1px solid #ff5555;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      padding: 8px;
-      text-align: center;
-      border-bottom: 1px solid #333;
-    }
-    th {
-      background-color: #222;
-      color: #00ffe1;
-    }
-    td {
-      background-color: #1c1c1c;
+      outline: none;
     }
     a {
       color: #00ffe1;
       text-decoration: underline;
       cursor: pointer;
+      user-select: none;
     }
-    ul {
-      padding-left: 20px;
+    a:hover {
+      color: #00c7aa;
+    }
+    .hidden {
+      display: none !important;
+    }
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0 10px 0;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+    }
+    th {
+      background-color: #222;
+      color: #00ffe1;
+      font-weight: 700;
+    }
+    td {
+      background-color: #1c1c1c;
+    }
+    /* Admin Panel Section */
+    .admin-section {
+      background: #2b1b1b;
+      border: 2px solid #ff5555;
+      max-width: 900px;
+    }
+    .admin-section h3 {
+      margin-top: 0;
+    }
+    /* Buttons in table */
+    .btn-table {
+      padding: 6px 10px;
+      margin: 0 3px;
+      font-size: 13px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .btn-accept {
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+    }
+    .btn-reject {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+    }
+    .btn-close {
+      background-color: #6c757d;
+      color: #fff;
+      border: none;
+    }
+    .btn-edit {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+    }
+    .btn-delete {
+      background-color: #e55753;
+      color: #fff;
+      border: none;
+    }
+    .btn-small {
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+    /* User Dashboard */
+    #userDashboard {
+      max-width: 600px;
+      text-align: left;
+    }
+    #userDashboard p, #userDashboard code {
+      margin: 6px 0;
+      font-size: 15px;
+    }
+    code {
+      display: inline-block;
+      background-color: #333;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      user-select: all;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #262626;
+      margin: 25px 0;
+    }
+    /* Responsive */
+    @media (max-width: 640px) {
+      .box, .admin-section {
+        max-width: 100%;
+        padding: 15px 20px;
+      }
+      table, th, td {
+        font-size: 12px;
+      }
+      button, input, select, textarea {
+        font-size: 14px;
+      }
+    }
+    /* Modal for editing */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 25px 30px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 0 20px #00ffe1bb;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .modal-header h4 {
+      margin: 0;
+      color: #00ffe1;
+    }
+    .modal-close {
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #ff5555;
+      user-select: none;
     }
   </style>
 </head>
@@ -88,8 +222,8 @@
 
 <div id="loginBox" class="box">
   <h3>🔐 Login</h3>
-  <input type="text" id="loginId" placeholder="Enter ID" />
-  <input type="password" id="loginPass" placeholder="Password" />
+  <input type="text" id="loginId" placeholder="Enter ID" autocomplete="username" />
+  <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" />
   <button onclick="login()">Login</button>
   <p>Don't have ID? <a onclick="showRegister()">Register here</a></p>
 </div>
@@ -97,21 +231,21 @@
 <div id="registerBox" class="box hidden">
   <p><a onclick="showForgot()">Forgot Password?</a></p>
   <h3>📝 New Registration</h3>
-  <input type="text" id="regName" placeholder="Full Name" />
-  <input type="text" id="regMobile" placeholder="Mobile Number" />
+  <input type="text" id="regName" placeholder="Full Name" autocomplete="name"/>
+  <input type="text" id="regMobile" placeholder="Mobile Number" autocomplete="tel"/>
   <input type="text" id="regWallet" placeholder="BEP20 USDT Wallet Address" />
-  <input type="password" id="regPassword" placeholder="Set Password" />
+  <input type="password" id="regPassword" placeholder="Set Password" autocomplete="new-password"/>
   <input type="text" id="regRef" placeholder="Referral ID (optional)" />
   <button onclick="register()">Register Now</button>
 </div>
 
 <div id="forgotBox" class="box hidden">
   <h3>🔑 Reset Password via OTP</h3>
-  <input type="text" id="otpMobile" placeholder="Enter Registered Mobile Number" />
+  <input type="text" id="otpMobile" placeholder="Enter Registered Mobile Number" autocomplete="tel" />
   <div id="recaptcha-container"></div>
   <button onclick="sendOTP()">Send OTP</button>
-  <input type="text" id="otpCode" placeholder="Enter OTP" />
-  <input type="password" id="otpNewPass" placeholder="New Password" />
+  <input type="text" id="otpCode" placeholder="Enter OTP" autocomplete="one-time-code" />
+  <input type="password" id="otpNewPass" placeholder="New Password" autocomplete="new-password" />
   <button onclick="verifyOTP()">Verify & Change Password</button>
   <p><a onclick="backToLogin()">🔙 Back to Login</a></p>
 </div>
@@ -131,12 +265,12 @@
   <h4>📥 Deposit Funds</h4>
   <p>Send 100–1000 USDT to:</p>
   <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
-  <input type="number" id="depAmount" placeholder="Enter amount (100-1000)" />
+  <input type="number" id="depAmount" placeholder="Enter amount (100-1000)" min="100" max="1000" />
   <button onclick="submitDeposit()">Submit Deposit</button>
 
   <hr />
   <h4>💸 Request Withdrawal</h4>
-  <input type="number" id="withAmt" placeholder="Min 5 USDT" />
+  <input type="number" id="withAmt" placeholder="Min 5 USDT" min="5" />
   <button onclick="requestWithdraw()">Request Withdrawal</button>
 
   <hr />
@@ -154,7 +288,8 @@
 
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Dashboard</h3>
-  <div id="adminUsers"></div>
+
+  <div id="adminUsersContainer"></div>
 
   <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
@@ -164,7 +299,34 @@
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
+<!-- Modal for Editing User -->
+<div id="editUserModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h4>Edit User</h4>
+      <span class="modal-close" onclick="closeEditModal()">&times;</span>
+    </div>
+    <input type="text" id="editUserId" placeholder="User ID" disabled />
+    <input type="text" id="editName" placeholder="Full Name" />
+    <input type="text" id="editMobile" placeholder="Mobile Number" />
+    <input type="text" id="editWallet" placeholder="BEP20 USDT Wallet Address" />
+    <input type="password" id="editPassword" placeholder="Password (leave blank to keep unchanged)" />
+    <input type="text" id="editRef" placeholder="Referral ID" />
+    <select id="editStatus">
+      <option value="Pending">Pending</option>
+      <option value="Active">Active</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Closed">Closed</option>
+    </select>
+    <input type="number" id="editDeposit" placeholder="Deposit" min="0" step="any" />
+    <input type="number" id="editIncome" placeholder="Income" min="0" step="any" />
+    <input type="number" id="editWalletBalance" placeholder="Wallet Balance" min="0" step="any" />
+    <button onclick="saveUserChanges()">Save Changes</button>
+  </div>
+</div>
+
 <script>
+  // Firebase config & initialize
   const firebaseConfig = {
     apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
     authDomain: "ashirwadmart-6d657.firebaseapp.com",
@@ -174,34 +336,50 @@
     messagingSenderId: "1013585797321",
     appId: "1:1013585797321:web:8a5c5fdb50c6aa7e7e57aa"
   };
-
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
+  // Global vars
   let currentId = "";
   let confirmationResultGlobal = null;
+  let editingUserKey = null;
 
+  // Show/hide elements helpers
+  function show(element) { element.classList.remove('hidden'); }
+  function hide(element) { element.classList.add('hidden'); }
+
+  // Show registration
   function showRegister() {
-    document.getElementById('loginBox').classList.add('hidden');
-    document.getElementById('registerBox').classList.remove('hidden');
+    hide(document.getElementById('loginBox'));
+    show(document.getElementById('registerBox'));
+    hide(document.getElementById('forgotBox'));
   }
 
+  // Show forgot password
   function showForgot() {
-    document.getElementById('loginBox').classList.add('hidden');
-    document.getElementById('registerBox').classList.add('hidden');
-    document.getElementById('forgotBox').classList.remove('hidden');
+    hide(document.getElementById('loginBox'));
+    hide(document.getElementById('registerBox'));
+    show(document.getElementById('forgotBox'));
   }
 
+  // Back to login
   function backToLogin() {
-    document.getElementById('forgotBox').classList.add('hidden');
-    document.getElementById('loginBox').classList.remove('hidden');
+    hide(document.getElementById('forgotBox'));
+    hide(document.getElementById('registerBox'));
+    show(document.getElementById('loginBox'));
   }
 
+  // Login function
   function login() {
     const id = document.getElementById('loginId').value.trim();
     const pass = document.getElementById('loginPass').value;
+    if (!id) return alert("Please enter your ID");
+    if (!pass) return alert("Please enter your password");
+
     if (id === "Admin" && pass === "Jaihanuman@7") {
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminPanel").classList.remove("hidden");
+      currentId = "Admin";
+      hide(document.getElementById("loginBox"));
+      show(document.getElementById("adminPanel"));
       loadAdmin();
       return;
     }
@@ -211,36 +389,44 @@
         if (data.password !== pass) return alert("Incorrect password");
         currentId = id;
         loadUser(id);
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("userDashboard").classList.remove("hidden");
+        hide(document.getElementById("loginBox"));
+        show(document.getElementById("userDashboard"));
       } else {
         alert("User ID not found.");
       }
     });
   }
 
+  // Register function
   function register() {
     const name = document.getElementById("regName").value.trim();
     const mobile = document.getElementById("regMobile").value.trim();
     const wallet = document.getElementById("regWallet").value.trim();
     const ref = document.getElementById("regRef").value.trim();
-    if (!name || !mobile || !wallet) return alert("Please fill all fields");
+    const password = document.getElementById("regPassword").value.trim();
+
+    if (!name || !mobile || !wallet || !password) {
+      return alert("Please fill all required fields");
+    }
     const id = "U" + Math.floor(Math.random() * 100000);
 
-    const password = document.getElementById("regPassword").value.trim();
-    if (!password) return alert("Please set a password");
-
     const userData = {
-      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref, password, walletBalance: 0
+      name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref || "", password, walletBalance: 0
     };
     db.ref("users/" + id).set(userData).then(() => {
-      alert("Registered! Your ID: " + id);
+      alert(`Registered! Your ID: ${id}`);
       location.reload();
-    });
+    }).catch(err => alert("Error during registration: " + err.message));
   }
 
+  // Load user details for user dashboard
   function loadUser(id) {
     db.ref("users/" + id).on("value", snap => {
+      if (!snap.exists()) {
+        alert("User data not found");
+        logout();
+        return;
+      }
       const data = snap.val();
       const deposit = parseFloat(data.deposit || 0);
       const income = parseFloat(data.income || 0);
@@ -250,14 +436,13 @@
 
       document.getElementById("userName").innerText = data.name;
       document.getElementById("userWallet").innerText = data.wallet;
-      document.getElementById("userDeposit").innerText = deposit;
-      document.getElementById("userIncome").innerText = income;
+      document.getElementById("userDeposit").innerText = deposit.toFixed(2);
+      document.getElementById("userIncome").innerText = income.toFixed(2);
       document.getElementById("userStatus").innerText = data.status;
       document.getElementById("userWithdrawWallet").innerText = data.wallet;
-      document.getElementById("userTarget").innerText = cap;
-      document.getElementById("userRemaining").innerText = remaining;
-      document.getElementById("walletBalance").innerText = balance;
-      document.getElementById("userDashboard").classList.remove("hidden");
+      document.getElementById("userTarget").innerText = cap.toFixed(2);
+      document.getElementById("userRemaining").innerText = remaining.toFixed(2);
+      document.getElementById("walletBalance").innerText = balance.toFixed(2);
 
       if (deposit > 0 && income >= cap && data.status !== "Closed") {
         db.ref("users/" + id).update({
@@ -270,47 +455,57 @@
     });
   }
 
+  // Submit deposit request
   function submitDeposit() {
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (isNaN(amt) || amt < 100 || amt > 1000) {
+      return alert("Deposit amount must be between 100 and 1000 USDT");
+    }
     db.ref("users/" + currentId).once("value", snap => {
-      const data = snap.val();
-      if (data.status === "Active") {
-        return alert("Deposit is locked until agreement is closed.");
-      }
+      if (!snap.exists()) return alert("User data not found");
 
-      const amt = parseFloat(document.getElementById("depAmount").value);
-      if (amt < 100 || amt > 1000) return alert("Invalid amount");
+      const data = snap.val();
+      if (data.status === "Active") return alert("Deposit is locked until agreement is closed.");
 
       db.ref("users/" + currentId).update({
         deposit: amt,
         status: "Pending"
       }).then(() => {
         alert("Deposit submitted! Waiting for admin approval.");
-      });
+        document.getElementById("depAmount").value = "";
+      }).catch(err => alert("Error submitting deposit: " + err.message));
     });
   }
 
+  // Request withdrawal
   function requestWithdraw() {
     const amt = parseFloat(document.getElementById("withAmt").value);
-    if (amt < 5) return alert("Minimum 5 USDT");
+    if (isNaN(amt) || amt < 5) return alert("Minimum withdrawal amount is 5 USDT");
 
     db.ref("users/" + currentId).once("value", snap => {
+      if (!snap.exists()) return alert("User data not found");
+
       const data = snap.val();
       const walletBalance = parseFloat(data.walletBalance || 0);
       if (amt > walletBalance) return alert("Insufficient wallet balance");
 
-      db.ref("users/" + currentId + "/walletBalance").set(walletBalance - amt);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" });
-      alert("Withdrawal requested!");
+      const newBalance = walletBalance - amt;
+      db.ref("users/" + currentId + "/walletBalance").set(newBalance);
+      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" }).then(() => {
+        alert("Withdrawal requested!");
+        document.getElementById("withAmt").value = "";
+      });
     });
   }
 
+  // View referral team
   function viewTeam() {
     db.ref("users").once("value", snap => {
       let html = "<ul>";
       snap.forEach(child => {
         const data = child.val();
         if (data.referredBy === currentId) {
-          html += `<li>${child.key}: ${data.name} - ${data.deposit} USDT - ${data.status}</li>`;
+          html += `<li><b>${child.key}</b>: ${data.name} - ${parseFloat(data.deposit || 0).toFixed(2)} USDT - ${data.status}</li>`;
         }
       });
       html += "</ul>";
@@ -318,75 +513,98 @@
     });
   }
 
+  // View history (withdrawals)
   function viewHistory() {
-    let html = "<h5>Withdrawals:</h5><ul>";
     db.ref("withdrawals/" + currentId).once("value", snap => {
+      let html = "<h5>Withdrawals:</h5><ul>";
       snap.forEach(child => {
         const d = child.val();
-        html += `<li>${d.amount} USDT - ${d.status}</li>`;
+        html += `<li>${parseFloat(d.amount).toFixed(2)} USDT - ${d.status}</li>`;
       });
       html += "</ul>";
       document.getElementById("historyBox").innerHTML = html;
     });
   }
 
+  // Load admin panel users and withdrawals
   function loadAdmin() {
-    db.ref("users").once("value", snap => {
-      let html = "<h4>All Users</h4><table><tr><th>ID</th><th>Name</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th></tr>";
+    const container = document.getElementById("adminUsersContainer");
+    container.innerHTML = "<p>Loading users...</p>";
+
+    db.ref("users").once("value").then(snap => {
+      let html = `<h4>All Users</h4><table>
+        <thead>
+          <tr>
+            <th>User ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead><tbody>`;
       snap.forEach(child => {
         const d = child.val();
-        html += `<tr>
+        html += `<tr id="row-${child.key}">
           <td>${child.key}</td>
-          <td>${d.name}</td>
-          <td>${d.wallet}</td>
-          <td>${d.deposit}</td>
-          <td>${d.income}</td>
+          <td>${escapeHtml(d.name)}</td>
+          <td>${escapeHtml(d.mobile)}</td>
+          <td>${escapeHtml(d.wallet)}</td>
+          <td>${parseFloat(d.deposit || 0).toFixed(2)}</td>
+          <td>${parseFloat(d.income || 0).toFixed(2)}</td>
           <td>${d.status}</td>
           <td>
-            <button onclick="approveDeposit('${child.key}')">✅ Accept</button>
-            <button onclick="rejectDeposit('${child.key}')">❌ Reject</button>
-            <button onclick="closeAgreement('${child.key}')">🔒 Close</button>
+            <button class="btn-table btn-accept btn-small" onclick="approveDeposit('${child.key}')">Accept</button>
+            <button class="btn-table btn-reject btn-small" onclick="rejectDeposit('${child.key}')">Reject</button>
+            <button class="btn-table btn-close btn-small" onclick="closeAgreement('${child.key}')">Close</button>
+            <button class="btn-table btn-edit btn-small" onclick="openEditModal('${child.key}')">Edit</button>
+            <button class="btn-table btn-delete btn-small" onclick="deleteUser('${child.key}')">Delete</button>
           </td>
         </tr>`;
       });
-      html += "</table>";
-      document.getElementById("adminUsers").innerHTML = html;
-    });
+      html += "</tbody></table>";
 
-    db.ref("withdrawals").once("value", snap => {
-      let html = "<h4>Pending Withdrawals</h4><table><tr><th>User ID</th><th>Amount</th><th>Status</th><th>Action</th></tr>";
-      snap.forEach(userSnap => {
-        const userId = userSnap.key;
-        userSnap.forEach(wSnap => {
-          const w = wSnap.val();
-          if (w.status === "Pending") {
-            html += `<tr>
-              <td>${userId}</td>
-              <td>${w.amount}</td>
-              <td>${w.status}</td>
-              <td>
-                <button onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
-                <button onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
-              </td>
-            </tr>`;
-          }
+      // Pending withdrawals
+      html += "<h4>Pending Withdrawals</h4>";
+      return db.ref("withdrawals").once("value").then(withdrawSnap => {
+        let whtml = `<table>
+          <thead>
+            <tr><th>User ID</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+          </thead><tbody>`;
+        withdrawSnap.forEach(userSnap => {
+          const userId = userSnap.key;
+          userSnap.forEach(wSnap => {
+            const w = wSnap.val();
+            if (w.status === "Pending") {
+              whtml += `<tr>
+                <td>${userId}</td>
+                <td>${parseFloat(w.amount).toFixed(2)}</td>
+                <td>${w.status}</td>
+                <td>
+                  <button class="btn-table btn-accept btn-small" onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
+                  <button class="btn-table btn-reject btn-small" onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
+                </td>
+              </tr>`;
+            }
+          });
         });
+        whtml += "</tbody></table>";
+        container.innerHTML = html + whtml;
       });
-      html += "</table>";
-      document.getElementById("adminUsers").innerHTML += html;
+    }).catch(err => {
+      container.innerHTML = `<p style="color:#f55;">Error loading users: ${escapeHtml(err.message)}</p>`;
     });
   }
 
+  // Approve deposit and distribute referral income
   function approveDeposit(userId) {
-    db.ref("users/" + userId).once("value", snap => {
+    db.ref("users/" + userId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User not found");
+
       const data = snap.val();
       const amt = parseFloat(data.deposit || 0);
 
       db.ref("users/" + userId + "/status").set("Active");
 
+      // Distribute referral income: 3 levels
       if (data.referredBy) {
         const ref1 = data.referredBy;
-        db.ref("users/" + ref1).once("value", s1 => {
+        db.ref("users/" + ref1).once("value").then(s1 => {
           if (s1.exists()) {
             const d1 = s1.val();
             const cap1 = (parseFloat(d1.deposit) || 0) * 2;
@@ -403,7 +621,7 @@
 
             if (d1.referredBy) {
               const ref2 = d1.referredBy;
-              db.ref("users/" + ref2).once("value", s2 => {
+              db.ref("users/" + ref2).once("value").then(s2 => {
                 if (s2.exists()) {
                   const d2 = s2.val();
                   const cap2 = (parseFloat(d2.deposit) || 0) * 2;
@@ -420,7 +638,7 @@
 
                   if (d2.referredBy) {
                     const ref3 = d2.referredBy;
-                    db.ref("users/" + ref3).once("value", s3 => {
+                    db.ref("users/" + ref3).once("value").then(s3 => {
                       if (s3.exists()) {
                         const d3 = s3.val();
                         const cap3 = (parseFloat(d3.deposit) || 0) * 2;
@@ -443,52 +661,69 @@
           }
         });
       }
-
       alert("Deposit approved and referral income distributed.");
-    });
+      loadAdmin();
+    }).catch(err => alert("Error approving deposit: " + err.message));
   }
 
+  // Reject deposit
   function rejectDeposit(userId) {
-    db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" });
-    alert("Deposit rejected.");
+    if (confirm("Are you sure you want to reject this user's deposit?")) {
+      db.ref("users/" + userId).update({ deposit: 0, status: "Rejected" }).then(() => {
+        alert("Deposit rejected.");
+        loadAdmin();
+      }).catch(err => alert("Error rejecting deposit: " + err.message));
+    }
   }
 
+  // Close agreement
   function closeAgreement(userId) {
-    db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0 });
-    alert("Agreement closed.");
+    if (confirm("Are you sure you want to close this agreement?")) {
+      db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0 }).then(() => {
+        alert("Agreement closed.");
+        loadAdmin();
+      }).catch(err => alert("Error closing agreement: " + err.message));
+    }
   }
 
+  // Approve withdrawal
   function approveWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved");
-    db.ref("users/" + userId).once("value", snap => {
-      const data = snap.val();
-      const deposit = parseFloat(data.deposit || 0);
-      const income = parseFloat(data.income || 0);
-      if (deposit > 0 && income >= 2 * deposit) {
-        db.ref("users/" + userId).update({
-          income: 0,
-          deposit: 0,
-          status: "Closed"
-        });
-      }
-    });
-    alert("Withdrawal approved.");
+    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved").then(() => {
+      db.ref("users/" + userId).once("value").then(snap => {
+        const data = snap.val();
+        const deposit = parseFloat(data.deposit || 0);
+        const income = parseFloat(data.income || 0);
+        if (deposit > 0 && income >= 2 * deposit) {
+          db.ref("users/" + userId).update({
+            income: 0,
+            deposit: 0,
+            status: "Closed"
+          });
+        }
+        alert("Withdrawal approved.");
+        loadAdmin();
+      });
+    }).catch(err => alert("Error approving withdrawal: " + err.message));
   }
 
+  // Reject withdrawal
   function rejectWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected");
-    alert("Withdrawal rejected.");
+    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected")
+      .then(() => {
+        alert("Withdrawal rejected.");
+        loadAdmin();
+      })
+      .catch(err => alert("Error rejecting withdrawal: " + err.message));
   }
 
+  // Add weekly income
   function addWeeklyIncome() {
     const uid = document.getElementById("incomeUserId").value.trim();
     const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uid || isNaN(amt)) return alert("Enter valid input");
+    if (!uid || isNaN(amt) || amt <= 0) return alert("Enter valid user ID and positive amount");
 
-    db.ref("users/" + uid).once("value", snap => {
-      if (!snap.exists()) {
-        return alert("User ID not found!");
-      }
+    db.ref("users/" + uid).once("value").then(snap => {
+      if (!snap.exists()) return alert("User ID not found!");
 
       const data = snap.val();
       const deposit = parseFloat(data.deposit || 0);
@@ -506,9 +741,124 @@
         walletBalance: balance + actualAdded
       }).then(() => {
         alert("✅ Income added successfully!");
+        document.getElementById("incomeUserId").value = "";
+        document.getElementById("incomeAmt").value = "";
+        loadAdmin();
       });
     });
   }
+
+  // User logout
+  function logout() {
+    currentId = "";
+    editingUserKey = null;
+
+    hide(document.getElementById("userDashboard"));
+    hide(document.getElementById("adminPanel"));
+    hide(document.getElementById("editUserModal"));
+    show(document.getElementById("loginBox"));
+  }
+
+  /////////////////////////
+  // Edit user modal logic
+  /////////////////////////
+
+  function openEditModal(userKey) {
+    editingUserKey = userKey;
+    db.ref("users/" + userKey).once("value").then(snap => {
+      if (!snap.exists()) {
+        alert("User not found");
+        return;
+      }
+      const data = snap.val();
+      document.getElementById("editUserId").value = userKey;
+      document.getElementById("editName").value = data.name || "";
+      document.getElementById("editMobile").value = data.mobile || "";
+      document.getElementById("editWallet").value = data.wallet || "";
+      document.getElementById("editPassword").value = "";
+      document.getElementById("editRef").value = data.referredBy || "";
+      document.getElementById("editStatus").value = data.status || "Pending";
+      document.getElementById("editDeposit").value = parseFloat(data.deposit || 0).toFixed(2);
+      document.getElementById("editIncome").value = parseFloat(data.income || 0).toFixed(2);
+      document.getElementById("editWalletBalance").value = parseFloat(data.walletBalance || 0).toFixed(2);
+
+      show(document.getElementById("editUserModal"));
+    }).catch(err => alert("Error loading user data: " + err.message));
+  }
+
+  function closeEditModal() {
+    editingUserKey = null;
+    hide(document.getElementById("editUserModal"));
+  }
+
+  function saveUserChanges() {
+    if (!editingUserKey) {
+      alert("No user selected");
+      return;
+    }
+    const name = document.getElementById("editName").value.trim();
+    const mobile = document.getElementById("editMobile").value.trim();
+    const wallet = document.getElementById("editWallet").value.trim();
+    const password = document.getElementById("editPassword").value;
+    const referredBy = document.getElementById("editRef").value.trim();
+    const status = document.getElementById("editStatus").value;
+    const deposit = parseFloat(document.getElementById("editDeposit").value);
+    const income = parseFloat(document.getElementById("editIncome").value);
+    const walletBalance = parseFloat(document.getElementById("editWalletBalance").value);
+
+    if (!name || !mobile || !wallet || isNaN(deposit) || isNaN(income) || isNaN(walletBalance)) {
+      alert("Please fill all fields correctly");
+      return;
+    }
+
+    let updateData = {
+      name, mobile, wallet, referredBy, status,
+      deposit: deposit < 0 ? 0 : deposit,
+      income: income < 0 ? 0 : income,
+      walletBalance: walletBalance < 0 ? 0 : walletBalance
+    };
+    if (password) {
+      updateData.password = password;
+    }
+
+    db.ref("users/" + editingUserKey).update(updateData).then(() => {
+      alert("User data updated!");
+      closeEditModal();
+      loadAdmin();
+    }).catch(err => alert("Error saving user: " + err.message));
+  }
+
+  // Delete user with confirm
+  function deleteUser(userId) {
+    if (!confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) return;
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User deleted.");
+      // Remove any withdrawals for that user
+      db.ref("withdrawals/" + userId).remove().catch(() => {});
+      loadAdmin();
+    }).catch(err => alert("Error deleting user: " + err.message));
+  }
+
+  // Escape HTML for XSS protection on output
+  function escapeHtml(text) {
+    if (!text) return "";
+    return text.replace(/[&<>"'`=\/]/g, function (s) {
+      return ({
+        '&': "&amp;",
+        '<': "&lt;",
+        '>': "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+        '/': "&#x2F;",
+        '`': "&#x60;",
+        '=': "&#x3D;"
+      })[s];
+    });
+  }
+
+  /////////
+  // OTP for forgot password
+  /////////
 
   function sendOTP() {
     const mobile = document.getElementById("otpMobile").value.trim();
@@ -518,8 +868,8 @@
 
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
       'size': 'normal',
-      'callback': function(response) {
-      }
+      'callback': function(response) {},
+      'expired-callback': function() {}
     });
 
     firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
@@ -540,7 +890,7 @@
     if (!code || !newPass) return alert("Please enter all fields");
 
     confirmationResultGlobal.confirm(code).then(function (result) {
-      db.ref("users").once("value", snap => {
+      db.ref("users").once("value").then(snap => {
         let found = false;
         snap.forEach(child => {
           const data = child.val();
@@ -561,14 +911,7 @@
     });
   }
 
-  function logout() {
-    currentId = "";
-    document.getElementById("userDashboard").classList.add("hidden");
-    document.getElementById("adminPanel").classList.add("hidden");
-    document.getElementById("loginBox").classList.remove("hidden");
-  }
 </script>
 
 </body>
-                                              </html>
-  
+</html>
