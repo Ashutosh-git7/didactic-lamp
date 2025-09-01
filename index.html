@@ -90,6 +90,7 @@
       text-align: center;
       border-bottom: 1px solid #333;
       font-size: 14px;
+      word-break: break-word;
     }
     th {
       background-color: #222;
@@ -98,12 +99,12 @@
     }
     td {
       background-color: #1c1c1c;
-      word-break: break-word;
     }
     .admin-section {
       background: #2b1b1b;
       border: 2px solid #ff5555;
       max-width: 980px;
+      overflow-x: auto;
     }
     .admin-section h3 {
       margin-top: 0;
@@ -359,7 +360,7 @@
     <table id="depositsTable">
       <thead>
         <tr>
-          <th>User ID</th><th>Name</th><th>Amount</th><th>Currency</th><th>Status</th><th>Deposit Time</th><th>Actions</th>
+          <th>User ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Wallet Balance</th><th>BEP20 Wallet Address</th><th>Deposit Time</th><th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -430,9 +431,8 @@
   let currentId = "";
   let profitChartInstance = null;
 
-  // Keep 7% margin on deposits and 5% margin on withdrawals internally, no UI mention
-  let usdtToINRBuy = null;   // USDT to INR buy rate + 7%
-  let usdtToINRSell = null;  // USDT to INR sell rate - 5%
+  let usdtToINRBuy = null;   // 7% margin added internally
+  let usdtToINRSell = null;  // 5% margin deducted internally
 
   async function loadExchangeRates() {
     try {
@@ -468,8 +468,6 @@
   }
   loadExchangeRates();
   setInterval(loadExchangeRates, 60000);
-
-  // Other functions unchanged except where needed to use usdtToINRBuy and usdtToINRSell for calculations
 
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
@@ -845,7 +843,8 @@
     show(document.getElementById("loginBox"));
   }
 
-  // Admin panel functions (same as before)
+  // Admin panel functions
+
   function loadAdmin() {
     loadUsers();
     loadDeposits();
@@ -855,7 +854,7 @@
   function loadUsers() {
     db.ref("users").once("value").then(snap => {
       const container = document.getElementById("adminUsersContainer");
-      let html = "<h4>Users List</h4><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Income</th><th>Wallet Balance</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>";
+      let html = "<h4>Users List</h4><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Income</th><th>Wallet Balance</th><th>BEP20 Wallet Address</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>";
 
       let totalDeposit = 0;
       let totalWallet = 0;
@@ -872,6 +871,7 @@
           <td>${parseFloat(d.deposit || 0).toFixed(2)} USDT</td>
           <td>${parseFloat(d.income || 0).toFixed(2)} USDT</td>
           <td>${parseFloat(d.walletBalance || 0).toFixed(2)} USDT</td>
+          <td>${d.wallet || "(No wallet address)"}</td>
           <td>${d.upiId || ""}</td>
           <td>
             <button class="btn-table btn-edit" onclick="openEditModal('${id}')">Edit</button>
@@ -900,9 +900,10 @@
           tr.innerHTML = `
             <td>${id}</td>
             <td>${user.name}</td>
-            <td>${user.deposit.toFixed(2)}</td>
-            <td>USDT</td>
             <td>${user.status}</td>
+            <td>${user.deposit.toFixed(2)}</td>
+            <td>${user.walletBalance.toFixed(2)}</td>
+            <td>${user.wallet || "(No wallet address)"}</td>
             <td>${user.depositTime ? new Date(user.depositTime).toLocaleString() : ''}</td>
             <td>
               <button class="btn-table btn-accept" onclick="approveDepositUSDT('${id}')">Approve</button>
