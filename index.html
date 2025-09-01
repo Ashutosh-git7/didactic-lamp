@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* General and reuse previous styles */
+    /* Same styles as before */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
@@ -270,6 +270,9 @@
   <p><small><em>Deposit Time: <span id="userDepositTime">N/A</span></em></small></p>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
+  <p><small>Set your UPI ID for INR withdrawals:</small></p>
+  <input type="text" id="userUPI" placeholder="Enter your UPI ID here" autocomplete="off" />
+  <button onclick="saveUserUPI()">Save UPI ID</button>
   <p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
   <p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
   <p>🔒 Status: <span id="userStatus">Pending</span></p>
@@ -277,15 +280,51 @@
 
   <hr />
   <h4>📥 Deposit Funds</h4>
-  <p>Send 100–1000 USDT to:</p>
-  <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
-  <input type="number" id="depAmount" placeholder="Enter amount (100-1000)" min="100" max="1000" />
-  <button onclick="submitDeposit()">Submit Deposit</button>
+  <label>
+    <input type="radio" name="depositCurrency" value="USDT" checked onclick="updateDepositUI()" /> Deposit in USDT
+  </label>
+  <label>
+    <input type="radio" name="depositCurrency" value="INR" onclick="updateDepositUI()" /> Deposit in INR (UPI)
+  </label>
+
+  <div id="depositUSDTDiv" style="margin-top: 15px;">
+    <p>Send 100–1000 USDT to:</p>
+    <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
+    <input type="number" id="depAmount" placeholder="Enter amount (100-1000)" min="100" max="1000" />
+    <button onclick="submitDeposit()">Submit Deposit</button>
+  </div>
+
+  <div id="depositINRDiv" class="hidden" style="margin-top: 15px;">
+    <p>Current USDT to INR Buy Rate + 7% = <b><span id="usdtToInrBuyRate">Loading...</span> ₹</b></p>
+    <p>Enter USDT amount to deposit (100-1000 USDT):</p>
+    <input type="number" id="depINRUSDTAmount" placeholder="Enter USDT amount (100-1000)" min="100" max="1000" oninput="updateINRDepositAmount()" />
+    <p>You need to pay (INR) <b><span id="depINRAmount">0</span></b> via UPI.</p>
+    <p>Send payment to UPI ID: <code>ashutoshkarmkar7-1@oksbi</code></p>
+    <button onclick="submitDepositINR()">Submit INR Deposit Request</button>
+  </div>
 
   <hr />
   <h4>💸 Request Withdrawal</h4>
-  <input type="number" id="withAmt" placeholder="Min 5 USDT" min="5" />
-  <button onclick="requestWithdraw()">Request Withdrawal</button>
+
+  <label>
+    <input type="radio" name="withdrawCurrency" value="USDT" checked onclick="updateWithdrawUI()" /> Withdraw in USDT
+  </label>
+  <label>
+    <input type="radio" name="withdrawCurrency" value="INR" onclick="updateWithdrawUI()" /> Withdraw in INR
+  </label>
+
+  <div id="withdrawUSDTDiv" style="margin-top: 15px;">
+    <input type="number" id="withAmt" placeholder="Min 5 USDT" min="5" />
+    <button onclick="requestWithdraw()">Request Withdrawal</button>
+  </div>
+
+  <div id="withdrawINRDiv" class="hidden" style="margin-top: 15px;">
+    <p>Current USDT to INR Sell Rate - 7% = <b><span id="usdtToInrSellRate">Loading...</span> ₹</b></p>
+    <p>Wallet Balance: <span id="walletBalanceINR">0</span> ₹ (approx.)</p>
+    <p>Enter INR withdrawal amount (Min ₹373 approx for 5 USDT):</p>
+    <input type="number" id="withAmtINR" placeholder="Enter INR amount" min="0" />
+    <button onclick="requestWithdrawINR()">Request INR Withdrawal</button>
+  </div>
 
   <hr />
   <h4>🔑 Change Password</h4>
@@ -317,6 +356,30 @@
   <div style="margin-bottom:15px; font-size: 16px; color: #00ffe1;">
     <b>Total Deposit Balance:</b> <span id="totalDepositBalance">0</span> USDT &nbsp;&nbsp;&nbsp;
     <b>Total Wallet Balance:</b> <span id="totalWalletBalance">0</span> USDT
+  </div>
+
+  <div id="adminDepositsContainer" style="margin-bottom: 20px;">
+    <h4>📝 Pending Deposit Requests</h4>
+    <table id="depositsTable">
+      <thead>
+        <tr>
+          <th>User ID</th><th>Name</th><th>Amount</th><th>Currency</th><th>Status</th><th>Deposit Time</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="adminWithdrawalsContainer" style="margin-bottom: 20px;">
+    <h4>📝 Pending Withdrawal Requests</h4>
+    <table id="withdrawalsTable">
+      <thead>
+        <tr>
+          <th>User ID</th><th>Name</th><th>Amount</th><th>Currency</th><th>UPI ID</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <div id="adminUsersContainer"></div>
@@ -370,12 +433,51 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Global vars
   let currentId = "";
-  let confirmationResultGlobal = null;
-  let editingUserKey = null;
+  let profitChartInstance = null;
 
-  // Helper show/hide
+  // Exchange rates global vars
+  let usdtToINRBuy = null;   // Price to BUY USDT (for deposits INR) + 7%
+  let usdtToINRSell = null;  // Price to SELL USDT (for withdrawal INR) - 7%
+
+  // Load live exchange rates from CoinGecko API and update UI every 60 seconds
+  async function loadExchangeRates() {
+    try {
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr');
+      const data = await response.json();
+      const baseRate = data.tether.inr;
+      if (baseRate) {
+        usdtToINRBuy = baseRate * 1.07; // +7% margin buy
+        usdtToINRSell = baseRate * 0.93; // -7% margin sell
+
+        document.getElementById('usdtToInrBuyRate').innerText = usdtToINRBuy.toFixed(2);
+        document.getElementById('usdtToInrSellRate').innerText = usdtToINRSell.toFixed(2);
+
+        if (currentId) {
+          db.ref('users/' + currentId).once('value').then(snap => {
+            const data = snap.val();
+            if (data) {
+              const walletUSDT = parseFloat(data.walletBalance || 0);
+              const walletINR = walletUSDT * usdtToINRSell;
+              document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
+              // Show user UPI if saved
+              const userUPI = data.upiId || "";
+              document.getElementById("userUPI").value = userUPI;
+            }
+          });
+        }
+        updateINRDepositAmount();
+      }
+    } catch (e) {
+      console.error(e);
+      document.getElementById('usdtToInrBuyRate').innerText = 'Error';
+      document.getElementById('usdtToInrSellRate').innerText = 'Error';
+    }
+  }
+  loadExchangeRates();
+  setInterval(loadExchangeRates, 60000);
+
+  // Show/hide helpers
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
 
@@ -395,7 +497,6 @@
     show(document.getElementById('loginBox'));
   }
 
-  // Login function
   function login() {
     const id = document.getElementById('loginId').value.trim();
     const pass = document.getElementById('loginPass').value;
@@ -423,7 +524,6 @@
     });
   }
 
-  // Register function
   function register() {
     const name = document.getElementById("regName").value.trim();
     const mobile = document.getElementById("regMobile").value.trim();
@@ -436,10 +536,9 @@
     }
     const id = "U" + Math.floor(Math.random() * 100000);
 
-    // Set initial depositTime null on registration
     const userData = {
       name, mobile, wallet, deposit: 0, income: 0, status: "Pending", referredBy: ref || "", password,
-      walletBalance: 0, depositTime: null
+      walletBalance: 0, depositTime: null, upiId: ""
     };
     db.ref("users/" + id).set(userData).then(() => {
       alert(`Registered! Your ID: ${id}`);
@@ -447,7 +546,6 @@
     }).catch(err => alert("Error during registration: " + err.message));
   }
 
-  // Load user details and profit chart
   function loadUser(id) {
     db.ref("users/" + id).on("value", snap => {
       if (!snap.exists()) {
@@ -462,7 +560,6 @@
       const cap = deposit * 2;
       const remaining = Math.max(0, cap - income);
       const balance = parseFloat(data.walletBalance || 0);
-      // Show deposit time formatted
       const depositTimeStr = data.depositTime ? new Date(data.depositTime).toLocaleString() : "N/A";
 
       document.getElementById("userName").innerText = data.name;
@@ -476,6 +573,14 @@
       document.getElementById("userRemaining").innerText = remaining.toFixed(2);
       document.getElementById("walletBalance").innerText = balance.toFixed(2);
 
+      // Show UPI ID
+      document.getElementById("userUPI").value = data.upiId || "";
+
+      if (usdtToINRSell) {
+        const walletINR = balance * usdtToINRSell;
+        document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
+      }
+
       if (deposit > 0 && income >= cap && data.status !== "Closed") {
         db.ref("users/" + id).update({
           income: 0,
@@ -486,18 +591,39 @@
         alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
       }
 
-      // Show profit graph
       loadProfitChart(deposit, income);
     });
   }
 
-  // Deposit submit with time
+  // Deposit UI toggle
+  function updateDepositUI() {
+    const currency = document.querySelector('input[name="depositCurrency"]:checked').value;
+    if (currency === "USDT") {
+      show(document.getElementById("depositUSDTDiv"));
+      hide(document.getElementById("depositINRDiv"));
+    } else {
+      hide(document.getElementById("depositUSDTDiv"));
+      show(document.getElementById("depositINRDiv"));
+      updateINRDepositAmount();
+    }
+  }
+
+  function updateINRDepositAmount() {
+    const usdtAmt = parseFloat(document.getElementById("depINRUSDTAmount").value);
+    if (isNaN(usdtAmt) || usdtAmt < 100 || usdtAmt > 1000 || !usdtToINRBuy) {
+      document.getElementById("depINRAmount").innerText = "0";
+      return;
+    }
+    const inrAmt = usdtAmt * usdtToINRBuy;
+    document.getElementById("depINRAmount").innerText = inrAmt.toFixed(2);
+  }
+
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (isNaN(amt) || amt < 100 || amt > 1000) {
       return alert("Deposit amount must be between 100 and 1000 USDT");
     }
-    db.ref("users/" + currentId).once("value", snap => {
+    db.ref("users/" + currentId).once("value").then(snap => {
       if (!snap.exists()) return alert("User data not found");
 
       const data = snap.val();
@@ -508,7 +634,9 @@
       db.ref("users/" + currentId).update({
         deposit: amt,
         status: "Pending",
-        depositTime: nowISOString
+        depositTime: nowISOString,
+        depositCurrency: "USDT",
+        depositINRAmount: null
       }).then(() => {
         alert("Deposit submitted! Waiting for admin approval.");
         document.getElementById("depAmount").value = "";
@@ -516,12 +644,53 @@
     });
   }
 
-  // Withdrawal
+  function submitDepositINR() {
+    const usdtAmt = parseFloat(document.getElementById("depINRUSDTAmount").value);
+    if (isNaN(usdtAmt) || usdtAmt < 100 || usdtAmt > 1000) {
+      return alert("USDT amount must be between 100 and 1000");
+    }
+    if (!usdtToINRBuy) {
+      return alert("Exchange rate not loaded yet. Please wait.");
+    }
+    const inrAmt = usdtAmt * usdtToINRBuy;
+    const nowISOString = new Date().toISOString();
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
+      const data = snap.val();
+      if (data.status === "Active") return alert("Deposit is locked until agreement is closed.");
+
+      db.ref("depositINRRequests/" + currentId).set({
+        usdtAmount: usdtAmt,
+        inrAmount: inrAmt,
+        status: "Pending",
+        depositTime: nowISOString,
+        upiId: "ashutoshkarmkar7-1@oksbi"
+      }).then(() => {
+        alert(`INR deposit request submitted for approx ₹${inrAmt.toFixed(2)}. Please pay via UPI to ashutoshkarmkar7-1@oksbi.\nAfter payment, wait for admin approval.`);
+        document.getElementById("depINRUSDTAmount").value = "";
+        document.getElementById("depINRAmount").innerText = "0";
+      }).catch(err => alert("Error submitting INR deposit: " + err.message));
+    });
+  }
+
+  function updateWithdrawUI() {
+    const currency = document.querySelector('input[name="withdrawCurrency"]:checked').value;
+    if (currency === "USDT") {
+      show(document.getElementById("withdrawUSDTDiv"));
+      hide(document.getElementById("withdrawINRDiv"));
+    } else {
+      hide(document.getElementById("withdrawUSDTDiv"));
+      show(document.getElementById("withdrawINRDiv"));
+    }
+  }
+
   function requestWithdraw() {
     const amt = parseFloat(document.getElementById("withAmt").value);
     if (isNaN(amt) || amt < 5) return alert("Minimum withdrawal amount is 5 USDT");
 
-    db.ref("users/" + currentId).once("value", snap => {
+    db.ref("users/" + currentId).once("value").then(snap => {
       if (!snap.exists()) return alert("User data not found");
 
       const data = snap.val();
@@ -530,14 +699,51 @@
 
       const newBalance = walletBalance - amt;
       db.ref("users/" + currentId + "/walletBalance").set(newBalance);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending" }).then(() => {
+      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending", currency: "USDT", upiId: "" }).then(() => {
         alert("Withdrawal requested!");
         document.getElementById("withAmt").value = "";
       });
     });
   }
 
-  // Normal password change for user
+  function requestWithdrawINR() {
+    const inrAmt = parseFloat(document.getElementById("withAmtINR").value);
+    if (isNaN(inrAmt) || inrAmt <= 0) return alert("Please enter a valid INR amount");
+
+    if (!usdtToINRSell) return alert("Exchange rate not loaded yet. Please wait.");
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
+      const data = snap.val();
+      const walletUSDT = parseFloat(data.walletBalance || 0);
+
+      const usdtValue = inrAmt / usdtToINRSell;
+
+      if (usdtValue > walletUSDT) return alert("Insufficient wallet balance for requested INR withdrawal");
+
+      const newBalance = walletUSDT - usdtValue;
+
+      db.ref("users/" + currentId + "/walletBalance").set(newBalance);
+      // Attach user's saved UPI ID for this withdrawal
+      const userUPI = data.upiId || "";
+      db.ref("withdrawals/" + currentId).push({ amount: inrAmt, status: "Pending", currency: "INR", upiId: userUPI }).then(() => {
+        alert(`INR Withdrawal requested for ₹${inrAmt.toFixed(2)}. Waiting for admin approval.`);
+        document.getElementById("withAmtINR").value = "";
+        document.getElementById('walletBalanceINR').innerText = (newBalance * usdtToINRSell).toFixed(2);
+      });
+    });
+  }
+
+  function saveUserUPI() {
+    const upiId = document.getElementById("userUPI").value.trim();
+    if (!upiId) return alert("Please enter a valid UPI ID");
+
+    db.ref("users/" + currentId).update({ upiId }).then(() => {
+      alert("UPI ID saved successfully.");
+    }).catch(err => alert("Error saving UPI ID: " + err.message));
+  }
+
   function changePasswordNormal() {
     const currentPass = document.getElementById("changePassCurrent").value;
     const newPass = document.getElementById("changePassNew").value;
@@ -555,9 +761,8 @@
     }).catch(err => alert("Error changing password: " + err.message));
   }
 
-  // Referral team
   function viewTeam() {
-    db.ref("users").once("value", snap => {
+    db.ref("users").once("value").then(snap => {
       let html = "<ul>";
       snap.forEach(child => {
         const data = child.val();
@@ -570,23 +775,19 @@
     });
   }
 
-  // History withdrawals
   function viewHistory() {
-    db.ref("withdrawals/" + currentId).once("value", snap => {
+    db.ref("withdrawals/" + currentId).once("value").then(snap => {
       let html = "<h5>Withdrawals:</h5><ul>";
       snap.forEach(child => {
         const d = child.val();
-        html += `<li>${parseFloat(d.amount).toFixed(2)} USDT - ${d.status}</li>`;
+        html += `<li>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USDT'} - ${d.status}</li>`;
       });
       html += "</ul>";
       document.getElementById("historyBox").innerHTML = html;
     });
   }
 
-  // Profit chart variables
-  let profitChartInstance = null;
-
-  // Load profit chart with current deposit and income for user
+  // Profit chart
   function loadProfitChart(deposit, income) {
     const container = document.getElementById("profitChartContainer");
     if (deposit <= 0) {
@@ -597,7 +798,6 @@
 
     const ctx = document.getElementById("profitChart").getContext('2d');
 
-    // Destroy old chart if any
     if (profitChartInstance) {
       profitChartInstance.destroy();
     }
@@ -610,316 +810,327 @@
           {
             label: 'Deposit',
             data: [deposit, deposit],
-            borderColor: '#00C7AA',
-            backgroundColor: 'rgba(0, 199, 170, 0.2)',
-            fill: true,
-            tension: 0.2
+            borderColor: '#00ffe1',
+            backgroundColor: '#001f20',
+            fill: false
           },
           {
             label: 'Income',
             data: [0, income],
-            borderColor: '#00FFE1',
-            backgroundColor: 'rgba(0, 255, 225, 0.3)',
-            fill: true,
-            tension: 0.3
+            borderColor: '#ffaa00',
+            backgroundColor: '#332600',
+            fill: false
           }
         ]
       },
       options: {
         responsive: true,
         scales: {
-          y: {
-            beginAtZero: true,
-            title: {display: true, text: 'USDT'}
-          }
-        },
-        plugins: {
-          legend: { position: 'bottom', labels: {color: '#00ffe1'} },
-          tooltip: { enabled: true, mode: 'index', intersect: false }
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
         }
       }
     });
   }
 
-  // Load admin panel with totals and remaining target
-  function loadAdmin() {
-    const container = document.getElementById("adminUsersContainer");
-    container.innerHTML = "<p>Loading users...</p>";
-
-    let totalDeposit = 0;
-    let totalWallet = 0;
-
-    db.ref("users").once("value").then(snap => {
-      let html = `<h4>All Users</h4><table>
-        <thead>
-          <tr>
-            <th>User ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Deposit</th><th>Income</th>
-            <th>Remaining Target</th><th>Status</th><th>Deposit Time</th><th>Actions</th>
-          </tr>
-        </thead><tbody>`;
-      snap.forEach(child => {
-        const d = child.val();
-        const deposit = parseFloat(d.deposit || 0);
-        const income = parseFloat(d.income || 0);
-        const cap = deposit * 2;
-        const remaining = Math.max(0, cap - income);
-        totalDeposit += deposit;
-        totalWallet += parseFloat(d.walletBalance || 0);
-
-        const dtStr = d.depositTime ? new Date(d.depositTime).toLocaleString() : "-";
-
-        html += `<tr id="row-${child.key}">
-          <td>${child.key}</td>
-          <td>${escapeHtml(d.name)}</td>
-          <td>${escapeHtml(d.mobile)}</td>
-          <td>${escapeHtml(d.wallet)}</td>
-          <td>${deposit.toFixed(2)}</td>
-          <td>${income.toFixed(2)}</td>
-          <td>${remaining.toFixed(2)}</td>
-          <td>${d.status}</td>
-          <td>${dtStr}</td>
-          <td>
-            <button class="btn-table btn-accept btn-small" onclick="approveDeposit('${child.key}')">Accept</button>
-            <button class="btn-table btn-reject btn-small" onclick="rejectDeposit('${child.key}')">Reject</button>
-            <button class="btn-table btn-close btn-small" onclick="closeAgreement('${child.key}')">Close</button>
-            <button class="btn-table btn-edit btn-small" onclick="openEditModal('${child.key}')">Edit</button>
-            <button class="btn-table btn-delete btn-small" onclick="deleteUser('${child.key}')">Delete</button>
-          </td>
-        </tr>`;
-      });
-      html += "</tbody></table>";
-
-      // Show total deposit and wallet balance aggregated
-      document.getElementById("totalDepositBalance").innerText = totalDeposit.toFixed(2);
-      document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
-
-      // Pending withdrawals
-      html += "<h4>Pending Withdrawals</h4>";
-      return db.ref("withdrawals").once("value").then(withdrawSnap => {
-        let whtml = `<table>
-          <thead>
-            <tr><th>User ID</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
-          </thead><tbody>`;
-        withdrawSnap.forEach(userSnap => {
-          const userId = userSnap.key;
-          userSnap.forEach(wSnap => {
-            const w = wSnap.val();
-            if (w.status === "Pending") {
-              whtml += `<tr>
-                <td>${userId}</td>
-                <td>${parseFloat(w.amount).toFixed(2)}</td>
-                <td>${w.status}</td>
-                <td>
-                  <button class="btn-table btn-accept btn-small" onclick="approveWithdraw('${userId}', '${wSnap.key}')">Approve</button>
-                  <button class="btn-table btn-reject btn-small" onclick="rejectWithdraw('${userId}', '${wSnap.key}')">Reject</button>
-                </td>
-              </tr>`;
-            }
-          });
-        });
-        whtml += "</tbody></table>";
-        container.innerHTML = html + whtml;
-      });
-    }).catch(err => {
-      container.innerHTML = `<p style="color:#f55;">Error loading users: ${escapeHtml(err.message)}</p>`;
-    });
-  }
-
-  // Approve deposit with referral income distribution
-  function approveDeposit(userId) {
-    db.ref("users/" + userId).once("value").then(snap => {
-      if (!snap.exists()) return alert("User not found");
-
-      const data = snap.val();
-      const amt = parseFloat(data.deposit || 0);
-
-      db.ref("users/" + userId + "/status").set("Active");
-
-      if (data.referredBy) {
-        const ref1 = data.referredBy;
-        db.ref("users/" + ref1).once("value").then(s1 => {
-          if (s1.exists()) {
-            const d1 = s1.val();
-            const cap1 = (parseFloat(d1.deposit) || 0) * 2;
-            const currentIncome1 = parseFloat(d1.income || 0);
-            const walletBalance1 = parseFloat(d1.walletBalance || 0);
-            const bonus1 = amt * 0.05;
-            const newIncome1 = Math.min(currentIncome1 + bonus1, cap1);
-            const actualAdded1 = newIncome1 - currentIncome1;
-
-            db.ref("users/" + ref1).update({
-              income: newIncome1,
-              walletBalance: walletBalance1 + actualAdded1
-            });
-
-            if (d1.referredBy) {
-              const ref2 = d1.referredBy;
-              db.ref("users/" + ref2).once("value").then(s2 => {
-                if (s2.exists()) {
-                  const d2 = s2.val();
-                  const cap2 = (parseFloat(d2.deposit) || 0) * 2;
-                  const currentIncome2 = parseFloat(d2.income || 0);
-                  const walletBalance2 = parseFloat(d2.walletBalance || 0);
-                  const bonus2 = amt * 0.03;
-                  const newIncome2 = Math.min(currentIncome2 + bonus2, cap2);
-                  const actualAdded2 = newIncome2 - currentIncome2;
-
-                  db.ref("users/" + ref2).update({
-                    income: newIncome2,
-                    walletBalance: walletBalance2 + actualAdded2
-                  });
-
-                  if (d2.referredBy) {
-                    const ref3 = d2.referredBy;
-                    db.ref("users/" + ref3).once("value").then(s3 => {
-                      if (s3.exists()) {
-                        const d3 = s3.val();
-                        const cap3 = (parseFloat(d3.deposit) || 0) * 2;
-                        const currentIncome3 = parseFloat(d3.income || 0);
-                        const walletBalance3 = parseFloat(d3.walletBalance || 0);
-                        const bonus3 = amt * 0.02;
-                        const newIncome3 = Math.min(currentIncome3 + bonus3, cap3);
-                        const actualAdded3 = newIncome3 - currentIncome3;
-
-                        db.ref("users/" + ref3).update({
-                          income: newIncome3,
-                          walletBalance: walletBalance3 + actualAdded3
-                        });
-                      }
-                    });
-                  }
-                }
-              });
-            }
-          }
-        });
-      }
-      alert("Deposit approved and referral income distributed.");
-      loadAdmin();
-    }).catch(err => alert("Error approving deposit: " + err.message));
-  }
-
-  // Reject deposit
-  function rejectDeposit(userId) {
-    if (confirm("Are you sure you want to reject this user's deposit?")) {
-      db.ref("users/" + userId).update({ deposit: 0, status: "Rejected", depositTime: null }).then(() => {
-        alert("Deposit rejected.");
-        loadAdmin();
-      }).catch(err => alert("Error rejecting deposit: " + err.message));
-    }
-  }
-
-  // Close agreement
-  function closeAgreement(userId) {
-    if (confirm("Are you sure you want to close this agreement?")) {
-      db.ref("users/" + userId).update({ status: "Closed", deposit: 0, income: 0, depositTime: null }).then(() => {
-        alert("Agreement closed.");
-        loadAdmin();
-      }).catch(err => alert("Error closing agreement: " + err.message));
-    }
-  }
-
-  // Approve withdrawal
-  function approveWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Approved").then(() => {
-      db.ref("users/" + userId).once("value").then(snap => {
-        const data = snap.val();
-        const deposit = parseFloat(data.deposit || 0);
-        const income = parseFloat(data.income || 0);
-        if (deposit > 0 && income >= 2 * deposit) {
-          db.ref("users/" + userId).update({
-            income: 0,
-            deposit: 0,
-            status: "Closed",
-            depositTime: null
-          });
-        }
-        alert("Withdrawal approved.");
-        loadAdmin();
-      });
-    }).catch(err => alert("Error approving withdrawal: " + err.message));
-  }
-
-  // Reject withdrawal
-  function rejectWithdraw(userId, withdrawId) {
-    db.ref("withdrawals/" + userId + "/" + withdrawId + "/status").set("Rejected")
-      .then(() => {
-        alert("Withdrawal rejected.");
-        loadAdmin();
-      })
-      .catch(err => alert("Error rejecting withdrawal: " + err.message));
-  }
-
-  // Add weekly income
-  function addWeeklyIncome() {
-    const uid = document.getElementById("incomeUserId").value.trim();
-    const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uid || isNaN(amt) || amt <= 0) return alert("Enter valid user ID and positive amount");
-
-    db.ref("users/" + uid).once("value").then(snap => {
-      if (!snap.exists()) return alert("User ID not found!");
-
-      const data = snap.val();
-      const deposit = parseFloat(data.deposit || 0);
-      const income = parseFloat(data.income || 0);
-      const balance = parseFloat(data.walletBalance || 0);
-      const cap = deposit * 2;
-
-      if (income >= cap) return alert("2x cap reached");
-
-      const newIncome = Math.min(income + amt, cap);
-      const actualAdded = newIncome - income;
-
-      db.ref("users/" + uid).update({
-        income: newIncome,
-        walletBalance: balance + actualAdded
-      }).then(() => {
-        alert("✅ Income added successfully!");
-        document.getElementById("incomeUserId").value = "";
-        document.getElementById("incomeAmt").value = "";
-        loadAdmin();
-      });
-    });
-  }
-
-  // User logout
   function logout() {
     currentId = "";
-    editingUserKey = null;
+    profitChartInstance?.destroy();
+    document.getElementById("loginId").value = "";
+    document.getElementById("loginPass").value = "";
 
     hide(document.getElementById("userDashboard"));
     hide(document.getElementById("adminPanel"));
-    hide(document.getElementById("editUserModal"));
-    hide(document.getElementById("profitChartContainer"));
     show(document.getElementById("loginBox"));
   }
 
-  /////////////////////////
-  // Edit user modal logic
-  /////////////////////////
+  // ====== Admin Panel ======
 
-  function openEditModal(userKey) {
-    editingUserKey = userKey;
-    db.ref("users/" + userKey).once("value").then(snap => {
-      if (!snap.exists()) {
-        alert("User not found");
-        return;
-      }
-      const data = snap.val();
-      document.getElementById("editUserId").value = userKey;
-      document.getElementById("editName").value = data.name || "";
-      document.getElementById("editMobile").value = data.mobile || "";
-      document.getElementById("editWallet").value = data.wallet || "";
+  function loadAdmin() {
+    loadUsers();
+    loadDeposits();
+    loadWithdrawals();
+  }
+
+  function loadUsers() {
+    db.ref("users").once("value").then(snap => {
+      const container = document.getElementById("adminUsersContainer");
+      let html = "<h4>Users List</h4><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Income</th><th>Wallet Balance</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>";
+
+      let totalDeposit = 0;
+      let totalWallet = 0;
+
+      snap.forEach(child => {
+        const d = child.val();
+        const id = child.key;
+        totalDeposit += parseFloat(d.deposit || 0);
+        totalWallet += parseFloat(d.walletBalance || 0);
+        html += `<tr>
+          <td>${id}</td>
+          <td>${d.name}</td>
+          <td>${d.status}</td>
+          <td>${parseFloat(d.deposit || 0).toFixed(2)} USDT</td>
+          <td>${parseFloat(d.income || 0).toFixed(2)} USDT</td>
+          <td>${parseFloat(d.walletBalance || 0).toFixed(2)} USDT</td>
+          <td>${d.upiId || ""}</td>
+          <td>
+            <button class="btn-table btn-edit" onclick="openEditModal('${id}')">Edit</button>
+            <button class="btn-table btn-delete" onclick="deleteUser('${id}')">Delete</button>
+          </td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      container.innerHTML = html;
+      document.getElementById("totalDepositBalance").innerText = totalDeposit.toFixed(2);
+      document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
+    });
+  }
+
+  function loadDeposits() {
+    const tbody = document.querySelector("#depositsTable tbody");
+    tbody.innerHTML = "";
+
+    db.ref("users").once("value").then(usersSnap => {
+      usersSnap.forEach(userSnap => {
+        const id = userSnap.key;
+        const user = userSnap.val();
+        if (user.status === "Pending" && user.deposit > 0) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${id}</td>
+            <td>${user.name}</td>
+            <td>${user.deposit.toFixed(2)}</td>
+            <td>USDT</td>
+            <td>${user.status}</td>
+            <td>${user.depositTime ? new Date(user.depositTime).toLocaleString() : ''}</td>
+            <td>
+              <button class="btn-table btn-accept" onclick="approveDepositUSDT('${id}')">Approve</button>
+              <button class="btn-table btn-reject" onclick="rejectDepositUSDT('${id}')">Reject</button>
+            </td>`;
+          tbody.appendChild(tr);
+        }
+      });
+
+      db.ref("depositINRRequests").once("value").then(depositINRSnap => {
+        depositINRSnap.forEach(childSnap => {
+          const id = childSnap.key;
+          const d = childSnap.val();
+          if (d.status === "Pending") {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${id}</td>
+              <td>(INR Deposit) Pending User</td>
+              <td>${d.usdtAmount.toFixed(2)} USDT / ₹${d.inrAmount.toFixed(2)}</td>
+              <td>INR</td>
+              <td>${d.status}</td>
+              <td>${d.depositTime ? new Date(d.depositTime).toLocaleString() : ''}</td>
+              <td>
+                <button class="btn-table btn-accept" onclick="approveDepositINR('${id}')">Approve</button>
+                <button class="btn-table btn-reject" onclick="rejectDepositINR('${id}')">Reject</button>
+              </td>`;
+            tbody.appendChild(tr);
+          }
+        });
+      });
+    });
+  }
+
+  function loadWithdrawals() {
+    const tbody = document.querySelector("#withdrawalsTable tbody");
+    tbody.innerHTML = "";
+    db.ref("withdrawals").once("value").then(withdrawalsSnap => {
+      withdrawalsSnap.forEach(userSnap => {
+        const userId = userSnap.key;
+        userSnap.forEach(wSnap => {
+          const w = wSnap.val();
+          if (w.status === "Pending") {
+            db.ref("users/" + userId).once("value").then(userDataSnap => {
+              const userName = userDataSnap.val()?.name || "(Unknown)";
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${userId}</td>
+                <td>${userName}</td>
+                <td>${parseFloat(w.amount).toFixed(2)}</td>
+                <td>${w.currency || "USDT"}</td>
+                <td>${w.upiId || ""}</td>
+                <td>${w.status}</td>
+                <td>
+                  <button class="btn-table btn-accept" onclick="approveWithdrawal('${userId}', '${wSnap.key}', ${w.amount}, '${w.currency || "USDT"}')">Approve</button>
+                  <button class="btn-table btn-reject" onclick="rejectWithdrawal('${userId}', '${wSnap.key}')">Reject</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        });
+      });
+    });
+  }
+
+  function approveDepositUSDT(userId) {
+    db.ref("users/" + userId).once("value").then(snap => {
+      const user = snap.val();
+      if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
+
+      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + parseFloat(user.deposit);
+      db.ref("users/" + userId).update({
+        status: "Active",
+        walletBalance: newWalletBalance,
+      }).then(() => {
+        alert(`Deposit Approved for User: ${userId}`);
+        loadDeposits();
+        loadUsers();
+      });
+    });
+  }
+
+  function rejectDepositUSDT(userId) {
+    db.ref("users/" + userId).once("value").then(snap => {
+      const user = snap.val();
+      if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
+
+      db.ref("users/" + userId).update({
+        deposit: 0,
+        status: "Rejected",
+        depositTime: null
+      }).then(() => {
+        alert(`Deposit Rejected for User: ${userId}`);
+        loadDeposits();
+        loadUsers();
+      });
+    });
+  }
+
+  function approveDepositINR(userId) {
+    db.ref("depositINRRequests/" + userId).once("value").then(snap => {
+      const req = snap.val();
+      if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
+
+      db.ref("users/" + userId).once("value").then(userSnap => {
+        const user = userSnap.val();
+        if (!user) return alert("User not found");
+
+        const newDeposit = (parseFloat(user.deposit || 0)) + req.usdtAmount;
+        const newWalletBalance = (parseFloat(user.walletBalance || 0)) + req.usdtAmount;
+
+        db.ref("users/" + userId).update({
+          deposit: newDeposit,
+          walletBalance: newWalletBalance,
+          status: "Active",
+          depositTime: req.depositTime
+        }).then(() => {
+          db.ref("depositINRRequests/" + userId).remove();
+          alert(`INR Deposit Approved for User: ${userId}`);
+          loadDeposits();
+          loadUsers();
+        });
+      });
+    });
+  }
+
+  function rejectDepositINR(userId) {
+    db.ref("depositINRRequests/" + userId).once("value").then(snap => {
+      const req = snap.val();
+      if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
+
+      db.ref("depositINRRequests/" + userId).remove().then(() => {
+        alert(`INR Deposit Rejected for User: ${userId}`);
+        loadDeposits();
+      });
+    });
+  }
+
+  function approveWithdrawal(userId, withdrawalKey, amount, currency) {
+    db.ref("withdrawals/" + userId + "/" + withdrawalKey).once("value").then(wSnap => {
+      const w = wSnap.val();
+      if (!w || w.status !== "Pending") return alert("Withdrawal already processed or invalid");
+
+      db.ref("withdrawals/" + userId + "/" + withdrawalKey).update({ status: "Approved" }).then(() => {
+        alert(`Withdrawal Approved for User: ${userId}`);
+        loadWithdrawals();
+        loadUsers();
+      });
+    });
+  }
+
+  function rejectWithdrawal(userId, withdrawalKey) {
+    db.ref("withdrawals/" + userId + "/" + withdrawalKey).once("value").then(wSnap => {
+      const w = wSnap.val();
+      if (!w || w.status !== "Pending") return alert("Withdrawal already processed or invalid");
+
+      db.ref("users/" + userId).once("value").then(userSnap => {
+        const user = userSnap.val();
+        if (!user) return alert("User not found");
+
+        let refundAmountUSDT = 0;
+        if ((w.currency || "USDT") === "USDT") {
+          refundAmountUSDT = parseFloat(w.amount);
+        } else if (w.currency === "INR") {
+          if (usdtToINRSell) {
+            refundAmountUSDT = parseFloat(w.amount) / usdtToINRSell;
+          }
+        }
+
+        const newWalletBalance = (parseFloat(user.walletBalance || 0)) + refundAmountUSDT;
+
+        db.ref("users/" + userId + "/walletBalance").set(newWalletBalance).then(() => {
+          db.ref("withdrawals/" + userId + "/" + withdrawalKey).update({ status: "Rejected" }).then(() => {
+            alert(`Withdrawal Rejected and wallet refunded for User: ${userId}`);
+            loadWithdrawals();
+            loadUsers();
+          });
+        });
+      });
+    });
+  }
+
+  function openEditModal(userId) {
+    editingUserKey = userId;
+    db.ref("users/" + userId).once("value").then(snap => {
+      const u = snap.val();
+      if (!u) return;
+      document.getElementById("editUserId").value = userId;
+      document.getElementById("editName").value = u.name || "";
+      document.getElementById("editMobile").value = u.mobile || "";
+      document.getElementById("editWallet").value = u.wallet || "";
       document.getElementById("editPassword").value = "";
-      document.getElementById("editRef").value = data.referredBy || "";
-      document.getElementById("editStatus").value = data.status || "Pending";
-      document.getElementById("editDeposit").value = parseFloat(data.deposit || 0).toFixed(2);
-      document.getElementById("editIncome").value = parseFloat(data.income || 0).toFixed(2);
-      document.getElementById("editWalletBalance").value = parseFloat(data.walletBalance || 0).toFixed(2);
-      document.getElementById("editDepositTime").value = data.depositTime || "";
-
+      document.getElementById("editRef").value = u.referredBy || "";
+      document.getElementById("editStatus").value = u.status || "Pending";
+      document.getElementById("editDeposit").value = parseFloat(u.deposit || 0);
+      document.getElementById("editIncome").value = parseFloat(u.income || 0);
+      document.getElementById("editWalletBalance").value = parseFloat(u.walletBalance || 0);
+      document.getElementById("editDepositTime").value = u.depositTime || "";
       show(document.getElementById("editUserModal"));
-    }).catch(err => alert("Error loading user data: " + err.message));
+    });
+  }
+
+  function saveUserChanges() {
+    if (!editingUserKey) return;
+    const userId = editingUserKey;
+    const updatedData = {
+      name: document.getElementById("editName").value,
+      mobile: document.getElementById("editMobile").value,
+      wallet: document.getElementById("editWallet").value,
+      referredBy: document.getElementById("editRef").value,
+      status: document.getElementById("editStatus").value,
+      deposit: parseFloat(document.getElementById("editDeposit").value),
+      income: parseFloat(document.getElementById("editIncome").value),
+      walletBalance: parseFloat(document.getElementById("editWalletBalance").value),
+      depositTime: document.getElementById("editDepositTime").value
+    };
+    const newPassword = document.getElementById("editPassword").value;
+    if (newPassword) {
+      updatedData.password = newPassword;
+    }
+    db.ref("users/" + userId).update(updatedData).then(() => {
+      alert("User updated");
+      closeEditModal();
+      loadUsers();
+    });
   }
 
   function closeEditModal() {
@@ -927,132 +1138,38 @@
     hide(document.getElementById("editUserModal"));
   }
 
-  function saveUserChanges() {
-    if (!editingUserKey) {
-      alert("No user selected");
-      return;
-    }
-    const name = document.getElementById("editName").value.trim();
-    const mobile = document.getElementById("editMobile").value.trim();
-    const wallet = document.getElementById("editWallet").value.trim();
-    const password = document.getElementById("editPassword").value;
-    const referredBy = document.getElementById("editRef").value.trim();
-    const status = document.getElementById("editStatus").value;
-    const deposit = parseFloat(document.getElementById("editDeposit").value);
-    const income = parseFloat(document.getElementById("editIncome").value);
-    const walletBalance = parseFloat(document.getElementById("editWalletBalance").value);
-    const depositTime = document.getElementById("editDepositTime").value.trim();
-
-    if (!name || !mobile || !wallet || isNaN(deposit) || isNaN(income) || isNaN(walletBalance)) {
-      alert("Please fill all fields correctly");
-      return;
-    }
-    if (depositTime && isNaN(Date.parse(depositTime))) {
-      alert("Deposit time must be valid ISO datetime string or empty");
-      return;
-    }
-
-    let updateData = {
-      name, mobile, wallet, referredBy, status,
-      deposit: deposit < 0 ? 0 : deposit,
-      income: income < 0 ? 0 : income,
-      walletBalance: walletBalance < 0 ? 0 : walletBalance,
-      depositTime: depositTime || null
-    };
-    if (password) {
-      updateData.password = password;
-    }
-
-    db.ref("users/" + editingUserKey).update(updateData).then(() => {
-      alert("User data updated!");
-      closeEditModal();
-      loadAdmin();
-    }).catch(err => alert("Error saving user: " + err.message));
-  }
-
-  // Delete user with confirm
   function deleteUser(userId) {
-    if (!confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) return;
+    if (!confirm("Are you sure you want to delete user " + userId + "?")) return;
     db.ref("users/" + userId).remove().then(() => {
-      alert("User deleted.");
-      // Remove any withdrawals for that user
-      db.ref("withdrawals/" + userId).remove().catch(() => {});
-      loadAdmin();
-    }).catch(err => alert("Error deleting user: " + err.message));
-  }
-
-  // Escape HTML for XSS protection on output
-  function escapeHtml(text) {
-    if (!text) return "";
-    return text.replace(/[&<>"'`=\/]/g, function (s) {
-      return ({
-        '&': "&amp;",
-        '<': "&lt;",
-        '>': "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-        '/': "&#x2F;",
-        '`': "&#x60;",
-        '=': "&#x3D;"
-      })[s];
+      alert("User deleted");
+      loadUsers();
     });
   }
 
-  /////////
-  // OTP for forgot password
-  /////////
+  function addWeeklyIncome() {
+    const id = document.getElementById("incomeUserId").value.trim();
+    const amt = parseFloat(document.getElementById("incomeAmt").value);
+    if (!id || isNaN(amt) || amt <= 0) return alert("Valid User ID and amount required");
 
-  function sendOTP() {
-    const mobile = document.getElementById("otpMobile").value.trim();
-    if (!mobile) return alert("Enter your registered mobile number");
+    db.ref("users/" + id).once("value").then(snap => {
+      if (!snap.exists()) return alert("User not found");
+      const user = snap.val();
+      const newIncome = (parseFloat(user.income || 0)) + amt;
+      let newWalletBalance = parseFloat(user.walletBalance || 0) + amt;
 
-    const fullNumber = "+91" + mobile; 
-
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      'size': 'normal',
-      'callback': function(response) {},
-      'expired-callback': function() {}
-    });
-
-    firebase.auth().signInWithPhoneNumber(fullNumber, window.recaptchaVerifier)
-      .then(function (confirmationResult) {
-        confirmationResultGlobal = confirmationResult;
-        alert("OTP sent successfully");
-      })
-      .catch(function (error) {
-        alert("Error sending OTP: " + error.message);
+      db.ref("users/" + id).update({
+        income: newIncome,
+        walletBalance: newWalletBalance
+      }).then(() => {
+        alert("Weekly income added");
+        loadUsers();
       });
-  }
-
-  function verifyOTP() {
-    const code = document.getElementById("otpCode").value.trim();
-    const newPass = document.getElementById("otpNewPass").value.trim();
-    const mobile = document.getElementById("otpMobile").value.trim();
-
-    if (!code || !newPass) return alert("Please enter all fields");
-
-    confirmationResultGlobal.confirm(code).then(function (result) {
-      db.ref("users").once("value").then(snap => {
-        let found = false;
-        snap.forEach(child => {
-          const data = child.val();
-          if (data.mobile === mobile) {
-            found = true;
-            db.ref("users/" + child.key + "/password").set(newPass).then(() => {
-              alert("Password updated successfully. Please login with new password.");
-              location.reload();
-            });
-          }
-        });
-        if (!found) {
-          alert("Mobile number not registered.");
-        }
-      });
-    }).catch(function (error) {
-      alert("OTP verification failed: " + error.message);
     });
   }
 
+  // Initial UI setup
+  updateDepositUI();
+  updateWithdrawUI();
 </script>
 
 </body>
