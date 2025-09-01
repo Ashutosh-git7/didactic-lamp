@@ -9,8 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Your existing styles unchanged */
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
@@ -360,7 +358,7 @@
     <table id="depositsTable">
       <thead>
         <tr>
-          <th>User ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Wallet Balance</th><th>BEP20 Wallet Address</th><th>Deposit Time</th><th>Actions</th>
+          <th>User ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Wallet Balance</th><th>Deposit Time</th><th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -854,7 +852,7 @@
   function loadUsers() {
     db.ref("users").once("value").then(snap => {
       const container = document.getElementById("adminUsersContainer");
-      let html = "<h4>Users List</h4><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Income</th><th>Wallet Balance</th><th>BEP20 Wallet Address</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>";
+      let html = "<h4>Users List</h4><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Deposit</th><th>Income</th><th>Wallet Balance</th><th>Remaining Balance</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>";
 
       let totalDeposit = 0;
       let totalWallet = 0;
@@ -864,14 +862,18 @@
         const id = child.key;
         totalDeposit += parseFloat(d.deposit || 0);
         totalWallet += parseFloat(d.walletBalance || 0);
+        const deposit = parseFloat(d.deposit || 0);
+        const income = parseFloat(d.income || 0);
+        const remainingBalance = Math.max(0, (deposit * 2) - income);
+
         html += `<tr>
           <td>${id}</td>
           <td>${d.name}</td>
           <td>${d.status}</td>
-          <td>${parseFloat(d.deposit || 0).toFixed(2)} USDT</td>
+          <td>${deposit.toFixed(2)} USDT</td>
           <td>${parseFloat(d.income || 0).toFixed(2)} USDT</td>
           <td>${parseFloat(d.walletBalance || 0).toFixed(2)} USDT</td>
-          <td>${d.wallet || "(No wallet address)"}</td>
+          <td>${remainingBalance.toFixed(2)} USDT</td>
           <td>${d.upiId || ""}</td>
           <td>
             <button class="btn-table btn-edit" onclick="openEditModal('${id}')">Edit</button>
@@ -903,7 +905,6 @@
             <td>${user.status}</td>
             <td>${user.deposit.toFixed(2)}</td>
             <td>${user.walletBalance.toFixed(2)}</td>
-            <td>${user.wallet || "(No wallet address)"}</td>
             <td>${user.depositTime ? new Date(user.depositTime).toLocaleString() : ''}</td>
             <td>
               <button class="btn-table btn-accept" onclick="approveDepositUSDT('${id}')">Approve</button>
@@ -1128,54 +1129,26 @@
       depositTime: document.getElementById("editDepositTime").value || null
     };
     const newPassword = document.getElementById("editPassword").value.trim();
-
-    let updates = {...updatedData};
     if (newPassword) {
-      updates.password = newPassword;
+      updatedData.password = newPassword;
     }
-
-    db.ref("users/" + userId).update(updates).then(() => {
-      alert("User data updated successfully.");
+    db.ref("users/" + userId).update(updatedData).then(() => {
+      alert("User data updated");
       closeEditModal();
       loadUsers();
-      loadDeposits();
-      loadWithdrawals();
-    }).catch(err => alert("Error saving user changes: " + err.message));
+    }).catch(err => alert("Error updating user: " + err.message));
   }
 
   function deleteUser(userId) {
-    if (confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) {
-      db.ref("users/" + userId).remove().then(() => {
-        alert("User deleted successfully.");
-        loadUsers();
-        loadDeposits();
-        loadWithdrawals();
-      }).catch(err => alert("Error deleting user: " + err.message));
-    }
-  }
+    if (!confirm("Are you sure you want to delete user " + userId + "? This action is irreversible.")) return;
 
-  function addWeeklyIncome() {
-    const uId = document.getElementById("incomeUserId").value.trim();
-    const amount = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uId) return alert("Please enter User ID");
-    if (!amount || amount <= 0) return alert("Please enter a valid amount");
-
-    db.ref("users/" + uId).once("value").then(snap => {
-      if (!snap.exists()) return alert("User not found");
-      const user = snap.val();
-      const newIncome = (parseFloat(user.income || 0)) + amount;
-      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amount;
-
-      db.ref("users/" + uId).update({
-        income: newIncome,
-        walletBalance: newWalletBalance
-      }).then(() => {
-        alert(`Added ${amount} USDT income for user ${uId}.`);
-        loadUsers();
-      });
-    }).catch(err => alert("Error adding income: " + err.message));
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User deleted");
+      loadUsers();
+      loadDeposits();
+      loadWithdrawals();
+    }).catch(err => alert("Error deleting user: " + err.message));
   }
 </script>
-
 </body>
 </html>
