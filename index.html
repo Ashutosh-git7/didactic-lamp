@@ -430,8 +430,9 @@
   let currentId = "";
   let profitChartInstance = null;
 
-  let usdtToINRBuy = null;
-  let usdtToINRSell = null;
+  // Keep 7% margin on deposits and 5% margin on withdrawals internally, no UI mention
+  let usdtToINRBuy = null;   // USDT to INR buy rate + 7%
+  let usdtToINRSell = null;  // USDT to INR sell rate - 5%
 
   async function loadExchangeRates() {
     try {
@@ -439,8 +440,8 @@
       const data = await response.json();
       const baseRate = data.tether.inr;
       if (baseRate) {
-        usdtToINRBuy = baseRate;
-        usdtToINRSell = baseRate;
+        usdtToINRBuy = baseRate * 1.07;
+        usdtToINRSell = baseRate * 0.95;
 
         document.getElementById('usdtToInrBuyRate').innerText = usdtToINRBuy.toFixed(2);
         document.getElementById('usdtToInrSellRate').innerText = usdtToINRSell.toFixed(2);
@@ -467,6 +468,8 @@
   }
   loadExchangeRates();
   setInterval(loadExchangeRates, 60000);
+
+  // Other functions unchanged except where needed to use usdtToINRBuy and usdtToINRSell for calculations
 
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
@@ -842,8 +845,7 @@
     show(document.getElementById("loginBox"));
   }
 
-  // ===== Admin Panel functions =====
-
+  // Admin panel functions (same as before)
   function loadAdmin() {
     loadUsers();
     loadDeposits();
