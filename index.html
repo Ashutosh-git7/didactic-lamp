@@ -9,7 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Same styles as before */
+    /* Your existing styles unchanged */
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
@@ -79,7 +80,6 @@
     .hidden {
       display: none !important;
     }
-    /* Tables */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -100,7 +100,6 @@
       background-color: #1c1c1c;
       word-break: break-word;
     }
-    /* Admin Panel Section */
     .admin-section {
       background: #2b1b1b;
       border: 2px solid #ff5555;
@@ -109,7 +108,6 @@
     .admin-section h3 {
       margin-top: 0;
     }
-    /* Buttons in table */
     .btn-table {
       padding: 6px 10px;
       margin: 0 3px;
@@ -146,7 +144,6 @@
       padding: 5px 8px;
       font-size: 12px;
     }
-    /* User Dashboard */
     #userDashboard {
       max-width: 650px;
       text-align: left;
@@ -179,7 +176,6 @@
       border-top: 1px solid #262626;
       margin: 25px 0;
     }
-    /* Responsive */
     @media (max-width: 640px) {
       .box, .admin-section {
         max-width: 100%;
@@ -192,7 +188,6 @@
         font-size: 14px;
       }
     }
-    /* Modal for editing */
     .modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -272,7 +267,7 @@
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p><small>Set your UPI ID for INR withdrawals:</small></p>
   <input type="text" id="userUPI" placeholder="Enter your UPI ID here" autocomplete="off" />
-  <button onclick="saveUserUPI()">Save UPI ID</button>
+  <button id="saveUPIButton" onclick="saveUserUPI()">Save UPI ID</button>
   <p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
   <p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
   <p>🔒 Status: <span id="userStatus">Pending</span></p>
@@ -295,7 +290,7 @@
   </div>
 
   <div id="depositINRDiv" class="hidden" style="margin-top: 15px;">
-    <p>Current USDT to INR Buy Rate + 7% = <b><span id="usdtToInrBuyRate">Loading...</span> ₹</b></p>
+    <p>Current USDT to INR Buy Rate = <b><span id="usdtToInrBuyRate">Loading...</span> ₹</b></p>
     <p>Enter USDT amount to deposit (100-1000 USDT):</p>
     <input type="number" id="depINRUSDTAmount" placeholder="Enter USDT amount (100-1000)" min="100" max="1000" oninput="updateINRDepositAmount()" />
     <p>You need to pay (INR) <b><span id="depINRAmount">0</span></b> via UPI.</p>
@@ -314,12 +309,13 @@
   </label>
 
   <div id="withdrawUSDTDiv" style="margin-top: 15px;">
+    <p>Your BEP20 USDT Wallet Address: <code id="userWalletAddress"></code></p>
     <input type="number" id="withAmt" placeholder="Min 5 USDT" min="5" />
     <button onclick="requestWithdraw()">Request Withdrawal</button>
   </div>
 
   <div id="withdrawINRDiv" class="hidden" style="margin-top: 15px;">
-    <p>Current USDT to INR Sell Rate - 7% = <b><span id="usdtToInrSellRate">Loading...</span> ₹</b></p>
+    <p>Current USDT to INR Sell Rate = <b><span id="usdtToInrSellRate">Loading...</span> ₹</b></p>
     <p>Wallet Balance: <span id="walletBalanceINR">0</span> ₹ (approx.)</p>
     <p>Enter INR withdrawal amount (Min ₹373 approx for 5 USDT):</p>
     <input type="number" id="withAmtINR" placeholder="Enter INR amount" min="0" />
@@ -392,7 +388,6 @@
   <button onclick="logout()">🚪 Logout</button>
 </div>
 
-<!-- Modal for Editing User -->
 <div id="editUserModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
@@ -420,7 +415,6 @@
 </div>
 
 <script>
-  // Firebase config & initialize
   const firebaseConfig = {
     apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
     authDomain: "ashirwadmart-6d657.firebaseapp.com",
@@ -436,19 +430,17 @@
   let currentId = "";
   let profitChartInstance = null;
 
-  // Exchange rates global vars
-  let usdtToINRBuy = null;   // Price to BUY USDT (for deposits INR) + 7%
-  let usdtToINRSell = null;  // Price to SELL USDT (for withdrawal INR) - 7%
+  let usdtToINRBuy = null;
+  let usdtToINRSell = null;
 
-  // Load live exchange rates from CoinGecko API and update UI every 60 seconds
   async function loadExchangeRates() {
     try {
       const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr');
       const data = await response.json();
       const baseRate = data.tether.inr;
       if (baseRate) {
-        usdtToINRBuy = baseRate * 1.07; // +7% margin buy
-        usdtToINRSell = baseRate * 0.93; // -7% margin sell
+        usdtToINRBuy = baseRate;
+        usdtToINRSell = baseRate;
 
         document.getElementById('usdtToInrBuyRate').innerText = usdtToINRBuy.toFixed(2);
         document.getElementById('usdtToInrSellRate').innerText = usdtToINRSell.toFixed(2);
@@ -460,7 +452,6 @@
               const walletUSDT = parseFloat(data.walletBalance || 0);
               const walletINR = walletUSDT * usdtToINRSell;
               document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
-              // Show user UPI if saved
               const userUPI = data.upiId || "";
               document.getElementById("userUPI").value = userUPI;
             }
@@ -477,7 +468,6 @@
   loadExchangeRates();
   setInterval(loadExchangeRates, 60000);
 
-  // Show/hide helpers
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
 
@@ -573,8 +563,15 @@
       document.getElementById("userRemaining").innerText = remaining.toFixed(2);
       document.getElementById("walletBalance").innerText = balance.toFixed(2);
 
-      // Show UPI ID
-      document.getElementById("userUPI").value = data.upiId || "";
+      document.getElementById("userWalletAddress").innerText = data.wallet || "(No wallet address)";
+
+      const upiValue = data.upiId || "";
+      document.getElementById("userUPI").value = upiValue;
+      if (upiValue.trim()) {
+        document.getElementById("saveUPIButton").style.display = "none";
+      } else {
+        document.getElementById("saveUPIButton").style.display = "inline-block";
+      }
 
       if (usdtToINRSell) {
         const walletINR = balance * usdtToINRSell;
@@ -595,7 +592,6 @@
     });
   }
 
-  // Deposit UI toggle
   function updateDepositUI() {
     const currency = document.querySelector('input[name="depositCurrency"]:checked').value;
     if (currency === "USDT") {
@@ -725,7 +721,6 @@
       const newBalance = walletUSDT - usdtValue;
 
       db.ref("users/" + currentId + "/walletBalance").set(newBalance);
-      // Attach user's saved UPI ID for this withdrawal
       const userUPI = data.upiId || "";
       db.ref("withdrawals/" + currentId).push({ amount: inrAmt, status: "Pending", currency: "INR", upiId: userUPI }).then(() => {
         alert(`INR Withdrawal requested for ₹${inrAmt.toFixed(2)}. Waiting for admin approval.`);
@@ -741,6 +736,7 @@
 
     db.ref("users/" + currentId).update({ upiId }).then(() => {
       alert("UPI ID saved successfully.");
+      document.getElementById("saveUPIButton").style.display = "none";
     }).catch(err => alert("Error saving UPI ID: " + err.message));
   }
 
@@ -787,7 +783,6 @@
     });
   }
 
-  // Profit chart
   function loadProfitChart(deposit, income) {
     const container = document.getElementById("profitChartContainer");
     if (deposit <= 0) {
@@ -847,7 +842,7 @@
     show(document.getElementById("loginBox"));
   }
 
-  // ====== Admin Panel ======
+  // ===== Admin Panel functions =====
 
   function loadAdmin() {
     loadUsers();
@@ -1088,6 +1083,8 @@
     });
   }
 
+  let editingUserKey = null;
+
   function openEditModal(userId) {
     editingUserKey = userId;
     db.ref("users/" + userId).once("value").then(snap => {
@@ -1108,6 +1105,11 @@
     });
   }
 
+  function closeEditModal() {
+    editingUserKey = null;
+    hide(document.getElementById("editUserModal"));
+  }
+
   function saveUserChanges() {
     if (!editingUserKey) return;
     const userId = editingUserKey;
@@ -1120,56 +1122,56 @@
       deposit: parseFloat(document.getElementById("editDeposit").value),
       income: parseFloat(document.getElementById("editIncome").value),
       walletBalance: parseFloat(document.getElementById("editWalletBalance").value),
-      depositTime: document.getElementById("editDepositTime").value
+      depositTime: document.getElementById("editDepositTime").value || null
     };
-    const newPassword = document.getElementById("editPassword").value;
+    const newPassword = document.getElementById("editPassword").value.trim();
+
+    let updates = {...updatedData};
     if (newPassword) {
-      updatedData.password = newPassword;
+      updates.password = newPassword;
     }
-    db.ref("users/" + userId).update(updatedData).then(() => {
-      alert("User updated");
+
+    db.ref("users/" + userId).update(updates).then(() => {
+      alert("User data updated successfully.");
       closeEditModal();
       loadUsers();
-    });
-  }
-
-  function closeEditModal() {
-    editingUserKey = null;
-    hide(document.getElementById("editUserModal"));
+      loadDeposits();
+      loadWithdrawals();
+    }).catch(err => alert("Error saving user changes: " + err.message));
   }
 
   function deleteUser(userId) {
-    if (!confirm("Are you sure you want to delete user " + userId + "?")) return;
-    db.ref("users/" + userId).remove().then(() => {
-      alert("User deleted");
-      loadUsers();
-    });
+    if (confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) {
+      db.ref("users/" + userId).remove().then(() => {
+        alert("User deleted successfully.");
+        loadUsers();
+        loadDeposits();
+        loadWithdrawals();
+      }).catch(err => alert("Error deleting user: " + err.message));
+    }
   }
 
   function addWeeklyIncome() {
-    const id = document.getElementById("incomeUserId").value.trim();
-    const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!id || isNaN(amt) || amt <= 0) return alert("Valid User ID and amount required");
+    const uId = document.getElementById("incomeUserId").value.trim();
+    const amount = parseFloat(document.getElementById("incomeAmt").value);
+    if (!uId) return alert("Please enter User ID");
+    if (!amount || amount <= 0) return alert("Please enter a valid amount");
 
-    db.ref("users/" + id).once("value").then(snap => {
+    db.ref("users/" + uId).once("value").then(snap => {
       if (!snap.exists()) return alert("User not found");
       const user = snap.val();
-      const newIncome = (parseFloat(user.income || 0)) + amt;
-      let newWalletBalance = parseFloat(user.walletBalance || 0) + amt;
+      const newIncome = (parseFloat(user.income || 0)) + amount;
+      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amount;
 
-      db.ref("users/" + id).update({
+      db.ref("users/" + uId).update({
         income: newIncome,
         walletBalance: newWalletBalance
       }).then(() => {
-        alert("Weekly income added");
+        alert(`Added ${amount} USDT income for user ${uId}.`);
         loadUsers();
       });
-    });
+    }).catch(err => alert("Error adding income: " + err.message));
   }
-
-  // Initial UI setup
-  updateDepositUI();
-  updateWithdrawUI();
 </script>
 
 </body>
