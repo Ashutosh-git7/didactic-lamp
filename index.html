@@ -9,8 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Your existing styles unchanged */
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
@@ -430,7 +428,7 @@
   let currentId = "";
   let profitChartInstance = null;
 
-  // Keep 7% margin on deposits and 5% margin on withdrawals internally, no UI mention
+  // Margins on exchange rates internally for deposit and withdrawal
   let usdtToINRBuy = null;   // USDT to INR buy rate + 7%
   let usdtToINRSell = null;  // USDT to INR sell rate - 5%
 
@@ -446,7 +444,7 @@
         document.getElementById('usdtToInrBuyRate').innerText = usdtToINRBuy.toFixed(2);
         document.getElementById('usdtToInrSellRate').innerText = usdtToINRSell.toFixed(2);
 
-        if (currentId) {
+        if (currentId && currentId !== "Admin") {
           db.ref('users/' + currentId).once('value').then(snap => {
             const data = snap.val();
             if (data) {
@@ -468,8 +466,6 @@
   }
   loadExchangeRates();
   setInterval(loadExchangeRates, 60000);
-
-  // Other functions unchanged except where needed to use usdtToINRBuy and usdtToINRSell for calculations
 
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
@@ -617,6 +613,43 @@
     document.getElementById("depINRAmount").innerText = inrAmt.toFixed(2);
   }
 
+  // Referral income percentages for levels
+  const REF_LEVELS = [0.05, 0.03, 0.02]; // 5%, 3%, 2%
+
+  // Adds referral income up to 3 levels for given deposit amount
+  function addReferralIncome(depositAmount, userId) {
+    let currentUserId = userId;
+    let level = 0;
+
+    function updateUserIncome(userId, incomeToAdd) {
+      return db.ref("users/" + userId).transaction(userData => {
+        if (userData) {
+          userData.income = (parseFloat(userData.income) || 0) + incomeToAdd;
+          userData.walletBalance = (parseFloat(userData.walletBalance) || 0) + incomeToAdd;
+        }
+        return userData;
+      });
+    }
+
+    (async () => {
+      while (level < 3 && currentUserId) {
+        const userSnap = await db.ref("users/" + currentUserId).once("value");
+        if (!userSnap.exists()) break;
+        const user = userSnap.val();
+        const referrerId = user.referredBy;
+        if (!referrerId) break;
+
+        const referralIncome = depositAmount * REF_LEVELS[level];
+        if (referralIncome > 0) {
+          await updateUserIncome(referrerId, referralIncome);
+        }
+
+        currentUserId = referrerId;
+        level++;
+      }
+    })();
+  }
+
   function submitDeposit() {
     const amt = parseFloat(document.getElementById("depAmount").value);
     if (isNaN(amt) || amt < 100 || amt > 1000) {
@@ -639,6 +672,7 @@
       }).then(() => {
         alert("Deposit submitted! Waiting for admin approval.");
         document.getElementById("depAmount").value = "";
+        loadUser(currentId);
       }).catch(err => alert("Error submitting deposit: " + err.message));
     });
   }
@@ -845,7 +879,7 @@
     show(document.getElementById("loginBox"));
   }
 
-  // Admin panel functions (same as before)
+  // Admin functions
   function loadAdmin() {
     loadUsers();
     loadDeposits();
@@ -968,21 +1002,57 @@
     });
   }
 
-  function approveDepositUSDT(userId) {
-    db.ref("users/" + userId).once("value").then(snap => {
-      const user = snap.val();
-      if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
+  // Modified to add referral income on deposit approval for USDT deposits
+  async function approveDepositUSDT(userId) {
+    const userSnap = await db.ref("users/" + userId).once("value");
+    const user = userSnap.val();
+    if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
 
-      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + parseFloat(user.deposit);
-      db.ref("users/" + userId).update({
-        status: "Active",
-        walletBalance: newWalletBalance,
-      }).then(() => {
-        alert(`Deposit Approved for User: ${userId}`);
-        loadDeposits();
-        loadUsers();
-      });
+    const depositAmount = parseFloat(user.deposit);
+
+    // Add deposit to wallet balance, mark active
+    const newWalletBalance = (parseFloat(user.walletBalance || 0)) + depositAmount;
+    await db.ref("users/" + userId).update({
+      status: "Active",
+      walletBalance: newWalletBalance,
     });
+
+    // Add referral income up to 3 levels
+    addReferralIncome(depositAmount, userId);
+
+    alert(`Deposit Approved for User: ${userId} and referral income distributed.`);
+    loadDeposits();
+    loadUsers();
+  }
+
+  // Modified to add referral income on deposit approval for INR deposits
+  async function approveDepositINR(userId) {
+    const reqSnap = await db.ref("depositINRRequests/" + userId).once("value");
+    const req = reqSnap.val();
+    if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
+
+    const userSnap = await db.ref("users/" + userId).once("value");
+    const user = userSnap.val();
+    if (!user) return alert("User not found");
+
+    const depositAmount = parseFloat(req.usdtAmount);
+    const newDeposit = (parseFloat(user.deposit || 0)) + depositAmount;
+    const newWalletBalance = (parseFloat(user.walletBalance || 0)) + depositAmount;
+
+    await db.ref("users/" + userId).update({
+      deposit: newDeposit,
+      walletBalance: newWalletBalance,
+      status: "Active",
+      depositTime: req.depositTime
+    });
+
+    // Add referral income up to 3 levels
+    addReferralIncome(depositAmount, userId);
+
+    await db.ref("depositINRRequests/" + userId).remove();
+    alert(`INR Deposit Approved for User: ${userId} and referral income distributed.`);
+    loadDeposits();
+    loadUsers();
   }
 
   function rejectDepositUSDT(userId) {
@@ -998,33 +1068,6 @@
         alert(`Deposit Rejected for User: ${userId}`);
         loadDeposits();
         loadUsers();
-      });
-    });
-  }
-
-  function approveDepositINR(userId) {
-    db.ref("depositINRRequests/" + userId).once("value").then(snap => {
-      const req = snap.val();
-      if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
-
-      db.ref("users/" + userId).once("value").then(userSnap => {
-        const user = userSnap.val();
-        if (!user) return alert("User not found");
-
-        const newDeposit = (parseFloat(user.deposit || 0)) + req.usdtAmount;
-        const newWalletBalance = (parseFloat(user.walletBalance || 0)) + req.usdtAmount;
-
-        db.ref("users/" + userId).update({
-          deposit: newDeposit,
-          walletBalance: newWalletBalance,
-          status: "Active",
-          depositTime: req.depositTime
-        }).then(() => {
-          db.ref("depositINRRequests/" + userId).remove();
-          alert(`INR Deposit Approved for User: ${userId}`);
-          loadDeposits();
-          loadUsers();
-        });
       });
     });
   }
@@ -1121,59 +1164,55 @@
       wallet: document.getElementById("editWallet").value,
       referredBy: document.getElementById("editRef").value,
       status: document.getElementById("editStatus").value,
-      deposit: parseFloat(document.getElementById("editDeposit").value),
-      income: parseFloat(document.getElementById("editIncome").value),
-      walletBalance: parseFloat(document.getElementById("editWalletBalance").value),
+      deposit: parseFloat(document.getElementById("editDeposit").value) || 0,
+      income: parseFloat(document.getElementById("editIncome").value) || 0,
+      walletBalance: parseFloat(document.getElementById("editWalletBalance").value) || 0,
       depositTime: document.getElementById("editDepositTime").value || null
     };
-    const newPassword = document.getElementById("editPassword").value.trim();
-
-    let updates = {...updatedData};
-    if (newPassword) {
-      updates.password = newPassword;
+    // Password update only if entered
+    const newPass = document.getElementById("editPassword").value;
+    if (newPass.trim()) {
+      updatedData.password = newPass;
     }
-
-    db.ref("users/" + userId).update(updates).then(() => {
-      alert("User data updated successfully.");
+    db.ref("users/" + userId).update(updatedData).then(() => {
+      alert("User data updated.");
       closeEditModal();
       loadUsers();
-      loadDeposits();
-      loadWithdrawals();
-    }).catch(err => alert("Error saving user changes: " + err.message));
+    }).catch(err => alert("Error updating user: " + err.message));
   }
 
   function deleteUser(userId) {
-    if (confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) {
-      db.ref("users/" + userId).remove().then(() => {
-        alert("User deleted successfully.");
-        loadUsers();
-        loadDeposits();
-        loadWithdrawals();
-      }).catch(err => alert("Error deleting user: " + err.message));
-    }
+    if (!confirm(`Are you sure? Delete user ${userId} permanently?`)) return;
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User deleted.");
+      loadUsers();
+    });
   }
 
   function addWeeklyIncome() {
-    const uId = document.getElementById("incomeUserId").value.trim();
-    const amount = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uId) return alert("Please enter User ID");
-    if (!amount || amount <= 0) return alert("Please enter a valid amount");
+    const userId = document.getElementById("incomeUserId").value.trim();
+    const amt = parseFloat(document.getElementById("incomeAmt").value);
+    if (!userId || isNaN(amt) || amt <= 0) return alert("Enter valid User ID and amount");
 
-    db.ref("users/" + uId).once("value").then(snap => {
+    db.ref("users/" + userId).once("value").then(snap => {
       if (!snap.exists()) return alert("User not found");
-      const user = snap.val();
-      const newIncome = (parseFloat(user.income || 0)) + amount;
-      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amount;
 
-      db.ref("users/" + uId).update({
+      const user = snap.val();
+      const newIncome = (parseFloat(user.income || 0)) + amt;
+      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amt;
+
+      db.ref("users/" + userId).update({
         income: newIncome,
         walletBalance: newWalletBalance
       }).then(() => {
-        alert(`Added ${amount} USDT income for user ${uId}.`);
+        alert("Weekly income added.");
         loadUsers();
+        document.getElementById("incomeUserId").value = "";
+        document.getElementById("incomeAmt").value = "";
       });
-    }).catch(err => alert("Error adding income: " + err.message));
+    });
   }
+
 </script>
 
 </body>
