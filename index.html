@@ -9,20 +9,17 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Your existing styles unchanged */
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #121212;
       color: #e0e0e0;
-      margin: 0;
-      padding: 15px;
+      margin: 0; padding: 15px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-    h2, h3, h4, h5 {
+    h2,h3,h4,h5 {
       color: #00ffe1;
       text-align: center;
       margin: 12px 0 8px;
@@ -38,7 +35,7 @@
       max-width: 650px;
       box-sizing: border-box;
     }
-    input, button, select, textarea {
+    input,button,select,textarea {
       padding: 12px 15px;
       margin: 10px 0 20px 0;
       width: 100%;
@@ -50,7 +47,7 @@
       box-sizing: border-box;
       transition: background-color 0.2s ease, box-shadow 0.2s ease;
     }
-    input:focus, select:focus, textarea:focus {
+    input:focus,select:focus,textarea:focus {
       outline: none;
       background-color: #393939;
       box-shadow: 0 0 6px #00ffe1aa;
@@ -64,7 +61,7 @@
       transition: background 0.3s ease;
       user-select: none;
     }
-    button:hover, button:focus {
+    button:hover,button:focus {
       background: #00c7aa;
       outline: none;
     }
@@ -85,7 +82,7 @@
       border-collapse: collapse;
       margin: 15px 0 10px 0;
     }
-    th, td {
+    th,td {
       padding: 12px;
       text-align: center;
       border-bottom: 1px solid #333;
@@ -108,89 +105,9 @@
     .admin-section h3 {
       margin-top: 0;
     }
-    .btn-table {
-      padding: 6px 10px;
-      margin: 0 3px;
-      font-size: 13px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-    .btn-accept {
-      background-color: #28a745;
-      color: #fff;
-      border: none;
-    }
-    .btn-reject {
-      background-color: #dc3545;
-      color: #fff;
-      border: none;
-    }
-    .btn-close {
-      background-color: #6c757d;
-      color: #fff;
-      border: none;
-    }
-    .btn-edit {
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-    }
-    .btn-delete {
-      background-color: #e55753;
-      color: #fff;
-      border: none;
-    }
-    .btn-small {
-      padding: 5px 8px;
-      font-size: 12px;
-    }
-    #userDashboard {
-      max-width: 650px;
-      text-align: left;
-    }
-    #userDashboard p, #userDashboard code {
-      margin: 6px 0;
-      font-size: 15px;
-    }
-    #profitChartContainer {
-      margin-top: 20px;
-      background: #272727;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px #00ffe1bb;
-    }
-    #profitChart {
-      width: 100% !important;
-      max-height: 250px;
-    }
-    code {
-      display: inline-block;
-      background-color: #333;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-family: monospace;
-      user-select: all;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #262626;
-      margin: 25px 0;
-    }
-    @media (max-width: 640px) {
-      .box, .admin-section {
-        max-width: 100%;
-        padding: 15px 20px;
-      }
-      table, th, td {
-        font-size: 12px;
-      }
-      button, input, select, textarea {
-        font-size: 14px;
-      }
-    }
     .modal {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top:0; left:0; right:0; bottom:0;
       background: rgba(0,0,0,0.85);
       display: flex;
       align-items: center;
@@ -430,9 +347,8 @@
   let currentId = "";
   let profitChartInstance = null;
 
-  // Keep 7% margin on deposits and 5% margin on withdrawals internally, no UI mention
-  let usdtToINRBuy = null;   // USDT to INR buy rate + 7%
-  let usdtToINRSell = null;  // USDT to INR sell rate - 5%
+  let usdtToINRBuy = null;
+  let usdtToINRSell = null;
 
   async function loadExchangeRates() {
     try {
@@ -468,8 +384,6 @@
   }
   loadExchangeRates();
   setInterval(loadExchangeRates, 60000);
-
-  // Other functions unchanged except where needed to use usdtToINRBuy and usdtToINRSell for calculations
 
   function show(ele) { ele.classList.remove('hidden'); }
   function hide(ele) { ele.classList.add('hidden'); }
@@ -845,7 +759,7 @@
     show(document.getElementById("loginBox"));
   }
 
-  // Admin panel functions (same as before)
+  // Admin functions
   function loadAdmin() {
     loadUsers();
     loadDeposits();
@@ -973,10 +887,9 @@
       const user = snap.val();
       if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
 
-      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + parseFloat(user.deposit);
+      // IMPORTANT: Deposit balance updated, walletBalance remains unchanged
       db.ref("users/" + userId).update({
-        status: "Active",
-        walletBalance: newWalletBalance,
+        status: "Active"
       }).then(() => {
         alert(`Deposit Approved for User: ${userId}`);
         loadDeposits();
@@ -1012,11 +925,9 @@
         if (!user) return alert("User not found");
 
         const newDeposit = (parseFloat(user.deposit || 0)) + req.usdtAmount;
-        const newWalletBalance = (parseFloat(user.walletBalance || 0)) + req.usdtAmount;
 
         db.ref("users/" + userId).update({
           deposit: newDeposit,
-          walletBalance: newWalletBalance,
           status: "Active",
           depositTime: req.depositTime
         }).then(() => {
@@ -1085,6 +996,7 @@
     });
   }
 
+  // Edit user modal functions here...
   let editingUserKey = null;
 
   function openEditModal(userId) {
@@ -1121,58 +1033,54 @@
       wallet: document.getElementById("editWallet").value,
       referredBy: document.getElementById("editRef").value,
       status: document.getElementById("editStatus").value,
-      deposit: parseFloat(document.getElementById("editDeposit").value),
-      income: parseFloat(document.getElementById("editIncome").value),
-      walletBalance: parseFloat(document.getElementById("editWalletBalance").value),
-      depositTime: document.getElementById("editDepositTime").value || null
+      deposit: parseFloat(document.getElementById("editDeposit").value) || 0,
+      income: parseFloat(document.getElementById("editIncome").value) || 0,
+      walletBalance: parseFloat(document.getElementById("editWalletBalance").value) || 0,
+      depositTime: document.getElementById("editDepositTime").value || null,
     };
-    const newPassword = document.getElementById("editPassword").value.trim();
+    const newPass = document.getElementById("editPassword").value.trim();
+    let updatePromise = null;
 
-    let updates = {...updatedData};
-    if (newPassword) {
-      updates.password = newPassword;
+    if (newPass) {
+      updatedData.password = newPass;
     }
 
-    db.ref("users/" + userId).update(updates).then(() => {
-      alert("User data updated successfully.");
+    updatePromise = db.ref("users/" + userId).update(updatedData);
+
+    updatePromise.then(() => {
+      alert("User details saved");
       closeEditModal();
       loadUsers();
-      loadDeposits();
-      loadWithdrawals();
-    }).catch(err => alert("Error saving user changes: " + err.message));
+    }).catch(err => alert("Error saving user: " + err.message));
   }
 
   function deleteUser(userId) {
-    if (confirm(`Are you sure you want to delete user ${userId}? This action cannot be undone.`)) {
-      db.ref("users/" + userId).remove().then(() => {
-        alert("User deleted successfully.");
-        loadUsers();
-        loadDeposits();
-        loadWithdrawals();
-      }).catch(err => alert("Error deleting user: " + err.message));
-    }
+    if (!confirm(`Are you sure you want to delete user ${userId}?`)) return;
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User deleted.");
+      loadUsers();
+    }).catch(err => alert("Error deleting user: " + err.message));
   }
 
   function addWeeklyIncome() {
-    const uId = document.getElementById("incomeUserId").value.trim();
-    const amount = parseFloat(document.getElementById("incomeAmt").value);
-    if (!uId) return alert("Please enter User ID");
-    if (!amount || amount <= 0) return alert("Please enter a valid amount");
+    const uid = document.getElementById("incomeUserId").value.trim();
+    const amt = parseFloat(document.getElementById("incomeAmt").value);
+    if (!uid || isNaN(amt) || amt <= 0) return alert("Enter valid User ID and amount.");
 
-    db.ref("users/" + uId).once("value").then(snap => {
-      if (!snap.exists()) return alert("User not found");
+    db.ref("users/" + uid).once("value").then(snap => {
+      if (!snap.exists()) return alert("User not found.");
       const user = snap.val();
-      const newIncome = (parseFloat(user.income || 0)) + amount;
-      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amount;
+      const newIncome = (parseFloat(user.income || 0)) + amt;
+      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amt;
 
-      db.ref("users/" + uId).update({
+      db.ref("users/" + uid).update({
         income: newIncome,
         walletBalance: newWalletBalance
       }).then(() => {
-        alert(`Added ${amount} USDT income for user ${uId}.`);
+        alert(`Added income ₹${amt} for user ${uid}.`);
         loadUsers();
       });
-    }).catch(err => alert("Error adding income: " + err.message));
+    });
   }
 </script>
 
