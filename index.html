@@ -338,6 +338,173 @@
     });
   }
 </script>
+  <!-- Add ye section userDashboard me TMPL Purchase ke niche ya suitable jagah par -->
+<hr />
+<h4>🛡️ TMPL Staking</h4>
+<p>Total TMPL Balance: <b><span id="totalTMPL">0</span></b></p>
+<p>TMPL Currently Staked: <b><span id="stakedTMPL">0</span></b></p>
+<p>Available to Stake: <b><span id="availableTMPL">0</span></b></p>
+<p>Accumulated Staking Rewards (USDT): <b><span id="stakingRewardsUSDT">0</span></b></p>
+
+<input type="number" id="stakeAmount" placeholder="Enter TMPL amount to stake" min="0" step="any" />
+<button onclick="stakeTMPL()">Stake TMPL</button>
+
+<input type="number" id="unstakeAmount" placeholder="Enter TMPL amount to unstake" min="0" step="any" />
+<button onclick="unstakeTMPL()">Unstake TMPL</button>
+
+<button onclick="claimStakingRewards()">Claim USDT Rewards</button>
+
+<script>
+  // Staking rate per day (example: 0.1% daily on staked TMPL's USDT value)
+  const STAKING_RATE_PER_DAY = 0.001; 
+
+  // Helper: update staking rewards based on elapsed time
+  async function updateStakingRewards() {
+    const userRef = db.ref('users/' + currentId);
+
+    await userRef.transaction(user => {
+      if (user && user.tmplStaked && user.tmplStakeStart) {
+        const now = Date.now();
+        const lastStake = new Date(user.tmplStakeStart).getTime();
+
+        const elapsedDays = Math.max(0, (now - lastStake) / (1000 * 60 * 60 * 24));
+        if (elapsedDays <= 0) return user;
+
+        const stakedTMPL = parseFloat(user.tmplStaked) || 0;
+        const tokenValueUSDT = 0.001; // 1 TMPL = 0.001 USDT
+        const stakedValueUSDT = stakedTMPL * tokenValueUSDT;
+
+        // Reward earned for the elapsed days
+        const rewardEarned = stakedValueUSDT * STAKING_RATE_PER_DAY * elapsedDays;
+
+        // Update rewards and reset stake time
+        user.tmplRewardUSDT = (parseFloat(user.tmplRewardUSDT) || 0) + rewardEarned;
+        user.tmplStakeStart = new Date(now).toISOString();
+      }
+      return user;
+    });
+  }
+
+  // Load user staking data and update UI
+  async function loadStakingUI() {
+    await updateStakingRewards();
+
+    const snap = await db.ref('users/' + currentId).once('value');
+    if (snap.exists()) {
+      const user = snap.val();
+      const tmplBalance = parseFloat(user.tmplBalance || 0);
+      const tmplStaked = parseFloat(user.tmplStaked || 0);
+      const tmplRewardUSDT = parseFloat(user.tmplRewardUSDT || 0);
+
+      document.getElementById('totalTMPL').innerText = tmplBalance.toFixed(2);
+      document.getElementById('stakedTMPL').innerText = tmplStaked.toFixed(2);
+      document.getElementById('availableTMPL').innerText = (tmplBalance - tmplStaked).toFixed(2);
+      document.getElementById('stakingRewardsUSDT').innerText = tmplRewardUSDT.toFixed(4);
+    }
+  }
+
+  // Stake TMPL tokens
+  async function stakeTMPL() {
+    const amount = parseFloat(document.getElementById('stakeAmount').value);
+    if (isNaN(amount) || amount <= 0) return alert('Please enter valid TMPL amount to stake');
+
+    const snap = await db.ref('users/' + currentId).once('value');
+    const user = snap.val();
+    if (!user) return alert('User data not found');
+
+    const tmplBalance = parseFloat(user.tmplBalance || 0);
+    const tmplStaked = parseFloat(user.tmplStaked || 0);
+    if (amount > (tmplBalance - tmplStaked)) {
+      return alert('Not enough TMPL tokens available to stake');
+    }
+
+    await updateStakingRewards();
+
+    // Update staking info transactionally
+    await db.ref('users/' + currentId).transaction(user => {
+      if (user) {
+        user.tmplStaked = (parseFloat(user.tmplStaked) || 0) + amount;
+        user.tmplStakeStart = new Date().toISOString();
+      }
+      return user;
+    });
+
+    alert(`Successfully staked ${amount.toFixed(2)} TMPL tokens.`);
+    document.getElementById('stakeAmount').value = '';
+    loadStakingUI();
+    loadUser(currentId);
+  }
+
+  // Unstake TMPL tokens
+  async function unstakeTMPL() {
+    const amount = parseFloat(document.getElementById('unstakeAmount').value);
+    if (isNaN(amount) || amount <= 0) return alert('Please enter valid TMPL amount to unstake');
+
+    const snap = await db.ref('users/' + currentId).once('value');
+    const user = snap.val();
+    if (!user) return alert('User data not found');
+
+    const tmplStaked = parseFloat(user.tmplStaked || 0);
+    if (amount > tmplStaked) {
+      return alert('You cannot unstake more than currently staked');
+    }
+
+    await updateStakingRewards();
+
+    // Update staking info transactionally
+    await db.ref('users/' + currentId).transaction(user => {
+      if (user) {
+        user.tmplStaked = (parseFloat(user.tmplStaked) || 0) - amount;
+        // Reset stake time if unstaked all
+        if (user.tmplStaked <= 0) {
+          user.tmplStakeStart = null;
+        } else {
+          user.tmplStakeStart = new Date().toISOString();
+        }
+      }
+      return user;
+    });
+
+    alert(`Successfully unstaked ${amount.toFixed(2)} TMPL tokens.`);
+    document.getElementById('unstakeAmount').value = '';
+    loadStakingUI();
+    loadUser(currentId);
+  }
+
+  // Claim staking rewards in USDT - add to walletBalance + income, reset tmplRewardUSDT
+  async function claimStakingRewards() {
+    const snap = await db.ref('users/' + currentId).once('value');
+    const user = snap.val();
+    if (!user) return alert('User not found');
+
+    let rewards = parseFloat(user.tmplRewardUSDT || 0);
+    if (rewards <= 0) return alert('No staking rewards to claim');
+
+    await updateStakingRewards();
+
+    // Claim transaction
+    await db.ref('users/' + currentId).transaction(user => {
+      if (user) {
+        rewards = parseFloat(user.tmplRewardUSDT || 0);
+        if (rewards <= 0) return user; // No changes if no rewards
+
+        user.walletBalance = (parseFloat(user.walletBalance) || 0) + rewards;
+        user.income = (parseFloat(user.income) || 0) + rewards;
+        user.tmplRewardUSDT = 0;
+      }
+      return user;
+    });
+
+    alert(`Claimed staking rewards: ${rewards.toFixed(4)} USDT added to your wallet.`);
+    loadStakingUI();
+    loadUser(currentId);
+  }
+
+  // Initial load of staking data on dashboard load or login
+  if (currentId && currentId !== '') {
+    loadStakingUI();
+  }
+</script>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p><small>Set your UPI ID for INR withdrawals:</small></p>
