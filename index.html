@@ -261,6 +261,83 @@
   <p>💼 Wallet: <span id="userWallet"></span></p>
   <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
   <p><small><em>Deposit Time: <span id="userDepositTime">N/A</span></em></small></p>
+  <!-- Add ye section userDashboard ke andar kahin bhi deposit ke neeche after deposit/withdraw sections -->
+<hr />
+<h4>💎 TMPL Token Purchase (Minimum 15 USDT / Maximum 500 USDT)</h4>
+<p>1 TMPL = 0.001 USDT (Fixed Rate)</p>
+<input type="number" id="tmplPurchaseUSDT" placeholder="Enter USDT amount to purchase TMPL (15-500)" min="15" max="500" step="any" />
+<p>You'll get TMPL tokens: <b><span id="tmplTokensToGet">0</span></b></p>
+<button onclick="purchaseTMPL()">Purchase TMPL</button>
+
+<script>
+  // Calculate and show TMPL tokens to get based on input USDT
+  document.getElementById('tmplPurchaseUSDT').addEventListener('input', () => {
+    const usdtAmount = parseFloat(document.getElementById('tmplPurchaseUSDT').value);
+    if (!usdtAmount || usdtAmount < 15) {
+      document.getElementById('tmplTokensToGet').innerText = '0';
+      return;
+    }
+    if (usdtAmount > 500) {
+      document.getElementById('tmplTokensToGet').innerText = '0';
+      return;
+    }
+    const tokens = usdtAmount / 0.001; // 1 TMPL = 0.001 USDT
+    document.getElementById('tmplTokensToGet').innerText = tokens.toFixed(0);
+  });
+
+  // Purchase TMPL function: deduct from walletBalance (usdt), add tokens to tmplBalance, distribute referral commission
+  async function purchaseTMPL() {
+    const usdtAmount = parseFloat(document.getElementById('tmplPurchaseUSDT').value);
+    if (isNaN(usdtAmount)) return alert('Please enter a valid USDT amount');
+    if (usdtAmount < 15 || usdtAmount > 500) return alert('Amount must be between 15 and 500 USDT');
+
+    const userRef = db.ref('users/' + currentId);
+
+    const snap = await userRef.once('value');
+    if (!snap.exists()) return alert('User not found');
+
+    const userData = snap.val();
+    const walletBalance = parseFloat(userData.walletBalance || 0);
+
+    if (walletBalance < usdtAmount) {
+      return alert('Insufficient USDT wallet balance for this purchase');
+    }
+
+    const tokensToAdd = usdtAmount / 0.001;
+
+    // Firebase transaction to avoid race condition
+    userRef.transaction(user => {
+      if (user) {
+        if ((parseFloat(user.walletBalance) || 0) < usdtAmount) {
+          alert('Insufficient balance during transaction.');
+          return;
+        }
+        user.walletBalance = (parseFloat(user.walletBalance) || 0) - usdtAmount;
+        user.tmplBalance = (parseFloat(user.tmplBalance) || 0) + tokensToAdd;
+
+        // Optional: keep track of purchase history per user
+        if (!user.tmplPurchases) user.tmplPurchases = [];
+        user.tmplPurchases.push({ usdtAmount, tokens: tokensToAdd, time: new Date().toISOString() });
+      }
+      return user;
+    }, (error, committed, snapshot) => {
+      if (error) {
+        alert('Transaction failed: ' + error.message);
+      } else if (!committed) {
+        alert('Transaction not committed');
+      } else {
+        alert(`Successfully purchased ${tokensToAdd.toFixed(0)} TMPL tokens for ${usdtAmount} USDT.`);
+
+        // Distribute referral commission in USDT (5%,3%,2%)
+        addReferralIncome(usdtAmount, currentId);
+
+        document.getElementById('tmplPurchaseUSDT').value = '';
+        document.getElementById('tmplTokensToGet').innerText = '0';
+        loadUser(currentId); // Refresh UI values
+      }
+    });
+  }
+</script>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p><small>Set your UPI ID for INR withdrawals:</small></p>
