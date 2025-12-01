@@ -505,6 +505,104 @@
     loadStakingUI();
   }
 </script>
+  <!-- Add ye section userDashboard me TMPL Staking ke niche -->
+<hr />
+<h4>🚀 Withdraw TMPL to Trust Wallet</h4>
+<p>Your TMPL Balance: <b><span id="tmplBalanceForWithdraw">0</span></b></p>
+<input type="text" id="tmplWithdrawWallet" placeholder="Enter your BEP20 Trust Wallet Address" autocomplete="off"/>
+<input type="number" id="tmplWithdrawAmount" placeholder="Enter TMPL amount to withdraw" min="0" step="any" />
+<button onclick="requestTMPLWithdrawal()">Request TMPL Withdrawal</button>
+
+<script>
+  // Update tmplBalanceForWithdraw span from user data
+  async function updateTmplWithdrawUI() {
+    const snap = await db.ref('users/' + currentId).once('value');
+    if (snap.exists()) {
+      const tmplBalance = parseFloat(snap.val().tmplBalance || 0);
+      document.getElementById('tmplBalanceForWithdraw').innerText = tmplBalance.toFixed(2);
+      const storedWallet = snap.val().wallet || '';
+      if (storedWallet) {
+        document.getElementById('tmplWithdrawWallet').value = storedWallet;
+      }
+    }
+  }
+
+  updateTmplWithdrawUI();
+
+  async function requestTMPLWithdrawal() {
+    const amount = parseFloat(document.getElementById('tmplWithdrawAmount').value);
+    const walletAddr = document.getElementById('tmplWithdrawWallet').value.trim();
+    if (!walletAddr) return alert('Please enter your BEP20 Trust Wallet address');
+    if (isNaN(amount) || amount <= 0) return alert('Please enter a valid TMPL amount to withdraw');
+
+    const snap = await db.ref('users/' + currentId).once('value');
+    if (!snap.exists()) return alert('User not found');
+
+    const tmplBalance = parseFloat(snap.val().tmplBalance || 0);
+    if (amount > tmplBalance) return alert('Insufficient TMPL balance for withdrawal');
+
+    // Deduct tokens first to prevent duplicate requests
+    await db.ref('users/' + currentId).transaction(user => {
+      if (user) {
+        if ((parseFloat(user.tmplBalance) || 0) < amount) {
+          alert('Insufficient TMPL balance during transaction.');
+          return;
+        }
+        user.tmplBalance = (parseFloat(user.tmplBalance) || 0) - amount;
+      }
+      return user;
+    });
+
+    // Add withdrawal request to Firebase under tmplWithdrawals
+    await db.ref('tmplWithdrawals/' + currentId).push({
+      amountTMPL: amount,
+      wallet: walletAddr,
+      status: 'Pending',
+      requestedAt: new Date().toISOString()
+    });
+
+    alert(`TMPL Withdrawal requested for ${amount.toFixed(2)} tokens. Waiting for admin approval.`);
+    document.getElementById('tmplWithdrawAmount').value = '';
+    updateTmplWithdrawUI();
+  }
+</script>
+
+<!-- Admin Panel Section to show Pending TMPL Withdrawals -->
+
+<script>
+  async function loadTmplWithdrawals() {
+    const container = document.getElementById('adminTmplWithdrawalsContainer');
+    if (!container) return; // Container not present yet
+
+    const tmplWithdrawTableBody = container.querySelector('tbody');
+    tmplWithdrawTableBody.innerHTML = '';
+
+    const snap = await db.ref('tmplWithdrawals').once('value');
+    if (snap.exists()) {
+      for (const userId in snap.val()) {
+        const userRequests = snap.val()[userId];
+        for (const reqId in userRequests) {
+          const req = userRequests[reqId];
+          if (req.status === 'Pending') {
+            const userSnap = await db.ref('users/' + userId).once('value');
+            const userName = userSnap.val()?.name || '(Unknown)';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${userId}</td>
+              <td>${userName}</td>
+              <td>${req.amountTMPL.toFixed(2)}</td>
+              <td>${req.wallet}</td>
+              <td>${req.status}</td>
+              <td>
+                <button class="btn-table btn-accept" onclick="approveTmplWithdrawal('${userId}', '${reqId}', ${req.amountTMPL})">Approve</button>
+                <button class="btn-table btn-reject" onclick="rejectTmplWithdrawal('${userId}', '${reqId}', ${req.amountTMPL})">Reject</button>
+              </td>
+            `;
+            tmplWithdrawTableBody.appendChild(tr);
+          }
+        }
+      }
+    }
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p><small>Set your UPI ID for INR withdrawals:</small></p>
