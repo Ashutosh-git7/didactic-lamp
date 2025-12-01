@@ -1,362 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simple MLM Product Plan</title>
-<style>
-body {font-family: Arial, sans-serif; background:#121212; color:#e0e0e0; margin:0; padding:10px;}
-.box {background:#1e1e1e; padding:20px; margin:20px 0; border-radius:10px;}
-input, select, button {width:100%; padding:12px; margin-top:10px; border:none; border-radius:6px; font-size:16px;}
-button {background:#00ffe1; cursor:pointer; font-weight:bold;}
-button:hover {background:#00c7aa;}
-h2, h3 {text-align:center; color:#00ffe1;}
-table {width:100%; border-collapse:collapse; margin-top:20px;}
-th, td {border:1px solid #333; padding:10px; text-align:center;}
-th {background:#222; color:#00ffe1;}
-.hidden {display:none;}
-</style>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-</head>
-<body>
-
-<h2>MLM Product Plan</h2>
-
-<!-- Login -->
-<div id="loginDiv" class="box">
-<h3>Login</h3>
-<input type="text" id="loginID" placeholder="Enter User ID" />
-<input type="password" id="loginPass" placeholder="Password" />
-<button onclick="login()">Login</button>
-<p>New? <a href="#" onclick="showRegister()">Register here</a></p>
-</div>
-
-<!-- Register -->
-<div id="registerDiv" class="box hidden">
-<h3>Register</h3>
-<input type="text" id="regName" placeholder="Full Name" />
-<input type="text" id="regMobile" placeholder="Mobile" />
-<input type="text" id="regWallet" placeholder="BEP20 USDT Wallet" />
-<input type="password" id="regPassword" placeholder="Set Password" />
-<input type="text" id="regRef" placeholder="Referred By (ID, optional)" />
-<button onclick="register()">Register</button>
-<p>Already registered? <a href="#" onclick="showLogin()">Login here</a></p>
-</div>
-
-<!-- User Dashboard -->
-<div id="userDiv" class="box hidden">
-<h3>Hello, <span id="userNameDisplay"></span></h3>
-<p>Status: <span id="userStatus"></span></p>
-<p>Wallet Balance: <span id="walletBalance">0</span> USDT</p>
-<p>Total Income: <span id="totalIncome">0</span> USDT</p>
-
-<!-- Product Purchase -->
-<h3>Buy Products</h3>
-<select id="productSelect"></select>
-<input type="number" id="buyQty" placeholder="Quantity" min="1" />
-<button onclick="buyProduct()">Buy</button>
-
-<!-- Downline -->
-<h3>Your Downline (6 levels)</h3>
-<div id="downline"></div>
-
-<!-- Earnings Ledger -->
-<h3>My Earnings</h3>
-<table id="ledgerTable">
-<tr><th>Date</th><th>Level</th><th>Amount (USDT)</th></tr>
-<tbody></tbody>
-</table>
-
-<!-- Withdraw -->
-<h3>Request Withdrawal</h3>
-<input type="text" id="withdrawWallet" placeholder="Your USDT Wallet" />
-<input type="number" id="withdrawAmount" placeholder="Amount (min 5 USDT)" min="5" />
-<button onclick="requestWithdraw()">Request</button>
-
-<button onclick="logout()">Logout</button>
-</div>
-
-<!-- Admin Panel -->
-<div id="adminDiv" class="box hidden">
-<h3>Admin Panel</h3>
-<h4>Adjust Commission Percentages</h4>
-<table>
-<tr><th>Level</th><th>% of 70%</th></tr>
-<tr><td>1</td><td><input type="number" id="p1" min="0" max="70" value="25" /></td></tr>
-<tr><td>2</td><td><input type="number" id="p2" min="0" max="70" value="15" /></td></tr>
-<tr><td>3</td><td><input type="number" id="p3" min="0" max="70" value="12" /></td></tr>
-<tr><td>4</td><td><input type="number" id="p4" min="0" max="70" value="10" /></td></tr>
-<tr><td>5</td><td><input type="number" id="p5" min="0" max="70" value="5" /></td></tr>
-<tr><td>6</td><td><input type="number" id="p6" min="0" max="70" value="3" /></td></tr>
-</table>
-<button onclick="savePercentages()">Save Percentages</button>
-
-<h4>Product List</h4>
-<table id="productTable">
-<tr><th>Name</th><th>Price (USDT)</th><th>BV</th><th>Edit</th></tr>
-</table>
-
-<br/><button onclick="logout()">Logout Admin</button>
-</div>
-
-<script>
-  // Firebase Init
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_DOMAIN",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    databaseURL: "YOUR_DB_URL"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  let currentUserId = null;
-  let isAdmin = false;
-  let commissionPercentages = [25,15,12,10,5,3];
-
-  // Sample products
-  let products = [
-    { name: "Product A", price: 100, bv: 80 },
-    { name: "Product B", price: 200, bv: 160 },
-    { name: "Product C", price: 300, bv: 240 }
-  ];
-
-  // Load products into admin table
-  function loadProducts() {
-    const tbody = document.getElementById("productTable").querySelector("tbody");
-    tbody.innerHTML="";
-    products.forEach((p, i) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${p.name}</td>
-        <td>${p.price.toFixed(2)}</td>
-        <td>${p.bv}</td>
-        <td><button onclick='editProduct(${i})'>Edit</button></td>`;
-      tbody.appendChild(row);
-    });
-  }
-  function editProduct(i) {
-    const p = products[i];
-    const newName = prompt("New Name:", p.name);
-    const newPrice = parseFloat(prompt("New Price", p.price));
-    const newBV = parseInt(prompt("New BV", p.bv));
-    if (newName && !isNaN(newPrice) && !isNaN(newBV)) {
-      products[i] = { name: newName, price: newPrice, bv: newBV };
-      loadProducts();
+  <title>🚀 Ashirwad Mart P - Grow Up Together</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 15px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-  }
-
-  // Show/hide pages
-  function showPage(id) {
-    document.querySelectorAll('.box').forEach(b => b.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
-  }
-
-  function showRegister() { showPage('registerDiv'); }
-  function showLogin() { showPage('loginDiv'); }
-
-  // Register
-  function register() {
-    const name = document.getElementById("regName").value.trim();
-    const mobile= document.getElementById("regMobile").value.trim();
-    const wallet= document.getElementById("regWallet").value.trim();
-    const pass= document.getElementById("regPassword").value.trim();
-    const ref= document.getElementById("regRef").value.trim();
-    if (!name || !mobile || !wallet || !pass) { alert("Fill all fields"); return; }
-    const uid = "U"+Math.floor(100000+Math.random()*900000);
-    const data= {
-      name, mobile, wallet, password: pass,
-      referredBy: ref || null,
-      walletBalance: 0,
-      income: 0,
-      deposit:0,
-      status: "Active",
-      bvTotal:0,
-      createdAt: new Date().toISOString()
-    };
-    db.ref("users/"+uid).set(data).then(()=>{ alert("Registered ID: "+uid); showPage('loginDiv'); }).catch(e => alert("Error: "+e));
-  }
-
-  // Login
-  function login() {
-    const id = document.getElementById("loginID").value.trim();
-    const pass= document.getElementById("loginPass").value.trim();
-    if (id === "Admin" && pass==="JaiHanuman7") { isAdmin= true; showPage("adminDiv"); return; }
-    db.ref("users/"+id).once("value").then(snap => {
-      if (!snap.exists()) { alert("Not found"); return; }
-      const u= snap.val();
-      if (u.password!==pass) { alert("Wrong pass"); return; }
-      currentUserId= id; showPage("userDiv"); loadUserData();
-    });
-  }
-
-  // Load user data
-  function loadUserData() {
-    db.ref("users/"+currentUserId).once("value").then(snap => {
-      const u= snap.val();
-      document.getElementById("userNameDisplay").innerText= u.name;
-      document.getElementById("userStatus").innerText= u.status;
-      document.getElementById("walletBalance").innerText= u.walletBalance.toFixed(2);
-      document.getElementById("totalIncome").innerText= u.income.toFixed(2);
-      loadDownline();
-      loadLedger();
-    });
-  }
-
-  // Load downline recursion up to 6 levels
-  function loadDownline() {
-    const container= document.getElementById("downline");
-    container.innerHTML= "Loading...";
-    function recurse(parentId, level) {
-      return db.ref("users").orderByChild("referredBy").equalTo(parentId).once("value").then(snap => {
-        let html="";
-        snap.forEach(s => {
-          const u= s.val();
-          html += `<li>Level ${level}: ${u.name} (ID: ${s.key})</li>`;
-          if (level<6) {
-            html += `<ul>${recurse(s.key, level+1)}</ul>`;
-          }
-        });
-        return html;
-      });
+    h2, h3, h4, h5 {
+      color: #00ffe1;
+      text-align: center;
+      margin: 12px 0 8px;
+      font-weight: 600;
     }
-    recurse(currentUserId,1).then(html => {
-      document.getElementById("downline").innerHTML= `<ul>${html}</ul>`;
-    });
-  }
-
-  // Load ledger
-  function loadLedger() {
-    db.ref("users/"+currentUserId+"/commissionLedger").once("value").then(snap => {
-      const ledger= snap.val() || {};
-      const tbody= document.getElementById("ledgerTable").querySelector("tbody");
-      tbody.innerHTML= "";
-      Object.keys(ledger).sort().forEach(date => {
-        ledger[date].forEach(rec => {
-          const tr= document.createElement("tr");
-          tr.innerHTML= `<td>${date}</td><td>${rec.level}</td><td>${rec.amount.toFixed(2)}</td>`;
-          tbody.appendChild(tr);
-        });
-      });
-    });
-  }
-
-  // Buy Product
-  function buyProduct() {
-    const prodId= document.getElementById("productSelect").value;
-    const qty= parseInt(document.getElementById("buyQty").value);
-    if (!prodId || isNaN(qty) || qty<1) { alert("Select product and quantity"); return; }
-    const p= products.find(pp=> pp.name===prodId);
-    if (!p) { alert("Invalid product"); return; }
-    // For demo, assume payment done outside
-    // Add BV to user
-    db.ref("users/"+currentUserId).transaction(u=> {
-      if (!u) return u;
-      u.bvTotal= (u.bvTotal||0)+ p.bv*qty;
-      return u;
-    }).then(()=>{
-      // Save purchase record
-      const saleData= {
-        product: p.name,
-        qty,
-        bv: p.bv*qty,
-        price: p.price*qty,
-        date: new Date().toISOString()
-      };
-      db.ref("purchases").push(saleData).then(()=> {
-        alert("Purchase recorded");
-        distributeCommission(currentUserId, p.bv*qty);
-        loadUserData();
-      });
-    });
-  }
-
-  // Distribute commission up to 6 levels
-  function distributeCommission(bvAmount, buyerId) {
-    const companyShare= bvAmount*0.30;
-    db.ref("company/profit").transaction(c=> (c||0)+companyShare);
-    let uid= buyerId;
-    for(let i=0; i<commissionPercentages.length; i++) {
-      db.ref("users/"+uid).once("value").then(snap => {
-        const u= snap.val();
-        if (u && u.referredBy) {
-          const uplinerId= u.referredBy;
-          const commission= bvAmount*0.70* (commissionPercentages[i]/100);
-          // Credit upliner wallet
-          db.ref("users/"+uplinerId).transaction(upl=> {
-            if (!upl) return upl;
-            upl.walletBalance= (upl.walletBalance||0)+commission;
-            upl.income= (upl.income||0)+commission;
-            const dateStr= new Date().toISOString().slice(0,10);
-            if (!upl.commissionLedger) upl.commissionLedger= {};
-            if (!upl.commissionLedger[dateStr]) upl.commissionLedger[dateStr]= [];
-            upl.commissionLedger[dateStr].push({level: i+1, amount: commission});
-            return upl;
-          });
-          uid= uplinerId;
-        }
-      });
-    }
-  }
-
-  // Request withdrawal
-  function requestWithdraw() {
-    const addr= document.getElementById("withdrawWallet").value.trim();
-    const amount= parseFloat(document.getElementById("withdrawAmount").value);
-    if (!addr || isNaN(amount) || amount<5) { alert("Enter valid amount & address"); return; }
-    // Deduct from wallet
-    db.ref("users/"+currentUserId).transaction(u=> {
-      if (!u) return u;
-      if ((u.walletBalance||0)<amount) { alert("Insufficient balance"); return; }
-      u.walletBalance= (u.walletBalance||0)-amount;
-      return u;
-    }).then(()=> {
-      // Save withdrawal request
-      const wr= {
-        wallet: addr,
-        amount,
-        date: new Date().toISOString(),
-        status: "Pending"
-      };
-      db.ref("withdrawals/"+currentUserId).push(wr).then(()=>alert("Withdrawal requested"));
-      loadUserData();
-    });
-  }
-
-  // Save Commission Percentages
-  function savePercentages() {
-    for(let i=1; i<=6; i++) {
-      const val= parseFloat(document.getElementById("p"+i).value);
-      if (!isNaN(val)) commissionPercentages[i-1]= val;
-    }
-    alert("Percentages saved");
-  }
-
-  // Load Products into store
-  function loadProducts() {
-    // Generate options
-    const select= document.getElementById("productSelect");
-    products.forEach(p=> {
-      const opt= document.createElement("option");
-      opt.value= p.name;
-      opt.innerText= `${p.name} - Price: ${p.price} USDT, BV: ${p.bv}`;
-      select.appendChild(opt);
-    });
-  }
-  loadProducts();
-
-  // Initial load
-  function init() {
-    // You can load admin data or set admin login here for demo
-  }
-  init();
-</script>
-</body>
-</html>      box-sizing: border-box;
+    .box {
+      background: #1e1e1e;
+      padding: 24px 30px;
+      margin: 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 18px #00ffe170;
+      width: 100%;
+      max-width: 650px;
+      box-sizing: border-box;
     }
     input, button, select, textarea {
       padding: 12px 15px;
