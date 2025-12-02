@@ -1009,16 +1009,36 @@
         document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
       }
 
-      if (deposit > 0 && income >= cap && data.status !== "Closed") {
-        db.ref("users/" + id).update({
-          income: 0,
-          deposit: 0,
-          status: "Closed",
-          depositTime: null
-        });
-        alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
-      }
+      const deposit = parseFloat(data.deposit || 0);
+const income = parseFloat(data.income || 0);
+const tmplBalance = parseFloat(data.tmplBalance || 0);
+const tmplStaked = parseFloat(data.tmplStaked || 0);
+const tmplRewardUSDT = parseFloat(data.tmplRewardUSDT || 0);
 
+document.getElementById("userDeposit").innerText = deposit.toFixed(2);
+document.getElementById("userIncome").innerText = income.toFixed(2);
+
+document.getElementById("userTarget").innerText = "-";  // no 2x target any more
+document.getElementById("userRemaining").innerText = "-";  // no remaining target
+document.getElementById("userStatus").innerText = data.status || "Active";
+
+document.getElementById("totalTMPL").innerText = tmplBalance.toFixed(4);
+document.getElementById("stakedTMPL").innerText = tmplStaked.toFixed(4);
+
+document.getElementById("stakingRewardsUSDT").innerText = tmplRewardUSDT.toFixed(6);
+
+// Optionally update wallet balances display if needed...
+
+// Remove any warning related to "Deposit is locked until agreement is closed." in deposit submission function if needed.
+
+// Addition in userDashboard UI (within #userDashboard)
+
+// Add info about TMPL token balances visibly:
+/*
+<p><b>TMPL Token Balance:</b> <span id="totalTMPL">0</span></p>
+<p><b>TMPL Staked:</b> <span id="stakedTMPL">0</span></p>
+<p><b>Accumulated Staking Rewards:</b> <span id="stakingRewardsUSDT">0</span> USDT</p>
+*/
       loadProfitChart(deposit, income);
     });
   }
