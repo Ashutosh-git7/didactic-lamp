@@ -287,57 +287,59 @@
 
   // Purchase TMPL function: deduct from walletBalance (usdt), add tokens to tmplBalance, distribute referral commission
   async function purchaseTMPL() {
-    const usdtAmount = parseFloat(document.getElementById('tmplPurchaseUSDT').value);
-    if (isNaN(usdtAmount)) return alert('Please enter a valid USDT amount');
-    if (usdtAmount < 15 || usdtAmount > 500) return alert('Amount must be between 15 and 500 USDT');
+  const usdtAmount = parseFloat(document.getElementById('tmplPurchaseUSDT').value);
+  if (isNaN(usdtAmount)) return alert('Please enter a valid USDT amount');
+  if (usdtAmount < 15 || usdtAmount > 500) return alert('Amount must be between 15 and 500 USDT');
 
-    const userRef = db.ref('users/' + currentId);
-
-    const snap = await userRef.once('value');
-    if (!snap.exists()) return alert('User not found');
-
-    const userData = snap.val();
-    const walletBalance = parseFloat(userData.walletBalance || 0);
-
-    if (walletBalance < usdtAmount) {
-      return alert('Insufficient USDT wallet balance for this purchase');
-    }
-
-    const tokensToAdd = usdtAmount / 0.001;
-
-    // Firebase transaction to avoid race condition
-    userRef.transaction(user => {
-      if (user) {
-        if ((parseFloat(user.walletBalance) || 0) < usdtAmount) {
-          alert('Insufficient balance during transaction.');
-          return;
-        }
-        user.walletBalance = (parseFloat(user.walletBalance) || 0) - usdtAmount;
-        user.tmplBalance = (parseFloat(user.tmplBalance) || 0) + tokensToAdd;
-
-        // Optional: keep track of purchase history per user
-        if (!user.tmplPurchases) user.tmplPurchases = [];
-        user.tmplPurchases.push({ usdtAmount, tokens: tokensToAdd, time: new Date().toISOString() });
-      }
-      return user;
-    }, (error, committed, snapshot) => {
-      if (error) {
-        alert('Transaction failed: ' + error.message);
-      } else if (!committed) {
-        alert('Transaction not committed');
-      } else {
-        alert(`Successfully purchased ${tokensToAdd.toFixed(0)} TMPL tokens for ${usdtAmount} USDT.`);
-
-        // Distribute referral commission in USDT (5%,3%,2%)
-        addReferralIncome(usdtAmount, currentId);
-
-        document.getElementById('tmplPurchaseUSDT').value = '';
-        document.getElementById('tmplTokensToGet').innerText = '0';
-        loadUser(currentId); // Refresh UI values
-      }
-    });
+  if (!currentId) {
+    return alert('User not logged in.');
   }
-</script>
+
+  const userRef = db.ref('users/' + currentId);
+
+  const snap = await userRef.once('value');
+  if (!snap.exists()) return alert('User not found');
+
+  const userData = snap.val();
+  const walletBalance = parseFloat(userData.walletBalance || 0);
+
+  if (walletBalance < usdtAmount) {
+    return alert('Insufficient USDT wallet balance for this purchase');
+  }
+
+  const tokensToAdd = usdtAmount / 0.001;
+
+  userRef.transaction(async user => {
+    if (user) {
+      if ((parseFloat(user.walletBalance) || 0) < usdtAmount) {
+        alert('Insufficient balance during transaction.');
+        return;
+      }
+      user.walletBalance = (parseFloat(user.walletBalance) || 0) - usdtAmount;
+      user.tmplBalance = (parseFloat(user.tmplBalance) || 0) + tokensToAdd;
+
+      if (!user.tmplPurchases) user.tmplPurchases = [];
+      user.tmplPurchases.push({ usdtAmount, tokens: tokensToAdd, time: new Date().toISOString() });
+    }
+    return user;
+  }, async (error, committed, snapshot) => {
+    if (error) {
+      console.error('Transaction error:', error);
+      alert('Transaction failed: ' + error.message);
+    } else if (!committed) {
+      alert('Transaction not committed');
+    } else {
+      alert(`Successfully purchased ${tokensToAdd.toFixed(0)} TMPL tokens for ${usdtAmount} USDT.`);
+
+      // Await referral commission to ensure completion
+      await addReferralIncome(usdtAmount, currentId);
+
+      document.getElementById('tmplPurchaseUSDT').value = '';
+      document.getElementById('tmplTokensToGet').innerText = '0';
+      loadUser(currentId); // Refresh UI values
+    }
+  });
+}
   <!-- Add ye section userDashboard me TMPL Purchase ke niche ya suitable jagah par -->
 <hr />
 <h4>🛡️ TMPL Staking</h4>
