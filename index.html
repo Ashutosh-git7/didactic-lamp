@@ -579,21 +579,23 @@
   }
 
   async function rejectTmplWithdrawal(userId, reqId, amount) {
-    // On rejection, refund tokens to user tmplBalance
+  async function rejectTmplWithdrawal(userId, reqId, amount) {
+  try {
     await db.ref(`users/${userId}`).transaction(user => {
       if (user) {
         user.tmplBalance = (parseFloat(user.tmplBalance) || 0) + amount;
       }
       return user;
     });
-
     await db.ref(`tmplWithdrawals/${userId}/${reqId}`).update({ status: 'Rejected', rejectedAt: new Date().toISOString() });
-
     alert(`TMPL withdrawal rejected and tokens refunded for ${userId}.`);
-    loadTmplWithdrawals();
-    loadUsers();
+    await loadTmplWithdrawals();
+    await loadUsers();
+  } catch (error) {
+    console.error('Reject withdrawal error:', error);
+    alert('Error rejecting withdrawal');
   }
-
+  }
   // Add this container in adminPanel HTML where you want admin to manage TMPL withdrawals
 </script>
 
