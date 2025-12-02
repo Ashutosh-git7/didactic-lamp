@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -506,7 +505,6 @@
     loadStakingUI();
   }
 </script>
-
   <!-- Add ye section userDashboard me TMPL Staking ke niche -->
 <hr />
 <h4>🚀 Withdraw TMPL to Trust Wallet</h4>
@@ -605,64 +603,6 @@
         }
       }
     }
-  }
-
-  async function approveTmplWithdrawal(userId, reqId, amount) {
-    // Admin should process on-chain transfer manually here before approval
-    await db.ref(`tmplWithdrawals/${userId}/${reqId}`).update({ status: 'Approved', approvedAt: new Date().toISOString() });
-
-    alert(`TMPL withdrawal approved for ${userId} of ${amount.toFixed(2)} tokens.`);
-    loadTmplWithdrawals();
-    loadUsers();
-  }
-
-  async function rejectTmplWithdrawal(userId, reqId, amount) {
-    // On rejection, refund tokens to user tmplBalance
-    await db.ref(`users/${userId}`).transaction(user => {
-      if (user) {
-        user.tmplBalance = (parseFloat(user.tmplBalance) || 0) + amount;
-      }
-      return user;
-    });
-
-    await db.ref(`tmplWithdrawals/${userId}/${reqId}`).update({ status: 'Rejected', rejectedAt: new Date().toISOString() });
-
-    alert(`TMPL withdrawal rejected and tokens refunded for ${userId}.`);
-    loadTmplWithdrawals();
-    loadUsers();
-  }
-
-  // Add this container in adminPanel HTML where you want admin to manage TMPL withdrawals
-</script>
-
-<!-- Add this inside adminPanel HTML -->
-<div id="adminTmplWithdrawalsContainer" style="margin-bottom:20px;">
-  <h4>📝 Pending TMPL Withdrawal Requests</h4>
-  <table>
-    <thead>
-      <tr>
-        <th>User ID</th>
-        <th>Name</th>
-        <th>Amount (TMPL)</th>
-        <th>Wallet Address</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<script>
-  // Make sure to call loadTmplWithdrawals() in admin load functions
-  async function loadAdmin() {
-    await loadUsers();
-    await loadDeposits();
-    await loadWithdrawals();
-    await loadTmplWithdrawals(); // <-- new line for TMPL withdrawals
-  }
-</script>
-  
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
   <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
   <p><small>Set your UPI ID for INR withdrawals:</small></p>
@@ -780,37 +720,6 @@
 
   <div id="adminUsersContainer"></div>
 
-  <!-- Add ye section adminPanel me other controls ke neeche -->
-<hr/>
-<h4>➕ Add Staking Reward to User</h4>
-<input type="text" id="rewardUserId" placeholder="User ID" />
-<input type="number" id="rewardAmount" placeholder="Reward Amount in USDT" step="any" />
-<button onclick="addStakingReward()">Add Reward</button>
-
-<script>
-  async function addStakingReward() {
-    const userId = document.getElementById('rewardUserId').value.trim();
-    const rewardAmt = parseFloat(document.getElementById('rewardAmount').value);
-    if (!userId) return alert('Please enter User ID');
-    if (isNaN(rewardAmt) || rewardAmt <= 0) return alert('Please enter valid reward amount');
-
-    const userRef = db.ref('users/' + userId);
-    const snap = await userRef.once('value');
-    if (!snap.exists()) return alert('User not found');
-
-    await userRef.transaction(user => {
-      if (user) {
-        user.walletBalance = (parseFloat(user.walletBalance) || 0) + rewardAmt;
-        user.income = (parseFloat(user.income) || 0) + rewardAmt;
-      }
-      return user;
-    });
-
-    alert(`Added ${rewardAmt.toFixed(2)} USDT staking reward to ${userId}.`);
-    loadUsers();
-  }
-</script>
-  
   <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
   <input type="number" id="incomeAmt" placeholder="Amount" />
@@ -1010,36 +919,16 @@
         document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
       }
 
-      const deposit = parseFloat(data.deposit || 0);
-const income = parseFloat(data.income || 0);
-const tmplBalance = parseFloat(data.tmplBalance || 0);
-const tmplStaked = parseFloat(data.tmplStaked || 0);
-const tmplRewardUSDT = parseFloat(data.tmplRewardUSDT || 0);
+      if (deposit > 0 && income >= cap && data.status !== "Closed") {
+        db.ref("users/" + id).update({
+          income: 0,
+          deposit: 0,
+          status: "Closed",
+          depositTime: null
+        });
+        alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
+      }
 
-document.getElementById("userDeposit").innerText = deposit.toFixed(2);
-document.getElementById("userIncome").innerText = income.toFixed(2);
-
-document.getElementById("userTarget").innerText = "-";  // no 2x target any more
-document.getElementById("userRemaining").innerText = "-";  // no remaining target
-document.getElementById("userStatus").innerText = data.status || "Active";
-
-document.getElementById("totalTMPL").innerText = tmplBalance.toFixed(4);
-document.getElementById("stakedTMPL").innerText = tmplStaked.toFixed(4);
-
-document.getElementById("stakingRewardsUSDT").innerText = tmplRewardUSDT.toFixed(6);
-
-// Optionally update wallet balances display if needed...
-
-// Remove any warning related to "Deposit is locked until agreement is closed." in deposit submission function if needed.
-
-// Addition in userDashboard UI (within #userDashboard)
-
-// Add info about TMPL token balances visibly:
-/*
-<p><b>TMPL Token Balance:</b> <span id="totalTMPL">0</span></p>
-<p><b>TMPL Staked:</b> <span id="stakedTMPL">0</span></p>
-<p><b>Accumulated Staking Rewards:</b> <span id="stakingRewardsUSDT">0</span> USDT</p>
-*/
       loadProfitChart(deposit, income);
     });
   }
