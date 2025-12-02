@@ -518,56 +518,17 @@
 
 <script>
   // Update tmplBalanceForWithdraw span from user data
-  async function updateTmplWithdrawUI() {
-    const snap = await db.ref('users/' + currentId).once('value');
-    if (snap.exists()) {
-      const tmplBalance = parseFloat(snap.val().tmplBalance || 0);
-      document.getElementById('tmplBalanceForWithdraw').innerText = tmplBalance.toFixed(2);
-      const storedWallet = snap.val().wallet || '';
-      if (storedWallet) {
-        document.getElementById('tmplWithdrawWallet').value = storedWallet;
-      }
-    }
+  async function approveTmplWithdrawal(userId, reqId, amount) {
+  try {
+    await db.ref(`tmplWithdrawals/${userId}/${reqId}`).update({ status: 'Approved', approvedAt: new Date().toISOString() });
+    alert(`TMPL withdrawal approved for ${userId} of ${amount.toFixed(2)} tokens.`);
+    await loadTmplWithdrawals();
+    await loadUsers();
+  } catch (error) {
+    console.error('Approve withdrawal error:', error);
+    alert('Error approving withdrawal');
   }
-
-  updateTmplWithdrawUI();
-
-  async function requestTMPLWithdrawal() {
-    const amount = parseFloat(document.getElementById('tmplWithdrawAmount').value);
-    const walletAddr = document.getElementById('tmplWithdrawWallet').value.trim();
-    if (!walletAddr) return alert('Please enter your BEP20 Trust Wallet address');
-    if (isNaN(amount) || amount <= 0) return alert('Please enter a valid TMPL amount to withdraw');
-
-    const snap = await db.ref('users/' + currentId).once('value');
-    if (!snap.exists()) return alert('User not found');
-
-    const tmplBalance = parseFloat(snap.val().tmplBalance || 0);
-    if (amount > tmplBalance) return alert('Insufficient TMPL balance for withdrawal');
-
-    // Deduct tokens first to prevent duplicate requests
-    await db.ref('users/' + currentId).transaction(user => {
-      if (user) {
-        if ((parseFloat(user.tmplBalance) || 0) < amount) {
-          alert('Insufficient TMPL balance during transaction.');
-          return;
-        }
-        user.tmplBalance = (parseFloat(user.tmplBalance) || 0) - amount;
-      }
-      return user;
-    });
-
-    // Add withdrawal request to Firebase under tmplWithdrawals
-    await db.ref('tmplWithdrawals/' + currentId).push({
-      amountTMPL: amount,
-      wallet: walletAddr,
-      status: 'Pending',
-      requestedAt: new Date().toISOString()
-    });
-
-    alert(`TMPL Withdrawal requested for ${amount.toFixed(2)} tokens. Waiting for admin approval.`);
-    document.getElementById('tmplWithdrawAmount').value = '';
-    updateTmplWithdrawUI();
-  }
+}
 </script>
 
 <!-- Admin Panel Section to show Pending TMPL Withdrawals -->
