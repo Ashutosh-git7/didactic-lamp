@@ -779,6 +779,37 @@
 
   <div id="adminUsersContainer"></div>
 
+  <!-- Add ye section adminPanel me other controls ke neeche -->
+<hr/>
+<h4>➕ Add Staking Reward to User</h4>
+<input type="text" id="rewardUserId" placeholder="User ID" />
+<input type="number" id="rewardAmount" placeholder="Reward Amount in USDT" step="any" />
+<button onclick="addStakingReward()">Add Reward</button>
+
+<script>
+  async function addStakingReward() {
+    const userId = document.getElementById('rewardUserId').value.trim();
+    const rewardAmt = parseFloat(document.getElementById('rewardAmount').value);
+    if (!userId) return alert('Please enter User ID');
+    if (isNaN(rewardAmt) || rewardAmt <= 0) return alert('Please enter valid reward amount');
+
+    const userRef = db.ref('users/' + userId);
+    const snap = await userRef.once('value');
+    if (!snap.exists()) return alert('User not found');
+
+    await userRef.transaction(user => {
+      if (user) {
+        user.walletBalance = (parseFloat(user.walletBalance) || 0) + rewardAmt;
+        user.income = (parseFloat(user.income) || 0) + rewardAmt;
+      }
+      return user;
+    });
+
+    alert(`Added ${rewardAmt.toFixed(2)} USDT staking reward to ${userId}.`);
+    loadUsers();
+  }
+</script>
+  
   <h4>➕ Add Weekly Income</h4>
   <input type="text" id="incomeUserId" placeholder="User ID" />
   <input type="number" id="incomeAmt" placeholder="Amount" />
