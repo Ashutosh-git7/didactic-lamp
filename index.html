@@ -67,6 +67,8 @@
     .btn-primary:hover { background: linear-gradient(45deg, #00c7aa, #00ffe1); transform: translateY(-2px); }
     .btn-success { background: linear-gradient(45deg, #28a745, #20c997); color: white; }
     .btn-success:hover { background: linear-gradient(45deg, #20c997, #28a745); }
+    .btn-danger { background: linear-gradient(45deg, #dc3545, #c82333); color: white; }
+    .btn-danger:hover { background: linear-gradient(45deg, #c82333, #dc3545); }
     .payment-info {
       background: rgba(40, 167, 69, 0.2);
       padding: 20px;
@@ -88,6 +90,11 @@
     .status-pending { color: #ffc107; }
     .status-approved { color: #28a745; }
     .status-rejected { color: #dc3545; }
+    .admin-login-box {
+      background: rgba(220, 53, 69, 0.15);
+      border: 2px solid #dc3545;
+    }
+    .hidden { display: none !important; }
     @media (max-width: 640px) {
       .box { padding: 20px 15px; margin: 10px 0; }
       h2 { font-size: 24px; }
@@ -124,12 +131,24 @@
     <button class="btn-primary" onclick="registerFounder()">📝 Register Founder</button>
   </div>
 
+  <!-- Admin Login -->
+  <div id="adminLoginBox" class="box admin-login-box">
+    <h3>🔐 Admin Login</h3>
+    <input type="password" id="adminPassword" placeholder="Admin Password" />
+    <button class="btn-success" onclick="adminLogin()">Login to Admin Panel</button>
+    <p style="text-align: center; margin-top: 15px;">
+      <small><strong>Admin Code:</strong> Jaihanuman@7</small>
+    </p>
+  </div>
+
   <!-- Admin Panel -->
-  <div id="adminPanel" class="box" style="display: none; max-width: 900px;">
-    <h3>🛠️ Admin - Founder Registrations</h3>
-    <div style="margin-bottom: 20px;">
-      <button class="btn-success" onclick="refreshFounders()" style="width: auto; padding: 10px 20px;">🔄 Refresh</button>
-      <button class="btn-success" onclick="logout()" style="width: auto; padding: 10px 20px; float: right;">🚪 Logout</button>
+  <div id="adminPanel" class="box hidden" style="max-width: 900px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>🛠️ Admin - Founder Registrations</h3>
+      <div>
+        <button class="btn-success" onclick="refreshFounders()" style="width: auto; padding: 10px 20px; margin-right: 10px;">🔄 Refresh</button>
+        <button class="btn-danger" onclick="adminLogout()" style="width: auto; padding: 10px 20px;">🚪 Logout</button>
+      </div>
     </div>
     
     <div id="foundersList"></div>
@@ -148,19 +167,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  let currentUser = null;
-
-  // Check if admin logged in
-  function checkAdmin() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const adminPass = urlParams.get('admin');
-    if (adminPass === 'Jaihanuman@7') {
-      document.getElementById('registerBox').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'block';
-      loadFounders();
-      currentUser = 'Admin';
-    }
-  }
+  let isAdminLoggedIn = false;
 
   function generateFounderCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -192,8 +199,7 @@
     const founderCode = generateFounderCode();
     const codeCheck = await db.ref('founders').orderByChild('code').equalTo(founderCode).once('value');
     if (codeCheck.exists()) {
-      // Rare case, generate new one
-      return registerFounder(); // Recursive but very unlikely
+      return registerFounder();
     }
 
     const founderData = {
@@ -235,6 +241,9 @@ Admin approval का wait करें।`);
 
   function showFounderCode(code) {
     const box = document.getElementById('registerBox');
+    const existingCode = box.querySelector('.code-display');
+    if (existingCode) existingCode.remove();
+    
     box.innerHTML += `
       <div class="code-display">🎉 ${code} 🎉</div>
       <p style="text-align: center; color: #00ffe1;">
@@ -243,8 +252,30 @@ Admin approval का wait करें।`);
     `;
   }
 
+  function adminLogin() {
+    const password = document.getElementById('adminPassword').value;
+    if (password === 'Jaihanuman@7') {
+      isAdminLoggedIn = true;
+      document.getElementById('adminLoginBox').classList.add('hidden');
+      document.getElementById('adminPanel').classList.remove('hidden');
+      loadFounders();
+      alert('✅ Admin Login Successful!');
+    } else {
+      alert('❌ Wrong Password!');
+      document.getElementById('adminPassword').value = '';
+    }
+  }
+
+  function adminLogout() {
+    isAdminLoggedIn = false;
+    document.getElementById('adminPanel').classList.add('hidden');
+    document.getElementById('adminLoginBox').classList.remove('hidden');
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('foundersList').innerHTML = '';
+  }
+
   function loadFounders() {
-    db.ref('founders').orderByChild('timestamp').on('value', snap => {
+    db.ref('founders').orderByChild('timestamp').limitToLast(100).on('value', snap => {
       let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
       html += '<thead><tr style="background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000;">';
       html += '<th style="padding: 12px; text-align: center;">Founder Code</th>';
@@ -252,19 +283,23 @@ Admin approval का wait करें।`);
       html += '<th style="padding: 12px; text-align: center;">Mobile</th>';
       html += '<th style="padding: 12px; text-align: center;">Payment Ref</th>';
       html += '<th style="padding: 12px; text-align: center;">Status</th>';
+      html += '<th style="padding: 12px; text-align: center;">Date</th>';
       html += '<th style="padding: 12px; text-align: center;">Actions</th></tr></thead><tbody>';
 
       let totalPending = 0;
       let totalApproved = 0;
+      let totalRejected = 0;
 
       snap.forEach(child => {
         const data = child.val();
         const key = child.key;
         const statusClass = data.status === 'Approved' ? 'status-approved' : 
                            data.status === 'Rejected' ? 'status-rejected' : 'status-pending';
+        const date = data.timestamp ? new Date(data.timestamp).toLocaleString('en-IN') : '';
         
         if (data.status === 'Pending') totalPending++;
         if (data.status === 'Approved') totalApproved++;
+        if (data.status === 'Rejected') totalRejected++;
 
         html += `<tr style="border-bottom: 1px solid #333;">`;
         html += `<td style="padding: 12px; font-weight: bold; color: #00ffe1;">${data.code}</td>`;
@@ -272,16 +307,17 @@ Admin approval का wait करें।`);
         html += `<td style="padding: 12px;">${data.mobile}</td>`;
         html += `<td style="padding: 12px; font-size: 12px; max-width: 150px; word-break: break-all;">${data.paymentRef}</td>`;
         html += `<td style="padding: 12px;"><span class="${statusClass}">${data.status}</span></td>`;
+        html += `<td style="padding: 12px; font-size: 12px;">${date}</td>`;
         html += `<td style="padding: 12px;">
                   <button class="btn-success" onclick="updateStatus('${key}', 'Approved')" style="padding: 5px 10px; margin: 2px; font-size: 12px;">✅ Approve</button>
-                  <button class="btn-success" onclick="updateStatus('${key}', 'Rejected')" style="padding: 5px 10px; margin: 2px; font-size: 12px; background: linear-gradient(45deg, #dc3545, #c82333);">❌ Reject</button>
+                  <button class="btn-danger" onclick="updateStatus('${key}', 'Rejected')" style="padding: 5px 10px; margin: 2px; font-size: 12px;">❌ Reject</button>
                  </td>`;
         html += `</tr>`;
       });
 
       html += '</tbody></table>';
       html += `<div style="margin-top: 20px; padding: 15px; background: rgba(0,255,225,0.1); border-radius: 10px;">`;
-      html += `<strong>Total Pending: ${totalPending} | Total Approved: ${totalApproved}</strong>`;
+      html += `<strong>📊 Total: Pending-${totalPending} | Approved-${totalApproved} | Rejected-${totalRejected}</strong>`;
       html += `</div>`;
 
       document.getElementById('foundersList').innerHTML = html;
@@ -291,7 +327,9 @@ Admin approval का wait करें।`);
   function updateStatus(key, status) {
     if (confirm(`Are you sure? Status will be changed to "${status}"`)) {
       db.ref('founders/' + key).update({ status }).then(() => {
-        alert('Status updated successfully!');
+        alert('✅ Status updated successfully!');
+      }).catch(err => {
+        alert('❌ Error: ' + err.message);
       });
     }
   }
@@ -300,12 +338,15 @@ Admin approval का wait करें।`);
     loadFounders();
   }
 
-  function logout() {
-    window.location.href = window.location.pathname;
-  }
+  // Enter key support for admin login
+  document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && document.getElementById('adminPassword') === document.activeElement) {
+      adminLogin();
+    }
+  });
 
   // Initialize
-  checkAdmin();
+  document.getElementById('adminPassword').focus();
 </script>
 </body>
 </html>
