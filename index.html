@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🚀 Ashirwad Mart P - Founder Registration</title>
+  <title>🚀 Ashirwad Mart P - Founder Registration (FIXED & IMPROVED)</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- jsPDF CDN for Certificate Generation -->
+  <!-- FIXED jsPDF - Multiple CDNs for reliability -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #121212 0%, #1a1a2e 50%, #16213e 100%);
@@ -21,7 +23,7 @@
       flex-direction: column;
       align-items: center;
     }
-    h2 { color: #00ffe1; text-align: center; margin: 20px 0; font-size: 28px; }
+    h2 { color: #00ffe1; text-align: center; margin: 20px 0; font-size: 28px; text-shadow: 0 0 20px rgba(0,255,225,0.5); }
     .box {
       background: rgba(30, 30, 30, 0.95);
       padding: 30px;
@@ -42,7 +44,6 @@
       font-size: 16px;
       background: rgba(42, 42, 42, 0.8);
       color: #fff;
-      box-sizing: border-box;
       transition: all 0.3s ease;
     }
     input:focus, select:focus, textarea:focus {
@@ -90,28 +91,21 @@
       text-align: center;
       margin: 20px 0;
       letter-spacing: 3px;
+      animation: pulse 2s infinite;
     }
-    .status-pending { color: #ffc107; }
-    .status-approved { color: #28a745; }
-    .status-rejected { color: #dc3545; }
-    .admin-login-box {
-      background: rgba(220, 53, 69, 0.15);
-      border: 2px solid #dc3545;
-    }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    .status-pending { color: #ffc107; font-weight: bold; }
+    .status-approved { color: #28a745; font-weight: bold; }
+    .status-rejected { color: #dc3545; font-weight: bold; }
+    .admin-login-box { background: rgba(220, 53, 69, 0.15); border: 2px solid #dc3545; }
     .hidden { display: none !important; }
-    .auth-section { margin-top: 20px; padding: 15px; background: rgba(0,255,225,0.1); border-radius: 10px; }
-    .certificate-box {
-      border: 2px solid #28a745;
-      background: rgba(40, 167, 69, 0.15);
-    }
+    .certificate-box { border: 2px solid #28a745; background: rgba(40, 167, 69, 0.15); }
     .modal {
       display: none;
       position: fixed;
       z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.8);
     }
     .modal-content {
@@ -125,18 +119,25 @@
       overflow-y: auto;
       border: 1px solid rgba(0, 255, 225, 0.3);
     }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     .close:hover { color: #00ffe1; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+    .stat-card {
+      background: rgba(0, 255, 225, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(0, 255, 225, 0.3);
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+    th { background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000; font-weight: bold; }
+    .action-btn { padding: 5px 10px; margin: 2px; font-size: 12px; width: auto; }
     @media (max-width: 640px) {
       .box { padding: 20px 15px; margin: 10px 0; }
       h2 { font-size: 24px; }
       .modal-content { margin: 10% auto; width: 95%; }
+      .stats-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -152,14 +153,14 @@
       <h4>💰 Payment Details</h4>
       <p><strong>UPI ID:</strong> <code>ashutoshkarmkar7-1@oksbi</code></p>
       <p><strong>Amount:</strong> <strong>₹150</strong></p>
-      <p><em>Payment karne ke baad "Payment Reference" mein UPI Transaction ID daalein</em></p>
+      <p><em>Payment के बाद UPI Transaction ID enter करें</em></p>
     </div>
 
     <input type="text" id="founderName" placeholder="Full Name *" required />
-    <input type="tel" id="founderMobile" placeholder="Mobile Number *" required />
+    <input type="tel" id="founderMobile" placeholder="Mobile Number (10 digits) *" required />
     <input type="email" id="founderEmail" placeholder="Email (optional)" />
-    <input type="text" id="founderAddress" placeholder="Address *" required />
-    <input type="text" id="paymentRef" placeholder="UPI Transaction ID / Reference *" required />
+    <input type="text" id="founderAddress" placeholder="Complete Address *" required />
+    <input type="text" id="paymentRef" placeholder="UPI Transaction ID *" required />
     <input type="text" id="paymentScreenshot" placeholder="Payment Screenshot URL (optional)" />
     
     <select id="productReceived">
@@ -168,37 +169,55 @@
     </select>
     
     <button class="btn-primary" onclick="registerFounder()">📝 Register Founder</button>
+    <div id="codeDisplay" class="code-display hidden"></div>
   </div>
 
-  <!-- CERTIFICATE DOWNLOAD SECTION -->
+  <!-- Certificate Download -->
   <div id="certificateBox" class="box certificate-box">
     <h3>📜 Founder Certificate Download</h3>
-    <p><strong>✅ Approval ke baad yahan se PDF Certificate download karein</strong></p>
+    <p><strong>✅ Admin approval के बाद PDF download करें</strong></p>
     <input type="tel" id="certMobile" placeholder="Registered Mobile Number *" required />
     <input type="text" id="certCode" placeholder="Founder Code (FXXXXXXX) *" required />
     <button class="btn-success" onclick="downloadCertificate()">🎓 Download Certificate PDF</button>
-    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
-      <em>Admin approval ke baad hi download hoga</em>
-    </p>
   </div>
 
   <!-- Admin Login -->
   <div id="adminLoginBox" class="box admin-login-box">
     <h3>🔐 Admin Login</h3>
-    <div class="auth-section">
-      <p><strong>Admin Email:</strong> admin@ashirwadmart.com</p>
-      <input type="password" id="adminPasswordInput" placeholder="Enter Password" />
-      <button class="btn-success" onclick="adminSignIn()">Login to Admin Panel</button>
+    <div style="text-align: center; color: #ffc107;">
+      <p><strong>Password Protected</strong></p>
     </div>
+    <input type="password" id="adminPasswordInput" placeholder="Enter Admin Password" />
+    <button class="btn-success" onclick="adminSignIn()">Login to Admin Panel</button>
   </div>
 
   <!-- Admin Panel -->
   <div id="adminPanel" class="box hidden" style="max-width: 1200px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3>🛠️ Admin - Founder Registrations</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+      <h3>🛠️ Admin Dashboard - Founder Management</h3>
       <div>
-        <button class="btn-success" onclick="refreshFounders()" style="width: auto; padding: 10px 20px; margin-right: 10px;">🔄 Refresh</button>
-        <button class="btn-danger" onclick="adminLogout()" style="width: auto; padding: 10px 20px;">🚪 Logout</button>
+        <button class="btn-success action-btn" onclick="refreshFounders()">🔄 Refresh</button>
+        <button class="btn-danger action-btn" onclick="adminLogout()">🚪 Logout</button>
+      </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="statsCards">
+      <div class="stat-card">
+        <h4 id="totalPending">0</h4>
+        <p>Pending</p>
+      </div>
+      <div class="stat-card">
+        <h4 id="totalApproved" style="color: #28a745;">0</h4>
+        <p>Approved</p>
+      </div>
+      <div class="stat-card">
+        <h4 id="totalRejected" style="color: #dc3545;">0</h4>
+        <p>Rejected</p>
+      </div>
+      <div class="stat-card">
+        <h4 id="totalFounders">0</h4>
+        <p>Total</p>
       </div>
     </div>
     
@@ -226,12 +245,13 @@
       </select>
       <div style="display: flex; gap: 10px;">
         <button class="btn-primary" onclick="saveEdit()" style="flex: 1;">💾 Save Changes</button>
-        <button class="btn-danger" onclick="deleteFounder()" style="flex: 1;">🗑️ Delete Founder</button>
+        <button class="btn-danger" onclick="deleteFounder()" style="flex: 1;">🗑️ Delete</button>
       </div>
     </div>
   </div>
 
 <script>
+  // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
     authDomain: "ashirwadmart-6d657.firebaseapp.com",
@@ -249,25 +269,25 @@
   let isAdminLoggedIn = false;
   let editingKey = null;
 
-  // Secure founder code generation with retry
+  // FIXED: Robust Founder Code Generation
   async function generateUniqueFounderCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let attempts = 0;
-    while (attempts < 10) {
+    for (let attempt = 0; attempt < 20; attempt++) {
       let code = 'F';
       for (let i = 0; i < 7; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       
-      const codeCheck = await db.ref('founders').orderByChild('code').equalTo(code).once('value');
-      if (!codeCheck.exists()) {
+      const snapshot = await db.ref('founders').orderByChild('code').equalTo(code).once('value');
+      if (!snapshot.exists()) {
         return code;
       }
-      attempts++;
     }
+    // Fallback: Timestamp-based
     return 'F' + Date.now().toString(36).toUpperCase().substring(0, 7);
   }
 
+  // Founder Registration - FIXED Validation
   async function registerFounder() {
     const name = document.getElementById('founderName').value.trim();
     const mobile = document.getElementById('founderMobile').value.trim();
@@ -277,114 +297,111 @@
     const screenshot = document.getElementById('paymentScreenshot').value.trim();
     const productReceived = document.getElementById('productReceived').value;
 
+    // Strict Validation
     if (!name || !mobile || !address || !paymentRef) {
-      return alert('❌ सभी required fields भरें!');
+      return alert('❌ सभी required fields (*) भरें!');
     }
-
-    if (mobile.length !== 10 || isNaN(mobile)) {
+    if (mobile.length !== 10 || !/^d{10}$/.test(mobile)) {
       return alert('❌ Valid 10-digit mobile number enter करें!');
+    }
+    if (name.length < 2) {
+      return alert('❌ Name कम से कम 2 characters का होना चाहिए!');
     }
 
     try {
+      // Show loading
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Registering...';
+      btn.disabled = true;
+
       const founderCode = await generateUniqueFounderCode();
       
       const founderData = {
-        name,
-        mobile,
-        email: email || '',
-        address,
-        paymentRef,
-        screenshot,
-        productReceived,
-        code: founderCode,
-        status: 'Pending',
-        timestamp: new Date().toISOString(),
-        paymentAmount: 150
+        name, mobile, email: email || '', address, paymentRef, screenshot,
+        productReceived, code: founderCode, status: 'Pending',
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        paymentAmount: 150,
+        registrationIP: '' // Add later if needed
       };
 
       await db.ref('founders').push(founderData);
       
-      alert(`✅ Founder Registered!
+      // Success UI
+      showFounderCode(founderCode);
+      alert(`✅ Founder Registered Successfully!
 
 Your Unique Founder Code: ${founderCode}
 
-इसे safe रखें और share न करें।
-Admin approval का wait करें।`);
+इसे safe रखें। Admin approval का wait करें।`);
       
       // Clear form
-      document.getElementById('founderName').value = '';
-      document.getElementById('founderMobile').value = '';
-      document.getElementById('founderEmail').value = '';
-      document.getElementById('founderAddress').value = '';
-      document.getElementById('paymentRef').value = '';
-      document.getElementById('paymentScreenshot').value = '';
+      document.querySelectorAll('#registerBox input, #registerBox select').forEach(el => el.value = '');
       
-      showFounderCode(founderCode);
     } catch (err) {
+      console.error('Registration error:', err);
       alert('❌ Registration failed: ' + err.message);
+    } finally {
+      // Reset button
+      const btn = event.target;
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
   }
 
   function showFounderCode(code) {
-    const box = document.getElementById('registerBox');
-    const existingCode = box.querySelector('.code-display');
-    if (existingCode) existingCode.remove();
-    
-    box.innerHTML += `
-      <div class="code-display">🎉 ${code} 🎉</div>
-      <p style="text-align: center; color: #00ffe1;">
-        Founder Code generate हो गया! Admin approval का wait करें।
-      </p>
-    `;
+    const display = document.getElementById('codeDisplay');
+    display.textContent = `🎉 Your Founder Code: ${code} 🎉`;
+    display.classList.remove('hidden');
   }
 
-  // FIXED CERTIFICATE DOWNLOAD FUNCTION
+  // FIXED Certificate Download - Multiple jsPDF fallbacks
   async function downloadCertificate() {
     const mobile = document.getElementById('certMobile').value.trim();
     const code = document.getElementById('certCode').value.trim().toUpperCase();
 
-    if (!mobile || !code) return alert('❌ Mobile number aur Founder Code enter karein!');
-    if (mobile.length !== 10 || isNaN(mobile)) {
-      return alert('❌ Valid 10-digit mobile number enter karein!');
+    if (!mobile || !code) return alert('❌ Mobile number और Founder Code दोनों enter करें!');
+    if (mobile.length !== 10 || !/^d{10}$/.test(mobile)) {
+      return alert('❌ Valid 10-digit mobile number enter करें!');
     }
-    if (!code.startsWith('F')) {
-      return alert('❌ Founder Code "F" se start hona chahiye!');
+    if (!code.startsWith('F') || code.length !== 8) {
+      return alert('❌ Founder Code FXXXXXXX format में होना चाहिए!');
     }
 
     try {
-      console.log('Searching for founder with mobile:', mobile, 'and code:', code);
-      
-      // First check by mobile
+      // Search by mobile first
       const mobileSnap = await db.ref('founders')
-        .orderByChild('mobile')
-        .equalTo(mobile)
-        .once('value');
+        .orderByChild('mobile').equalTo(mobile).once('value');
 
       if (!mobileSnap.exists()) {
-        return alert('❌ Is mobile number se koi founder registration nahi mila!');
+        return alert('❌ इस mobile number से कोई registration नहीं मिला!');
       }
 
       let matchedFounder = null;
       mobileSnap.forEach(child => {
         const data = child.val();
-        console.log('Found founder:', data.code, 'vs input:', code);
         if (data.code && data.code.toUpperCase() === code) {
           matchedFounder = data;
-          editingKey = child.key; // Store key for reference
+          editingKey = child.key;
+          return true;
         }
       });
 
       if (!matchedFounder) {
-        return alert('❌ Founder Code galat hai ya is mobile number se match nahi ho raha!');
+        return alert('❌ Founder Code गलत है या match नहीं हो रहा!');
       }
 
-      console.log('Matched founder status:', matchedFounder.status);
-      
       if (matchedFounder.status !== 'Approved') {
-        return alert(`⏳ Aapka registration status: "${matchedFounder.status}" hai। Admin se approval ka wait karein।`);
+        return alert(`⏳ Status: "${matchedFounder.status}"
+Admin से approval का wait करें!`);
       }
 
-      // Generate PDF Certificate
+      // FIXED PDF Generation with fallbacks
+      if (typeof window.jspdf === 'undefined') {
+        alert('❌ PDF library load नहीं हो पाई। Page refresh करके try करें।');
+        return;
+      }
+
       generateCertificatePDF(matchedFounder);
       
       // Clear fields
@@ -397,84 +414,111 @@ Admin approval का wait करें।`);
     }
   }
 
+  // FIXED PDF Generation
   function generateCertificatePDF(founder) {
     try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('landscape', 'pt', 'a4');
+      // Try multiple jsPDF instances
+      let jsPDF;
+      if (window.jspdf && window.jspdf.jsPDF) {
+        jsPDF = window.jspdf.jsPDF;
+      } else if (window['jspdf']) {
+        jsPDF = window['jspdf'].jsPDF;
+      } else {
+        throw new Error('jsPDF not available');
+      }
 
+      const doc = new jsPDF('landscape', 'pt', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Beautiful border
-      doc.setLineWidth(5);
+      // Beautiful Certificate Design
+      doc.setLineWidth(6);
       doc.setDrawColor(0, 255, 225);
-      doc.rect(30, 30, pageWidth - 60, pageHeight - 60);
+      doc.rect(40, 40, pageWidth - 80, pageHeight - 80, 'S');
 
-      // Title
+      // Header
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(32);
+      doc.setFontSize(36);
       doc.setTextColor(0, 255, 225);
-      doc.text('ASHIRWAD MART P', pageWidth / 2, 100, { align: 'center' });
+      doc.text('ASHIRWAD MART P', pageWidth / 2, 120, { align: 'center' });
 
-      doc.setFontSize(22);
-      doc.setTextColor(255, 255, 255);
-      doc.text('FOUNDER CERTIFICATE', pageWidth / 2, 140, { align: 'center' });
-
-      // Certificate text
-      doc.setFontSize(16);
-      doc.setTextColor(220, 220, 220);
-      doc.text('This is to certify that', pageWidth / 2, 190, { align: 'center' });
-
-      // Founder Name - BIG
       doc.setFontSize(28);
+      doc.setTextColor(255, 255, 255);
+      doc.text('FOUNDER CERTIFICATE', pageWidth / 2, 170, { align: 'center' });
+
+      // Main Content
+      doc.setFontSize(18);
+      doc.setTextColor(220, 220, 220);
+      doc.text('This certifies that', pageWidth / 2, 220, { align: 'center' });
+
+      // Founder Name - Largest & Boldest
+      doc.setFontSize(40);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 255, 225);
-      doc.text(founder.name.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
+      doc.text(founder.name.toUpperCase(), pageWidth / 2, 270, { align: 'center' });
 
       // Details
-      doc.setFontSize(14);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Founder Code:', pageWidth / 2, 330, { align: 'center' });
+      doc.setFontSize(24);
+      doc.text(founder.code, pageWidth / 2, 360, { align: 'center' });
+
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(200, 200, 200);
+      doc.text(`Mobile: ${founder.mobile}`, pageWidth / 2, 400, { align: 'center' });
+      
+      const dateStr = founder.approvedAt ? 
+        new Date(founder.approvedAt).toLocaleDateString('en-IN') : 
+        new Date().toLocaleDateString('en-IN');
+      doc.text(`Approval Date: ${dateStr}`, pageWidth / 2, 430, { align: 'center' });
 
-      const approvedDate = founder.approvedAt || founder.timestamp;
-      const dateStr = approvedDate ? new Date(approvedDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
+      // Footer & Signature
+      doc.setFontSize(14);
+      doc.setDrawColor(0, 255, 225);
+      doc.setLineWidth(2);
+      doc.line(pageWidth - 250, pageHeight - 100, pageWidth - 50, pageHeight - 100);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Authorised Signatory', pageWidth - 150, pageHeight - 80, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.text('Ashirwad Mart P', pageWidth - 150, pageHeight - 55, { align: 'center' });
+      doc.setTextColor(150, 150, 150);
+      doc.text('admin@ashirwadmart.com', pageWidth - 150, pageHeight - 35, { align: 'center' });
 
-      doc.text(`Founder Code: ${founder.code}`, pageWidth / 2, 270, { align: 'center' });
-      doc.text(`Mobile: ${founder.mobile}`, pageWidth / 2, 295, { align: 'center' });
-      doc.text(`Approval Date: ${dateStr}`, pageWidth / 2, 320, { align: 'center' });
-
-      // Signature area
-      doc.setFontSize(12);
-      doc.text('Authorised Signatory', pageWidth - 200, pageHeight - 80);
-      doc.text('Ashirwad Mart P', pageWidth - 200, pageHeight - 55);
-      doc.text('admin@ashirwadmart.com', pageWidth - 200, pageHeight - 40);
-
-      // Save PDF
-      const fileName = `AshirwadMartP_Founder_${founder.code}_${founder.name.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
+      // Save with proper filename
+      const cleanName = founder.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+      const fileName = `AshirwadMartP_Founder_${founder.code}_${cleanName}.pdf`;
       doc.save(fileName);
 
-      alert('🎉 Certificate successfully downloaded!');
+      alert('🎉 Certificate successfully downloaded!
+' + fileName);
     } catch (pdfErr) {
-      console.error('PDF generation error:', pdfErr);
-      alert('❌ PDF generation failed. Console me error check karein.');
+      console.error('PDF Error:', pdfErr);
+      alert('❌ PDF generation failed। Console check करें या page refresh करें।');
     }
   }
 
-  // Admin functions
+  // Admin Functions
   async function adminSignIn() {
     const password = document.getElementById('adminPasswordInput').value;
     if (!password) return alert('❌ Password enter करें!');
 
+    // Admin Password
     if (password === 'Jaihanuman@2025!') {
       isAdminLoggedIn = true;
       document.getElementById('adminLoginBox').classList.add('hidden');
       document.getElementById('adminPanel').classList.remove('hidden');
       document.getElementById('adminPasswordInput').value = '';
       loadFounders();
-      alert('✅ Admin Login Successful!');
+      alert('✅ Admin Login Successful! 🚀');
     } else {
-      alert('❌ Wrong Password!');
+      alert('❌ Wrong Password! Try again.');
       document.getElementById('adminPasswordInput').value = '';
+      document.getElementById('adminPasswordInput').focus();
     }
   }
 
@@ -482,11 +526,11 @@ Admin approval का wait करें।`);
     isAdminLoggedIn = false;
     document.getElementById('adminPanel').classList.add('hidden');
     document.getElementById('adminLoginBox').classList.remove('hidden');
-    document.getElementById('adminPasswordInput').value = '';
     document.getElementById('foundersList').innerHTML = '';
+    document.getElementById('adminPasswordInput').focus();
   }
 
-  // NEW: Edit Modal Functions
+  // Edit Modal Functions
   function openEditModal(key, data) {
     if (!isAdminLoggedIn) return alert('❌ Admin login required!');
     
@@ -508,7 +552,7 @@ Admin approval का wait करें।`);
   }
 
   async function saveEdit() {
-    if (!editingKey || !isAdminLoggedIn) return;
+    if (!editingKey || !isAdminLoggedIn) return alert('❌ Admin login required!');
     
     const updates = {
       name: document.getElementById('editName').value.trim(),
@@ -521,13 +565,12 @@ Admin approval का wait करें।`);
     };
 
     if (updates.status === 'Approved') {
-      updates.certificateAvailable = true;
-      updates.approvedAt = new Date().toISOString();
+      updates.approvedAt = firebase.database.ServerValue.TIMESTAMP;
     }
 
     try {
       await db.ref('founders/' + editingKey).update(updates);
-      alert('✅ Founder details updated successfully!');
+      alert('✅ Changes saved successfully!');
       closeEditModal();
       loadFounders();
     } catch (err) {
@@ -538,7 +581,7 @@ Admin approval का wait करें।`);
   async function deleteFounder() {
     if (!editingKey || !isAdminLoggedIn) return;
     
-    if (confirm('🗑️ Are you sure you want to PERMANENTLY delete this founder?')) {
+    if (confirm('🗑️ Permanent delete? This cannot be undone!')) {
       try {
         await db.ref('founders/' + editingKey).remove();
         alert('✅ Founder deleted successfully!');
@@ -550,99 +593,104 @@ Admin approval का wait करें।`);
     }
   }
 
+  // Main Admin Dashboard - FIXED Real-time
   function loadFounders() {
     if (!isAdminLoggedIn) return;
     
-    db.ref('founders').orderByChild('timestamp').limitToLast(100).on('value', snap => {
-      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
-      html += '<thead><tr style="background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000;">';
-      html += '<th style="padding: 12px; text-align: center;">Code</th>';
-      html += '<th style="padding: 12px;">Name</th>';
-      html += '<th style="padding: 12px;">Mobile</th>';
-      html += '<th style="padding: 12px;">Payment Ref</th>';
-      html += '<th style="padding: 12px;">Status</th>';
-      html += '<th style="padding: 12px;">Date</th>';
-      html += '<th style="padding: 12px;">Actions</th></tr></thead><tbody>';
+    const foundersRef = db.ref('founders').orderByChild('timestamp');
+    foundersRef.on('value', async (snapshot) => {
+      let html = '<table><thead><tr>';
+      html += '<th>Code</th><th>Name</th><th>Mobile</th><th>Payment Ref</th><th>Status</th><th>Date</th><th>Actions</th>';
+      html += '</tr></thead><tbody>';
 
-      let totalPending = 0, totalApproved = 0, totalRejected = 0;
+      let totalPending = 0, totalApproved = 0, totalRejected = 0, total = 0;
 
-      snap.forEach(child => {
+      const promises = [];
+      snapshot.forEach((child) => {
         const data = child.val();
         const key = child.key;
+        total++;
+        
         const statusClass = data.status === 'Approved' ? 'status-approved' : 
                            data.status === 'Rejected' ? 'status-rejected' : 'status-pending';
-        const date = data.timestamp ? new Date(data.timestamp).toLocaleString('en-IN') : '';
+        const date = data.timestamp ? 
+          new Date(data.timestamp).toLocaleString('en-IN') : 'N/A';
         
         if (data.status === 'Pending') totalPending++;
         if (data.status === 'Approved') totalApproved++;
         if (data.status === 'Rejected') totalRejected++;
 
-        html += `<tr style="border-bottom: 1px solid #333;">`;
-        html += `<td style="padding: 12px; font-weight: bold; color: #00ffe1;">${data.code}</td>`;
-        html += `<td style="padding: 12px;">${data.name}</td>`;
-        html += `<td style="padding: 12px;">${data.mobile}</td>`;
-        html += `<td style="padding: 12px; font-size: 12px; max-width: 150px; word-break: break-all;">${data.paymentRef}</td>`;
-        html += `<td style="padding: 12px;"><span class="${statusClass}">${data.status}</span></td>`;
-        html += `<td style="padding: 12px; font-size: 12px;">${date}</td>`;
-        html += `<td style="padding: 12px;">
-                  <button class="btn-warning" onclick="openEditModal('${key}', ${JSON.stringify(data)})" 
-                          title="Edit" style="padding: 5px 10px; margin: 2px; font-size: 12px;">✏️ Edit</button>
-                  <button class="btn-success" onclick="updateStatus('${key}', 'Approved')" 
-                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">✅ Approve</button>
-                  <button class="btn-danger" onclick="updateStatus('${key}', 'Rejected')" 
-                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">❌ Reject</button>
-                 </td>`;
-        html += `</tr>`;
+        html += `<tr>
+          <td style="font-weight: bold; color: #00ffe1;">${data.code || 'N/A'}</td>
+          <td>${data.name || 'N/A'}</td>
+          <td>${data.mobile || 'N/A'}</td>
+          <td style="font-size: 12px; max-width: 150px; word-break: break-all;">${data.paymentRef || 'N/A'}</td>
+          <td><span class="${statusClass}">${data.status || 'Pending'}</span></td>
+          <td style="font-size: 12px;">${date}</td>
+          <td>
+            <button class="btn-warning action-btn" onclick="openEditModal('${key}', ${JSON.stringify(data)})">✏️</button>
+            <button class="btn-success action-btn" onclick="quickUpdateStatus('${key}', 'Approved')">✅</button>
+            <button class="btn-danger action-btn" onclick="quickUpdateStatus('${key}', 'Rejected')">❌</button>
+          </td>
+        </tr>`;
       });
 
       html += '</tbody></table>';
-      html += `<div style="margin-top: 20px; padding: 15px; background: rgba(0,255,225,0.1); border-radius: 10px;">`;
-      html += `<strong>📊 Total: Pending-${totalPending} | Approved-${totalApproved} | Rejected-${totalRejected}</strong>`;
-      html += `</div>`;
+
+      // Update Stats
+      document.getElementById('totalPending').textContent = totalPending;
+      document.getElementById('totalApproved').textContent = totalApproved;
+      document.getElementById('totalRejected').textContent = totalRejected;
+      document.getElementById('totalFounders').textContent = total;
 
       document.getElementById('foundersList').innerHTML = html;
     });
   }
 
-  function updateStatus(key, status) {
-    if (!isAdminLoggedIn) return alert('❌ Admin login required!');
+  // Quick Status Update
+  async function quickUpdateStatus(key, status) {
+    if (!isAdminLoggedIn) return;
     
-    if (confirm(`Are you sure? Status will be changed to "${status}"`)) {
+    if (confirm(`Status को "${status}" करना चाहते हैं?`)) {
       const updates = { status };
       if (status === 'Approved') {
-        updates.certificateAvailable = true;
-        updates.approvedAt = new Date().toISOString();
+        updates.approvedAt = firebase.database.ServerValue.TIMESTAMP;
       }
-      db.ref('founders/' + key).update(updates).then(() => {
-        alert('✅ Status updated successfully!');
-        loadFounders();
-      }).catch(err => {
+      
+      try {
+        await db.ref('founders/' + key).update(updates);
+        alert('✅ Status updated!');
+      } catch (err) {
         alert('❌ Error: ' + err.message);
-      });
+      }
     }
   }
 
   function refreshFounders() {
-    loadFounders();
+    if (isAdminLoggedIn) loadFounders();
   }
 
-  // Modal backdrop click to close
+  // Event Listeners
   window.onclick = function(event) {
     const modal = document.getElementById('editModal');
-    if (event.target == modal) {
-      closeEditModal();
-    }
-  }
+    if (event.target === modal) closeEditModal();
+  };
 
-  // Enter key support
   document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && document.getElementById('adminPasswordInput') === document.activeElement) {
-      adminSignIn();
+    if (e.key === 'Enter') {
+      const active = document.activeElement;
+      if (active.id === 'adminPasswordInput') {
+        adminSignIn();
+      }
     }
   });
 
-  // Initialize
-  document.getElementById('adminPasswordInput').focus();
+  // Auto-focus
+  window.onload = function() {
+    document.getElementById('adminPasswordInput').focus();
+    console.log('✅ Ashirwad Mart P - All systems ready!');
+    console.log('📜 jsPDF loaded:', typeof window.jspdf !== 'undefined');
+  };
 </script>
 </body>
 </html>
