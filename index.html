@@ -10,7 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
-    /* Same existing styles - no change needed */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #121212 0%, #1a1a2e 50%, #16213e 100%);
@@ -72,6 +71,8 @@
     .btn-success:hover { background: linear-gradient(45deg, #20c997, #28a745); }
     .btn-danger { background: linear-gradient(45deg, #dc3545, #c82333); color: white; }
     .btn-danger:hover { background: linear-gradient(45deg, #c82333, #dc3545); }
+    .btn-warning { background: linear-gradient(45deg, #ffc107, #e0a800); color: #000; }
+    .btn-warning:hover { background: linear-gradient(45deg, #e0a800, #ffc107); }
     .payment-info {
       background: rgba(40, 167, 69, 0.2);
       padding: 20px;
@@ -103,9 +104,39 @@
       border: 2px solid #28a745;
       background: rgba(40, 167, 69, 0.15);
     }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+      background: rgba(30, 30, 30, 0.95);
+      margin: 5% auto;
+      padding: 30px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid rgba(0, 255, 225, 0.3);
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover { color: #00ffe1; }
     @media (max-width: 640px) {
       .box { padding: 20px 15px; margin: 10px 0; }
       h2 { font-size: 24px; }
+      .modal-content { margin: 10% auto; width: 95%; }
     }
   </style>
 </head>
@@ -139,7 +170,7 @@
     <button class="btn-primary" onclick="registerFounder()">📝 Register Founder</button>
   </div>
 
-  <!-- CERTIFICATE DOWNLOAD SECTION - NEW -->
+  <!-- CERTIFICATE DOWNLOAD SECTION -->
   <div id="certificateBox" class="box certificate-box">
     <h3>📜 Founder Certificate Download</h3>
     <p><strong>✅ Approval ke baad yahan se PDF Certificate download karein</strong></p>
@@ -162,7 +193,7 @@
   </div>
 
   <!-- Admin Panel -->
-  <div id="adminPanel" class="box hidden" style="max-width: 900px;">
+  <div id="adminPanel" class="box hidden" style="max-width: 1200px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h3>🛠️ Admin - Founder Registrations</h3>
       <div>
@@ -172,6 +203,32 @@
     </div>
     
     <div id="foundersList"></div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeEditModal()">&times;</span>
+      <h3>✏️ Edit Founder Details</h3>
+      <input type="text" id="editName" placeholder="Full Name" />
+      <input type="tel" id="editMobile" placeholder="Mobile Number" />
+      <input type="email" id="editEmail" placeholder="Email" />
+      <input type="text" id="editAddress" placeholder="Address" />
+      <input type="text" id="editPaymentRef" placeholder="Payment Reference" />
+      <select id="editProductReceived">
+        <option value="No">Product Received? No</option>
+        <option value="Yes">Product Received? Yes</option>
+      </select>
+      <select id="editStatus">
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-primary" onclick="saveEdit()" style="flex: 1;">💾 Save Changes</button>
+        <button class="btn-danger" onclick="deleteFounder()" style="flex: 1;">🗑️ Delete Founder</button>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -190,6 +247,7 @@
   const auth = firebase.auth();
 
   let isAdminLoggedIn = false;
+  let editingKey = null;
 
   // Secure founder code generation with retry
   async function generateUniqueFounderCode() {
@@ -280,7 +338,7 @@ Admin approval का wait करें।`);
     `;
   }
 
-  // CERTIFICATE DOWNLOAD FUNCTION - NEW
+  // FIXED CERTIFICATE DOWNLOAD FUNCTION
   async function downloadCertificate() {
     const mobile = document.getElementById('certMobile').value.trim();
     const code = document.getElementById('certCode').value.trim().toUpperCase();
@@ -294,120 +352,115 @@ Admin approval का wait करें।`);
     }
 
     try {
-      // Check by mobile first
-      const snap = await db.ref('founders')
+      console.log('Searching for founder with mobile:', mobile, 'and code:', code);
+      
+      // First check by mobile
+      const mobileSnap = await db.ref('founders')
         .orderByChild('mobile')
         .equalTo(mobile)
         .once('value');
 
-      if (!snap.exists()) {
+      if (!mobileSnap.exists()) {
         return alert('❌ Is mobile number se koi founder registration nahi mila!');
       }
 
-      let matched = null;
-      snap.forEach(child => {
+      let matchedFounder = null;
+      mobileSnap.forEach(child => {
         const data = child.val();
+        console.log('Found founder:', data.code, 'vs input:', code);
         if (data.code && data.code.toUpperCase() === code) {
-          matched = data;
+          matchedFounder = data;
+          editingKey = child.key; // Store key for reference
         }
       });
 
-      if (!matched) {
+      if (!matchedFounder) {
         return alert('❌ Founder Code galat hai ya is mobile number se match nahi ho raha!');
       }
 
-      if (matched.status !== 'Approved') {
-        return alert('⏳ Aapka registration abhi "Approved" nahi hai। Admin se approval ka wait karein।');
+      console.log('Matched founder status:', matchedFounder.status);
+      
+      if (matchedFounder.status !== 'Approved') {
+        return alert(`⏳ Aapka registration status: "${matchedFounder.status}" hai। Admin se approval ka wait karein।`);
       }
 
       // Generate PDF Certificate
-      generateCertificatePDF(matched);
+      generateCertificatePDF(matchedFounder);
       
-      // Clear fields after success
+      // Clear fields
       document.getElementById('certMobile').value = '';
       document.getElementById('certCode').value = '';
       
     } catch (err) {
+      console.error('Certificate error:', err);
       alert('❌ Error: ' + err.message);
     }
   }
 
   function generateCertificatePDF(founder) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('landscape', 'pt', 'a4');
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('landscape', 'pt', 'a4');
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Beautiful border
-    doc.setLineWidth(5);
-    doc.setDrawColor(0, 255, 225);
-    doc.rect(30, 30, pageWidth - 60, pageHeight - 60);
+      // Beautiful border
+      doc.setLineWidth(5);
+      doc.setDrawColor(0, 255, 225);
+      doc.rect(30, 30, pageWidth - 60, pageHeight - 60);
 
-    // Title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(32);
-    doc.setTextColor(0, 255, 225);
-    doc.text('ASHIRWAD MART P', pageWidth / 2, 100, { align: 'center' });
+      // Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(32);
+      doc.setTextColor(0, 255, 225);
+      doc.text('ASHIRWAD MART P', pageWidth / 2, 100, { align: 'center' });
 
-    doc.setFontSize(22);
-    doc.setTextColor(255, 255, 255);
-    doc.text('FOUNDER CERTIFICATE', pageWidth / 2, 140, { align: 'center' });
+      doc.setFontSize(22);
+      doc.setTextColor(255, 255, 255);
+      doc.text('FOUNDER CERTIFICATE', pageWidth / 2, 140, { align: 'center' });
 
-    // Certificate text
-    doc.setFontSize(16);
-    doc.setTextColor(220, 220, 220);
-    doc.text('This is to certify that', pageWidth / 2, 190, { align: 'center' });
+      // Certificate text
+      doc.setFontSize(16);
+      doc.setTextColor(220, 220, 220);
+      doc.text('This is to certify that', pageWidth / 2, 190, { align: 'center' });
 
-    // Founder Name - BIG
-    doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 255, 225);
-    doc.text(founder.name.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
+      // Founder Name - BIG
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 255, 225);
+      doc.text(founder.name.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
 
-    // Details
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 200, 200);
+      // Details
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(200, 200, 200);
 
-    const approvedDate = founder.approvedAt || founder.timestamp;
-    const dateStr = approvedDate ? new Date(approvedDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
+      const approvedDate = founder.approvedAt || founder.timestamp;
+      const dateStr = approvedDate ? new Date(approvedDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
 
-    doc.text(
-      `Founder Code: ${founder.code}`,
-      pageWidth / 2,
-      270,
-      { align: 'center' }
-    );
+      doc.text(`Founder Code: ${founder.code}`, pageWidth / 2, 270, { align: 'center' });
+      doc.text(`Mobile: ${founder.mobile}`, pageWidth / 2, 295, { align: 'center' });
+      doc.text(`Approval Date: ${dateStr}`, pageWidth / 2, 320, { align: 'center' });
 
-    doc.text(
-      `Mobile: ${founder.mobile}`,
-      pageWidth / 2,
-      295,
-      { align: 'center' }
-    );
+      // Signature area
+      doc.setFontSize(12);
+      doc.text('Authorised Signatory', pageWidth - 200, pageHeight - 80);
+      doc.text('Ashirwad Mart P', pageWidth - 200, pageHeight - 55);
+      doc.text('admin@ashirwadmart.com', pageWidth - 200, pageHeight - 40);
 
-    doc.text(
-      `Approval Date: ${dateStr}`,
-      pageWidth / 2,
-      320,
-      { align: 'center' }
-    );
+      // Save PDF
+      const fileName = `AshirwadMartP_Founder_${founder.code}_${founder.name.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
+      doc.save(fileName);
 
-    // Signature area
-    doc.setFontSize(12);
-    doc.text('Authorised Signatory', pageWidth - 200, pageHeight - 80);
-    doc.text('Ashirwad Mart P', pageWidth - 200, pageHeight - 55);
-    doc.text('admin@ashirwadmart.com', pageWidth - 200, pageHeight - 40);
-
-    // Save PDF
-    const fileName = `AshirwadMartP_Founder_${founder.code}_${founder.name.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
-    doc.save(fileName);
-
-    alert('🎉 Certificate successfully downloaded!');
+      alert('🎉 Certificate successfully downloaded!');
+    } catch (pdfErr) {
+      console.error('PDF generation error:', pdfErr);
+      alert('❌ PDF generation failed. Console me error check karein.');
+    }
   }
 
-  // UPDATED Admin Login
+  // Admin functions
   async function adminSignIn() {
     const password = document.getElementById('adminPasswordInput').value;
     if (!password) return alert('❌ Password enter करें!');
@@ -425,7 +478,6 @@ Admin approval का wait करें।`);
     }
   }
 
-  // UPDATED Admin Logout
   function adminLogout() {
     isAdminLoggedIn = false;
     document.getElementById('adminPanel').classList.add('hidden');
@@ -434,21 +486,67 @@ Admin approval का wait करें।`);
     document.getElementById('foundersList').innerHTML = '';
   }
 
-  // UPDATED Status Update with Certificate Flag
-  function updateStatus(key, status) {
+  // NEW: Edit Modal Functions
+  function openEditModal(key, data) {
     if (!isAdminLoggedIn) return alert('❌ Admin login required!');
     
-    if (confirm(`Are you sure? Status will be changed to "${status}"`)) {
-      const updates = { status };
-      if (status === 'Approved') {
-        updates.certificateAvailable = true;
-        updates.approvedAt = new Date().toISOString();
+    editingKey = key;
+    document.getElementById('editName').value = data.name || '';
+    document.getElementById('editMobile').value = data.mobile || '';
+    document.getElementById('editEmail').value = data.email || '';
+    document.getElementById('editAddress').value = data.address || '';
+    document.getElementById('editPaymentRef').value = data.paymentRef || '';
+    document.getElementById('editProductReceived').value = data.productReceived || 'No';
+    document.getElementById('editStatus').value = data.status || 'Pending';
+    
+    document.getElementById('editModal').style.display = 'block';
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+    editingKey = null;
+  }
+
+  async function saveEdit() {
+    if (!editingKey || !isAdminLoggedIn) return;
+    
+    const updates = {
+      name: document.getElementById('editName').value.trim(),
+      mobile: document.getElementById('editMobile').value.trim(),
+      email: document.getElementById('editEmail').value.trim(),
+      address: document.getElementById('editAddress').value.trim(),
+      paymentRef: document.getElementById('editPaymentRef').value.trim(),
+      productReceived: document.getElementById('editProductReceived').value,
+      status: document.getElementById('editStatus').value
+    };
+
+    if (updates.status === 'Approved') {
+      updates.certificateAvailable = true;
+      updates.approvedAt = new Date().toISOString();
+    }
+
+    try {
+      await db.ref('founders/' + editingKey).update(updates);
+      alert('✅ Founder details updated successfully!');
+      closeEditModal();
+      loadFounders();
+    } catch (err) {
+      alert('❌ Update failed: ' + err.message);
+    }
+  }
+
+  async function deleteFounder() {
+    if (!editingKey || !isAdminLoggedIn) return;
+    
+    if (confirm('🗑️ Are you sure you want to PERMANENTLY delete this founder?')) {
+      try {
+        await db.ref('founders/' + editingKey).remove();
+        alert('✅ Founder deleted successfully!');
+        closeEditModal();
+        loadFounders();
+      } catch (err) {
+        alert('❌ Delete failed: ' + err.message);
       }
-      db.ref('founders/' + key).update(updates).then(() => {
-        alert('✅ Status updated successfully! Certificate अब download हो सकेगा।');
-      }).catch(err => {
-        alert('❌ Error: ' + err.message);
-      });
     }
   }
 
@@ -458,17 +556,15 @@ Admin approval का wait करें।`);
     db.ref('founders').orderByChild('timestamp').limitToLast(100).on('value', snap => {
       let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
       html += '<thead><tr style="background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000;">';
-      html += '<th style="padding: 12px; text-align: center;">Founder Code</th>';
-      html += '<th style="padding: 12px; text-align: center;">Name</th>';
-      html += '<th style="padding: 12px; text-align: center;">Mobile</th>';
-      html += '<th style="padding: 12px; text-align: center;">Payment Ref</th>';
-      html += '<th style="padding: 12px; text-align: center;">Status</th>';
-      html += '<th style="padding: 12px; text-align: center;">Date</th>';
-      html += '<th style="padding: 12px; text-align: center;">Actions</th></tr></thead><tbody>';
+      html += '<th style="padding: 12px; text-align: center;">Code</th>';
+      html += '<th style="padding: 12px;">Name</th>';
+      html += '<th style="padding: 12px;">Mobile</th>';
+      html += '<th style="padding: 12px;">Payment Ref</th>';
+      html += '<th style="padding: 12px;">Status</th>';
+      html += '<th style="padding: 12px;">Date</th>';
+      html += '<th style="padding: 12px;">Actions</th></tr></thead><tbody>';
 
-      let totalPending = 0;
-      let totalApproved = 0;
-      let totalRejected = 0;
+      let totalPending = 0, totalApproved = 0, totalRejected = 0;
 
       snap.forEach(child => {
         const data = child.val();
@@ -489,8 +585,12 @@ Admin approval का wait करें।`);
         html += `<td style="padding: 12px;"><span class="${statusClass}">${data.status}</span></td>`;
         html += `<td style="padding: 12px; font-size: 12px;">${date}</td>`;
         html += `<td style="padding: 12px;">
-                  <button class="btn-success" onclick="updateStatus('${key}', 'Approved')" style="padding: 5px 10px; margin: 2px; font-size: 12px;">✅ Approve</button>
-                  <button class="btn-danger" onclick="updateStatus('${key}', 'Rejected')" style="padding: 5px 10px; margin: 2px; font-size: 12px;">❌ Reject</button>
+                  <button class="btn-warning" onclick="openEditModal('${key}', ${JSON.stringify(data)})" 
+                          title="Edit" style="padding: 5px 10px; margin: 2px; font-size: 12px;">✏️ Edit</button>
+                  <button class="btn-success" onclick="updateStatus('${key}', 'Approved')" 
+                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">✅ Approve</button>
+                  <button class="btn-danger" onclick="updateStatus('${key}', 'Rejected')" 
+                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">❌ Reject</button>
                  </td>`;
         html += `</tr>`;
       });
@@ -504,9 +604,34 @@ Admin approval का wait करें।`);
     });
   }
 
+  function updateStatus(key, status) {
+    if (!isAdminLoggedIn) return alert('❌ Admin login required!');
+    
+    if (confirm(`Are you sure? Status will be changed to "${status}"`)) {
+      const updates = { status };
+      if (status === 'Approved') {
+        updates.certificateAvailable = true;
+        updates.approvedAt = new Date().toISOString();
+      }
+      db.ref('founders/' + key).update(updates).then(() => {
+        alert('✅ Status updated successfully!');
+        loadFounders();
+      }).catch(err => {
+        alert('❌ Error: ' + err.message);
+      });
+    }
+  }
+
   function refreshFounders() {
-    if (!isAdminLoggedIn) return;
     loadFounders();
+  }
+
+  // Modal backdrop click to close
+  window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target == modal) {
+      closeEditModal();
+    }
   }
 
   // Enter key support
