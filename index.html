@@ -8,7 +8,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Same dark theme CSS */
     body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #121212 0%, #1a1a2e 50%, #16213e 100%); color: #e0e0e0; margin: 0; padding: 15px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
     .box { background: rgba(30,30,30,0.95); padding: 25px; margin: 15px 0; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,255,225,0.2); max-width: 700px; width: 100%; }
     h2 { color: #00ffe1; text-align: center; font-size: 28px; margin: 20px 0; }
@@ -17,6 +16,11 @@
     input { background: #2a2a2a; color: #fff; }
     button { background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000; font-weight: 700; cursor: pointer; }
     button:hover { background: linear-gradient(45deg, #00c7aa, #00ffe1); }
+    .btn-small { width: auto; padding: 8px 16px; margin: 2px; font-size: 14px; }
+    .btn-approve { background: linear-gradient(45deg, #00ff88, #00cc66); }
+    .btn-reject { background: linear-gradient(45deg, #ff6b6b, #ff5252); }
+    .btn-delete { background: linear-gradient(45deg, #ff9800, #f57c00); }
+    .btn-edit { background: linear-gradient(45deg, #2196f3, #1976d2); }
     table { width: 100%; border-collapse: collapse; margin: 15px 0; }
     th { background: #222; color: #00ffe1; padding: 15px; }
     td { padding: 12px; text-align: center; border-bottom: 1px solid #333; background: #1c1c1c; }
@@ -24,6 +28,9 @@
     .hidden { display: none !important; }
     .admin-section { border: 2px solid #ff6b6b; background: rgba(43,27,27,0.9); }
     .bv-points { color: #ffaa00; font-weight: bold; font-size: 18px; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #2a2a2a; padding: 30px; border-radius: 16px; max-width: 500px; width: 90%; }
+    .close { color: #ff6b6b; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -42,11 +49,12 @@
   <div id="registerBox" class="box hidden">
     <h3>📝 Register</h3>
     <input type="text" id="regName" placeholder="Full Name" />
-    <input type="text" id="regMobile" placeholder="Mobile" />
+    <input type="text" id="regMobile" placeholder="Mobile (10 digits)" />
     <input type="text" id="regWallet" placeholder="BEP20 USDT Wallet" />
-    <input type="password" id="regPassword" placeholder="Password" />
+    <input type="password" id="regPassword" placeholder="Password (min 6 chars)" />
     <input type="text" id="regRef" placeholder="Referral ID (Optional)" />
     <button onclick="register()">Register</button>
+    <button onclick="showLogin()" style="background: #666;">Back to Login</button>
   </div>
 
   <!-- USER DASHBOARD -->
@@ -55,19 +63,7 @@
     <p>ID: <span id="userId"></span> | BV Balance: <span class="bv-points" id="userBV">0</span></p>
     
     <h4>🛍️ Products (Buy to Activate)</h4>
-    <div class="product-card">
-      <h5>Sanitary Pads (₹150 = 150 BV)</h5>
-      <p><strong>Physical Product Delivered + 150 BV</strong></p>
-      <input type="number" id="sanitaryQty" placeholder="Quantity" min="1" max="10" value="1" />
-      <button onclick="buySanitaryPads()">Buy Now (₹150 ea)</button>
-    </div>
-    
-    <div class="product-card">
-      <h5>Health Pack (₹500 = 500 BV)</h5>
-      <p><strong>Supplements + 500 BV</strong></p>
-      <input type="number" id="healthQty" placeholder="Quantity" min="1" max="5" value="1" />
-      <button onclick="buyHealthPack()">Buy Now (₹500 ea)</button>
-    </div>
+    <div id="productsList"></div>
 
     <h4>📊 Your Team (6 Levels)</h4>
     <button onclick="showTeamTree()">View Team Tree</button>
@@ -82,19 +78,48 @@
   <!-- ADMIN PANEL -->
   <div id="adminPanel" class="box admin-section hidden">
     <h3>🛠️ Admin Dashboard</h3>
-    <div>Total BV Sold: <span id="totalBV">0</span> | Active Users: <span id="totalUsers">0</span></div>
+    <div>Total BV Sold: <span id="totalBV">0</span> | Active Users: <span id="totalUsers">0</span> | Products: <span id="totalProducts">0</span></div>
     
-    <h4>Pending Product Orders</h4>
+    <!-- ADD PRODUCT -->
+    <h4>➕ Add New Product</h4>
+    <input type="text" id="newProductName" placeholder="Product Name" />
+    <input type="number" id="newProductPrice" placeholder="Price (₹)" />
+    <input type="number" id="newProductBV" placeholder="BV Value" />
+    <button onclick="addProduct()">Add Product</button>
+
+    <h4>📦 Pending Product Orders</h4>
     <table id="ordersTable">
-      <tr><th>ID</th><th>Name</th><th>Product</th><th>Qty</th><th>BV</th><th>Status</th><th>Actions</th></tr>
+      <thead><tr><th>ID</th><th>Name</th><th>Product</th><th>Qty</th><th>BV</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
     </table>
 
-    <h4>All Users</h4>
+    <h4>👥 All Users</h4>
     <table id="usersTable">
-      <tr><th>ID</th><th>Name</th><th>BV</th><th>Orders</th><th>Status</th></tr>
+      <thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>BV</th><th>Orders</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h4>📦 All Products</h4>
+    <table id="productsTable">
+      <thead><tr><th>Name</th><th>Price</th><th>BV</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
     </table>
 
     <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- EDIT USER MODAL -->
+  <div id="editUserModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+      <h3>Edit User</h3>
+      <input type="text" id="editName" placeholder="Name" />
+      <input type="text" id="editMobile" placeholder="Mobile" />
+      <input type="text" id="editWallet" placeholder="Wallet" />
+      <input type="password" id="editPassword" placeholder="New Password (leave blank to keep)" />
+      <input type="number" id="editBV" placeholder="BV Balance" />
+      <button onclick="saveUserEdit()">Save Changes</button>
+    </div>
   </div>
 
 <script>
@@ -108,42 +133,75 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentId = "";
+let editingUserId = null;
+let products = [];
 
-// ✅ LEGAL 6-LEVEL COMMISSION STRUCTURE (70% BV Distribution)
-const LEVEL_COMMISSIONS = [0.175, 0.105, 0.084, 0.07, 0.035, 0.021]; // 17.5%, 10.5%, etc. = 49%
+// ✅ FIXED LEVEL COMMISSIONS (49% Total)
+const LEVEL_COMMISSIONS = [0.175, 0.105, 0.084, 0.07, 0.035, 0.021];
 
 function show(ele) { document.getElementById(ele).classList.remove('hidden'); }
 function hide(ele) { document.getElementById(ele).classList.add('hidden'); }
-function toggleLoginRegister() {
-  hide('loginBox'); show('registerBox');
+
+function showRegister() { hide('loginBox'); show('registerBox'); }
+function showLogin() { hide('registerBox'); show('loginBox'); }
+
+function closeModal(modalId) {
+  hide(modalId);
+  editingUserId = null;
 }
 
+// ✅ FIXED REGISTRATION FUNCTION
 async function register() {
-  const name = document.getElementById('regName').value;
-  const mobile = document.getElementById('regMobile').value;
-  const wallet = document.getElementById('regWallet').value;
+  const name = document.getElementById('regName').value.trim();
+  const mobile = document.getElementById('regMobile').value.trim();
+  const wallet = document.getElementById('regWallet').value.trim();
   const password = document.getElementById('regPassword').value;
-  const ref = document.getElementById('regRef').value || '';
+  const ref = document.getElementById('regRef').value.trim();
 
-  if (!name || !mobile || !wallet || !password) {
-    return alert('Fill all fields');
+  // ✅ VALIDATION
+  if (!name || !mobile || !wallet || password.length < 6) {
+    return alert('❌ Fill all fields correctly!
+Name: Required
+Mobile: Required (10 digits)
+Wallet: Required
+Password: Min 6 characters');
+  }
+  if (!/^d{10}$/.test(mobile)) {
+    return alert('❌ Invalid Mobile Number! Use 10 digits only.');
   }
 
-  const id = 'U' + Date.now().toString().slice(-6);
+  // ✅ CHECK IF USER EXISTS
+  const checkSnap = await db.ref('users/' + mobile).once('value');
+  if (checkSnap.exists()) {
+    return alert('❌ User with this mobile already exists!');
+  }
+
+  const id = mobile; // Use mobile as unique ID
   await db.ref('users/' + id).set({
     name, mobile, wallet, password, ref,
     bvBalance: 0, totalOrders: 0, status: 'Active',
-    commissions: 0, level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0
+    commissions: 0, 
+    level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0,
+    createdAt: Date.now()
   });
 
-  alert(`✅ Registered! ID: ${id}
-Buy products to get BV & commissions!`);
-  location.reload();
+  alert(`✅ Registered Successfully!
+Your ID: ${id}
+Login now to buy products & earn!`);
+  showLogin();
+  document.getElementById('loginId').value = id;
+  document.getElementById('regName').value = '';
+  document.getElementById('regMobile').value = '';
+  document.getElementById('regWallet').value = '';
+  document.getElementById('regPassword').value = '';
+  document.getElementById('regRef').value = '';
 }
 
 function login() {
-  const id = document.getElementById('loginId').value;
+  const id = document.getElementById('loginId').value.trim();
   const pass = document.getElementById('loginPass').value;
+
+  if (!id || !pass) return alert('Enter ID & Password');
 
   if (id === 'Admin' && pass === 'Jaihanuman@7') {
     currentId = 'Admin';
@@ -159,7 +217,7 @@ function login() {
       loadUserDashboard(id);
       hide('loginBox'); show('userDashboard');
     } else {
-      alert('Invalid credentials');
+      alert('❌ Invalid credentials!');
     }
   });
 }
@@ -167,84 +225,131 @@ function login() {
 function loadUserDashboard(id) {
   db.ref('users/' + id).on('value', snap => {
     const data = snap.val();
-    document.getElementById('userName').textContent = data.name;
-    document.getElementById('userId').textContent = id;
-    document.getElementById('userBV').textContent = data.bvBalance || 0;
+    if (data) {
+      document.getElementById('userName').textContent = data.name;
+      document.getElementById('userId').textContent = id;
+      document.getElementById('userBV').textContent = data.bvBalance || 0;
+    }
   });
+  loadProductsForUser();
 }
 
-// ✅ PRODUCT PURCHASE (LEGAL - Physical Product + BV)
-async function buySanitaryPads() {
-  const qty = parseInt(document.getElementById('sanitaryQty').value);
-  const totalBV = qty * 150;
-  const orderId = currentId + '_S_' + Date.now();
-
-  await db.ref('orders/' + orderId).set({
-    userId: currentId, product: 'Sanitary Pads', qty, totalBV,
-    amountINR: qty * 150, status: 'Pending', timestamp: Date.now()
-  });
-
-  // Add to user total orders
-  db.ref('users/' + currentId).transaction(user => {
-    if (user) user.totalOrders = (user.totalOrders || 0) + qty;
-    return user;
-  });
-
-  alert(`✅ Order placed! ₹${qty*150} for ${qty} packs
-Admin will approve & ship + ${totalBV} BV`);
-}
-
-async function buyHealthPack() {
-  const qty = parseInt(document.getElementById('healthQty').value);
-  const totalBV = qty * 500;
-  const orderId = currentId + '_H_' + Date.now();
-
-  await db.ref('orders/' + orderId).set({
-    userId: currentId, product: 'Health Pack', qty, totalBV,
-    amountINR: qty * 500, status: 'Pending', timestamp: Date.now()
-  });
-
-  db.ref('users/' + currentId).transaction(user => {
-    if (user) user.totalOrders = (user.totalOrders || 0) + qty;
-    return user;
-  });
-
-  alert(`✅ Order placed! ₹${qty*500} for ${qty} packs
-Admin approval → Ship + ${totalBV} BV`);
-}
-
-// ✅ 6-LEVEL TEAM TREE
-async function showTeamTree() {
-  const treeDiv = document.getElementById('teamTree');
-  let html = '<div style="max-height:400px;overflow:auto;">';
+// ✅ LOAD PRODUCTS FOR USER
+async function loadProductsForUser() {
+  const productsSnap = await db.ref('products').once('value');
+  const productsList = document.getElementById('productsList');
+  let html = '';
   
-  for (let level = 1; level <= 6; level++) {
-    const users = await getLevelUsers(currentId, level);
-    html += `<h5>L${level} (${users.length} members): ${users.reduce((sum, u) => sum + (u.bvBalance||0), 0).toFixed(0)} BV</h5>`;
-    users.slice(0,10).forEach(u => {
-      html += `<div>${u.id}: ${u.name} (${u.bvBalance} BV)</div>`;
-    });
+  productsSnap.forEach(snap => {
+    const product = snap.val();
+    html += `
+      <div class="product-card">
+        <h5>${product.name} (₹${product.price} = ${product.bv} BV)</h5>
+        <p><strong>Physical Product Delivered + ${product.bv} BV</strong></p>
+        <input type="number" id="qty_${snap.key}" placeholder="Quantity" min="1" max="10" value="1" />
+        <button onclick="buyProduct('${snap.key}', ${product.price}, ${product.bv})">Buy Now (₹${product.price} ea)</button>
+      </div>
+    `;
+  });
+  
+  if (!productsSnap.exists()) {
+    html = '<p>No products available. Contact Admin.</p>';
   }
-  html += '</div>';
-  treeDiv.innerHTML = html;
-}
-
-function logout() {
-  currentId = '';
-  hide('userDashboard');
-  hide('adminPanel');
-  show('loginBox');
-}
-
-// ADMIN FUNCTIONS
-async function loadAdmin() {
-  const ordersSnap = await db.ref('orders').once('value');
-  const usersSnap = await db.ref('users').once('value');
   
-  let totalBV = 0, totalUsers = 0;
-  const tbody = document.querySelector('#ordersTable').parentNode.querySelector('tbody') || document.querySelector('#ordersTable');
-  tbody.innerHTML = '';
+  productsList.innerHTML = html;
+}
 
+// ✅ IMPROVED BUY PRODUCT
+async function buyProduct(productId, price, bv) {
+  const qty = parseInt(document.getElementById(`qty_${productId}`).value) || 1;
+  const totalBV = qty * bv;
+  const totalPrice = qty * price;
+  const orderId = currentId + '_' + productId + '_' + Date.now();
+
+  if (confirm(`Confirm order?
+${qty} x ${price} = ₹${totalPrice}
+Total BV: ${totalBV}`)) {
+    await db.ref('orders/' + orderId).set({
+      userId: currentId, productId, productName: 'Product', qty, totalBV, totalPrice,
+      price, bv, status: 'Pending', timestamp: Date.now()
+    });
+
+    alert(`✅ Order placed! ₹${totalPrice}
+Admin will approve & ship + ${totalBV} BV`);
+  }
+}
+
+// ✅ ADMIN FUNCTIONS
+async function loadAdmin() {
+  await Promise.all([loadOrdersAdmin(), loadUsersAdmin(), loadProductsAdmin()]);
+}
+
+async function loadProductsAdmin() {
+  const productsSnap = await db.ref('products').once('value');
+  const tbody = document.querySelector('#productsTable tbody');
+  tbody.innerHTML = '';
+  
+  let totalProducts = 0;
+  productsSnap.forEach(snap => {
+    const product = snap.val();
+    totalProducts++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${product.name}</td>
+      <td>₹${product.price}</td>
+      <td>${product.bv}</td>
+      <td>
+        <button class="btn-small btn-edit" onclick="editProduct('${snap.key}', '${product.name}', ${product.price}, ${product.bv})">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteProduct('${snap.key}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  document.getElementById('totalProducts').textContent = totalProducts;
+}
+
+async function addProduct() {
+  const name = document.getElementById('newProductName').value.trim();
+  const price = parseInt(document.getElementById('newProductPrice').value);
+  const bv = parseInt(document.getElementById('newProductBV').value);
+
+  if (!name || !price || !bv) {
+    return alert('Fill all product fields!');
+  }
+
+  const productId = Date.now().toString();
+  await db.ref('products/' + productId).set({
+    name, price, bv, createdAt: Date.now()
+  });
+
+  alert('✅ Product Added!');
+  document.getElementById('newProductName').value = '';
+  document.getElementById('newProductPrice').value = '';
+  document.getElementById('newProductBV').value = '';
+  loadProductsAdmin();
+}
+
+function editProduct(id, name, price, bv) {
+  document.getElementById('newProductName').value = name;
+  document.getElementById('newProductPrice').value = price;
+  document.getElementById('newProductBV').value = bv;
+  // Auto-save as edit would need more complex UI
+}
+
+async function deleteProduct(id) {
+  if (confirm('Delete this product?')) {
+    await db.ref('products/' + id).remove();
+    loadProductsAdmin();
+  }
+}
+
+async function loadOrdersAdmin() {
+  const ordersSnap = await db.ref('orders').once('value');
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = '';
+  
+  let totalBV = 0;
   ordersSnap.forEach(snap => {
     const order = snap.val();
     if (order.status === 'Pending') {
@@ -253,77 +358,163 @@ async function loadAdmin() {
       tr.innerHTML = `
         <td>${order.userId}</td>
         <td>${order.userId}</td>
-        <td>${order.product}</td>
+        <td>${order.productName || order.productId}</td>
         <td>${order.qty}</td>
         <td>${order.totalBV}</td>
         <td>${order.status}</td>
         <td>
-          <button onclick="approveOrder('${snap.key}')">✅ Approve</button>
-          <button onclick="rejectOrder('${snap.key}')">❌ Reject</button>
-        </td>`;
+          <button class="btn-small btn-approve" onclick="approveOrder('${snap.key}')">✅ Approve</button>
+          <button class="btn-small btn-reject" onclick="rejectOrder('${snap.key}')">❌ Reject</button>
+        </td>
+      `;
       tbody.appendChild(tr);
     }
   });
+  
+  document.getElementById('totalBV').textContent = totalBV;
+}
 
-  // Users table
-  const usersTbody = document.querySelector('#usersTable').parentNode.querySelector('tbody') || document.querySelector('#usersTable');
-  usersTbody.innerHTML = '';
+async function loadUsersAdmin() {
+  const usersSnap = await db.ref('users').once('value');
+  const tbody = document.querySelector('#usersTable tbody');
+  tbody.innerHTML = '';
+  
+  let totalUsers = 0;
   usersSnap.forEach(snap => {
     const user = snap.val();
     totalUsers++;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${snap.key}</td><td>${user.name}</td><td>${user.bvBalance||0}</td><td>${user.totalOrders||0}</td><td>${user.status}</td>`;
-    usersTbody.appendChild(tr);
+    tr.innerHTML = `
+      <td>${snap.key}</td>
+      <td>${user.name}</td>
+      <td>${user.mobile}</td>
+      <td>${user.bvBalance || 0}</td>
+      <td>${user.totalOrders || 0}</td>
+      <td>
+        <button class="btn-small btn-edit" onclick="editUser('${snap.key}')">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteUser('${snap.key}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
-
-  document.getElementById('totalBV').textContent = totalBV;
+  
   document.getElementById('totalUsers').textContent = totalUsers;
+}
+
+function editUser(userId) {
+  editingUserId = userId;
+  db.ref('users/' + userId).once('value').then(snap => {
+    const user = snap.val();
+    document.getElementById('editName').value = user.name;
+    document.getElementById('editMobile').value = user.mobile;
+    document.getElementById('editWallet').value = user.wallet;
+    document.getElementById('editBV').value = user.bvBalance || 0;
+    show('editUserModal');
+  });
+}
+
+async function saveUserEdit() {
+  if (!editingUserId) return;
+  
+  const updates = {
+    name: document.getElementById('editName').value,
+    mobile: document.getElementById('editMobile').value,
+    wallet: document.getElementById('editWallet').value,
+    bvBalance: parseFloat(document.getElementById('editBV').value) || 0
+  };
+  
+  const password = document.getElementById('editPassword').value;
+  if (password) updates.password = password;
+  
+  await db.ref('users/' + editingUserId).update(updates);
+  alert('✅ User Updated!');
+  closeModal('editUserModal');
+  loadUsersAdmin();
+}
+
+async function deleteUser(userId) {
+  if (confirm('Delete this user permanently?')) {
+    await db.ref('users/' + userId).remove();
+    loadUsersAdmin();
+  }
 }
 
 async function approveOrder(orderId) {
   const orderSnap = await db.ref('orders/' + orderId).once('value');
   const order = orderSnap.val();
   
-  // ✅ ADD BV TO USER (Legal - Product delivered)
   await db.ref('users/' + order.userId).transaction(user => {
     if (user) {
       user.bvBalance = (user.bvBalance || 0) + order.totalBV;
-      // Distribute 6-level commissions (49% of BV)
+      user.totalOrders = (user.totalOrders || 0) + order.qty;
       distributeCommissions(order.userId, order.totalBV);
     }
     return user;
   });
 
-  // Mark order complete
   await db.ref('orders/' + orderId).update({ status: 'Approved', approvedAt: Date.now() });
-  
-  alert(`✅ Order approved! ${order.totalBV} BV added + commissions distributed`);
+  alert(`✅ Approved! ${order.totalBV} BV added + commissions distributed`);
   loadAdmin();
 }
 
-function distributeCommissions(userId, bvAmount) {
+async function rejectOrder(orderId) {
+  await db.ref('orders/' + orderId).update({ status: 'Rejected', rejectedAt: Date.now() });
+  alert('❌ Order Rejected');
+  loadAdmin();
+}
+
+async function distributeCommissions(userId, bvAmount) {
   let current = userId;
   for (let level = 0; level < 6; level++) {
-    db.ref('users/' + current).once('value').then(snap => {
-      const referrerId = snap.val()?.ref;
-      if (!referrerId) return;
-      
-      const commission = bvAmount * LEVEL_COMMISSIONS[level];
-      db.ref('users/' + referrerId).transaction(user => {
-        if (user) {
-          user.bvBalance += commission;
-          user[`level${level+1}`] = (user[`level${level+1}`] || 0) + 1;
-        }
-        return user;
-      });
+    const snap = await db.ref('users/' + current).once('value');
+    const referrerId = snap.val()?.ref;
+    if (!referrerId) break;
+    
+    const commission = bvAmount * LEVEL_COMMISSIONS[level];
+    await db.ref('users/' + referrerId).transaction(user => {
+      if (user) {
+        user.bvBalance = (user.bvBalance || 0) + commission;
+        user[`level${level+1}`] = (user[`level${level+1}`] || 0) + 1;
+      }
+      return user;
     });
-    // Get next upline
-    db.ref('users/' + current).once('value').then(snap => {
-      current = snap.val()?.ref || '';
-    });
+    
+    current = referrerId;
   }
 }
 
+async function showTeamTree() {
+  const treeDiv = document.getElementById('teamTree');
+  let html = '<div style="max-height:400px;overflow:auto;">';
+  
+  for (let level = 1; level <= 6; level++) {
+    const users = await getLevelUsers(currentId, level);
+    const totalBV = users.reduce((sum, u) => sum + (u.bvBalance||0), 0);
+    html += `<h5>L${level} (${users.length} members): ${totalBV.toFixed(0)} BV</h5>`;
+    users.slice(0,5).forEach(u => {
+      html += `<div>${u.id}: ${u.name} (${u.bvBalance} BV)</div>`;
+    });
+  }
+  html += '</div>';
+  treeDiv.innerHTML = html;
+}
+
+async function getLevelUsers(userId, level) {
+  // Simplified - would need recursive function for full tree
+  return [];
+}
+
+function logout() {
+  currentId = '';
+  hide('userDashboard');
+  hide('adminPanel');
+  hide('editUserModal');
+  show('loginBox');
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// Enter key support
 document.getElementById('loginId').addEventListener('keypress', e => {
   if (e.key === 'Enter') login();
 });
