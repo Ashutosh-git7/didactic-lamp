@@ -1,648 +1,332 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🚀 Ashirwad Mart P - Founder Registration</title>
+  <title>🚀 Ashirwad Mart P - 6 Level Product MLM (LEGAL)</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- jsPDF CDN for Certificate Generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #121212 0%, #1a1a2e 50%, #16213e 100%);
-      color: #e0e0e0;
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h2 { color: #00ffe1; text-align: center; margin: 20px 0; font-size: 28px; }
-    .box {
-      background: rgba(30, 30, 30, 0.95);
-      padding: 30px;
-      margin: 20px 0;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0, 255, 225, 0.2);
-      width: 100%;
-      max-width: 500px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(0, 255, 225, 0.1);
-    }
-    input, select, textarea {
-      padding: 15px;
-      margin: 12px 0;
-      width: 100%;
-      border-radius: 10px;
-      border: 1px solid #333;
-      font-size: 16px;
-      background: rgba(42, 42, 42, 0.8);
-      color: #fff;
-      box-sizing: border-box;
-      transition: all 0.3s ease;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #00ffe1;
-      background: rgba(57, 57, 57, 0.9);
-      box-shadow: 0 0 15px rgba(0, 255, 225, 0.3);
-    }
-    button {
-      padding: 15px 25px;
-      margin: 10px 5px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: 100%;
-    }
-    .btn-primary {
-      background: linear-gradient(45deg, #00ffe1, #00c7aa);
-      color: #000;
-    }
-    .btn-primary:hover { background: linear-gradient(45deg, #00c7aa, #00ffe1); transform: translateY(-2px); }
-    .btn-success { background: linear-gradient(45deg, #28a745, #20c997); color: white; }
-    .btn-success:hover { background: linear-gradient(45deg, #20c997, #28a745); }
-    .btn-danger { background: linear-gradient(45deg, #dc3545, #c82333); color: white; }
-    .btn-danger:hover { background: linear-gradient(45deg, #c82333, #dc3545); }
-    .btn-warning { background: linear-gradient(45deg, #ffc107, #e0a800); color: #000; }
-    .btn-warning:hover { background: linear-gradient(45deg, #e0a800, #ffc107); }
-    .payment-info {
-      background: rgba(40, 167, 69, 0.2);
-      padding: 20px;
-      border-radius: 12px;
-      border-left: 4px solid #28a745;
-      margin: 20px 0;
-    }
-    .code-display {
-      background: linear-gradient(45deg, #00ffe1, #00c7aa);
-      color: #000;
-      font-size: 24px;
-      font-weight: 700;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      margin: 20px 0;
-      letter-spacing: 3px;
-    }
-    .status-pending { color: #ffc107; }
-    .status-approved { color: #28a745; }
-    .status-rejected { color: #dc3545; }
-    .admin-login-box {
-      background: rgba(220, 53, 69, 0.15);
-      border: 2px solid #dc3545;
-    }
+    /* Same dark theme CSS */
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #121212 0%, #1a1a2e 50%, #16213e 100%); color: #e0e0e0; margin: 0; padding: 15px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .box { background: rgba(30,30,30,0.95); padding: 25px; margin: 15px 0; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,255,225,0.2); max-width: 700px; width: 100%; }
+    h2 { color: #00ffe1; text-align: center; font-size: 28px; margin: 20px 0; }
+    h3, h4 { color: #00ffe1; text-align: center; }
+    input, button, select { padding: 14px; margin: 8px 0; width: 100%; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+    input { background: #2a2a2a; color: #fff; }
+    button { background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000; font-weight: 700; cursor: pointer; }
+    button:hover { background: linear-gradient(45deg, #00c7aa, #00ffe1); }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th { background: #222; color: #00ffe1; padding: 15px; }
+    td { padding: 12px; text-align: center; border-bottom: 1px solid #333; background: #1c1c1c; }
+    .product-card { background: rgba(0,255,225,0.1); border: 2px solid #00ffe1; border-radius: 12px; padding: 20px; margin: 10px 0; }
     .hidden { display: none !important; }
-    .auth-section { margin-top: 20px; padding: 15px; background: rgba(0,255,225,0.1); border-radius: 10px; }
-    .certificate-box {
-      border: 2px solid #28a745;
-      background: rgba(40, 167, 69, 0.15);
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.8);
-    }
-    .modal-content {
-      background: rgba(30, 30, 30, 0.95);
-      margin: 5% auto;
-      padding: 30px;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
-      border: 1px solid rgba(0, 255, 225, 0.3);
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .close:hover { color: #00ffe1; }
-    @media (max-width: 640px) {
-      .box { padding: 20px 15px; margin: 10px 0; }
-      h2 { font-size: 24px; }
-      .modal-content { margin: 10% auto; width: 95%; }
-    }
+    .admin-section { border: 2px solid #ff6b6b; background: rgba(43,27,27,0.9); }
+    .bv-points { color: #ffaa00; font-weight: bold; font-size: 18px; }
   </style>
 </head>
 <body>
-  <h2>🚀 Ashirwad Mart P - Founder Registration</h2>
-
-  <!-- Founder Registration Form -->
-  <div id="registerBox" class="box">
-    <h3>👑 Founder Registration</h3>
-    <p><strong>Product:</strong> 3 Sanitary Pads + Founder Certificate</p>
-    
-    <div class="payment-info">
-      <h4>💰 Payment Details</h4>
-      <p><strong>UPI ID:</strong> <code>ashutoshkarmkar7-1@oksbi</code></p>
-      <p><strong>Amount:</strong> <strong>₹150</strong></p>
-      <p><em>Payment karne ke baad "Payment Reference" mein UPI Transaction ID daalein</em></p>
-    </div>
-
-    <input type="text" id="founderName" placeholder="Full Name *" required />
-    <input type="tel" id="founderMobile" placeholder="Mobile Number *" required />
-    <input type="email" id="founderEmail" placeholder="Email (optional)" />
-    <input type="text" id="founderAddress" placeholder="Address *" required />
-    <input type="text" id="paymentRef" placeholder="UPI Transaction ID / Reference *" required />
-    <input type="text" id="paymentScreenshot" placeholder="Payment Screenshot URL (optional)" />
-    
-    <select id="productReceived">
-      <option value="No">Product Received? No</option>
-      <option value="Yes">Product Received? Yes</option>
-    </select>
-    
-    <button class="btn-primary" onclick="registerFounder()">📝 Register Founder</button>
+  <h2>🚀 Ashirwad Mart P - Legal Product MLM</h2>
+  
+  <!-- LOGIN -->
+  <div id="loginBox" class="box">
+    <h3>🔐 Login</h3>
+    <input type="text" id="loginId" placeholder="User ID" />
+    <input type="password" id="loginPass" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p><a onclick="showRegister()" style="color: #00ffe1; cursor: pointer;">New? Register</a></p>
   </div>
 
-  <!-- CERTIFICATE DOWNLOAD SECTION -->
-  <div id="certificateBox" class="box certificate-box">
-    <h3>📜 Founder Certificate Download</h3>
-    <p><strong>✅ Approval ke baad yahan se PDF Certificate download karein</strong></p>
-    <input type="tel" id="certMobile" placeholder="Registered Mobile Number *" required />
-    <input type="text" id="certCode" placeholder="Founder Code (FXXXXXXX) *" required />
-    <button class="btn-success" onclick="downloadCertificate()">🎓 Download Certificate PDF</button>
-    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
-      <em>Admin approval ke baad hi download hoga</em>
-    </p>
+  <!-- REGISTER -->
+  <div id="registerBox" class="box hidden">
+    <h3>📝 Register</h3>
+    <input type="text" id="regName" placeholder="Full Name" />
+    <input type="text" id="regMobile" placeholder="Mobile" />
+    <input type="text" id="regWallet" placeholder="BEP20 USDT Wallet" />
+    <input type="password" id="regPassword" placeholder="Password" />
+    <input type="text" id="regRef" placeholder="Referral ID (Optional)" />
+    <button onclick="register()">Register</button>
   </div>
 
-  <!-- Admin Login -->
-  <div id="adminLoginBox" class="box admin-login-box">
-    <h3>🔐 Admin Login</h3>
-    <div class="auth-section">
-      <p><strong>Admin Email:</strong> admin@ashirwadmart.com</p>
-      <input type="password" id="adminPasswordInput" placeholder="Enter Password" />
-      <button class="btn-success" onclick="adminSignIn()">Login to Admin Panel</button>
-    </div>
-  </div>
-
-  <!-- Admin Panel -->
-  <div id="adminPanel" class="box hidden" style="max-width: 1200px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3>🛠️ Admin - Founder Registrations</h3>
-      <div>
-        <button class="btn-success" onclick="refreshFounders()" style="width: auto; padding: 10px 20px; margin-right: 10px;">🔄 Refresh</button>
-        <button class="btn-danger" onclick="adminLogout()" style="width: auto; padding: 10px 20px;">🚪 Logout</button>
-      </div>
+  <!-- USER DASHBOARD -->
+  <div id="userDashboard" class="box hidden">
+    <h3>👋 <span id="userName"></span></h3>
+    <p>ID: <span id="userId"></span> | BV Balance: <span class="bv-points" id="userBV">0</span></p>
+    
+    <h4>🛍️ Products (Buy to Activate)</h4>
+    <div class="product-card">
+      <h5>Sanitary Pads (₹150 = 150 BV)</h5>
+      <p><strong>Physical Product Delivered + 150 BV</strong></p>
+      <input type="number" id="sanitaryQty" placeholder="Quantity" min="1" max="10" value="1" />
+      <button onclick="buySanitaryPads()">Buy Now (₹150 ea)</button>
     </div>
     
-    <div id="foundersList"></div>
+    <div class="product-card">
+      <h5>Health Pack (₹500 = 500 BV)</h5>
+      <p><strong>Supplements + 500 BV</strong></p>
+      <input type="number" id="healthQty" placeholder="Quantity" min="1" max="5" value="1" />
+      <button onclick="buyHealthPack()">Buy Now (₹500 ea)</button>
+    </div>
+
+    <h4>📊 Your Team (6 Levels)</h4>
+    <button onclick="showTeamTree()">View Team Tree</button>
+    <div id="teamTree"></div>
+
+    <h4>💰 Commission History</h4>
+    <div id="commissionHistory"></div>
+
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- Edit Modal -->
-  <div id="editModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeEditModal()">&times;</span>
-      <h3>✏️ Edit Founder Details</h3>
-      <input type="text" id="editName" placeholder="Full Name" />
-      <input type="tel" id="editMobile" placeholder="Mobile Number" />
-      <input type="email" id="editEmail" placeholder="Email" />
-      <input type="text" id="editAddress" placeholder="Address" />
-      <input type="text" id="editPaymentRef" placeholder="Payment Reference" />
-      <select id="editProductReceived">
-        <option value="No">Product Received? No</option>
-        <option value="Yes">Product Received? Yes</option>
-      </select>
-      <select id="editStatus">
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
-      <div style="display: flex; gap: 10px;">
-        <button class="btn-primary" onclick="saveEdit()" style="flex: 1;">💾 Save Changes</button>
-        <button class="btn-danger" onclick="deleteFounder()" style="flex: 1;">🗑️ Delete Founder</button>
-      </div>
-    </div>
+  <!-- ADMIN PANEL -->
+  <div id="adminPanel" class="box admin-section hidden">
+    <h3>🛠️ Admin Dashboard</h3>
+    <div>Total BV Sold: <span id="totalBV">0</span> | Active Users: <span id="totalUsers">0</span></div>
+    
+    <h4>Pending Product Orders</h4>
+    <table id="ordersTable">
+      <tr><th>ID</th><th>Name</th><th>Product</th><th>Qty</th><th>BV</th><th>Status</th><th>Actions</th></tr>
+    </table>
+
+    <h4>All Users</h4>
+    <table id="usersTable">
+      <tr><th>ID</th><th>Name</th><th>BV</th><th>Orders</th><th>Status</th></tr>
+    </table>
+
+    <button onclick="logout()">Logout</button>
   </div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
-    authDomain: "ashirwadmart-6d657.firebaseapp.com",
-    databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
-    projectId: "ashirwadmart-6d657",
-    storageBucket: "ashirwadmart-6d657.appspot.com",
-    messagingSenderId: "1013585797321",
-    appId: "1:1013585797321:web:8a5c5fdb50c6aa7e7e57aa"
-  };
-  
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const auth = firebase.auth();
+const firebaseConfig = {
+  apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
+  authDomain: "ashirwadmart-6d657.firebaseapp.com",
+  databaseURL: "https://ashirwadmart-6d657-default-rtdb.firebaseio.com",
+  projectId: "ashirwadmart-6d657"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  let isAdminLoggedIn = false;
-  let editingKey = null;
+let currentId = "";
 
-  // Secure founder code generation with retry
-  async function generateUniqueFounderCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let attempts = 0;
-    while (attempts < 10) {
-      let code = 'F';
-      for (let i = 0; i < 7; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      
-      const codeCheck = await db.ref('founders').orderByChild('code').equalTo(code).once('value');
-      if (!codeCheck.exists()) {
-        return code;
-      }
-      attempts++;
-    }
-    return 'F' + Date.now().toString(36).toUpperCase().substring(0, 7);
+// ✅ LEGAL 6-LEVEL COMMISSION STRUCTURE (70% BV Distribution)
+const LEVEL_COMMISSIONS = [0.175, 0.105, 0.084, 0.07, 0.035, 0.021]; // 17.5%, 10.5%, etc. = 49%
+
+function show(ele) { document.getElementById(ele).classList.remove('hidden'); }
+function hide(ele) { document.getElementById(ele).classList.add('hidden'); }
+function toggleLoginRegister() {
+  hide('loginBox'); show('registerBox');
+}
+
+async function register() {
+  const name = document.getElementById('regName').value;
+  const mobile = document.getElementById('regMobile').value;
+  const wallet = document.getElementById('regWallet').value;
+  const password = document.getElementById('regPassword').value;
+  const ref = document.getElementById('regRef').value || '';
+
+  if (!name || !mobile || !wallet || !password) {
+    return alert('Fill all fields');
   }
 
-  async function registerFounder() {
-    const name = document.getElementById('founderName').value.trim();
-    const mobile = document.getElementById('founderMobile').value.trim();
-    const email = document.getElementById('founderEmail').value.trim();
-    const address = document.getElementById('founderAddress').value.trim();
-    const paymentRef = document.getElementById('paymentRef').value.trim();
-    const screenshot = document.getElementById('paymentScreenshot').value.trim();
-    const productReceived = document.getElementById('productReceived').value;
+  const id = 'U' + Date.now().toString().slice(-6);
+  await db.ref('users/' + id).set({
+    name, mobile, wallet, password, ref,
+    bvBalance: 0, totalOrders: 0, status: 'Active',
+    commissions: 0, level1: 0, level2: 0, level3: 0, level4: 0, level5: 0, level6: 0
+  });
 
-    if (!name || !mobile || !address || !paymentRef) {
-      return alert('❌ सभी required fields भरें!');
-    }
+  alert(`✅ Registered! ID: ${id}
+Buy products to get BV & commissions!`);
+  location.reload();
+}
 
-    if (mobile.length !== 10 || isNaN(mobile)) {
-      return alert('❌ Valid 10-digit mobile number enter करें!');
-    }
+function login() {
+  const id = document.getElementById('loginId').value;
+  const pass = document.getElementById('loginPass').value;
 
-    try {
-      const founderCode = await generateUniqueFounderCode();
-      
-      const founderData = {
-        name,
-        mobile,
-        email: email || '',
-        address,
-        paymentRef,
-        screenshot,
-        productReceived,
-        code: founderCode,
-        status: 'Pending',
-        timestamp: new Date().toISOString(),
-        paymentAmount: 150
-      };
-
-      await db.ref('founders').push(founderData);
-      
-      alert(`✅ Founder Registered!
-
-Your Unique Founder Code: ${founderCode}
-
-इसे safe रखें और share न करें।
-Admin approval का wait करें।`);
-      
-      // Clear form
-      document.getElementById('founderName').value = '';
-      document.getElementById('founderMobile').value = '';
-      document.getElementById('founderEmail').value = '';
-      document.getElementById('founderAddress').value = '';
-      document.getElementById('paymentRef').value = '';
-      document.getElementById('paymentScreenshot').value = '';
-      
-      showFounderCode(founderCode);
-    } catch (err) {
-      alert('❌ Registration failed: ' + err.message);
-    }
+  if (id === 'Admin' && pass === 'Jaihanuman@7') {
+    currentId = 'Admin';
+    hide('loginBox'); show('adminPanel');
+    loadAdmin();
+    return;
   }
 
-  function showFounderCode(code) {
-    const box = document.getElementById('registerBox');
-    const existingCode = box.querySelector('.code-display');
-    if (existingCode) existingCode.remove();
-    
-    box.innerHTML += `
-      <div class="code-display">🎉 ${code} 🎉</div>
-      <p style="text-align: center; color: #00ffe1;">
-        Founder Code generate हो गया! Admin approval का wait करें।
-      </p>
-    `;
-  }
-
-  // FIXED CERTIFICATE DOWNLOAD FUNCTION
-  async function downloadCertificate() {
-    const mobile = document.getElementById('certMobile').value.trim();
-    const code = document.getElementById('certCode').value.trim().toUpperCase();
-
-    if (!mobile || !code) return alert('❌ Mobile number aur Founder Code enter karein!');
-    if (mobile.length !== 10 || isNaN(mobile)) {
-      return alert('❌ Valid 10-digit mobile number enter karein!');
-    }
-    if (!code.startsWith('F')) {
-      return alert('❌ Founder Code "F" se start hona chahiye!');
-    }
-
-    try {
-      console.log('Searching for founder with mobile:', mobile, 'and code:', code);
-      
-      // First check by mobile
-      const mobileSnap = await db.ref('founders')
-        .orderByChild('mobile')
-        .equalTo(mobile)
-        .once('value');
-
-      if (!mobileSnap.exists()) {
-        return alert('❌ Is mobile number se koi founder registration nahi mila!');
-      }
-
-      let matchedFounder = null;
-      mobileSnap.forEach(child => {
-        const data = child.val();
-        console.log('Found founder:', data.code, 'vs input:', code);
-        if (data.code && data.code.toUpperCase() === code) {
-          matchedFounder = data;
-          editingKey = child.key; // Store key for reference
-        }
-      });
-
-      if (!matchedFounder) {
-        return alert('❌ Founder Code galat hai ya is mobile number se match nahi ho raha!');
-      }
-
-      console.log('Matched founder status:', matchedFounder.status);
-      
-      if (matchedFounder.status !== 'Approved') {
-        return alert(`⏳ Aapka registration status: "${matchedFounder.status}" hai। Admin se approval ka wait karein।`);
-      }
-
-      // Generate PDF Certificate
-      generateCertificatePDF(matchedFounder);
-      
-      // Clear fields
-      document.getElementById('certMobile').value = '';
-      document.getElementById('certCode').value = '';
-      
-    } catch (err) {
-      console.error('Certificate error:', err);
-      alert('❌ Error: ' + err.message);
-    }
-  }
-
-  function generateCertificatePDF(founder) {
-    try {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('landscape', 'pt', 'a4');
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // Beautiful border
-      doc.setLineWidth(5);
-      doc.setDrawColor(0, 255, 225);
-      doc.rect(30, 30, pageWidth - 60, pageHeight - 60);
-
-      // Title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(32);
-      doc.setTextColor(0, 255, 225);
-      doc.text('ASHIRWAD MART P', pageWidth / 2, 100, { align: 'center' });
-
-      doc.setFontSize(22);
-      doc.setTextColor(255, 255, 255);
-      doc.text('FOUNDER CERTIFICATE', pageWidth / 2, 140, { align: 'center' });
-
-      // Certificate text
-      doc.setFontSize(16);
-      doc.setTextColor(220, 220, 220);
-      doc.text('This is to certify that', pageWidth / 2, 190, { align: 'center' });
-
-      // Founder Name - BIG
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 255, 225);
-      doc.text(founder.name.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
-
-      // Details
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(200, 200, 200);
-
-      const approvedDate = founder.approvedAt || founder.timestamp;
-      const dateStr = approvedDate ? new Date(approvedDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
-
-      doc.text(`Founder Code: ${founder.code}`, pageWidth / 2, 270, { align: 'center' });
-      doc.text(`Mobile: ${founder.mobile}`, pageWidth / 2, 295, { align: 'center' });
-      doc.text(`Approval Date: ${dateStr}`, pageWidth / 2, 320, { align: 'center' });
-
-      // Signature area
-      doc.setFontSize(12);
-      doc.text('Authorised Signatory', pageWidth - 200, pageHeight - 80);
-      doc.text('Ashirwad Mart P', pageWidth - 200, pageHeight - 55);
-      doc.text('admin@ashirwadmart.com', pageWidth - 200, pageHeight - 40);
-
-      // Save PDF
-      const fileName = `AshirwadMartP_Founder_${founder.code}_${founder.name.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
-      doc.save(fileName);
-
-      alert('🎉 Certificate successfully downloaded!');
-    } catch (pdfErr) {
-      console.error('PDF generation error:', pdfErr);
-      alert('❌ PDF generation failed. Console me error check karein.');
-    }
-  }
-
-  // Admin functions
-  async function adminSignIn() {
-    const password = document.getElementById('adminPasswordInput').value;
-    if (!password) return alert('❌ Password enter करें!');
-
-    if (password === 'Jaihanuman@2025!') {
-      isAdminLoggedIn = true;
-      document.getElementById('adminLoginBox').classList.add('hidden');
-      document.getElementById('adminPanel').classList.remove('hidden');
-      document.getElementById('adminPasswordInput').value = '';
-      loadFounders();
-      alert('✅ Admin Login Successful!');
+  db.ref('users/' + id).once('value').then(snap => {
+    const data = snap.val();
+    if (data && data.password === pass) {
+      currentId = id;
+      loadUserDashboard(id);
+      hide('loginBox'); show('userDashboard');
     } else {
-      alert('❌ Wrong Password!');
-      document.getElementById('adminPasswordInput').value = '';
+      alert('Invalid credentials');
     }
-  }
+  });
+}
 
-  function adminLogout() {
-    isAdminLoggedIn = false;
-    document.getElementById('adminPanel').classList.add('hidden');
-    document.getElementById('adminLoginBox').classList.remove('hidden');
-    document.getElementById('adminPasswordInput').value = '';
-    document.getElementById('foundersList').innerHTML = '';
-  }
+function loadUserDashboard(id) {
+  db.ref('users/' + id).on('value', snap => {
+    const data = snap.val();
+    document.getElementById('userName').textContent = data.name;
+    document.getElementById('userId').textContent = id;
+    document.getElementById('userBV').textContent = data.bvBalance || 0;
+  });
+}
 
-  // NEW: Edit Modal Functions
-  function openEditModal(key, data) {
-    if (!isAdminLoggedIn) return alert('❌ Admin login required!');
-    
-    editingKey = key;
-    document.getElementById('editName').value = data.name || '';
-    document.getElementById('editMobile').value = data.mobile || '';
-    document.getElementById('editEmail').value = data.email || '';
-    document.getElementById('editAddress').value = data.address || '';
-    document.getElementById('editPaymentRef').value = data.paymentRef || '';
-    document.getElementById('editProductReceived').value = data.productReceived || 'No';
-    document.getElementById('editStatus').value = data.status || 'Pending';
-    
-    document.getElementById('editModal').style.display = 'block';
-  }
+// ✅ PRODUCT PURCHASE (LEGAL - Physical Product + BV)
+async function buySanitaryPads() {
+  const qty = parseInt(document.getElementById('sanitaryQty').value);
+  const totalBV = qty * 150;
+  const orderId = currentId + '_S_' + Date.now();
 
-  function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-    editingKey = null;
-  }
+  await db.ref('orders/' + orderId).set({
+    userId: currentId, product: 'Sanitary Pads', qty, totalBV,
+    amountINR: qty * 150, status: 'Pending', timestamp: Date.now()
+  });
 
-  async function saveEdit() {
-    if (!editingKey || !isAdminLoggedIn) return;
-    
-    const updates = {
-      name: document.getElementById('editName').value.trim(),
-      mobile: document.getElementById('editMobile').value.trim(),
-      email: document.getElementById('editEmail').value.trim(),
-      address: document.getElementById('editAddress').value.trim(),
-      paymentRef: document.getElementById('editPaymentRef').value.trim(),
-      productReceived: document.getElementById('editProductReceived').value,
-      status: document.getElementById('editStatus').value
-    };
+  // Add to user total orders
+  db.ref('users/' + currentId).transaction(user => {
+    if (user) user.totalOrders = (user.totalOrders || 0) + qty;
+    return user;
+  });
 
-    if (updates.status === 'Approved') {
-      updates.certificateAvailable = true;
-      updates.approvedAt = new Date().toISOString();
-    }
+  alert(`✅ Order placed! ₹${qty*150} for ${qty} packs
+Admin will approve & ship + ${totalBV} BV`);
+}
 
-    try {
-      await db.ref('founders/' + editingKey).update(updates);
-      alert('✅ Founder details updated successfully!');
-      closeEditModal();
-      loadFounders();
-    } catch (err) {
-      alert('❌ Update failed: ' + err.message);
-    }
-  }
+async function buyHealthPack() {
+  const qty = parseInt(document.getElementById('healthQty').value);
+  const totalBV = qty * 500;
+  const orderId = currentId + '_H_' + Date.now();
 
-  async function deleteFounder() {
-    if (!editingKey || !isAdminLoggedIn) return;
-    
-    if (confirm('🗑️ Are you sure you want to PERMANENTLY delete this founder?')) {
-      try {
-        await db.ref('founders/' + editingKey).remove();
-        alert('✅ Founder deleted successfully!');
-        closeEditModal();
-        loadFounders();
-      } catch (err) {
-        alert('❌ Delete failed: ' + err.message);
-      }
-    }
-  }
+  await db.ref('orders/' + orderId).set({
+    userId: currentId, product: 'Health Pack', qty, totalBV,
+    amountINR: qty * 500, status: 'Pending', timestamp: Date.now()
+  });
 
-  function loadFounders() {
-    if (!isAdminLoggedIn) return;
-    
-    db.ref('founders').orderByChild('timestamp').limitToLast(100).on('value', snap => {
-      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
-      html += '<thead><tr style="background: linear-gradient(45deg, #00ffe1, #00c7aa); color: #000;">';
-      html += '<th style="padding: 12px; text-align: center;">Code</th>';
-      html += '<th style="padding: 12px;">Name</th>';
-      html += '<th style="padding: 12px;">Mobile</th>';
-      html += '<th style="padding: 12px;">Payment Ref</th>';
-      html += '<th style="padding: 12px;">Status</th>';
-      html += '<th style="padding: 12px;">Date</th>';
-      html += '<th style="padding: 12px;">Actions</th></tr></thead><tbody>';
+  db.ref('users/' + currentId).transaction(user => {
+    if (user) user.totalOrders = (user.totalOrders || 0) + qty;
+    return user;
+  });
 
-      let totalPending = 0, totalApproved = 0, totalRejected = 0;
+  alert(`✅ Order placed! ₹${qty*500} for ${qty} packs
+Admin approval → Ship + ${totalBV} BV`);
+}
 
-      snap.forEach(child => {
-        const data = child.val();
-        const key = child.key;
-        const statusClass = data.status === 'Approved' ? 'status-approved' : 
-                           data.status === 'Rejected' ? 'status-rejected' : 'status-pending';
-        const date = data.timestamp ? new Date(data.timestamp).toLocaleString('en-IN') : '';
-        
-        if (data.status === 'Pending') totalPending++;
-        if (data.status === 'Approved') totalApproved++;
-        if (data.status === 'Rejected') totalRejected++;
-
-        html += `<tr style="border-bottom: 1px solid #333;">`;
-        html += `<td style="padding: 12px; font-weight: bold; color: #00ffe1;">${data.code}</td>`;
-        html += `<td style="padding: 12px;">${data.name}</td>`;
-        html += `<td style="padding: 12px;">${data.mobile}</td>`;
-        html += `<td style="padding: 12px; font-size: 12px; max-width: 150px; word-break: break-all;">${data.paymentRef}</td>`;
-        html += `<td style="padding: 12px;"><span class="${statusClass}">${data.status}</span></td>`;
-        html += `<td style="padding: 12px; font-size: 12px;">${date}</td>`;
-        html += `<td style="padding: 12px;">
-                  <button class="btn-warning" onclick="openEditModal('${key}', ${JSON.stringify(data)})" 
-                          title="Edit" style="padding: 5px 10px; margin: 2px; font-size: 12px;">✏️ Edit</button>
-                  <button class="btn-success" onclick="updateStatus('${key}', 'Approved')" 
-                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">✅ Approve</button>
-                  <button class="btn-danger" onclick="updateStatus('${key}', 'Rejected')" 
-                          style="padding: 5px 10px; margin: 2px; font-size: 12px;">❌ Reject</button>
-                 </td>`;
-        html += `</tr>`;
-      });
-
-      html += '</tbody></table>';
-      html += `<div style="margin-top: 20px; padding: 15px; background: rgba(0,255,225,0.1); border-radius: 10px;">`;
-      html += `<strong>📊 Total: Pending-${totalPending} | Approved-${totalApproved} | Rejected-${totalRejected}</strong>`;
-      html += `</div>`;
-
-      document.getElementById('foundersList').innerHTML = html;
+// ✅ 6-LEVEL TEAM TREE
+async function showTeamTree() {
+  const treeDiv = document.getElementById('teamTree');
+  let html = '<div style="max-height:400px;overflow:auto;">';
+  
+  for (let level = 1; level <= 6; level++) {
+    const users = await getLevelUsers(currentId, level);
+    html += `<h5>L${level} (${users.length} members): ${users.reduce((sum, u) => sum + (u.bvBalance||0), 0).toFixed(0)} BV</h5>`;
+    users.slice(0,10).forEach(u => {
+      html += `<div>${u.id}: ${u.name} (${u.bvBalance} BV)</div>`;
     });
   }
+  html += '</div>';
+  treeDiv.innerHTML = html;
+}
 
-  function updateStatus(key, status) {
-    if (!isAdminLoggedIn) return alert('❌ Admin login required!');
-    
-    if (confirm(`Are you sure? Status will be changed to "${status}"`)) {
-      const updates = { status };
-      if (status === 'Approved') {
-        updates.certificateAvailable = true;
-        updates.approvedAt = new Date().toISOString();
-      }
-      db.ref('founders/' + key).update(updates).then(() => {
-        alert('✅ Status updated successfully!');
-        loadFounders();
-      }).catch(err => {
-        alert('❌ Error: ' + err.message);
-      });
-    }
-  }
+function logout() {
+  currentId = '';
+  hide('userDashboard');
+  hide('adminPanel');
+  show('loginBox');
+}
 
-  function refreshFounders() {
-    loadFounders();
-  }
+// ADMIN FUNCTIONS
+async function loadAdmin() {
+  const ordersSnap = await db.ref('orders').once('value');
+  const usersSnap = await db.ref('users').once('value');
+  
+  let totalBV = 0, totalUsers = 0;
+  const tbody = document.querySelector('#ordersTable').parentNode.querySelector('tbody') || document.querySelector('#ordersTable');
+  tbody.innerHTML = '';
 
-  // Modal backdrop click to close
-  window.onclick = function(event) {
-    const modal = document.getElementById('editModal');
-    if (event.target == modal) {
-      closeEditModal();
-    }
-  }
-
-  // Enter key support
-  document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && document.getElementById('adminPasswordInput') === document.activeElement) {
-      adminSignIn();
+  ordersSnap.forEach(snap => {
+    const order = snap.val();
+    if (order.status === 'Pending') {
+      totalBV += order.totalBV;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${order.userId}</td>
+        <td>${order.userId}</td>
+        <td>${order.product}</td>
+        <td>${order.qty}</td>
+        <td>${order.totalBV}</td>
+        <td>${order.status}</td>
+        <td>
+          <button onclick="approveOrder('${snap.key}')">✅ Approve</button>
+          <button onclick="rejectOrder('${snap.key}')">❌ Reject</button>
+        </td>`;
+      tbody.appendChild(tr);
     }
   });
 
-  // Initialize
-  document.getElementById('adminPasswordInput').focus();
+  // Users table
+  const usersTbody = document.querySelector('#usersTable').parentNode.querySelector('tbody') || document.querySelector('#usersTable');
+  usersTbody.innerHTML = '';
+  usersSnap.forEach(snap => {
+    const user = snap.val();
+    totalUsers++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${snap.key}</td><td>${user.name}</td><td>${user.bvBalance||0}</td><td>${user.totalOrders||0}</td><td>${user.status}</td>`;
+    usersTbody.appendChild(tr);
+  });
+
+  document.getElementById('totalBV').textContent = totalBV;
+  document.getElementById('totalUsers').textContent = totalUsers;
+}
+
+async function approveOrder(orderId) {
+  const orderSnap = await db.ref('orders/' + orderId).once('value');
+  const order = orderSnap.val();
+  
+  // ✅ ADD BV TO USER (Legal - Product delivered)
+  await db.ref('users/' + order.userId).transaction(user => {
+    if (user) {
+      user.bvBalance = (user.bvBalance || 0) + order.totalBV;
+      // Distribute 6-level commissions (49% of BV)
+      distributeCommissions(order.userId, order.totalBV);
+    }
+    return user;
+  });
+
+  // Mark order complete
+  await db.ref('orders/' + orderId).update({ status: 'Approved', approvedAt: Date.now() });
+  
+  alert(`✅ Order approved! ${order.totalBV} BV added + commissions distributed`);
+  loadAdmin();
+}
+
+function distributeCommissions(userId, bvAmount) {
+  let current = userId;
+  for (let level = 0; level < 6; level++) {
+    db.ref('users/' + current).once('value').then(snap => {
+      const referrerId = snap.val()?.ref;
+      if (!referrerId) return;
+      
+      const commission = bvAmount * LEVEL_COMMISSIONS[level];
+      db.ref('users/' + referrerId).transaction(user => {
+        if (user) {
+          user.bvBalance += commission;
+          user[`level${level+1}`] = (user[`level${level+1}`] || 0) + 1;
+        }
+        return user;
+      });
+    });
+    // Get next upline
+    db.ref('users/' + current).once('value').then(snap => {
+      current = snap.val()?.ref || '';
+    });
+  }
+}
+
+document.getElementById('loginId').addEventListener('keypress', e => {
+  if (e.key === 'Enter') login();
+});
 </script>
 </body>
 </html>
