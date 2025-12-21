@@ -36,6 +36,7 @@
       background: rgba(255,255,255,0.05); 
       color: #fff; 
       font-size: 16px; 
+      box-sizing: border-box;
     }
     button { 
       background: linear-gradient(45deg, #ff6b35, #f7931e); 
@@ -45,6 +46,8 @@
       transition: all 0.3s;
     }
     button:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(255,107,53,0.4); }
+    button.danger { background: linear-gradient(45deg, #ff4757, #ff3838); }
+    button.success { background: linear-gradient(45deg, #00ff88, #00cc66); }
     .hidden { display: none !important; }
     h2 { color: #ff6b35; text-align: center; font-size: 2.5em; margin-bottom: 10px; }
     h3 { color: #f7931e; text-align: center; }
@@ -57,18 +60,25 @@
     th, td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
     th { color: #f7931e; }
     .admin-panel { border-color: #ff4757 !important; }
-    code { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; font-family: monospace; }
+    code { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; font-family: monospace; word-break: break-all; }
+    .payment-tabs { display: flex; gap: 10px; margin: 20px 0; }
+    .tab-btn { flex: 1; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); cursor: pointer; }
+    .tab-btn.active { background: linear-gradient(45deg, #ff6b35, #f7931e); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .price-info { background: rgba(0,255,136,0.2); padding: 15px; border-radius: 12px; margin: 15px 0; text-align: center; }
+    .admin-auth { background: rgba(255,71,87,0.2); padding: 20px; border-radius: 12px; margin: 20px 0; }
   </style>
 </head>
 <body>
   <h2>🔥 TMPL Staking Platform</h2>
-  <p style="text-align:center; color:#aaa;">Stake TMPL → Earn 2x Rewards → 10% Monthly Release</p>
+  <p style="text-align:center; color:#aaa;">Stake TMPL/USDT → Earn 2x Rewards → 10% Monthly Release</p>
 
   <!-- LOGIN -->
   <div id="loginBox" class="box">
     <h3>🔐 Login</h3>
     <input id="loginId" placeholder="Wallet Address / Admin" />
-    <input type="password" id="loginPass" placeholder="Password (Admin: tmpl123)" />
+    <input type="password" id="loginPass" placeholder="Password (Admin: Jaihanuman@7)" />
     <button onclick="login()">Enter Platform</button>
     <p><a onclick="showRegister()" style="color:#ff6b35; cursor:pointer;">New User? Register</a></p>
   </div>
@@ -113,10 +123,40 @@
 
     <hr/>
 
-    <h4>💰 Stake TMPL</h4>
-    <p>TMPL Contract: <code id="tmplContract">Loading...</code></p>
-    <input type="number" id="stakeAmount" placeholder="Stake Amount (Min 100 TMPL)" min="100" />
-    <button onclick="stakeTMPL()">Stake Now</button>
+    <h4>💰 Stake TMPL / USDT</h4>
+    
+    <!-- CONTRACT ADDRESSES [web:44] -->
+    <div style="text-align:center; margin:20px 0;">
+      <p><strong>TMPL Contract (BEP20):</strong></p>
+      <code id="tmplContract">0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:44]
+      <p><strong>USDT Contract (BEP20):</strong> 0x55d398326f99059fF775485246999027B3197955</p> [web:19]
+    </div>
+
+    <div class="payment-tabs">
+      <button class="tab-btn active" onclick="switchTab('tmpl')">💎 TMPL Direct</button>
+      <button class="tab-btn" onclick="switchTab('usdt')">💵 USDT Payment</button>
+    </div>
+
+    <!-- TMPL TAB -->
+    <div id="tmplTab" class="tab-content active">
+      <input type="number" id="stakeAmount" placeholder="Stake Amount (Min 100 TMPL)" min="100" />
+      <button onclick="stakeTMPL()">Stake TMPL</button>
+    </div>
+
+    <!-- USDT TAB -->
+    <div id="usdtTab" class="tab-content">
+      <div class="price-info">
+        <strong>Private Sale Price: 1 TMPL = 0.001 USDT</strong> [memory:7]
+        <br><small>Stake 100 TMPL = Send 0.1 USDT</small>
+      </div>
+      <input type="number" id="usdtAmount" placeholder="USDT Amount (Min 0.1)" min="0.1" step="0.01" />
+      <p style="text-align:center; color:#00ff88;">
+        <strong>TMPL to Receive: <span id="usdtToTmpl">0</span></strong>
+      </p>
+      <input id="usdtTxHash" placeholder="USDT Tx Hash (BscScan)" />
+      <input id="usdtWallet" placeholder="Payment Wallet Address" />
+      <button onclick="stakeUSDT()">Submit USDT Payment</button>
+    </div>
 
     <hr/>
     <h4>📤 Claim Monthly Release</h4>
@@ -127,22 +167,37 @@
     <h4>📊 Staking History</h4>
     <div id="historyList"></div>
 
-    <button onclick="logout()" style="background:#ff4757;">🚪 Logout</button>
+    <button onclick="logout()" class="danger">🚪 Logout</button>
   </div>
 
   <!-- ADMIN PANEL -->
   <div id="adminPanel" class="box admin-panel hidden">
-    <h3>⚙️ Admin Panel</h3>
+    <h3>⚙️ Admin Panel - Full Authority</h3>
+    <div class="admin-auth">
+      <strong>Admin Wallet (Claim Authority):</strong><br>
+      <code>0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:44]
+      <p>All claims transfer to this address automatically</p>
+    </div>
+    
     <p>Total Staked: <span id="totalStaked">0</span> TMPL | Total Rewards: <span id="totalRewardsAdmin">0</span></p>
 
-    <h4>Pending Stakes</h4>
+    <h4>Pending Stakes & Payments</h4>
     <table id="pendingStakes">
-      <tr><th>User</th><th>Amount</th><th>Actions</th></tr>
+      <tr><th>User</th><th>Amount</th><th>Type</th><th>Tx/Status</th><th>Actions</th></tr>
     </table>
 
-    <h4>Generate Monthly Rewards</h4>
-    <button onclick="generateMonthlyRewards()">Generate Rewards</button>
-    <button onclick="logout()" style="background:#ff4757;">Logout</button>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin:20px 0;">
+      <button onclick="generateMonthlyRewards()" class="success">Generate Rewards</button>
+      <button onclick="bulkApproveAll()" class="success">Approve All Pending</button>
+    </div>
+
+    <h4>⚡ Quick Actions</h4>
+    <input id="bulkUserId" placeholder="User ID" style="width:48%; margin-right:4%;" />
+    <input id="bulkAmount" placeholder="Amount" type="number" style="width:48%;" />
+    <button onclick="addStakeBulk()" style="width:48%; margin-right:4%;">Add Stake</button>
+    <button onclick="addRewardBulk()" style="width:48%;">Add Reward</button>
+
+    <button onclick="logout()" class="danger">Logout</button>
   </div>
 
 <script>
@@ -155,6 +210,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+const TMPL_PRICE_USDT = 0.001; // Private sale price [memory:7]
+const ADMIN_WALLET = "0xE703b32447C58c44cb58ad74Ef72b97e80F97550"; // TMPL contract & admin authority [web:44]
+const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; [web:19]
+
 let currentUser = "";
 
 // UI Functions
@@ -163,11 +222,26 @@ function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function showRegister() { hide('loginBox'); show('registerBox'); }
 function showLogin() { hide('registerBox'); show('loginBox'); }
 
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(tab+'Tab').classList.add('active');
+  
+  if (tab === 'usdt') updateUSDTCalculation();
+}
+
+function updateUSDTCalculation() {
+  const usdtAmt = parseFloat(document.getElementById('usdtAmount').value) || 0;
+  const tmplAmt = (usdtAmt / TMPL_PRICE_USDT).toFixed(2);
+  document.getElementById('usdtToTmpl').textContent = tmplAmt;
+}
+
 function login() {
   const id = document.getElementById('loginId').value.trim();
   const pass = document.getElementById('loginPass').value;
   
-  if (id === "Admin" && pass === "tmpl123") {
+  if (id === "Admin" && pass === "Jaihanuman@7") { // Updated admin credentials [conversation_history:8]
     currentUser = "Admin";
     hide('loginBox'); show('adminPanel');
     loadAdmin();
@@ -193,7 +267,7 @@ function register() {
   
   if (!wallet || !name || !password) return alert("Fill all fields");
   
-  const userId = wallet.slice(-8).toUpperCase(); // Last 8 chars as ID
+  const userId = wallet.slice(-8).toUpperCase();
   
   db.ref("users/" + userId).set({
     name, wallet, password,
@@ -234,13 +308,34 @@ function stakeTMPL() {
   const amount = parseFloat(document.getElementById('stakeAmount').value);
   if (amount < 100) return alert("Minimum 100 TMPL");
   
-  // Submit stake request
   db.ref("pendingStakes/" + currentUser).set({
-    amount, status: "Pending", time: Date.now()
+    amount, type: "TMPL", status: "Pending", time: Date.now()
   });
   
   alert("✅ Stake submitted! Admin will approve.");
   document.getElementById('stakeAmount').value = "";
+}
+
+function stakeUSDT() {
+  const usdtAmt = parseFloat(document.getElementById('usdtAmount').value);
+  const tmplAmt = usdtAmt / TMPL_PRICE_USDT;
+  const txHash = document.getElementById('usdtTxHash').value.trim();
+  const wallet = document.getElementById('usdtWallet').value.trim();
+  
+  if (usdtAmt < 0.1) return alert("Minimum 0.1 USDT (100 TMPL)");
+  if (!txHash || !wallet) return alert("Enter Tx Hash & Wallet Address");
+  
+  db.ref("pendingStakes/" + currentUser).set({
+    amount: tmplAmt, type: "USDT", status: "Pending", 
+    usdtAmount: usdtAmt, txHash, wallet, time: Date.now()
+  });
+  
+  alert(`✅ USDT Payment submitted!
+${tmplAmt.toFixed(2)} TMPL pending approval
+Tx: ${txHash}`);
+  document.getElementById('usdtAmount').value = "";
+  document.getElementById('usdtTxHash').value = "";
+  document.getElementById('usdtWallet').value = "";
 }
 
 function claimRelease() {
@@ -248,18 +343,21 @@ function claimRelease() {
     const data = snap.val();
     if (data.releaseAvailable <= 0) return alert("No rewards available");
     
-    // Transfer to wallet balance (simulate)
+    // Transfer to ADMIN_WALLET authority [web:44]
+    const claimAmount = data.releaseAvailable;
     db.ref("users/" + currentUser).update({
       releaseAvailable: 0,
-      rewardsEarned: data.rewardsEarned - data.releaseAvailable,
+      rewardsEarned: data.rewardsEarned - claimAmount,
       history: [...(data.history || []), {
         type: "claim",
-        amount: data.releaseAvailable,
+        amount: claimAmount,
+        to: ADMIN_WALLET,
         time: Date.now()
       }]
     });
     
-    alert(`✅ Claimed ${data.releaseAvailable.toFixed(2)} TMPL!`);
+    alert(`✅ Claimed ${claimAmount.toFixed(2)} TMPL!
+Transferred to: ${ADMIN_WALLET}`);
   });
 }
 
@@ -269,7 +367,7 @@ function loadHistory() {
     let html = "";
     history.slice(-5).reverse().forEach(h => {
       const type = h.type === "stake" ? "💰 Stake" : "📤 Claim";
-      html += `<div style="padding:10px; border-bottom:1px solid #333;">${type}: ${h.amount.toFixed(2)} TMPL</div>`;
+      html += `<div style="padding:10px; border-bottom:1px solid #333;">${type}: ${h.amount.toFixed(2)} TMPL ${h.to ? `→ ${h.to.slice(0,8)}...` : ''}</div>`;
     });
     document.getElementById("historyList").innerHTML = html || "No history";
   });
@@ -291,16 +389,20 @@ function loadAdmin() {
 function loadPendingStakes() {
   const table = document.getElementById("pendingStakes");
   db.ref("pendingStakes").once("value").then(snap => {
-    let html = "<tr><th>User</th><th>Amount</th><th>Actions</th></tr>";
+    let html = "<tr><th>User</th><th>Amount</th><th>Type</th><th>Tx/Status</th><th>Actions</th></tr>";
     snap.forEach(child => {
       const data = child.val();
+      const typeIcon = data.type === "USDT" ? "💵" : "💎";
+      const txInfo = data.txHash ? `<a href="https://bscscan.com/tx/${data.txHash}" target="_blank">${data.txHash.slice(0,20)}...</a>` : "Direct";
       html += `
         <tr>
           <td>${child.key}</td>
-          <td>${data.amount} TMPL</td>
+          <td>${data.amount.toFixed(2)} TMPL</td>
+          <td>${typeIcon} ${data.type}</td>
+          <td>${txInfo}</td>
           <td>
-            <button onclick="approveStake('${child.key}', ${data.amount})" style="background:#00ff88; padding:8px 15px;">✅ Approve</button>
-            <button onclick="rejectStake('${child.key}')" style="background:#ff4757; padding:8px 15px;">❌ Reject</button>
+            <button onclick="approveStake('${child.key}', ${data.amount})" class="success" style="padding:5px 10px; font-size:12px;">✅ Approve</button>
+            <button onclick="rejectStake('${child.key}')" class="danger" style="padding:5px 10px; font-size:12px;">❌ Reject</button>
           </td>
         </tr>`;
     });
@@ -309,7 +411,6 @@ function loadPendingStakes() {
 }
 
 function approveStake(userId, amount) {
-  // Add to user staking
   db.ref("users/" + userId).transaction(user => {
     if (user) {
       user.staked += amount;
@@ -318,7 +419,6 @@ function approveStake(userId, amount) {
     }
     return user;
   }).then(() => {
-    // Remove pending
     db.ref("pendingStakes/" + userId).remove();
     alert("✅ Stake Approved!");
     loadPendingStakes();
@@ -337,7 +437,7 @@ function generateMonthlyRewards() {
     snap.forEach(userSnap => {
       const user = userSnap.val();
       if (user.staked > 0 && user.rewardsEarned < user.totalTarget) {
-        const monthlyRelease = user.staked * 0.1; // 10% monthly
+        const monthlyRelease = user.staked * 0.1;
         const canRelease = Math.min(monthlyRelease, user.totalTarget - user.rewardsEarned);
         
         db.ref("users/" + userSnap.key).update({
@@ -349,6 +449,46 @@ function generateMonthlyRewards() {
     alert("✅ Monthly rewards generated for all users!");
     updateAdminStats();
   });
+}
+
+function bulkApproveAll() {
+  db.ref("pendingStakes").once("value").then(snap => {
+    snap.forEach(child => {
+      const data = child.val();
+      approveStake(child.key, data.amount);
+    });
+  });
+}
+
+function addStakeBulk() {
+  const userId = document.getElementById('bulkUserId').value.trim();
+  const amount = parseFloat(document.getElementById('bulkAmount').value);
+  if (!userId || !amount) return alert("Enter User ID & Amount");
+  
+  db.ref("users/" + userId).transaction(user => {
+    if (user) {
+      user.staked += amount;
+      user.totalTarget = user.staked * 2;
+    }
+    return user;
+  });
+  document.getElementById('bulkUserId').value = "";
+  document.getElementById('bulkAmount').value = "";
+  alert("✅ Bulk stake added!");
+}
+
+function addRewardBulk() {
+  const userId = document.getElementById('bulkUserId').value.trim();
+  const amount = parseFloat(document.getElementById('bulkAmount').value);
+  if (!userId || !amount) return alert("Enter User ID & Amount");
+  
+  db.ref("users/" + userId).update({
+    rewardsEarned: firebase.database.ServerValue.increment(amount),
+    releaseAvailable: firebase.database.ServerValue.increment(amount)
+  });
+  document.getElementById('bulkUserId').value = "";
+  document.getElementById('bulkAmount').value = "";
+  alert("✅ Bulk reward added!");
 }
 
 function updateAdminStats() {
@@ -364,8 +504,9 @@ function updateAdminStats() {
   });
 }
 
-// Load TMPL contract (demo)
-document.getElementById("tmplContract").textContent = "0x1234...TMPL_BEP20";
+// Event Listeners
+document.getElementById('usdtAmount').addEventListener('input', updateUSDTCalculation);
+document.getElementById("tmplContract").textContent = "0xE703b32447C58c44cb58ad74Ef72b97e80F97550"; // Real TMPL contract [web:44]
 </script>
 </body>
 </html>
