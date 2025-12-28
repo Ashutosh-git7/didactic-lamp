@@ -946,6 +946,90 @@
       document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
     });
   }
+  // 🔥 TMPL FUNCTIONS
+const TMPL_MONTHLY_RATE = 0.05;
+
+function loadTMPLStakingData(userId) {
+  db.ref("tmplStakes/" + userId).once("value").then(snap => {
+    const data = snap.val();
+    if (data) {
+      const staked = parseFloat(data.amount || 0);
+      document.getElementById("tmplStaked").innerText = staked.toFixed(2);
+      document.getElementById("nextRewardDate").innerText = new Date((data.lastRewardDate || Date.now()) + 30*24*60*60*1000).toLocaleDateString();
+      document.getElementById("monthlyReward").innerText = (staked * TMPL_MONTHLY_RATE).toFixed(2);
+    } else {
+      document.getElementById("tmplStaked").innerText = "0";
+      document.getElementById("nextRewardDate").innerText = "N/A";
+      document.getElementById("monthlyReward").innerText = "0";
+    }
+  });
+}
+
+function submitTMPLStake() {
+  const amt = parseFloat(document.getElementById("tmplStakeAmount").value);
+  if (isNaN(amt) || amt < 100) return alert("Min 100 TMPL");
+  db.ref("tmplStakesPending/" + currentId).set({amount: amt, status: "Pending", timestamp: Date.now()}).then(() => {
+    alert("Stake submitted!");
+    document.getElementById("tmplStakeAmount").value = "";
+  });
+}
+
+function requestTMPLWithdraw() {
+  db.ref("tmplStakes/" + currentId).once("value").then(snap => {
+    const data = snap.val();
+    if (!data || parseFloat(data.amount || 0) <= 0) return alert("No stake");
+    db.ref("tmplWithdrawalsPending/" + currentId).push({amount: data.amount, status: "Pending", timestamp: Date.now()}).then(() => {
+      db.ref("tmplStakes/" + currentId).remove();
+      alert("Withdrawal requested!");
+    });
+  });
+}
+
+function loadTMPLStakesAdmin() {
+  const tbody = document.querySelector("#tmplStakesTable tbody");
+  tbody.innerHTML = "";
+  db.ref("tmplStakesPending").once("value").then(snap => {
+    snap.forEach(child => {
+      const d = child.val();
+      if (d.status === "Pending") {
+        tbody.innerHTML += `<tr><td>${child.key}</td><td>${d.amount.toFixed(2)}</td><td>${d.status}</td>
+        <td><button class="btn-table btn-accept btn-stake" onclick="approveTMPLStake('${child.key}', ${d.amount})">Approve</button>
+        <button class="btn-table btn-reject" onclick="rejectTMPLStake('${child.key}')">Reject</button></td></tr>`;
+      }
+    });
+  });
+}
+
+function approveTMPLStake(userId, amount) {
+  db.ref("tmplStakes/" + userId).set({amount, status: "Active", startDate: Date.now(), lastRewardDate: Date.now()});
+  db.ref("tmplStakesPending/" + userId).remove();
+  alert("Approved!");
+  loadTMPLStakesAdmin();
+}
+
+function processMonthlyRewards() {
+  db.ref("tmplStakes").once("value").then(snap => {
+    let count = 0;
+    snap.forEach(child => {
+      const data = child.val(), userId = child.key;
+      const months = Math.floor((Date.now() - (data.lastRewardDate || data.startDate)) / (30*24*60*60*1000));
+      if (months > 0) {
+        const reward = data.amount * TMPL_MONTHLY_RATE * months;
+        const newAmount = Math.max(0, data.amount - reward);
+        db.ref("users/" + userId + "/tmplRewards").transaction(c => (parseFloat(c) || 0) + reward);
+        db.ref("tmplStakes/" + userId).update({amount: newAmount, lastRewardDate: Date.now()});
+        count++;
+      }
+    });
+    alert(`${count} rewards processed!`);
+  });
+}
+
+// loadUser() में ye line add karo (end mein):
+// loadTMPLStakingData(id);
+
+// loadAdmin() में ye line add karo:
+// loadTMPLStakesAdmin();
 
   function loadDeposits() {
     const tbody = document.querySelector("#depositsTable tbody");
