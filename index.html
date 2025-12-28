@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🔥 TMPL Staking - Earn Rewards</title>
+  <title>🔥 TMPL Staking - Earn 110% Rewards</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -69,11 +69,12 @@
     .price-info { background: rgba(0,255,136,0.2); padding: 15px; border-radius: 12px; margin: 15px 0; text-align: center; }
     .admin-auth { background: rgba(255,71,87,0.2); padding: 20px; border-radius: 12px; margin: 20px 0; }
     .tab-buttons { display: flex; gap: 10px; }
+    .reward-info { background: rgba(255,107,53,0.2); padding: 15px; border-radius: 12px; margin: 15px 0; text-align: center; }
   </style>
 </head>
 <body>
   <h2>🔥 TMPL Staking Platform</h2>
-  <p style="text-align:center; color:#aaa;">Stake TMPL/USDT → Earn 2x Rewards → 10% Monthly Release</p>
+  <p style="text-align:center; color:#aaa;">Stake TMPL/USDT → Earn 10% Extra Rewards → 110% Total | 5% Monthly Release</p>
 
   <!-- LOGIN -->
   <div id="loginBox" class="box">
@@ -109,18 +110,23 @@
       </div>
       <div class="stat-box">
         <div class="stat-value" id="totalRewards">0</div>
-        <div>Total Target (2x)</div>
+        <div>Total Target (110%)</div>
       </div>
       <div class="stat-box">
         <div class="stat-value" id="releaseAvailable">0</div>
-        <div>Monthly Release</div>
+        <div>Monthly Release (5%)</div>
       </div>
     </div>
 
     <div class="progress-bar">
       <div class="progress-fill" id="progressFill" style="width:0%"></div>
     </div>
-    <p style="text-align:center; color:#aaa;">Progress to 2x Rewards: <span id="progressText">0%</span></p>
+    <p style="text-align:center; color:#aaa;">Progress to 110% Rewards: <span id="progressText">0%</span></p>
+
+    <div class="reward-info">
+      <strong>🆕 New Structure: 100% Principal + 10% Extra = 110% Total Rewards</strong><br>
+      <small>5% Monthly Release until 110% complete (22 months max)</small>
+    </div>
 
     <hr/>
 
@@ -128,8 +134,8 @@
     
     <div style="text-align:center; margin:20px 0;">
       <p><strong>TMPL Contract (BEP20):</strong></p>
-      <code>0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:4]
-      <p><strong>USDT Contract (BEP20):</strong> 0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</p> [web:6]
+      <code>0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:16]
+      <p><strong>USDT Contract (BEP20):</strong> 0x55d398326f99059fF775485246999027B3197955</p> [web:20]
     </div>
 
     <div class="payment-tabs">
@@ -146,7 +152,7 @@
     <!-- USDT TAB -->
     <div id="usdtTab" class="tab-content">
       <div class="price-info">
-        <strong>Private Sale Price: 1 TMPL = 0.001 USDT</strong> [memory:21]
+        <strong>Private Sale Price: 1 TMPL = 0.001 USDT</strong> [memory:1]
         <br><small>Stake 100 TMPL = Send 0.1 USDT</small>
       </div>
       <input type="number" id="usdtAmount" placeholder="USDT Amount (Min 0.1)" min="0.1" step="0.01" />
@@ -159,7 +165,7 @@
     </div>
 
     <hr/>
-    <h4>📤 Claim Monthly Release</h4>
+    <h4>📤 Claim Monthly Release (5%)</h4>
     <p>Available: <b><span id="claimable">0</span> TMPL</b></p>
     <button onclick="claimRelease()">Claim Release</button>
 
@@ -175,11 +181,11 @@
     <h3>⚙️ Admin Panel - Full Authority</h3>
     <div class="admin-auth">
       <strong>Admin Wallet (Claim Authority):</strong><br>
-      <code>0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:4]
+      <code>0xE703b32447C58c44cb58ad74Ef72b97e80F97550</code> [web:16]
       <p>All claims transfer to this address automatically</p>
     </div>
     
-    <p>Total Staked: <span id="totalStaked">0</span> TMPL | Total Rewards: <span id="totalRewardsAdmin">0</span></p>
+    <p>Total Staked: <span id="totalStaked">0</span> TMPL | Total Rewards Target: <span id="totalRewardsAdmin">0</span></p>
 
     <h4>Pending Stakes & Payments</h4>
     <table id="pendingStakes">
@@ -187,7 +193,7 @@
     </table>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin:20px 0;">
-      <button onclick="generateMonthlyRewards()" class="success">Generate Rewards</button>
+      <button onclick="generateMonthlyRewards()" class="success">Generate 5% Rewards</button>
       <button onclick="bulkApproveAll()" class="success">Approve All Pending</button>
     </div>
 
@@ -272,11 +278,11 @@ function register() {
     name, wallet, password,
     staked: 0,
     rewardsEarned: 0,
-    totalTarget: 0,
+    totalTarget: 0, // Now 110% of staked (100% + 10% extra)
     releaseAvailable: 0,
-    releaseMonth: 0,
     status: "Active",
-    history: []
+    history: [],
+    stakeDate: 0 // Track when staking started
   }).then(() => {
     alert("✅ Registered! ID: " + userId);
     showLogin();
@@ -383,7 +389,6 @@ function logout() {
 function loadAdmin() {
   loadPendingStakes();
   updateAdminStats();
-  // Add tab event listeners
   document.getElementById('tmplTabBtn').onclick = () => switchTab('tmpl');
   document.getElementById('usdtTabBtn').onclick = () => switchTab('usdt');
 }
@@ -416,13 +421,15 @@ function approveStake(userId, amount) {
   db.ref("users/" + userId).transaction(user => {
     if (user) {
       user.staked = (user.staked || 0) + amount;
-      user.totalTarget = user.staked * 2;
+      // NEW: 110% total target = 100% principal + 10% extra rewards
+      user.totalTarget = user.staked * 1.1;
+      if (!user.stakeDate) user.stakeDate = Date.now();
       user.history = [...(user.history || []), {type: "stake", amount, time: Date.now()}];
     }
     return user;
   }).then(() => {
     db.ref("pendingStakes/" + userId).remove();
-    alert("✅ Stake Approved!");
+    alert("✅ Stake Approved! 110% rewards activated.");
     loadPendingStakes();
     updateAdminStats();
   });
@@ -436,19 +443,31 @@ function rejectStake(userId) {
 
 function generateMonthlyRewards() {
   db.ref("users").once("value").then(snap => {
+    let updated = 0;
     snap.forEach(userSnap => {
       const user = userSnap.val();
       if ((user.staked || 0) > 0 && (user.rewardsEarned || 0) < (user.totalTarget || 0)) {
-        const monthlyRelease = (user.staked || 0) * 0.1;
-        const canRelease = Math.min(monthlyRelease, (user.totalTarget || 0) - (user.rewardsEarned || 0));
+        // NEW: 5% monthly release of staked amount
+        const monthlyRelease = (user.staked || 0) * 0.05;
+        const remainingRewards = (user.totalTarget || 0) - (user.rewardsEarned || 0);
+        const canRelease = Math.min(monthlyRelease, remainingRewards);
         
-        db.ref("users/" + userSnap.key).update({
-          rewardsEarned: (user.rewardsEarned || 0) + canRelease,
-          releaseAvailable: (user.releaseAvailable || 0) + canRelease
-        });
+        if (canRelease > 0) {
+          db.ref("users/" + userSnap.key).update({
+            rewardsEarned: (user.rewardsEarned || 0) + canRelease,
+            releaseAvailable: (user.releaseAvailable || 0) + canRelease,
+            history: [...(user.history || []), {
+              type: "reward", 
+              amount: canRelease, 
+              note: "5% Monthly (110% plan)",
+              time: Date.now()
+            }]
+          });
+          updated++;
+        }
       }
     });
-    alert("✅ Monthly rewards generated for all users!");
+    alert(`✅ 5% Monthly rewards generated for ${updated} users! (110% Total Plan)`);
     updateAdminStats();
   });
 }
@@ -461,7 +480,7 @@ function bulkApproveAll() {
       approveStake(child.key, data.amount);
       count++;
     });
-    alert(`✅ ${count} stakes approved!`);
+    alert(`✅ ${count} stakes approved with 110% rewards!`);
   });
 }
 
@@ -473,13 +492,14 @@ function addStakeBulk() {
   db.ref("users/" + userId).transaction(user => {
     if (user) {
       user.staked = (user.staked || 0) + amount;
-      user.totalTarget = user.staked * 2;
+      user.totalTarget = user.staked * 1.1; // 110% total
+      if (!user.stakeDate) user.stakeDate = Date.now();
     }
     return user;
   }).then(() => {
     document.getElementById('bulkUserId').value = "";
     document.getElementById('bulkAmount').value = "";
-    alert("✅ Bulk stake added!");
+    alert("✅ Bulk stake added with 110% rewards!");
   });
 }
 
@@ -514,8 +534,6 @@ function updateAdminStats() {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('usdtAmount').addEventListener('input', updateUSDTCalculation);
-  document.getElementById('tmplTabBtn').addEventListener('click', () => switchTab('tmpl'));
-  document.getElementById('usdtTabBtn').addEventListener('click', () => switchTab('usdt'));
 });
 </script>
 </body>
