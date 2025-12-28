@@ -1212,7 +1212,103 @@
       });
     });
   }
+// TMPL Staking Functions
+async function submitTMPLStake() {
+  const amount = parseFloat(document.getElementById("tmplStakeAmount").value);
+  if (isNaN(amount) || amount < 100) return alert("Minimum 100 TMPL required");
 
+  const stakeData = {
+    userId: currentId,
+    tmplAmount: amount,
+    rewardTarget: amount * 1.1,  // 110% rewards
+    currentReward: 0,
+    status: "Pending",
+    stakeTime: new Date().toISOString(),
+    monthlyRelease: amount * 0.1  // 10% per month
+  };
+
+  db.ref("tmplStakes/" + currentId).set(stakeData).then(() => {
+    alert(`TMPL Stake submitted: ${amount} TMPL
+Rewards Target: ${stakeData.rewardTarget.toFixed(2)} TMPL`);
+    document.getElementById("tmplStakeAmount").value = "";
+    loadUser(currentId);
+  });
+}
+
+function viewStakingRewards() {
+  db.ref("tmplStakes/" + currentId).once("value").then(snap => {
+    if (!snap.exists()) {
+      document.getElementById("stakingBox").innerHTML = "<p>No active staking</p>";
+      return;
+    }
+    const data = snap.val();
+    let html = `
+      <div style="background:#2a2a2a;padding:15px;border-radius:8px;margin:10px 0;">
+        <p><b>Staked:</b> ${data.tmplAmount.toFixed(2)} TMPL</p>
+        <p><b>Reward Target:</b> ${data.rewardTarget.toFixed(2)} TMPL</p>
+        <p><b>Current Rewards:</b> ${data.currentReward.toFixed(2)} TMPL</p>
+        <p><b>Status:</b> ${data.status}</p>
+        <p><b>Monthly Release:</b> ${data.monthlyRelease.toFixed(2)} TMPL</p>
+      </div>`;
+    document.getElementById("stakingBox").innerHTML = html;
+  });
+}
+
+// Admin functions for TMPL staking
+function loadAdminStakes() {
+  if (currentId !== "Admin") return;
+  
+  const tbody = document.querySelector("#stakingTable tbody");
+  tbody.innerHTML = "";
+  
+  db.ref("tmplStakes").once("value").then(snap => {
+    snap.forEach(child => {
+      const data = child.val();
+      if (data.status === "Pending") {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.userId}</td>
+          <td>${data.tmplAmount.toFixed(2)}</td>
+          <td>${data.status}</td>
+          <td>
+            <button class="btn-table btn-accept" onclick="approveTMPLStake('${child.key}')">Approve</button>
+            <button class="btn-table btn-reject" onclick="rejectTMPLStake('${child.key}')">Reject</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    });
+  });
+}
+
+async function approveTMPLStake(stakeId) {
+  const stakeSnap = await db.ref("tmplStakes/" + stakeId).once("value");
+  const stake = stakeSnap.val();
+  
+  // Activate staking
+  await db.ref("tmplStakes/" + stakeId).update({
+    status: "Active",
+    activationTime: new Date().toISOString()
+  });
+  
+  alert(`TMPL Stake approved for ${stake.userId}`);
+  loadAdminStakes();
+}
+
+function rejectTMPLStake(stakeId) {
+  db.ref("tmplStakes/" + stakeId).remove().then(() => {
+    alert("TMPL Stake rejected");
+    loadAdminStakes();
+  });
+}
+
+// Admin load mein add kariye:
+function loadAdmin() {
+  loadUsers();
+  loadDeposits();
+  loadWithdrawals();
+  loadAdminStakes();  // Ye line add karein
+  show(document.getElementById("adminStakingContainer"));
+}
 </script>
 
 </body>
