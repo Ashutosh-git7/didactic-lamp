@@ -267,3 +267,101 @@
   <button onclick="verifyOTP()">Verify & Change Password</button>
   <p><a onclick="backToLogin()">🔙 Back to Login</a></p>
 </div>
+<div id="userDashboard" class="box hidden">
+  <h3>👋 Hello, <span id="userName"></span></h3>
+  <p>💼 Wallet: <span id="userWallet"></span></p>
+  
+  <!-- 🔥 TMPL STAKING -->
+  <div class="tmpl-section">
+    <h4>🔥 TMPL Staking (5% Monthly)</h4>
+    <p>Staked: <b><span id="tmplStaked">0</span></b> | Next: <span id="nextRewardDate">N/A</span></p>
+    <p>5% Reward: <b><span id="monthlyReward">0</span></b></p>
+    <input type="number" id="tmplStakeAmount" placeholder="TMPL (Min 100)" min="100"/>
+    <button onclick="submitTMPLStake()">Stake</button>
+    <button onclick="requestTMPLWithdraw()">Withdraw</button>
+  </div>
+
+  <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
+  <p><small><em>Deposit Time: <span id="userDepositTime">N/A</span></em></small></p>
+  <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
+  <p>🏦 Withdrawal Wallet: <b><span id="userWithdrawWallet"></span></b></p>
+  <p><small>Set your UPI ID for INR withdrawals:</small></p>
+  <input type="text" id="userUPI" placeholder="Enter your UPI ID here" autocomplete="off" />
+  <button id="saveUPIButton" onclick="saveUserUPI()">Save UPI ID</button>
+  <p>🎯 Income Target (2x): <b><span id="userTarget">0</span> USDT</b></p>
+  <p>📉 Remaining Target: <b><span id="userRemaining">0</span> USDT</b></p>
+  <p>🔒 Status: <span id="userStatus">Pending</span></p>
+  <p>💳 Wallet Balance: <b><span id="walletBalance">0</span> USDT</b></p>
+
+  <hr />
+  <h4>📥 Deposit Funds</h4>
+  <label>
+    <input type="radio" name="depositCurrency" value="USDT" checked onclick="updateDepositUI()" /> Deposit in USDT
+  </label>
+  <label>
+    <input type="radio" name="depositCurrency" value="INR" onclick="updateDepositUI()" /> Deposit in INR (UPI)
+  </label>
+
+  <div id="depositUSDTDiv" style="margin-top: 15px;">
+    <p>Send 100–1000 USDT to:</p>
+    <code>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</code>
+    <input type="number" id="depAmount" placeholder="Enter amount (100-1000)" min="100" max="1000" />
+    <button onclick="submitDeposit()">Submit Deposit</button>
+  </div>
+
+  <div id="depositINRDiv" class="hidden" style="margin-top: 15px;">
+    <p>Current USDT to INR Buy Rate = <b><span id="usdtToInrBuyRate">Loading...</span> ₹</b></p>
+    <p>Enter USDT amount to deposit (100-1000 USDT):</p>
+    <input type="number" id="depINRUSDTAmount" placeholder="Enter USDT amount (100-1000)" min="100" max="1000" oninput="updateINRDepositAmount()" />
+    <p>You need to pay (INR) <b><span id="depINRAmount">0</span></b> via UPI.</p>
+    <p>Send payment to UPI ID: <code>ashutoshkarmkar7-1@oksbi</code></p>
+    <button onclick="submitDepositINR()">Submit INR Deposit Request</button>
+  </div>
+
+  <hr />
+  <h4>💸 Request Withdrawal</h4>
+
+  <label>
+    <input type="radio" name="withdrawCurrency" value="USDT" checked onclick="updateWithdrawUI()" /> Withdraw in USDT
+  </label>
+  <label>
+    <input type="radio" name="withdrawCurrency" value="INR" onclick="updateWithdrawUI()" /> Withdraw in INR
+  </label>
+
+  <div id="withdrawUSDTDiv" style="margin-top: 15px;">
+    <p>Your BEP20 USDT Wallet Address: <code id="userWalletAddress"></code></p>
+    <input type="number" id="withAmt" placeholder="Min 5 USDT" min="5" />
+    <button onclick="requestWithdraw()">Request Withdrawal</button>
+  </div>
+
+  <div id="withdrawINRDiv" class="hidden" style="margin-top: 15px;">
+    <p>Current USDT to INR Sell Rate = <b><span id="usdtToInrSellRate">Loading...</span> ₹</b></p>
+    <p>Wallet Balance: <span id="walletBalanceINR">0</span> ₹ (approx.)</p>
+    <p>Enter INR withdrawal amount (Min ₹373 approx for 5 USDT):</p>
+    <input type="number" id="withAmtINR" placeholder="Enter INR amount" min="0" />
+    <button onclick="requestWithdrawINR()">Request INR Withdrawal</button>
+  </div>
+
+  <hr />
+  <h4>🔑 Change Password</h4>
+  <input type="password" id="changePassCurrent" placeholder="Current Password" />
+  <input type="password" id="changePassNew" placeholder="New Password" />
+  <button onclick="changePasswordNormal()">Change Password</button>
+  
+  <hr/>
+  <h4>👨👩👧👦 Referral Team</h4>
+  <button onclick="viewTeam()">View Your Team</button>
+  <div id="teamBox"></div>
+
+  <hr />
+  <h4>📜 History</h4>
+  <button onclick="viewHistory()">View History</button>
+  <div id="historyBox"></div>
+
+  <div id="profitChartContainer" class="hidden">
+    <h4>📊 Profit Graph (Deposit vs Income)</h4>
+    <canvas id="profitChart"></canvas>
+  </div>
+
+  <button onclick="logout()">🚪 Logout</button>
+</div>
