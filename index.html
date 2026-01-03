@@ -841,6 +841,44 @@ function loadProfitChart(deposit, income) {
     loadWithdrawals();
     loadTMPLStakesAdmin();
   }
+  function loadUsers() {
+  db.ref("users").once("value").then(snap => {
+    const container = document.getElementById("adminUsersContainer");
+    let html = "<h4>👥 Users List (Complete Details)</h4><table><thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Status</th><th>Deposit</th><th>Income</th><th>Target (2x)</th><th>Wallet Bal</th><th>UPI</th><th>Actions</th></tr></thead><tbody>";
+
+    let totalDeposit = 0;
+    let totalWallet = 0;
+
+    snap.forEach(child => {
+      const d = child.val();
+      const id = child.key;
+      totalDeposit += parseFloat(d.deposit || 0);
+      totalWallet += parseFloat(d.walletBalance || 0);
+      
+      html += `<tr>
+        <td>${id}</td>
+        <td>${d.name || 'N/A'}</td>
+        <td>${d.mobile || 'N/A'}</td>
+        <td>${d.wallet ? d.wallet.substring(0,10)+'...' : 'N/A'}</td>
+        <td><span style="color:${d.status=='Active'?'#28a745':'#ffc107'}">${d.status}</span></td>
+        <td>${parseFloat(d.deposit || 0).toFixed(2)} USDT</td>
+        <td>${parseFloat(d.income || 0).toFixed(2)} USDT</td>
+        <td>${parseFloat((d.deposit || 0)*2).toFixed(2)} USDT</td>
+        <td>${parseFloat(d.walletBalance || 0).toFixed(2)} USDT</td>
+        <td>${d.upiId || 'N/A'}</td>
+        <td>
+          <button class="btn-table btn-edit btn-small" onclick="openEditModal('${id}')">Edit</button>
+          <button class="btn-table btn-delete btn-small" onclick="deleteUser('${id}')">Delete</button>
+        </td>
+      </tr>`;
+    });
+
+    html += "</tbody></table>";
+    container.innerHTML = html;
+    document.getElementById("totalDepositBalance").innerText = totalDeposit.toFixed(2);
+    document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
+  });
+}
 
   // Complete loadWithdrawals() - FIXED SYNTAX ERROR
   function loadWithdrawals() {
