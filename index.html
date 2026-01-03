@@ -365,3 +365,81 @@
 
   <button onclick="logout()">🚪 Logout</button>
 </div>
+<div id="adminPanel" class="box admin-section hidden">
+  <h3>🛠️ Admin Dashboard</h3>
+
+  <div style="margin-bottom:15px; font-size: 16px; color: #00ffe1;">
+    <b>Total Deposit Balance:</b> <span id="totalDepositBalance">0</span> USDT &nbsp;&nbsp;&nbsp;
+    <b>Total Wallet Balance:</b> <span id="totalWalletBalance">0</span> USDT
+  </div>
+  
+  <div id="adminTMPLStakes">
+    <h4>🔥 Pending TMPL Stakes</h4>
+    <table id="tmplStakesTable"><thead><tr><th>User</th><th>TMPL</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody></table>
+  </div>
+  <button onclick="processMonthlyRewards()">⚙️ 5% Rewards Process</button>
+
+  <h4>🔥 Add TMPL Stake (Admin)</h4>
+  <input type="text" id="adminTMPLUserId" placeholder="User ID (e.g. U12345)" />
+  <input type="number" id="adminTMPLAmount" placeholder="TMPL Amount (Min 100)" min="100" />
+  <button onclick="addTMPLStakeAdmin()">Add TMPL Stake</button>
+
+  <div id="adminDepositsContainer" style="margin-bottom: 20px;">
+    <h4>📝 Pending Deposit Requests</h4>
+    <table id="depositsTable">
+      <thead>
+        <tr>
+          <th>User ID</th><th>Name</th><th>Amount</th><th>Currency</th><th>Status</th><th>Deposit Time</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="adminWithdrawalsContainer" style="margin-bottom: 20px;">
+    <h4>📝 Pending Withdrawal Requests</h4>
+    <table id="withdrawalsTable">
+      <thead>
+        <tr>
+          <th>User ID</th><th>Name</th><th>Amount</th><th>Currency</th><th>UPI ID</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="adminUsersContainer"></div>
+
+  <h4>➕ Add Weekly Income</h4>
+  <input type="text" id="incomeUserId" placeholder="User ID" />
+  <input type="number" id="incomeAmt" placeholder="Amount" />
+  <button onclick="addWeeklyIncome()">Add Income</button>
+
+  <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<div id="editUserModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h4>Edit User</h4>
+      <span class="modal-close" onclick="closeEditModal()">&times;</span>
+    </div>
+    <input type="text" id="editUserId" placeholder="User ID" disabled />
+    <input type="text" id="editName" placeholder="Full Name" />
+    <input type="text" id="editMobile" placeholder="Mobile Number" />
+    <input type="text" id="editWallet" placeholder="BEP20 USDT Wallet Address" />
+    <input type="password" id="editPassword" placeholder="Password (leave blank to keep unchanged)" />
+    <input type="text" id="editRef" placeholder="Referral ID" />
+    <select id="editStatus">
+      <option value="Pending">Pending</option>
+      <option value="Active">Active</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Closed">Closed</option>
+    </select>
+    <input type="number" id="editDeposit" placeholder="Deposit" min="0" step="any" />
+    <input type="number" id="editIncome" placeholder="Income" min="0" step="any" />
+    <input type="number" id="editWalletBalance" placeholder="Wallet Balance" min="0" step="any" />
+    <input type="text" id="editDepositTime" placeholder="Deposit Time (ISO format)" />
+    <button onclick="saveUserChanges()">Save Changes</button>
+  </div>
+</div>
