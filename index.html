@@ -565,3 +565,215 @@
       location.reload();
     }).catch(err => alert("Error during registration: " + err.message));
   }
+function loadUser(id) {
+    db.ref("users/" + id).on("value", snap => {
+      if (!snap.exists()) {
+        alert("User data not found");
+        logout();
+        return;
+      }
+      const data = snap.val();
+
+      const deposit = parseFloat(data.deposit || 0);
+      const income = parseFloat(data.income || 0);
+      const cap = deposit * 2;
+      const remaining = Math.max(0, cap - income);
+      const balance = parseFloat(data.walletBalance || 0);
+      const depositTimeStr = data.depositTime ? new Date(data.depositTime).toLocaleString() : "N/A";
+
+      document.getElementById("userName").innerText = data.name;
+      document.getElementById("userWallet").innerText = data.wallet;
+      document.getElementById("userDeposit").innerText = deposit.toFixed(2);
+      document.getElementById("userDepositTime").innerText = depositTimeStr;
+      document.getElementById("userIncome").innerText = income.toFixed(2);
+      document.getElementById("userStatus").innerText = data.status;
+      document.getElementById("userWithdrawWallet").innerText = data.wallet;
+      document.getElementById("userTarget").innerText = cap.toFixed(2);
+      document.getElementById("userRemaining").innerText = remaining.toFixed(2);
+      document.getElementById("walletBalance").innerText = balance.toFixed(2);
+
+      document.getElementById("userWalletAddress").innerText = data.wallet || "(No wallet address)";
+
+      const upiValue = data.upiId || "";
+      document.getElementById("userUPI").value = upiValue;
+      if (upiValue.trim()) {
+        document.getElementById("saveUPIButton").style.display = "none";
+      } else {
+        document.getElementById("saveUPIButton").style.display = "inline-block";
+      }
+
+      if (usdtToINRSell) {
+        const walletINR = balance * usdtToINRSell;
+        document.getElementById('walletBalanceINR').innerText = walletINR.toFixed(2);
+      }
+
+      if (deposit > 0 && income >= cap && data.status !== "Closed") {
+        db.ref("users/" + id).update({
+          income: 0,
+          deposit: 0,
+          status: "Closed",
+          depositTime: null
+        });
+        alert("🎉 Congratulations! Your agreement has completed 2x and is now closed.");
+      }
+
+      loadProfitChart(deposit, income);
+      loadTMPLStakingData(id);
+    });
+  }
+
+  function updateDepositUI() {
+    const currency = document.querySelector('input[name="depositCurrency"]:checked').value;
+    if (currency === "USDT") {
+      show(document.getElementById("depositUSDTDiv"));
+      hide(document.getElementById("depositINRDiv"));
+    } else {
+      hide(document.getElementById("depositUSDTDiv"));
+      show(document.getElementById("depositINRDiv"));
+      updateINRDepositAmount();
+    }
+  }
+
+  function updateINRDepositAmount() {
+    const usdtAmt = parseFloat(document.getElementById("depINRUSDTAmount").value);
+    if (isNaN(usdtAmt) || usdtAmt < 100 || usdtAmt > 1000 || !usdtToINRBuy) {
+      document.getElementById("depINRAmount").innerText = "0";
+      return;
+    }
+    const inrAmt = usdtAmt * usdtToINRBuy;
+    document.getElementById("depINRAmount").innerText = inrAmt.toFixed(2);
+  }
+
+  // Referral income percentages for levels
+  const REF_LEVELS = [0.05, 0.03, 0.02]; // 5%, 3%, 2%
+
+  function addReferralIncome(depositAmount, userId) {
+    let currentUserId = userId;
+    let level = 0;
+
+    function updateUserIncome(userId, incomeToAdd) {
+      return db.ref("users/" + userId).transaction(userData => {
+        if (userData) {
+          userData.income = (parseFloat(userData.income) || 0) + incomeToAdd;
+          userData.walletBalance = (parseFloat(userData.walletBalance) || 0) + incomeToAdd;
+        }
+        return userData;
+      });
+    }
+
+    (async () => {
+      while (level < 3 && currentUserId) {
+        const userSnap = await db.ref("users/" + currentUserId).once("value");
+        if (!userSnap.exists()) break;
+        const user = userSnap.val();
+        const referrerId = user.referredBy;
+        if (!referrerId) break;
+
+        const referralIncome = depositAmount * REF_LEVELS[level];
+        if (referralIncome > 0) {
+          await updateUserIncome(referrerId, referralIncome);
+        }
+
+        currentUserId = referrerId;
+        level++;
+      }
+    })();
+  }
+
+  function submitDeposit() {
+    const amt = parseFloat(document.getElementById("depAmount").value);
+    if (isNaN(amt) || amt < 100 || amt > 1000) {
+      return alert("Deposit amount must be between 100 and 1000 USDT");
+    }
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
+      const data = snap.val();
+      if (data.status === "Active") return alert("Deposit is locked until agreement is closed.");
+
+      const nowISOString = new Date().toISOString();
+
+      db.ref("users/" + currentId).update({
+        deposit: amt,
+        status: "Pending",
+        depositTime: nowISOString,
+        depositCurrency: "USDT",
+        depositINRAmount: null
+      }).then(() => {
+        alert("Deposit submitted! Waiting for admin approval.");
+        document.getElementById("depAmount").value = "";
+        loadUser(currentId);
+      }).catch(err => alert("Error submitting deposit: " + err.message));
+    });
+  }
+
+  function submitDepositINR() {
+    const usdtAmt = parseFloat(document.getElementById("depINRUSDTAmount").value);
+    if (isNaN(usdtAmt) || usdtAmt < 100 || usdtAmt > 1000) {
+      return alert("USDT amount must be between 100 and 1000");
+    }
+    if (!usdtToINRBuy) {
+      return alert("Exchange rate not loaded yet. Please wait.");
+    }
+    const inrAmt = usdtAmt * usdtToINRBuy;
+    const nowISOString = new Date().toISOString();
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
+      const data = snap.val();
+      if (data.status === "Active") return alert("Deposit is locked until agreement is closed.");
+
+      db.ref("depositINRRequests/" + currentId).set({
+        usdtAmount: usdtAmt,
+        inrAmount: inrAmt,
+        status: "Pending",
+        depositTime: nowISOString,
+        upiId: "ashutoshkarmkar7-1@oksbi"
+      }).then(() => {
+        alert(`INR deposit request submitted for approx ₹${inrAmt.toFixed(2)}. Please pay via UPI to ashutoshkarmkar7-1@oksbi.
+After payment, wait for admin approval.`);
+        document.getElementById("depINRUSDTAmount").value = "";
+        document.getElementById("depINRAmount").innerText = "0";
+      }).catch(err => alert("Error submitting INR deposit: " + err.message));
+    });
+  }
+
+  // 🔥 TMPL FUNCTIONS
+  const TMPL_MONTHLY_RATE = 0.05;
+
+  function loadTMPLStakingData(userId) {
+    db.ref("tmplStakes/" + userId).once("value").then(snap => {
+      const data = snap.val();
+      if (data) {
+        const staked = parseFloat(data.amount || 0);
+        document.getElementById("tmplStaked").innerText = staked.toFixed(2);
+        document.getElementById("nextRewardDate").innerText = new Date((data.lastRewardDate || Date.now()) + 30*24*60*60*1000).toLocaleDateString();
+        document.getElementById("monthlyReward").innerText = (staked * TMPL_MONTHLY_RATE).toFixed(2);
+      } else {
+        document.getElementById("tmplStaked").innerText = "0";
+        document.getElementById("nextRewardDate").innerText = "N/A";
+        document.getElementById("monthlyReward").innerText = "0";
+      }
+    });
+  }
+
+  function submitTMPLStake() {
+    const amt = parseFloat(document.getElementById("tmplStakeAmount").value);
+    if (isNaN(amt) || amt < 100) return alert("Min 100 TMPL");
+    db.ref("tmplStakesPending/" + currentId).set({amount: amt, status: "Pending", timestamp: Date.now()}).then(() => {
+      alert("Stake submitted!");
+      document.getElementById("tmplStakeAmount").value = "";
+    });
+  }
+
+  function requestTMPLWithdraw() {
+    db.ref("tmplStakes/" + currentId).once("value").then(snap => {
+      const data = snap.val();
+      if (!data || parseFloat(data.amount || 0) <= 0) return alert("No stake");
+      db.ref("tmplWithdrawalsPending/" + currentId).push({amount: data.amount, status: "Pending", timestamp: Date.now()}).then(() => {
+        db.ref("tmplStakes/" + currentId).remove();
+        alert("Withdrawal requested!");
+      });
+    });
+  }
