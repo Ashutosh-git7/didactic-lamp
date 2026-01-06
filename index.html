@@ -879,67 +879,6 @@ function loadProfitChart(deposit, income) {
     document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
   });
 }
-  let editingUserKey = null;
-
-function openEditModal(userId) {
-  editingUserKey = userId;
-  db.ref("users/" + userId).once("value").then(snap => {
-    const data = snap.val();
-    document.getElementById("editUserId").value = userId;
-    document.getElementById("editName").value = data.name || "";
-    document.getElementById("editMobile").value = data.mobile || "";
-    document.getElementById("editWallet").value = data.wallet || "";
-    document.getElementById("editPassword").value = "";
-    document.getElementById("editRef").value = data.referredBy || "";
-    document.getElementById("editStatus").value = data.status || "Pending";
-    document.getElementById("editDeposit").value = data.deposit || 0;
-    document.getElementById("editIncome").value = data.income || 0;
-    document.getElementById("editWalletBalance").value = data.walletBalance || 0;
-    document.getElementById("editDepositTime").value = data.depositTime || "";
-    document.getElementById("editUPI").value = data.upiId || "";  // ← UPI भी add
-    show(document.getElementById("editUserModal"));
-  });
-}
-
-function closeEditModal() {
-  document.getElementById("editUserModal").classList.add("hidden");
-  editingUserKey = null;
-}
-
-function saveUserChanges() {
-  if (!editingUserKey) return alert("No user selected");
-  
-  const updates = {
-    name: document.getElementById("editName").value.trim(),
-    mobile: document.getElementById("editMobile").value.trim(),
-    wallet: document.getElementById("editWallet").value.trim(),
-    referredBy: document.getElementById("editRef").value.trim(),
-    status: document.getElementById("editStatus").value,
-    deposit: parseFloat(document.getElementById("editDeposit").value) || 0,
-    income: parseFloat(document.getElementById("editIncome").value) || 0,
-    walletBalance: parseFloat(document.getElementById("editWalletBalance").value) || 0,
-    depositTime: document.getElementById("editDepositTime").value || null,
-    upiId: document.getElementById("editUPI").value.trim()  // ← UPI field add
-  };
-  
-  const password = document.getElementById("editPassword").value.trim();
-  if (password) updates.password = password;
-
-  db.ref("users/" + editingUserKey).update(updates).then(() => {
-    alert("✅ User details updated successfully!");
-    closeEditModal();
-    loadUsers();  // Table refresh
-  }).catch(err => alert("Error: " + err.message));
-}
-
-function deleteUser(userId) {
-  if (confirm(`Delete user ${userId} permanently? All data lost!`)) {
-    db.ref("users/" + userId).remove().then(() => {
-      alert("🗑️ User deleted!");
-      loadUsers();
-    }).catch(err => alert("Delete error: " + err.message));
-  }
-}
 
   // Complete loadWithdrawals() - FIXED SYNTAX ERROR
   function loadWithdrawals() {
