@@ -220,18 +220,6 @@
       color: #ff5555;
       user-select: none;
     }
-    .tmpl-section {
-      border: 2px solid #ff6b35;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 15px 0;
-      background: #2a1a0f;
-    }
-    .btn-stake {
-      background-color: #ff6b35;
-      color: #fff;
-      border: none;
-    }
   </style>
 </head>
 <body>
@@ -267,20 +255,10 @@
   <button onclick="verifyOTP()">Verify & Change Password</button>
   <p><a onclick="backToLogin()">🔙 Back to Login</a></p>
 </div>
+
 <div id="userDashboard" class="box hidden">
   <h3>👋 Hello, <span id="userName"></span></h3>
   <p>💼 Wallet: <span id="userWallet"></span></p>
-  
-  <!-- 🔥 TMPL STAKING -->
-  <div class="tmpl-section">
-    <h4>🔥 TMPL Staking (5% Monthly)</h4>
-    <p>Staked: <b><span id="tmplStaked">0</span></b> | Next: <span id="nextRewardDate">N/A</span></p>
-    <p>5% Reward: <b><span id="monthlyReward">0</span></b></p>
-    <input type="number" id="tmplStakeAmount" placeholder="TMPL (Min 100)" min="100"/>
-    <button onclick="submitTMPLStake()">Stake</button>
-    <button onclick="requestTMPLWithdraw()">Withdraw</button>
-  </div>
-
   <p>💰 Deposit: <b><span id="userDeposit">0</span> USDT</b></p>
   <p><small><em>Deposit Time: <span id="userDepositTime">N/A</span></em></small></p>
   <p>📈 Income: <b><span id="userIncome">0</span> USDT</b></p>
@@ -365,6 +343,7 @@
 
   <button onclick="logout()">🚪 Logout</button>
 </div>
+
 <div id="adminPanel" class="box admin-section hidden">
   <h3>🛠️ Admin Dashboard</h3>
 
@@ -372,17 +351,6 @@
     <b>Total Deposit Balance:</b> <span id="totalDepositBalance">0</span> USDT &nbsp;&nbsp;&nbsp;
     <b>Total Wallet Balance:</b> <span id="totalWalletBalance">0</span> USDT
   </div>
-  
-  <div id="adminTMPLStakes">
-    <h4>🔥 Pending TMPL Stakes</h4>
-    <table id="tmplStakesTable"><thead><tr><th>User</th><th>TMPL</th><th>Status</th><th>Actions</th></tr></thead><tbody></tbody></table>
-  </div>
-  <button onclick="processMonthlyRewards()">⚙️ 5% Rewards Process</button>
-
-  <h4>🔥 Add TMPL Stake (Admin)</h4>
-  <input type="text" id="adminTMPLUserId" placeholder="User ID (e.g. U12345)" />
-  <input type="number" id="adminTMPLAmount" placeholder="TMPL Amount (Min 100)" min="100" />
-  <button onclick="addTMPLStakeAdmin()">Add TMPL Stake</button>
 
   <div id="adminDepositsContainer" style="margin-bottom: 20px;">
     <h4>📝 Pending Deposit Requests</h4>
@@ -443,6 +411,7 @@
     <button onclick="saveUserChanges()">Save Changes</button>
   </div>
 </div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCBXuE2NHuZkKeQY7JjYM5vpbF1-K9AcS8",
@@ -460,8 +429,8 @@
   let profitChartInstance = null;
 
   // Margins on exchange rates internally for deposit and withdrawal
-  let usdtToINRBuy = null;   
-  let usdtToINRSell = null;  
+  let usdtToINRBuy = null;   // USDT to INR buy rate + 7%
+  let usdtToINRSell = null;  // USDT to INR sell rate - 5%
 
   async function loadExchangeRates() {
     try {
@@ -565,7 +534,8 @@
       location.reload();
     }).catch(err => alert("Error during registration: " + err.message));
   }
-function loadUser(id) {
+
+  function loadUser(id) {
     db.ref("users/" + id).on("value", snap => {
       if (!snap.exists()) {
         alert("User data not found");
@@ -618,7 +588,6 @@ function loadUser(id) {
       }
 
       loadProfitChart(deposit, income);
-      loadTMPLStakingData(id);
     });
   }
 
@@ -647,6 +616,7 @@ function loadUser(id) {
   // Referral income percentages for levels
   const REF_LEVELS = [0.05, 0.03, 0.02]; // 5%, 3%, 2%
 
+  // Adds referral income up to 3 levels for given deposit amount
   function addReferralIncome(depositAmount, userId) {
     let currentUserId = userId;
     let level = 0;
@@ -731,53 +701,126 @@ function loadUser(id) {
         depositTime: nowISOString,
         upiId: "ashutoshkarmkar7-1@oksbi"
       }).then(() => {
-        alert(`INR deposit request submitted for approx ₹${inrAmt.toFixed(2)}. Please pay via UPI to ashutoshkarmkar7-1@oksbi.
-After payment, wait for admin approval.`);
+        alert(`INR deposit request submitted for approx ₹${inrAmt.toFixed(2)}. Please pay via UPI to ashutoshkarmkar7-1@oksbi.\nAfter payment, wait for admin approval.`);
         document.getElementById("depINRUSDTAmount").value = "";
         document.getElementById("depINRAmount").innerText = "0";
       }).catch(err => alert("Error submitting INR deposit: " + err.message));
     });
   }
 
-  // 🔥 TMPL FUNCTIONS
-  const TMPL_MONTHLY_RATE = 0.05;
-
-  function loadTMPLStakingData(userId) {
-    db.ref("tmplStakes/" + userId).once("value").then(snap => {
-      const data = snap.val();
-      if (data) {
-        const staked = parseFloat(data.amount || 0);
-        document.getElementById("tmplStaked").innerText = staked.toFixed(2);
-        document.getElementById("nextRewardDate").innerText = new Date((data.lastRewardDate || Date.now()) + 30*24*60*60*1000).toLocaleDateString();
-        document.getElementById("monthlyReward").innerText = (staked * TMPL_MONTHLY_RATE).toFixed(2);
-      } else {
-        document.getElementById("tmplStaked").innerText = "0";
-        document.getElementById("nextRewardDate").innerText = "N/A";
-        document.getElementById("monthlyReward").innerText = "0";
-      }
-    });
+  function updateWithdrawUI() {
+    const currency = document.querySelector('input[name="withdrawCurrency"]:checked').value;
+    if (currency === "USDT") {
+      show(document.getElementById("withdrawUSDTDiv"));
+      hide(document.getElementById("withdrawINRDiv"));
+    } else {
+      hide(document.getElementById("withdrawUSDTDiv"));
+      show(document.getElementById("withdrawINRDiv"));
+    }
   }
 
-  function submitTMPLStake() {
-    const amt = parseFloat(document.getElementById("tmplStakeAmount").value);
-    if (isNaN(amt) || amt < 100) return alert("Min 100 TMPL");
-    db.ref("tmplStakesPending/" + currentId).set({amount: amt, status: "Pending", timestamp: Date.now()}).then(() => {
-      alert("Stake submitted!");
-      document.getElementById("tmplStakeAmount").value = "";
-    });
-  }
+  function requestWithdraw() {
+    const amt = parseFloat(document.getElementById("withAmt").value);
+    if (isNaN(amt) || amt < 5) return alert("Minimum withdrawal amount is 5 USDT");
 
-  function requestTMPLWithdraw() {
-    db.ref("tmplStakes/" + currentId).once("value").then(snap => {
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
       const data = snap.val();
-      if (!data || parseFloat(data.amount || 0) <= 0) return alert("No stake");
-      db.ref("tmplWithdrawalsPending/" + currentId).push({amount: data.amount, status: "Pending", timestamp: Date.now()}).then(() => {
-        db.ref("tmplStakes/" + currentId).remove();
+      const walletBalance = parseFloat(data.walletBalance || 0);
+      if (amt > walletBalance) return alert("Insufficient wallet balance");
+
+      const newBalance = walletBalance - amt;
+      db.ref("users/" + currentId + "/walletBalance").set(newBalance);
+      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending", currency: "USDT", upiId: "" }).then(() => {
         alert("Withdrawal requested!");
+        document.getElementById("withAmt").value = "";
       });
     });
   }
-function loadProfitChart(deposit, income) {
+
+  function requestWithdrawINR() {
+    const inrAmt = parseFloat(document.getElementById("withAmtINR").value);
+    if (isNaN(inrAmt) || inrAmt <= 0) return alert("Please enter a valid INR amount");
+
+    if (!usdtToINRSell) return alert("Exchange rate not loaded yet. Please wait.");
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+
+      const data = snap.val();
+      const walletUSDT = parseFloat(data.walletBalance || 0);
+
+      const usdtValue = inrAmt / usdtToINRSell;
+
+      if (usdtValue > walletUSDT) return alert("Insufficient wallet balance for requested INR withdrawal");
+
+      const newBalance = walletUSDT - usdtValue;
+
+      db.ref("users/" + currentId + "/walletBalance").set(newBalance);
+      const userUPI = data.upiId || "";
+      db.ref("withdrawals/" + currentId).push({ amount: inrAmt, status: "Pending", currency: "INR", upiId: userUPI }).then(() => {
+        alert(`INR Withdrawal requested for ₹${inrAmt.toFixed(2)}. Waiting for admin approval.`);
+        document.getElementById("withAmtINR").value = "";
+        document.getElementById('walletBalanceINR').innerText = (newBalance * usdtToINRSell).toFixed(2);
+      });
+    });
+  }
+
+  function saveUserUPI() {
+    const upiId = document.getElementById("userUPI").value.trim();
+    if (!upiId) return alert("Please enter a valid UPI ID");
+
+    db.ref("users/" + currentId).update({ upiId }).then(() => {
+      alert("UPI ID saved successfully.");
+      document.getElementById("saveUPIButton").style.display = "none";
+    }).catch(err => alert("Error saving UPI ID: " + err.message));
+  }
+
+  function changePasswordNormal() {
+    const currentPass = document.getElementById("changePassCurrent").value;
+    const newPass = document.getElementById("changePassNew").value;
+    if (!currentPass || !newPass) return alert("Please fill both current and new password");
+
+    db.ref("users/" + currentId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User data not found");
+      const data = snap.val();
+      if (data.password !== currentPass) return alert("Current password is incorrect");
+
+      db.ref("users/" + currentId + "/password").set(newPass).then(() => {
+        alert("Password changed successfully. Please login again.");
+        logout();
+      });
+    }).catch(err => alert("Error changing password: " + err.message));
+  }
+
+  function viewTeam() {
+    db.ref("users").once("value").then(snap => {
+      let html = "<ul>";
+      snap.forEach(child => {
+        const data = child.val();
+        if (data.referredBy === currentId) {
+          html += `<li><b>${child.key}</b>: ${data.name} - ${parseFloat(data.deposit || 0).toFixed(2)} USDT - ${data.status}</li>`;
+        }
+      });
+      html += "</ul>";
+      document.getElementById("teamBox").innerHTML = html;
+    });
+  }
+
+  function viewHistory() {
+    db.ref("withdrawals/" + currentId).once("value").then(snap => {
+      let html = "<h5>Withdrawals:</h5><ul>";
+      snap.forEach(child => {
+        const d = child.val();
+        html += `<li>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USDT'} - ${d.status}</li>`;
+      });
+      html += "</ul>";
+      document.getElementById("historyBox").innerHTML = html;
+    });
+  }
+
+  function loadProfitChart(deposit, income) {
     const container = document.getElementById("profitChartContainer");
     if (deposit <= 0) {
       container.classList.add("hidden");
@@ -815,9 +858,11 @@ function loadProfitChart(deposit, income) {
       options: {
         responsive: true,
         scales: {
-          y: {
-            beginAtZero: true
-          }
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
         }
       }
     });
@@ -834,285 +879,13 @@ function loadProfitChart(deposit, income) {
     show(document.getElementById("loginBox"));
   }
 
-  // ADMIN FUNCTIONS - COMPLETE
+  // Admin functions
   function loadAdmin() {
-  loadUsers();        // ← ये add करें
-  loadDeposits();
-  loadWithdrawals();
-  loadTMPLStakesAdmin();
-}
-  function loadUsers() {
-  db.ref("users").once("value").then(snap => {
-    const container = document.getElementById("adminUsersContainer");
-    let html = "<h4>👥 Users List (Complete Details)</h4><table><thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Status</th><th>Deposit</th><th>Income</th><th>Target (2x)</th><th>Wallet Bal</th><th>UPI</th><th>Actions</th></tr></thead><tbody>";
-
-    let totalDeposit = 0;
-    let totalWallet = 0;
-
-    snap.forEach(child => {
-      const d = child.val();
-      const id = child.key;
-      totalDeposit += parseFloat(d.deposit || 0);
-      totalWallet += parseFloat(d.walletBalance || 0);
-      
-      html += `<tr>
-        <td>${id}</td>
-        <td>${d.name || 'N/A'}</td>
-        <td>${d.mobile || 'N/A'}</td>
-        <td>${d.wallet ? d.wallet.substring(0,10)+'...' : 'N/A'}</td>
-        <td><span style="color:${d.status=='Active'?'#28a745':'#ffc107'}">${d.status}</span></td>
-        <td>${parseFloat(d.deposit || 0).toFixed(2)} USDT</td>
-        <td>${parseFloat(d.income || 0).toFixed(2)} USDT</td>
-        <td>${parseFloat((d.deposit || 0)*2).toFixed(2)} USDT</td>
-        <td>${parseFloat(d.walletBalance || 0).toFixed(2)} USDT</td>
-        <td>${d.upiId || 'N/A'}</td>
-        <td>
-          <button class="btn-table btn-edit btn-small" onclick="openEditModal('${id}')">Edit</button>
-          <button class="btn-table btn-delete btn-small" onclick="deleteUser('${id}')">Delete</button>
-        </td>
-      </tr>`;
-    });
-
-    html += "</tbody></table>";
-    container.innerHTML = html;
-    document.getElementById("totalDepositBalance").innerText = totalDeposit.toFixed(2);
-    document.getElementById("totalWalletBalance").innerText = totalWallet.toFixed(2);
-  });
-}
-
-  // Complete loadWithdrawals() - FIXED SYNTAX ERROR
-  function loadWithdrawals() {
-    const tbody = document.querySelector("#withdrawalsTable tbody");
-    tbody.innerHTML = "";
-    db.ref("withdrawals").once("value").then(withdrawalsSnap => {
-      withdrawalsSnap.forEach(userSnap => {
-        const userId = userSnap.key;
-        userSnap.forEach(wSnap => {
-          const w = wSnap.val();
-          if (w.status === "Pending") {
-            db.ref("users/" + userId).once("value").then(userDataSnap => {
-              const userName = userDataSnap.val()?.name || "(Unknown)";
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td>${userId}</td>
-                <td>${userName}</td>
-                <td>${parseFloat(w.amount).toFixed(2)}</td>
-                <td>${w.currency || 'USDT'}</td>
-                <td>${w.upiId || ''}</td>
-                <td>${w.status}</td>
-                <td>
-                  <button class="btn-table btn-accept" onclick="approveWithdrawal('${wSnap.key}', '${userId}')">Approve</button>
-                  <button class="btn-table btn-reject" onclick="rejectWithdrawal('${wSnap.key}', '${userId}')">Reject</button>
-                </td>`;
-              tbody.appendChild(tr);
-            });
-          }
-        });
-      });
-    });
-  }
-
-  function approveWithdrawal(key, userId) {
-    db.ref("withdrawals/" + userId + "/" + key).update({status: "Approved"});
-    alert("Withdrawal approved!");
-    loadWithdrawals();
-  }
-
-  function rejectWithdrawal(key, userId) {
-    db.ref("withdrawals/" + userId + "/" + key).once("value").then(snap => {
-      const w = snap.val();
-      db.ref("users/" + userId).transaction(data => {
-        if (data) data.walletBalance = (parseFloat(data.walletBalance || 0) + parseFloat(w.amount));
-        return data;
-      });
-      snap.ref.update({status: "Rejected"});
-    });
-    alert("Withdrawal rejected and refunded!");
-    loadWithdrawals();
-  }
-
-  function approveDepositUSDT(userId) {
-    db.ref("users/" + userId).once("value").then(snap => {
-      const user = snap.val();
-      db.ref("users/" + userId).update({status: "Active"});
-      addReferralIncome(user.deposit, userId);
-    });
-    alert("Deposit approved + referrals paid!");
-    loadDeposits();
     loadUsers();
-  }
-
-  function rejectDepositUSDT(userId) {
-    db.ref("users/" + userId).update({deposit: 0, status: "Pending", depositTime: null});
-    alert("Deposit rejected!");
     loadDeposits();
+    loadWithdrawals();
   }
 
-  function approveDepositINR(userId) {
-    db.ref("depositINRRequests/" + userId).once("value").then(snap => {
-      const d = snap.val();
-      db.ref("users/" + userId).update({deposit: d.usdtAmount, status: "Active", depositCurrency: "INR"});
-      addReferralIncome(d.usdtAmount, userId);
-      snap.ref.remove();
-    });
-    alert("INR deposit approved + referrals paid!");
-    loadDeposits();
-  }
-
-  function rejectDepositINR(userId) {
-    db.ref("depositINRRequests/" + userId).remove();
-    alert("INR deposit rejected!");
-    loadDeposits();
-  }
-
-  function addTMPLStakeAdmin() {
-    const userId = document.getElementById("adminTMPLUserId").value.trim();
-    const amount = parseFloat(document.getElementById("adminTMPLAmount").value);
-    
-    if (!userId) return alert("User ID enter kariye");
-    if (isNaN(amount) || amount < 100) return alert("Minimum 100 TMPL hona chahiye");
-    
-    db.ref("tmplStakes/" + userId).set({
-      amount: amount,
-      status: "Active", 
-      startDate: Date.now(),
-      lastRewardDate: Date.now()
-    }).then(() => {
-      alert(`✅ ${amount} TMPL stake added to ${userId}`);
-      document.getElementById("adminTMPLUserId").value = "";
-      document.getElementById("adminTMPLAmount").value = "";
-      loadTMPLStakesAdmin();
-      loadUsers();
-    }).catch(err => alert("Error: " + err.message));
-  }
-
-  function approveTMPLStake(userId, amount) {
-    db.ref("tmplStakes/" + userId).set({amount, status: "Active", startDate: Date.now(), lastRewardDate: Date.now()});
-    db.ref("tmplStakesPending/" + userId).remove();
-    alert("Approved!");
-    loadTMPLStakesAdmin();
-  }
-
-  function rejectTMPLStake(userId) {
-    db.ref("tmplStakesPending/" + userId).remove();
-    alert("Rejected!");
-    loadTMPLStakesAdmin();
-  }
-
-  function loadTMPLStakesAdmin() {
-    const tbody = document.querySelector("#tmplStakesTable tbody");
-    tbody.innerHTML = "";
-    db.ref("tmplStakesPending").once("value").then(snap => {
-      snap.forEach(child => {
-        const d = child.val();
-        if (d.status === "Pending") {
-          tbody.innerHTML += `<tr><td>${child.key}</td><td>${d.amount.toFixed(2)}</td><td>${d.status}</td>
-          <td><button class="btn-table btn-accept btn-stake" onclick="approveTMPLStake('${child.key}', ${d.amount})">Approve</button>
-          <button class="btn-table btn-reject" onclick="rejectTMPLStake('${child.key}')">Reject</button></td></tr>`;
-        }
-      });
-    });
-  }
-
-  function processMonthlyRewards() {
-    db.ref("tmplStakes").once("value").then(snap => {
-      let count = 0;
-      snap.forEach(child => {
-        const data = child.val(), userId = child.key;
-        const months = Math.floor((Date.now() - (data.lastRewardDate || data.startDate)) / (30*24*60*60*1000));
-        if (months > 0) {
-          const reward = data.amount * TMPL_MONTHLY_RATE * months;
-          db.ref("users/" + userId + "/walletBalance").transaction(c => (parseFloat(c) || 0) + reward);
-          db.ref("tmplStakes/" + userId).update({lastRewardDate: Date.now()});
-          count++;
-        }
-      });
-      alert(`${count} rewards processed!`);
-    });
-  }
-
-  // Remaining user functions
-  function updateWithdrawUI() {
-    const currency = document.querySelector('input[name="withdrawCurrency"]:checked').value;
-    if (currency === "USDT") {
-      show(document.getElementById("withdrawUSDTDiv"));
-      hide(document.getElementById("withdrawINRDiv"));
-    } else {
-      hide(document.getElementById("withdrawUSDTDiv"));
-      show(document.getElementById("withdrawINRDiv"));
-    }
-  }
-
-  function requestWithdraw() {
-    const amt = parseFloat(document.getElementById("withAmt").value);
-    if (isNaN(amt) || amt < 5) return alert("Minimum withdrawal amount is 5 USDT");
-
-    db.ref("users/" + currentId).once("value").then(snap => {
-      const data = snap.val();
-      const walletBalance = parseFloat(data.walletBalance || 0);
-      if (amt > walletBalance) return alert("Insufficient wallet balance");
-
-      db.ref("users/" + currentId + "/walletBalance").set(walletBalance - amt);
-      db.ref("withdrawals/" + currentId).push({ amount: amt, status: "Pending", currency: "USDT", upiId: "" }).then(() => {
-        alert("Withdrawal requested!");
-        document.getElementById("withAmt").value = "";
-      });
-    });
-  }
-
-  function saveUserUPI() {
-    const upiId = document.getElementById("userUPI").value.trim();
-    if (!upiId) return alert("Please enter a valid UPI ID");
-
-    db.ref("users/" + currentId).update({ upiId }).then(() => {
-      alert("UPI ID saved successfully.");
-      document.getElementById("saveUPIButton").style.display = "none";
-    });
-  }
-
-  function changePasswordNormal() {
-    const currentPass = document.getElementById("changePassCurrent").value;
-    const newPass = document.getElementById("changePassNew").value;
-    if (!currentPass || !newPass) return alert("Please fill both current and new password");
-
-    db.ref("users/" + currentId).once("value").then(snap => {
-      const data = snap.val();
-      if (data.password !== currentPass) return alert("Current password is incorrect");
-
-      db.ref("users/" + currentId + "/password").set(newPass).then(() => {
-        alert("Password changed successfully. Please login again.");
-        logout();
-      });
-    });
-  }
-
-  function viewTeam() {
-    db.ref("users").once("value").then(snap => {
-      let html = "<ul>";
-      snap.forEach(child => {
-        const data = child.val();
-        if (data.referredBy === currentId) {
-          html += `<li><b>${child.key}</b>: ${data.name} - ${parseFloat(data.deposit || 0).toFixed(2)} USDT - ${data.status}</li>`;
-        }
-      });
-      html += "</ul>";
-      document.getElementById("teamBox").innerHTML = html;
-    });
-  }
-
-  function viewHistory() {
-    db.ref("withdrawals/" + currentId).once("value").then(snap => {
-      let html = "<h5>Withdrawals:</h5><ul>";
-      snap.forEach(child => {
-        const d = child.val();
-        html += `<li>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USDT'} - ${d.status}</li>`;
-      });
-      html += "</ul>";
-      document.getElementById("historyBox").innerHTML = html;
-    });
-  }
-
-  // Admin table functions
   function loadUsers() {
     db.ref("users").once("value").then(snap => {
       const container = document.getElementById("adminUsersContainer");
@@ -1152,7 +925,6 @@ function loadProfitChart(deposit, income) {
     const tbody = document.querySelector("#depositsTable tbody");
     tbody.innerHTML = "";
 
-    // USDT Deposits
     db.ref("users").once("value").then(usersSnap => {
       usersSnap.forEach(userSnap => {
         const id = userSnap.key;
@@ -1174,7 +946,6 @@ function loadProfitChart(deposit, income) {
         }
       });
 
-      // INR Deposits
       db.ref("depositINRRequests").once("value").then(depositINRSnap => {
         depositINRSnap.forEach(childSnap => {
           const id = childSnap.key;
@@ -1183,7 +954,7 @@ function loadProfitChart(deposit, income) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${id}</td>
-              <td>(INR Deposit)</td>
+              <td>(INR Deposit) Pending User</td>
               <td>${d.usdtAmount.toFixed(2)} USDT / ₹${d.inrAmount.toFixed(2)}</td>
               <td>INR</td>
               <td>${d.status}</td>
@@ -1199,31 +970,195 @@ function loadProfitChart(deposit, income) {
     });
   }
 
+  function loadWithdrawals() {
+    const tbody = document.querySelector("#withdrawalsTable tbody");
+    tbody.innerHTML = "";
+    db.ref("withdrawals").once("value").then(withdrawalsSnap => {
+      withdrawalsSnap.forEach(userSnap => {
+        const userId = userSnap.key;
+        userSnap.forEach(wSnap => {
+          const w = wSnap.val();
+          if (w.status === "Pending") {
+            db.ref("users/" + userId).once("value").then(userDataSnap => {
+              const userName = userDataSnap.val()?.name || "(Unknown)";
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${userId}</td>
+                <td>${userName}</td>
+                <td>${parseFloat(w.amount).toFixed(2)}</td>
+                <td>${w.currency || "USDT"}</td>
+                <td>${w.upiId || ""}</td>
+                <td>${w.status}</td>
+                <td>
+                  <button class="btn-table btn-accept" onclick="approveWithdrawal('${userId}', '${wSnap.key}', ${w.amount}, '${w.currency || "USDT"}')">Approve</button>
+                  <button class="btn-table btn-reject" onclick="rejectWithdrawal('${userId}', '${wSnap.key}')">Reject</button>
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        });
+      });
+    });
+  }
+
+  // Modified to add referral income on deposit approval for USDT deposits
+  async function approveDepositUSDT(userId) {
+    const userSnap = await db.ref("users/" + userId).once("value");
+    const user = userSnap.val();
+    if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
+
+    const depositAmount = parseFloat(user.deposit);
+
+    // Add deposit to wallet balance, mark active
+    const newWalletBalance = (parseFloat(user.walletBalance || 0)) + depositAmount;
+    await db.ref("users/" + userId).update({
+      status: "Active",
+      walletBalance: newWalletBalance,
+    });
+
+    // Add referral income up to 3 levels
+    addReferralIncome(depositAmount, userId);
+
+    alert(`Deposit Approved for User: ${userId} and referral income distributed.`);
+    loadDeposits();
+    loadUsers();
+  }
+
+  // Modified to add referral income on deposit approval for INR deposits
+  async function approveDepositINR(userId) {
+    const reqSnap = await db.ref("depositINRRequests/" + userId).once("value");
+    const req = reqSnap.val();
+    if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
+
+    const userSnap = await db.ref("users/" + userId).once("value");
+    const user = userSnap.val();
+    if (!user) return alert("User not found");
+
+    const depositAmount = parseFloat(req.usdtAmount);
+    const newDeposit = (parseFloat(user.deposit || 0)) + depositAmount;
+    const newWalletBalance = (parseFloat(user.walletBalance || 0)) + depositAmount;
+
+    await db.ref("users/" + userId).update({
+      deposit: newDeposit,
+      walletBalance: newWalletBalance,
+      status: "Active",
+      depositTime: req.depositTime
+    });
+
+    // Add referral income up to 3 levels
+    addReferralIncome(depositAmount, userId);
+
+    await db.ref("depositINRRequests/" + userId).remove();
+    alert(`INR Deposit Approved for User: ${userId} and referral income distributed.`);
+    loadDeposits();
+    loadUsers();
+  }
+
+  function rejectDepositUSDT(userId) {
+    db.ref("users/" + userId).once("value").then(snap => {
+      const user = snap.val();
+      if (!user || user.status !== "Pending" || !user.deposit) return alert("Invalid deposit request");
+
+      db.ref("users/" + userId).update({
+        deposit: 0,
+        status: "Rejected",
+        depositTime: null
+      }).then(() => {
+        alert(`Deposit Rejected for User: ${userId}`);
+        loadDeposits();
+        loadUsers();
+      });
+    });
+  }
+
+  function rejectDepositINR(userId) {
+    db.ref("depositINRRequests/" + userId).once("value").then(snap => {
+      const req = snap.val();
+      if (!req || req.status !== "Pending") return alert("Invalid INR deposit request");
+
+      db.ref("depositINRRequests/" + userId).remove().then(() => {
+        alert(`INR Deposit Rejected for User: ${userId}`);
+        loadDeposits();
+      });
+    });
+  }
+
+  function approveWithdrawal(userId, withdrawalKey, amount, currency) {
+    db.ref("withdrawals/" + userId + "/" + withdrawalKey).once("value").then(wSnap => {
+      const w = wSnap.val();
+      if (!w || w.status !== "Pending") return alert("Withdrawal already processed or invalid");
+
+      db.ref("withdrawals/" + userId + "/" + withdrawalKey).update({ status: "Approved" }).then(() => {
+        alert(`Withdrawal Approved for User: ${userId}`);
+        loadWithdrawals();
+        loadUsers();
+      });
+    });
+  }
+
+  function rejectWithdrawal(userId, withdrawalKey) {
+    db.ref("withdrawals/" + userId + "/" + withdrawalKey).once("value").then(wSnap => {
+      const w = wSnap.val();
+      if (!w || w.status !== "Pending") return alert("Withdrawal already processed or invalid");
+
+      db.ref("users/" + userId).once("value").then(userSnap => {
+        const user = userSnap.val();
+        if (!user) return alert("User not found");
+
+        let refundAmountUSDT = 0;
+        if ((w.currency || "USDT") === "USDT") {
+          refundAmountUSDT = parseFloat(w.amount);
+        } else if (w.currency === "INR") {
+          if (usdtToINRSell) {
+            refundAmountUSDT = parseFloat(w.amount) / usdtToINRSell;
+          }
+        }
+
+        const newWalletBalance = (parseFloat(user.walletBalance || 0)) + refundAmountUSDT;
+
+        db.ref("users/" + userId + "/walletBalance").set(newWalletBalance).then(() => {
+          db.ref("withdrawals/" + userId + "/" + withdrawalKey).update({ status: "Rejected" }).then(() => {
+            alert(`Withdrawal Rejected and wallet refunded for User: ${userId}`);
+            loadWithdrawals();
+            loadUsers();
+          });
+        });
+      });
+    });
+  }
+
   let editingUserKey = null;
+
   function openEditModal(userId) {
     editingUserKey = userId;
     db.ref("users/" + userId).once("value").then(snap => {
-      const data = snap.val();
+      const u = snap.val();
+      if (!u) return;
       document.getElementById("editUserId").value = userId;
-      document.getElementById("editName").value = data.name || "";
-      document.getElementById("editMobile").value = data.mobile || "";
-      document.getElementById("editWallet").value = data.wallet || "";
-      document.getElementById("editRef").value = data.referredBy || "";
-      document.getElementById("editStatus").value = data.status || "Pending";
-      document.getElementById("editDeposit").value = data.deposit || 0;
-      document.getElementById("editIncome").value = data.income || 0;
-      document.getElementById("editWalletBalance").value = data.walletBalance || 0;
-      document.getElementById("editDepositTime").value = data.depositTime || "";
+      document.getElementById("editName").value = u.name || "";
+      document.getElementById("editMobile").value = u.mobile || "";
+      document.getElementById("editWallet").value = u.wallet || "";
+      document.getElementById("editPassword").value = "";
+      document.getElementById("editRef").value = u.referredBy || "";
+      document.getElementById("editStatus").value = u.status || "Pending";
+      document.getElementById("editDeposit").value = parseFloat(u.deposit || 0);
+      document.getElementById("editIncome").value = parseFloat(u.income || 0);
+      document.getElementById("editWalletBalance").value = parseFloat(u.walletBalance || 0);
+      document.getElementById("editDepositTime").value = u.depositTime || "";
       show(document.getElementById("editUserModal"));
     });
   }
 
   function closeEditModal() {
+    editingUserKey = null;
     hide(document.getElementById("editUserModal"));
   }
 
   function saveUserChanges() {
-    const updates = {
+    if (!editingUserKey) return;
+    const userId = editingUserKey;
+    const updatedData = {
       name: document.getElementById("editName").value,
       mobile: document.getElementById("editMobile").value,
       wallet: document.getElementById("editWallet").value,
@@ -1234,91 +1169,51 @@ function loadProfitChart(deposit, income) {
       walletBalance: parseFloat(document.getElementById("editWalletBalance").value) || 0,
       depositTime: document.getElementById("editDepositTime").value || null
     };
+    // Password update only if entered
     const newPass = document.getElementById("editPassword").value;
-    if (newPass) updates.password = newPass;
-    
-    db.ref("users/" + editingUserKey).update(updates).then(() => {
-      alert("User updated!");
+    if (newPass.trim()) {
+      updatedData.password = newPass;
+    }
+    db.ref("users/" + userId).update(updatedData).then(() => {
+      alert("User data updated.");
       closeEditModal();
       loadUsers();
-    });
+    }).catch(err => alert("Error updating user: " + err.message));
   }
 
   function deleteUser(userId) {
-    if (confirm("Delete user " + userId + "?")) {
-      db.ref("users/" + userId).remove();
-      alert("User deleted!");
+    if (!confirm(`Are you sure? Delete user ${userId} permanently?`)) return;
+    db.ref("users/" + userId).remove().then(() => {
+      alert("User deleted.");
       loadUsers();
-    }
+    });
   }
 
   function addWeeklyIncome() {
-    const id = document.getElementById("incomeUserId").value.trim();
+    const userId = document.getElementById("incomeUserId").value.trim();
     const amt = parseFloat(document.getElementById("incomeAmt").value);
-    if (!id || isNaN(amt)) return alert("Enter valid ID and amount");
-    
-    db.ref("users/" + id).transaction(data => {
-      if (data) {
-        data.income = (parseFloat(data.income || 0) + amt);
-        data.walletBalance = (parseFloat(data.walletBalance || 0) + amt);
-      }
-      return data;
-    }).then(() => {
-      alert("Income added!");
-      document.getElementById("incomeUserId").value = "";
-      document.getElementById("incomeAmt").value = "";
-      loadUsers();
-    });
-  }
+    if (!userId || isNaN(amt) || amt <= 0) return alert("Enter valid User ID and amount");
 
-  // OTP Functions (Basic - SMS integration later)
-  function sendOTP() {
-    alert("OTP sent to " + document.getElementById("otpMobile").value + " (Demo: 123456)");
-  }
+    db.ref("users/" + userId).once("value").then(snap => {
+      if (!snap.exists()) return alert("User not found");
 
-  function verifyOTP() {
-    if (document.getElementById("otpCode").value === "123456") {
-      db.ref("users").orderByChild("mobile").equalTo(document.getElementById("otpMobile").value).once("value").then(snap => {
-        snap.forEach(child => {
-          db.ref("users/" + child.key + "/password").set(document.getElementById("otpNewPass").value);
-          alert("Password changed!");
-          backToLogin();
-        });
-      });
-    } else {
-      alert("Wrong OTP");
-    }
-  }
+      const user = snap.val();
+      const newIncome = (parseFloat(user.income || 0)) + amt;
+      const newWalletBalance = (parseFloat(user.walletBalance || 0)) + amt;
 
-  // Request Withdraw INR
-  function requestWithdrawINR() {
-    const inrAmt = parseFloat(document.getElementById("withAmtINR").value);
-    if (isNaN(inrAmt) || inrAmt <= 0) return alert("Please enter a valid INR amount");
-
-    if (!usdtToINRSell) return alert("Exchange rate not loaded yet. Please wait.");
-
-    db.ref("users/" + currentId).once("value").then(snap => {
-      const data = snap.val();
-      const walletUSDT = parseFloat(data.walletBalance || 0);
-      const usdtValue = inrAmt / usdtToINRSell;
-
-      if (usdtValue > walletUSDT) return alert("Insufficient wallet balance");
-
-      const newBalance = walletUSDT - usdtValue;
-      db.ref("users/" + currentId + "/walletBalance").set(newBalance);
-      const userUPI = data.upiId || "";
-      db.ref("withdrawals/" + currentId).push({ 
-        amount: inrAmt, 
-        status: "Pending", 
-        currency: "INR", 
-        upiId: userUPI,
-        usdtEquivalent: usdtValue 
+      db.ref("users/" + userId).update({
+        income: newIncome,
+        walletBalance: newWalletBalance
       }).then(() => {
-        alert(`INR Withdrawal requested for ₹${inrAmt.toFixed(2)}.`);
-        document.getElementById("withAmtINR").value = "";
+        alert("Weekly income added.");
+        loadUsers();
+        document.getElementById("incomeUserId").value = "";
+        document.getElementById("incomeAmt").value = "";
       });
     });
   }
+
 </script>
+
 </body>
 </html>
