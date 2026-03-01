@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TMPL PRO Ecosystem</title>
+<title>TMPL PRO Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
 body{margin:0;font-family:Poppins;background:#020617;color:white;}
@@ -22,6 +22,7 @@ h3,h4{margin-top:0;}
 .toggle{cursor:pointer;color:#22c55e;font-weight:bold;}
 .progress-container{background:#1e293b;border-radius:8px;padding:5px;margin:5px 0;}
 .progress-bar{background:#22c55e;height:20px;border-radius:8px;width:0%;}
+.history-item{background:#1e293b;padding:5px;margin:3px 0;border-radius:6px;font-size:13px;}
 </style>
 </head>
 <body>
@@ -74,7 +75,7 @@ h3,h4{margin-top:0;}
 
 <div class="card">
 <h3>Invest USDT</h3>
-<input id="amount" placeholder="Enter Amount">
+<input id="amount" placeholder="Enter Amount (20-500 USDT)">
 <button onclick="invest()">Submit Investment</button>
 </div>
 
@@ -85,8 +86,13 @@ h3,h4{margin-top:0;}
 
 <div class="card">
 <h3>Withdraw</h3>
-<input id="withdrawAmount" placeholder="Enter Amount to Withdraw">
+<input id="withdrawAmount" placeholder="Enter Amount to Withdraw (min 1 TMPL)">
 <button onclick="requestWithdraw()">Request Withdrawal</button>
+</div>
+
+<div class="card">
+<h3>Transaction History</h3>
+<div id="history"></div>
 </div>
 
 <button onclick="logout()">Logout</button>
@@ -102,7 +108,7 @@ h3,h4{margin-top:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, child, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, update, runTransaction, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -117,8 +123,8 @@ const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 let currentUser=null;
 
-/* Referral percentages 15 levels (10%, 5%, 3%, 2%, 2%, 1%,1%,1%...) */
-const referralPercents=[0.10,0.05,0.03,0.02,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
+/* Referral percentages 15 levels */
+const referralPercents=[0.10,0.05,0.03,0.02,0.02,0.015,0.015,0.015,0.015,0.015,0.01,0.01,0.01,0.01,0.01];
 
 /* SHOW REGISTER / LOGIN */
 function showRegister(){ register.classList.remove("hidden"); login.classList.add("hidden"); }
@@ -128,12 +134,14 @@ function showLogin(){ login.classList.remove("hidden"); register.classList.add("
 window.register=async function(){
 let mobile=rmobile.value.trim(),name=rname.value.trim(),password=rpassword.value.trim(),wallet=rwallet.value.trim(),refcode=rref.value.trim();
 if(!mobile||!name||!password||!wallet){ alert("All fields required!"); return; }
+if(!/^0x[a-fA-F0-9]{40}$/.test(wallet)){ alert("Invalid BEP20 wallet address"); return; }
 const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){ alert("User already exists!"); return; }
 await set(ref(db,'users/'+mobile),{
 name,password,wallet,ref:refcode||"",
 balance:0,investment:0,pendingInvestment:0,withdrawRequest:0,
-referralIncome:0,totalEarned:0,lastIncomeDate:Date.now()
+referralIncome:0,totalEarned:0,lastIncomeDate:Date.now(),
+transactions:[]
 });
 alert("Account Created ✅"); 
 rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
@@ -143,19 +151,20 @@ showLogin();
 /* LOGIN */
 window.login=async function(){
 let mobile=lmobile.value.trim(),password=lpassword.value.trim();
+if(!mobile||!password){ alert("Enter Mobile & Password"); return; }
+try{
 const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){
 let data=snap.val();
 if(data.password!==password){ alert("Wrong Password"); return; }
 currentUser=mobile;
-register.classList.add("hidden");
-login.classList.add("hidden");
-dashboard.classList.remove("hidden");
-await loadUser(); await loadTeamTree();
+register.classList.add("hidden"); login.classList.add("hidden"); dashboard.classList.remove("hidden");
+await loadUser(); await loadTeamTree(); await loadHistory();
 }else{ alert("User Not Found"); }
+}catch(err){ console.error(err); alert("Login failed. Try later"); }
 }
 
-/* LOAD USER WITH MONTHLY INCOME & COUNTDOWN */
+/* LOAD USER WITH INCOME & COUNTDOWN */
 async function loadUser(){
 const snap=await get(child(ref(db),'users/'+currentUser));
 let d=snap.val();
@@ -168,7 +177,8 @@ if(months>0 && d.totalEarned<(d.investment*2)){
   await update(ref(db,'users/'+currentUser),{
     balance:(d.balance||0)+newIncome,
     totalEarned:(d.totalEarned||0)+newIncome,
-    lastIncomeDate:now
+    lastIncomeDate:now,
+    transactions:[...(d.transactions||[]),{type:"Monthly Income",amount:newIncome,date:now}]
   });
   d.balance=(d.balance||0)+newIncome;
   d.totalEarned=(d.totalEarned||0)+newIncome;
@@ -185,21 +195,7 @@ let progress=Math.min(100,((d.totalEarned||0)/(d.investment*2))*100);
 document.getElementById('progressBar').style.width=progress+"%";
 }
 
-/* INVESTMENT */
-window.invest=async function(){
-let amt=parseFloat(amount.value);
-if(isNaN(amt)||amt<=0){ alert("Enter valid amount"); return; }
-const userRef=ref(db,'users/'+currentUser);
-await runTransaction(userRef,(d)=>{
-  if(d){
-    d.pendingInvestment=(d.pendingInvestment||0)+amt;
-  }
-  return d;
-});
-alert("Investment Submitted (Admin Approval)"); amount.value=""; loadUser();
-}
-
-/* TEAM TREE (collapsible) */
+/* LOAD TEAM TREE */
 async function loadTeamTree(){
 team.innerHTML="";
 async function buildTree(userId,level){
@@ -218,19 +214,50 @@ buildTree(u.key,level+1);
 buildTree(currentUser,1);
 }
 
+/* LOAD TRANSACTION HISTORY */
+async function loadHistory(){
+history.innerHTML="";
+const snap=await get(child(ref(db,'users/'+currentUser+'/transactions')));
+let txs=snap.val()||[];
+txs.forEach(tx=>{
+let div=document.createElement('div');
+div.className='history-item';
+div.innerText=`${new Date(tx.date).toLocaleString()} | ${tx.type} | ${tx.amount} TMPL`;
+history.appendChild(div);
+});
+}
+
+/* INVESTMENT */
+window.invest=async function(){
+let amt=parseFloat(amount.value);
+if(isNaN(amt)||amt<20||amt>500){ alert("Enter valid amount (20-500)"); return; }
+const userRef=ref(db,'users/'+currentUser);
+await runTransaction(userRef,(d)=>{
+  if(d){
+    d.pendingInvestment=(d.pendingInvestment||0)+amt;
+    d.transactions=d.transactions||[];
+    d.transactions.push({type:"Pending Investment",amount:amt,date:Date.now()});
+  }
+  return d;
+});
+alert("Investment Submitted (Admin Approval)"); amount.value=""; loadUser(); loadHistory();
+}
+
 /* WITHDRAW */
 window.requestWithdraw=async function(){
 let amt=parseFloat(withdrawAmount.value);
-if(isNaN(amt)||amt<=0){ alert("Enter valid amount"); return; }
+if(isNaN(amt)||amt<1){ alert("Enter valid amount (min 1)"); return; }
 const userRef=ref(db,'users/'+currentUser);
 await runTransaction(userRef,(d)=>{
   if(d){
     if(amt>d.balance){ alert("Insufficient Balance"); return d; }
     d.withdrawRequest=(d.withdrawRequest||0)+amt;
+    d.transactions=d.transactions||[];
+    d.transactions.push({type:"Withdrawal Request",amount:amt,date:Date.now()});
   }
   return d;
 });
-alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser();
+alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser(); loadHistory();
 }
 
 /* ADMIN PANEL */
@@ -243,6 +270,8 @@ snap.forEach(u=>{
 let d=u.val();
 html+=`<div class='card'>
 <b>${d.name} (${u.key})</b><br>
+Name: <input value="${d.name}" id="name_${u.key}"><br>
+Mobile(ID): <input value="${u.key}" id="id_${u.key}"><br>
 Wallet: <input value="${d.wallet}" id="wallet_${u.key}"><br>
 Balance: <input value="${d.balance||0}" id="balance_${u.key}"><br>
 Investment: <input value="${d.investment||0}" id="invest_${u.key}"><br>
@@ -252,24 +281,50 @@ Withdrawal Request: <input value="${d.withdrawRequest||0}" id="withdraw_${u.key}
 <button onclick="saveUser('${u.key}')">Save</button>
 <button onclick="approve('${u.key}')">Approve Investment</button>
 <button onclick="approveWithdraw('${u.key}')">Approve Withdrawal</button>
+<button onclick="viewTransactions('${u.key}')">View Transactions</button>
 </div>`;
 });
 admin.innerHTML=html;
 }
 
-/* ADMIN SAVE USER EDIT */
+/* VIEW TRANSACTIONS */
+window.viewTransactions=async function(uid){
+const snap=await get(ref(db,'users/'+uid+'/transactions'));
+let txs=snap.val()||[];
+let txHtml="<h4>Transactions for "+uid+"</h4>";
+txs.forEach(tx=>{
+txHtml+=`<div class='history-item'>${new Date(tx.date).toLocaleString()} | ${tx.type} | ${tx.amount} TMPL</div>`;
+});
+alert(txHtml.replace(/<[^>]*>?/gm,'')); // simple alert view
+}
+
+/* SAVE USER */
 window.saveUser=async function(uid){
-const wallet=document.getElementById('wallet_'+uid).value;
+const newName=document.getElementById('name_'+uid).value.trim();
+const newID=document.getElementById('id_'+uid).value.trim();
+const wallet=document.getElementById('wallet_'+uid).value.trim();
 const balance=parseFloat(document.getElementById('balance_'+uid).value)||0;
 const investment=parseFloat(document.getElementById('invest_'+uid).value)||0;
 const pending=parseFloat(document.getElementById('pending_'+uid).value)||0;
 const refIncome=parseFloat(document.getElementById('ref_'+uid).value)||0;
 const withdraw=parseFloat(document.getElementById('withdraw_'+uid).value)||0;
-await update(ref(db,'users/'+uid),{wallet:wallet,balance:balance,investment:investment,pendingInvestment:pending,referralIncome:refIncome,withdrawRequest:withdraw});
+
+if(!/^0x[a-fA-F0-9]{40}$/.test(wallet)){ alert("Invalid wallet"); return; }
+if(!newName || !newID){ alert("Name and ID required"); return; }
+
+if(uid!==newID){
+  // Change ID safely: copy data + delete old
+  const oldData=(await get(ref(db,'users/'+uid))).val();
+  await set(ref(db,'users/'+newID],{...oldData,name:newName,balance,investment,pendingInvestment:pending,referralIncome:refIncome,withdrawRequest:withdraw,wallet});
+  await remove(ref(db,'users/'+uid));
+}else{
+  await update(ref(db,'users/'+uid),{name:newName,wallet,balance,investment, pendingInvestment:pending,referralIncome:refIncome,withdrawRequest:withdraw});
+}
+
 alert("User Updated ✅"); adminLogin();
 }
 
-/* APPROVE INVESTMENT WITH REFERRAL DISTRIBUTION */
+/* APPROVE INVESTMENT */
 window.approve=async function(uid){
 const userRef=ref(db,'users/'+uid);
 await runTransaction(userRef,(d)=>{
@@ -278,19 +333,22 @@ await runTransaction(userRef,(d)=>{
     if(amt>0){
       d.investment=(d.investment||0)+amt;
       d.pendingInvestment=0;
-      let refAmt = amt*0.3;
+      d.transactions=d.transactions||[];
+      d.transactions.push({type:"Investment Approved",amount:amt,date:Date.now()});
       let parent = d.ref;
       for(let lvl=0;lvl<15;lvl++){
         if(!parent) break;
-        let parentRef = ref(db,'users/'+parent);
+        let parentRef=ref(db,'users/'+parent);
         runTransaction(parentRef,(pdata)=>{
           if(pdata){
-            let reward = amt * referralPercents[lvl];
-            let maxReward = (pdata.investment*2)-(pdata.totalEarned||0);
+            let reward=amt*referralPercents[lvl];
+            let maxReward=(pdata.investment*2)-(pdata.totalEarned||0);
             if(reward>maxReward) reward=maxReward;
             pdata.balance=(pdata.balance||0)+reward;
             pdata.referralIncome=(pdata.referralIncome||0)+reward;
             pdata.totalEarned=(pdata.totalEarned||0)+reward;
+            pdata.transactions=pdata.transactions||[];
+            pdata.transactions.push({type:`Referral Level ${lvl+1} Reward`,amount:reward,date:Date.now()});
             parent=pdata.ref;
           }
           return pdata;
@@ -313,28 +371,8 @@ await runTransaction(userRef,(d)=>{
       if(amt>d.balance){ alert("Insufficient Balance"); return d; }
       d.balance=d.balance-amt;
       d.withdrawRequest=0;
+      d.transactions=d.transactions||[];
+      d.transactions.push({type:"Withdrawal Approved",amount:amt,date:Date.now()});
     }
   }
   return d;
-});
-alert("Withdrawal Approved ✅"); adminLogin();
-}
-
-/* LOGOUT */
-window.logout=function(){
-currentUser=null;
-dashboard.classList.add("hidden");
-register.classList.remove("hidden");
-login.classList.remove("hidden");
-balance.innerHTML="0 TMPL";
-pending.innerText="0";
-document.getElementById('totalInvestment').innerText="0";
-refincome.innerText="0";
-document.getElementById('incomeCountdown').innerText="0";
-document.getElementById('progressBar').style.width="0%";
-team.innerHTML="";
-}
-</script>
-
-</body>
-</html>
