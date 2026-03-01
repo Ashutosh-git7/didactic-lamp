@@ -359,7 +359,338 @@ loadAdminPanel();
 async function loadAdminPanel(){
 adminPanel.innerHTML=`<div class="card">Admin Panel Loading...</div>`;
 }
+<!-- ========================= PART 2 : ADMIN + MLM ENGINE ========================= -->
+<script type="module">
 
+/* =========================================================
+   ADMIN PANEL FULL SYSTEM
+========================================================= */
+
+import {
+ref,
+get,
+update,
+remove,
+runTransaction,
+set
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* ---------- ROUTE CHECK (#admin) ---------- */
+if(location.hash === "#admin"){
+authPage.classList.add("hidden");
+dashboardPage.classList.add("hidden");
+adminPage.classList.remove("hidden");
+}
+
+/* =========================================================
+   ADMIN PANEL UI
+========================================================= */
+
+async function loadAdminPanel(){
+
+let statsSnap = await get(ref(db,'stats'));
+let stats = statsSnap.exists()?statsSnap.val():{};
+
+adminPanel.innerHTML = `
+<div class="card">
+<h3>Business Controls</h3>
+
+Live Price:
+<input id="newPrice" placeholder="Update TMPL Price">
+<button onclick="updateLivePrice()">Update Price</button>
+
+<hr>
+
+Liquidity Pool: ${stats.liquidity||0} USDT<br>
+Company Fund: ${stats.companyFund||0} USDT
+
+</div>
+
+<div class="card">
+<h3>Pending Investments</h3>
+<div id="joinList"></div>
+</div>
+
+<div class="card">
+<h3>Withdraw Requests</h3>
+<div id="withdrawList"></div>
+</div>
+
+<div class="card">
+<h3>User Management</h3>
+<div id="userList"></div>
+</div>
+`;
+
+loadJoins();
+loadWithdrawals();
+loadUsers();
+}
+
+/* =========================================================
+   UPDATE LIVE PRICE
+========================================================= */
+
+window.updateLivePrice = async ()=>{
+let price=parseFloat(newPrice.value);
+if(!price || price<=0) return alert("Invalid price");
+
+await update(ref(db,'stats'),{
+livePrice:price
+});
+
+alert("Price Updated ✅");
+loadAdminPanel();
+};
+
+/* =========================================================
+   LOAD USERS
+========================================================= */
+
+async function loadUsers(){
+
+let snap=await get(ref(db,'users'));
+let html="";
+
+snap.forEach(u=>{
+let d=u.val();
+
+html+=`
+<div class="card">
+<b>${d.name}</b> (${u.key})<br>
+Balance: ${d.balance||0} TMPL<br>
+Investment: ${d.investment||0} USDT
+
+<button onclick="editUserPrompt('${u.key}')">Edit</button>
+<button onclick="deleteUser('${u.key}')">Delete</button>
+</div>`;
+});
+
+userList.innerHTML=html;
+}
+
+/* =========================================================
+   EDIT USER
+========================================================= */
+
+window.editUserPrompt = async(uid)=>{
+
+let snap=await get(ref(db,'users/'+uid));
+let d=snap.val();
+
+let name=prompt("Name",d.name);
+if(name===null) return;
+
+let balance=parseFloat(prompt("Balance TMPL",d.balance||0));
+let investment=parseFloat(prompt("Investment",d.investment||0));
+
+await editUser(uid,{
+name,
+balance,
+investment
+});
+
+alert("User Updated ✅");
+loadAdminPanel();
+};
+
+async function editUser(userId,newData){
+await update(ref(db,'users/'+userId),newData);
+}
+
+/* =========================================================
+   DELETE USER
+========================================================= */
+
+window.deleteUser = async(uid)=>{
+if(!confirm("Delete user permanently?")) return;
+
+await remove(ref(db,'users/'+uid));
+
+alert("User Deleted");
+loadAdminPanel();
+};
+
+/* =========================================================
+   LOAD JOIN REQUESTS
+========================================================= */
+
+async function loadJoins(){
+
+let snap=await get(ref(db,'joins'));
+let html="";
+
+if(!snap.exists()){
+joinList.innerHTML="No pending joins";
+return;
+}
+
+snap.forEach(j=>{
+let d=j.val();
+if(d.status==="pending"){
+html+=`
+<div class="card">
+User: ${d.user}<br>
+Amount: ${d.amount} USDT
+<button onclick="processJoin('${j.key}')">Approve</button>
+</div>`;
+}
+});
+
+joinList.innerHTML=html||"No pending joins";
+}
+
+/* =========================================================
+   PROCESS JOIN (MAIN BUSINESS ENTRY)
+========================================================= */
+
+window.processJoin = async(joinId)=>{
+
+let snap=await get(ref(db,'joins/'+joinId));
+let join=snap.val();
+
+if(!join || join.status!=="pending") return;
+
+await splitInvestment(join.user,join.amount);
+
+await update(ref(db,'joins/'+joinId),{
+status:"approved"
+});
+
+alert("Investment Approved ✅");
+loadAdminPanel();
+};
+
+/* =========================================================
+   INVESTMENT SPLIT
+========================================================= */
+
+async function splitInvestment(userId,amount){
+
+let liquidity = amount*0.5;
+let commission = amount*0.3;
+let company = amount*0.2;
+
+/* liquidity */
+await runTransaction(ref(db,'stats/liquidity'),v=>(v||0)+liquidity);
+
+/* company fund */
+await runTransaction(ref(db,'stats/companyFund'),v=>(v||0)+company);
+
+/* user investment */
+await runTransaction(ref(db,'users/'+userId),(u)=>{
+if(u){
+u.investment=(u.investment||0)+amount;
+}
+return u;
+});
+
+/* MLM DISTRIBUTION */
+await distributeCommission(userId,commission);
+}
+
+/* =========================================================
+   MLM DISTRIBUTION (15 LEVEL)
+========================================================= */
+
+const levelPercents=[
+0.10,0.05,0.03,0.02,0.02,
+0.015,0.015,0.015,0.015,0.015,
+0.01,0.01,0.01,0.01,0.01
+];
+
+async function calculateTMPL(usdt){
+
+let snap=await get(ref(db,'stats/livePrice'));
+let price=snap.exists()?snap.val():0.01;
+
+return usdt/price;
+}
+
+async function distributeCommission(userId,commissionUSDT){
+
+let userSnap=await get(ref(db,'users/'+userId));
+let parent=userSnap.val().ref;
+
+for(let i=0;i<15;i++){
+
+if(!parent) break;
+
+let percent=levelPercents[i];
+let rewardUSDT=commissionUSDT*percent;
+let rewardTMPL=await calculateTMPL(rewardUSDT);
+
+await runTransaction(ref(db,'users/'+parent),(p)=>{
+if(p){
+p.balance=(p.balance||0)+rewardTMPL;
+p.referralIncome=(p.referralIncome||0)+rewardTMPL;
+parent=p.ref;
+}
+return p;
+});
+
+}
+}
+
+/* =========================================================
+   WITHDRAW REQUESTS
+========================================================= */
+
+async function loadWithdrawals(){
+
+let snap=await get(ref(db,'withdrawals'));
+let html="";
+
+if(!snap.exists()){
+withdrawList.innerHTML="No withdrawals";
+return;
+}
+
+snap.forEach(w=>{
+let d=w.val();
+if(d.status==="pending"){
+html+=`
+<div class="card">
+User: ${d.user}<br>
+Amount: ${d.amount}
+<button onclick="approveWithdraw('${w.key}')">Approve</button>
+</div>`;
+}
+});
+
+withdrawList.innerHTML=html||"No withdrawals";
+}
+
+/* =========================================================
+   APPROVE WITHDRAW
+========================================================= */
+
+window.approveWithdraw=async(id)=>{
+
+let snap=await get(ref(db,'withdrawals/'+id));
+let w=snap.val();
+
+let priceSnap=await get(ref(db,'stats/livePrice'));
+let price=priceSnap.val()||0.01;
+
+let tmplNeeded=w.amount/price;
+
+await runTransaction(ref(db,'users/'+w.user),(u)=>{
+if(u && u.balance>=tmplNeeded){
+u.balance-=tmplNeeded;
+}
+return u;
+});
+
+await update(ref(db,'withdrawals/'+id),{
+status:"approved"
+});
+
+alert("Withdrawal Approved ✅");
+loadAdminPanel();
+};
+
+</script>
 </script>
 </body>
 </html>
