@@ -2,92 +2,133 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TMPL Ecosystem</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TMPL PRO Ecosystem</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 
 <style>
 body{
-font-family:Arial;
-background:#0f172a;
-color:white;
 margin:0;
-padding:20px;
+font-family:Poppins;
+background:#020617;
+color:white;
+}
+.header{
+background:linear-gradient(90deg,#06b6d4,#22c55e);
+padding:15px;
+text-align:center;
+font-weight:bold;
+font-size:20px;
+}
+.container{
+padding:15px;
 }
 .card{
-background:#1e293b;
+background:#0f172a;
+border-radius:12px;
 padding:15px;
-margin:10px 0;
-border-radius:10px;
+margin-bottom:15px;
+box-shadow:0 0 10px #000;
 }
-input,button{
+input{
 width:100%;
-padding:10px;
-margin:5px 0;
-border-radius:6px;
+padding:12px;
+margin:6px 0;
+border-radius:8px;
 border:none;
+background:#020617;
+color:white;
 }
 button{
-background:#22c55e;
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:linear-gradient(90deg,#22c55e,#06b6d4);
 color:white;
 font-weight:bold;
+margin-top:8px;
 }
 .hidden{display:none;}
+.balance{
+font-size:28px;
+color:#22c55e;
+font-weight:bold;
+text-align:center;
+}
+.small{
+font-size:13px;
+opacity:.7;
+}
+.team-member{
+background:#1e293b;
+padding:8px;
+margin:5px 0;
+border-radius:8px;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🪙 TMPL Dashboard</h2>
+<div class="header">🪙 TMPL PRO Dashboard</div>
+
+<div class="container">
 
 <!-- REGISTER -->
 <div id="register" class="card">
-<h3>Register</h3>
-<input id="rname" placeholder="Name">
-<input id="rmobile" placeholder="Mobile">
-<input id="rwallet" placeholder="USDT Wallet">
+<h3>Create Account</h3>
+<input id="rname" placeholder="Full Name">
+<input id="rmobile" placeholder="Mobile Number">
+<input id="rwallet" placeholder="USDT Wallet Address">
 <input id="rref" placeholder="Referral Code (optional)">
-<button onclick="register()">Create Account</button>
+<button onclick="register()">Register</button>
 </div>
 
 <!-- LOGIN -->
 <div id="login" class="card">
 <h3>Login</h3>
-<input id="lmobile" placeholder="Mobile">
+<input id="lmobile" placeholder="Mobile Number">
 <button onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
-<div id="dash" class="hidden">
+<div id="dashboard" class="hidden">
 
 <div class="card">
-<h3>User Info</h3>
+<h3>Account</h3>
 <p id="userinfo"></p>
 </div>
 
 <div class="card">
-<h3>Investment</h3>
-<input id="amount" placeholder="USDT Amount">
+<div class="balance" id="balance">0 TMPL</div>
+<p class="small">Reward Balance</p>
+</div>
+
+<div class="card">
+<h3>Invest USDT</h3>
+<input id="amount" placeholder="Enter Amount">
 <button onclick="invest()">Submit Investment</button>
 </div>
 
 <div class="card">
-<h3>Balance</h3>
-<p id="balance">0 TMPL</p>
+<h3>Team</h3>
+<div id="team"></div>
 </div>
 
 <button onclick="logout()">Logout</button>
-
 </div>
 
-<!-- ADMIN -->
+<!-- ADMIN PANEL -->
 <div class="card">
 <h3>Admin Panel</h3>
 <input id="adminpass" placeholder="Admin Password">
 <button onclick="adminLogin()">Open Admin</button>
-
 <div id="admin" class="hidden"></div>
 </div>
 
+</div>
 
 <script type="module">
 
@@ -96,7 +137,7 @@ import {
 getDatabase, ref, set, get, child, update
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
+const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
 authDomain:"tmpl-cd770.firebaseapp.com",
 projectId:"tmpl-cd770",
@@ -105,124 +146,94 @@ messagingSenderId:"383728687521",
 appId:"1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
 
 let currentUser=null;
 
 /* REGISTER */
-window.register = async function(){
-
-let mobile=document.getElementById("rmobile").value;
-
+window.register=async function(){
+let mobile=rmobile.value;
 await set(ref(db,'users/'+mobile),{
 name:rname.value,
 wallet:rwallet.value,
-ref:rref.value || "",
+ref:rref.value||"",
 balance:0,
 investment:0
 });
-
-alert("Account Created");
+alert("Account Created ✅");
 }
 
 /* LOGIN */
-window.login = async function(){
-
-let mobile=lmobile.value;
-
-const snapshot = await get(child(ref(db),'users/'+mobile));
-
-if(snapshot.exists()){
-currentUser=mobile;
-document.getElementById("dash").classList.remove("hidden");
+window.login=async function(){
+const snap=await get(child(ref(db),'users/'+lmobile.value));
+if(snap.exists()){
+currentUser=lmobile.value;
+dashboard.classList.remove("hidden");
 loadUser();
+loadTeam();
 }else{
-alert("User not found");
+alert("User Not Found");
 }
 }
 
 /* LOAD USER */
 async function loadUser(){
-
 const snap=await get(child(ref(db),'users/'+currentUser));
 let d=snap.val();
-
-userinfo.innerHTML=
-"Name: "+d.name+"<br>Wallet: "+d.wallet;
-
+userinfo.innerHTML="Name: "+d.name+"<br>Wallet: "+d.wallet;
 balance.innerHTML=d.balance+" TMPL";
 }
 
 /* INVEST */
-window.invest = async function(){
-
+window.invest=async function(){
 let amt=parseFloat(amount.value);
-
 const userRef=ref(db,'users/'+currentUser);
-
 const snap=await get(userRef);
 let data=snap.val();
-
-let newInvestment=data.investment+amt;
-
-await update(userRef,{
-investment:newInvestment
-});
-
-alert("Investment Submitted (Admin Approval Pending)");
+await update(userRef,{investment:data.investment+amt});
+alert("Investment Submitted (Admin Approval)");
 }
 
-/* LOGOUT */
-window.logout=function(){
-location.reload();
-}
-
-/* ADMIN */
-window.adminLogin=async function(){
-
-if(adminpass.value!=="Admin@123"){
-alert("Wrong password");
-return;
-}
-
-admin.classList.remove("hidden");
-
+/* LOAD TEAM (15 Level Referral) */
+async function loadTeam(){
+team.innerHTML="";
 const snap=await get(ref(db,'users'));
-
-let html="<h4>Users</h4>";
-
 snap.forEach(u=>{
-
 let d=u.val();
-
-html+=`
-<div class='card'>
-${d.name} (${u.key})
-<br>Investment: ${d.investment}
-<button onclick="reward('${u.key}')">Give Reward</button>
-</div>`;
+if(d.ref==currentUser){
+team.innerHTML+=`<div class="team-member">${d.name} (${u.key}) - Investment: ${d.investment}</div>`;
+}
 });
+}
 
+/* ADMIN LOGIN */
+window.adminLogin=async function(){
+if(adminpass.value!=="Admin@123"){
+alert("Wrong Password"); return;
+}
+admin.classList.remove("hidden");
+const snap=await get(ref(db,'users'));
+let html="<h4>All Users</h4>";
+snap.forEach(u=>{
+let d=u.val();
+html+=`<div class='card'>${d.name} (${u.key})<br>Investment: ${d.investment}<br>Balance: ${d.balance}<br>
+<button onclick="reward('${u.key}')">Give Reward</button></div>`;
+});
 admin.innerHTML=html;
 }
 
-/* REWARD SIMULATION */
+/* GIVE REWARD */
 window.reward=async function(uid){
-
 const userRef=ref(db,'users/'+uid);
-
 const snap=await get(userRef);
 let d=snap.val();
-
-let reward=d.investment*0.1;
-
-await update(userRef,{
-balance:d.balance+reward
-});
-
-alert("Reward Added");
+let reward=d.investment*0.1; // 10% reward simulation
+await update(userRef,{balance:d.balance+reward});
+alert("Reward Added ✅");
 }
+
+window.logout=function(){location.reload();}
 
 </script>
 
