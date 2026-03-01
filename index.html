@@ -1,424 +1,355 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMPL Token Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TMPL PRO Ecosystem</title>
 
-<!-- Firebase v8 -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
 body{
 margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:linear-gradient(135deg,#0a0f1f,#141c34);
+font-family:Poppins;
+background:linear-gradient(180deg,#020617,#020617,#020617);
 color:#fff;
 }
-.container{max-width:950px;margin:auto;padding:15px;}
-.card{
-background:rgba(28,35,58,.9);
+.header{
+background:linear-gradient(90deg,#06b6d4,#22c55e);
 padding:15px;
-margin:10px 0;
-border-radius:12px;
-box-shadow:0 0 15px rgba(0,0,0,.5);
-backdrop-filter:blur(8px);
+text-align:center;
+font-size:20px;
+font-weight:600;
 }
-input,button{
+.container{padding:15px;max-width:900px;margin:auto;}
+.card{
+background:#0f172a;
+border-radius:14px;
+padding:15px;
+margin-bottom:15px;
+box-shadow:0 0 20px rgba(0,0,0,.5);
+}
+input{
 width:100%;
-padding:10px;
+padding:12px;
 margin:6px 0;
 border-radius:8px;
 border:none;
+background:#020617;
+color:#fff;
 }
-input{background:#0e1426;color:#fff;}
 button{
-background:#00c2ff;
-color:#000;
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:linear-gradient(90deg,#22c55e,#06b6d4);
+color:white;
 font-weight:bold;
+margin-top:8px;
 cursor:pointer;
 }
 .hidden{display:none;}
-.flex{display:flex;gap:8px;}
-.flex button{flex:1;}
-h2{text-align:center;}
-.small{font-size:12px;color:#aaa;}
+.balance{
+font-size:28px;
+text-align:center;
+color:#22c55e;
+font-weight:bold;
+}
+.small{opacity:.7;font-size:13px;}
 </style>
 </head>
 
 <body>
+
+<div class="header">🪙 TMPL PRO Ecosystem</div>
+
 <div class="container">
 
 <!-- REGISTER -->
-<div id="registerPage" class="card">
-<h2>TMPL Register</h2>
-<input id="rName" placeholder="Name">
-<input id="rMobile" placeholder="Mobile">
-<input id="rPassword" type="password" placeholder="Password">
-<input id="rWallet" placeholder="BEP20 Wallet">
-<button onclick="register()">Register</button>
-<div class="small">Already registered? <a href="#" onclick="showLogin()">Login</a></div>
+<div id="register" class="card">
+<h3>Register</h3>
+<input id="rname" placeholder="Full Name">
+<input id="rmobile" placeholder="Mobile Number">
+<input id="rpassword" type="password" placeholder="Password">
+<input id="rwallet" placeholder="USDT Wallet Address">
+<input id="rref" placeholder="Referral Code (optional)">
+<button onclick="register()">Create Account</button>
 </div>
 
 <!-- LOGIN -->
-<div id="loginPage" class="card hidden">
-<h2>Login</h2>
-<input id="lMobile" placeholder="Mobile">
-<input id="lPassword" type="password" placeholder="Password">
+<div id="login" class="card">
+<h3>Login</h3>
+<input id="lmobile" placeholder="Mobile">
+<input id="lpassword" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="hidden">
 
-<div class="flex">
-<button onclick="show('home')">Dashboard</button>
-<button onclick="show('team')">Team</button>
+<div class="card">
+<h3>User Info</h3>
+<div id="userinfo"></div>
+</div>
+
+<div class="card">
+<div class="balance" id="balance">0 TMPL</div>
+<div class="small">Investment: <span id="investment">0</span> USDT</div>
+<div class="small">Referral Earnings: <span id="refincome">0</span> TMPL</div>
+<div class="small">Live Price: <span id="liveprice">0</span> USDT</div>
+<div class="small">Liquidity: <span id="liquidity">0</span> USDT</div>
+</div>
+
+<div class="card">
+<h3>Invest (Min 20 USDT)</h3>
+<input id="amount" placeholder="Amount">
+<button onclick="invest()">Submit Investment</button>
+</div>
+
+<div class="card">
+<h3>Withdraw (Min 5 USDT)</h3>
+<input id="withdrawAmount" placeholder="TMPL Amount">
+<button onclick="requestWithdraw()">Request Withdraw</button>
+</div>
+
 <button onclick="logout()">Logout</button>
 </div>
 
-<div id="home" class="card">
-<h2>TMPL Dashboard</h2>
-<div id="stats"></div>
-
-<h3>Investment</h3>
-<input id="joinAmt" placeholder="Min 20 USDT">
-<button onclick="submitJoin()">Submit Investment</button>
-
-<h3>Withdraw</h3>
-<input id="withdrawAmt" placeholder="Min 5 USDT Equivalent">
-<button onclick="withdraw()">Request Withdraw</button>
-
-<h3>Referral</h3>
-<input id="refLink" readonly>
-<button onclick="copyRef()">Copy</button>
-</div>
-
-<div id="team" class="card hidden">
-<h3>Your Team</h3>
-<div id="teamList"></div>
-</div>
-
-</div>
-
-<!-- ADMIN LOGIN -->
-<div id="adminLogin" class="card hidden">
-<h2>Admin Login</h2>
-<input id="aid" placeholder="ID">
-<input id="apass" type="password" placeholder="Password">
-<button onclick="adminLogin()">Login</button>
-</div>
-
-<div id="adminPanel" class="hidden">
-
+<!-- ADMIN -->
 <div class="card">
-<h3>Live Price</h3>
-<input id="priceInput" placeholder="TMPL Price (USDT)">
-<button onclick="updatePrice()">Update Price</button>
-</div>
-
-<div class="card">
-<h3>Users</h3>
-<div id="users"></div>
-</div>
-
-<div class="card">
-<h3>Withdraw Requests</h3>
-<div id="withdrawList"></div>
+<h3>Admin Panel</h3>
+<input id="adminpass" type="password" placeholder="Admin Password">
+<button onclick="adminLogin()">Open Admin</button>
+<div id="admin"></div>
 </div>
 
 </div>
 
-</div>
+<script type="module">
 
-<script>
-/* ---------- FIREBASE CONFIG ---------- */
-var firebaseConfig={
-apiKey:"ADD_KEY",
-authDomain:"ADD_DOMAIN",
-databaseURL:"ADD_DB_URL",
-projectId:"ADD_ID"
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+getDatabase, ref, set, get, update,
+runTransaction, remove
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig={
+apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
+authDomain:"tmpl-cd770.firebaseapp.com",
+databaseURL:"https://tmpl-cd770-default-rtdb.firebaseio.com",
+projectId:"tmpl-cd770",
+storageBucket:"tmpl-cd770.firebasestorage.app",
+messagingSenderId:"383728687521",
+appId:"1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 };
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-const auth=firebase.auth();
 
-/* ---------- GLOBAL ---------- */
-let user=null;
-const ADMIN_ID="Admin";
-const ADMIN_PASS="Jaihanuman@7";
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
 
-/* ---------- HASH ---------- */
-async function sha256(msg){
-const buf=new TextEncoder().encode(msg);
-const hash=await crypto.subtle.digest("SHA-256",buf);
-return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+let currentUser=null;
+
+/* SESSION AUTO LOGIN */
+if(localStorage.getItem("tmplUser")){
+currentUser=localStorage.getItem("tmplUser");
+register.classList.add("hidden");
+login.classList.add("hidden");
+dashboard.classList.remove("hidden");
+loadUser();
 }
 
-/* ---------- ROUTING ---------- */
-if(location.hash==="#admin"){
-registerPage.classList.add("hidden");
-adminLogin.classList.remove("hidden");
-}
+/* REGISTER */
+window.register=async()=>{
+let mobile=rmobile.value.trim();
+if(!mobile) return alert("Enter mobile");
 
-function showLogin(){
-registerPage.classList.add("hidden");
-loginPage.classList.remove("hidden");
-}
-
-/* ---------- REGISTER ---------- */
-function getRef(){
-return new URLSearchParams(location.search).get("ref")||"";
-}
-function genRef(){
-return Math.random().toString(36).substr(2,5);
-}
-
-async function register(){
-let name=rName.value.trim();
-let mobile=rMobile.value.trim();
-let pass=rPassword.value;
-let wallet=rWallet.value.trim();
-
-if(!name||!mobile||!pass||!wallet) return alert("Fill all");
-
-let hash=await sha256(pass);
-
-db.ref("users/"+mobile).once("value",snap=>{
+let snap=await get(ref(db,'users/'+mobile));
 if(snap.exists()) return alert("User exists");
 
-db.ref("users/"+mobile).set({
-name,mobile,
-password:hash,
-wallet,
-refCode:genRef(),
-upline:getRef(),
+await set(ref(db,'users/'+mobile),{
+name:rname.value,
+password:rpassword.value,
+wallet:rwallet.value,
+ref:rref.value||"",
+balance:0,
 investment:0,
-tmpl:0,
-refEarnings:0
+pending:0,
+referralIncome:0
 });
-alert("Registered");
-showLogin();
-});
+alert("Registered ✅");
 }
 
-/* ---------- LOGIN ---------- */
-async function login(){
-let mobile=lMobile.value;
-let pass=lPassword.value;
-let hash=await sha256(pass);
+/* LOGIN */
+window.login=async()=>{
+let mobile=lmobile.value;
+let pass=lpassword.value;
+let snap=await get(ref(db,'users/'+mobile));
+if(!snap.exists()) return alert("No user");
 
-db.ref("users/"+mobile).once("value",snap=>{
-if(!snap.exists()) return alert("User not found");
-if(snap.val().password!==hash) return alert("Wrong password");
+if(snap.val().password!==pass)
+return alert("Wrong password");
 
+currentUser=mobile;
 localStorage.setItem("tmplUser",mobile);
-startSession(mobile);
-});
-}
 
-function startSession(mobile){
-user=mobile;
-registerPage.classList.add("hidden");
-loginPage.classList.add("hidden");
+register.classList.add("hidden");
+login.classList.add("hidden");
 dashboard.classList.remove("hidden");
-loadDashboard();
+
+loadUser();
 }
 
-window.onload=function(){
-let s=localStorage.getItem("tmplUser");
-if(s) startSession(s);
+/* LOAD USER */
+async function loadUser(){
+let s=await get(ref(db,'users/'+currentUser));
+let d=s.val();
+
+userinfo.innerHTML=
+`Name: ${d.name}<br>
+Wallet: ${d.wallet}`;
+
+balance.innerHTML=d.balance+" TMPL";
+investment.innerText=d.investment;
+refincome.innerText=d.referralIncome;
+
+let price=(await get(ref(db,'stats/livePrice'))).val()||0;
+liveprice.innerText=price;
+
+let liq=(await get(ref(db,'stats/liquidity'))).val()||0;
+liquidity.innerText=liq;
 }
 
-/* ---------- DASHBOARD ---------- */
-function loadDashboard(){
-db.ref("users/"+user).on("value",snap=>{
-let u=snap.val();
-db.ref("stats").once("value",s=>{
-let st=s.val()||{};
-stats.innerHTML=`
-<div class="card">
-Investment: ${u.investment||0} USDT<br>
-TMPL Balance: ${u.tmpl||0}<br>
-Referral Earnings: ${u.refEarnings||0}<br>
-Live Price: ${st.livePrice||0} USDT<br>
-Liquidity: ${st.liquidity||0}
-</div>`;
-});
-refLink.value=location.origin+location.pathname+"?ref="+u.refCode;
-loadTeam(u.refCode);
-});
-}
-
-/* ---------- TEAM ---------- */
-function loadTeam(code){
-teamList.innerHTML="";
-db.ref("users").once("value",snap=>{
-snap.forEach(c=>{
-if(c.val().upline===code)
-teamList.innerHTML+=`<div class="card">${c.val().name}</div>`;
-});
-});
-}
-
-/* ---------- INVEST ---------- */
-function submitJoin(){
-let amt=parseFloat(joinAmt.value);
+/* INVEST */
+window.invest=async()=>{
+let amt=parseFloat(amount.value);
 if(amt<20) return alert("Minimum 20");
 
-let id=Date.now();
-db.ref("joins/"+id).set({
-user,amount:amt,status:"pending"
+await runTransaction(ref(db,'users/'+currentUser),(u)=>{
+if(u) u.pending=(u.pending||0)+amt;
+return u;
 });
-alert("Submitted");
+alert("Pending Approval");
 }
 
-/* ---------- WITHDRAW ---------- */
-function withdraw(){
-let amt=parseFloat(withdrawAmt.value);
-if(amt<5) return alert("Min 5");
+/* ADMIN LOGIN */
+window.adminLogin=async()=>{
+if(adminpass.value!=="Jaihanuman@7") return alert("Wrong");
 
-db.ref("stats/livePrice").once("value",snap=>{
-let price=snap.val()||1;
-let tmpl=amt/price;
+let users=await get(ref(db,'users'));
+let html="<h4>Users</h4>";
 
-let id=Date.now();
-db.ref("withdrawals/"+id).set({
-user,usdt:amt,tmpl,status:"pending"
-});
-alert("Requested");
-});
-}
-
-/* ---------- ADMIN ---------- */
-function adminLogin(){
-if(aid.value===ADMIN_ID && apass.value===ADMIN_PASS){
-adminLogin.style.display="none";
-adminPanel.classList.remove("hidden");
-loadUsers();
-loadWithdraws();
-}else alert("Wrong");
-}
-
-function loadUsers(){
-db.ref("users").on("value",snap=>{
-users.innerHTML="";
-snap.forEach(c=>{
-let u=c.val();
-users.innerHTML+=`
+users.forEach(u=>{
+let d=u.val();
+html+=`
 <div class="card">
-${u.name} (${u.mobile})
-<br>Wallet: ${u.wallet}
-<button onclick="approveJoin('${u.mobile}')">Approve Investment</button>
+<b>${d.name}</b> (${u.key})<br>
+Invest: ${d.investment}<br>
+Pending: ${d.pending||0}<br>
+<button onclick="approve('${u.key}')">Approve</button>
+<button onclick="editUser('${u.key}')">Edit</button>
+<button onclick="deleteUser('${u.key}')">Delete</button>
 </div>`;
 });
+
+html+=`
+<h4>Update TMPL Price</h4>
+<input id="newPrice" placeholder="Price USDT">
+<button onclick="updatePrice()">Update Price</button>
+`;
+
+admin.innerHTML=html;
+}
+
+/* PRICE UPDATE */
+window.updatePrice=async()=>{
+let p=parseFloat(newPrice.value);
+await set(ref(db,'stats/livePrice'),p);
+alert("Price Updated");
+}
+
+/* APPROVE JOIN */
+window.approve=async(uid)=>{
+let s=await get(ref(db,'users/'+uid));
+let d=s.val();
+let amt=d.pending||0;
+if(!amt) return;
+
+let price=(await get(ref(db,'stats/livePrice'))).val()||1;
+
+/* SPLIT */
+let liquidity=amt*0.5;
+let commissionUSDT=amt*0.3;
+let company=amt*0.2;
+
+await runTransaction(ref(db,'stats/liquidity'),v=>(v||0)+liquidity);
+await runTransaction(ref(db,'stats/companyFund'),v=>(v||0)+company);
+
+/* UPDATE USER */
+await update(ref(db,'users/'+uid),{
+investment:(d.investment||0)+amt,
+pending:0
+});
+
+/* DISTRIBUTE 15 LEVEL */
+const perc=[10,5,3,2,2,1.5,1.5,1.5,1.5,1.5,1,1,1,1,1];
+
+let parent=d.ref;
+for(let i=0;i<15;i++){
+if(!parent) break;
+
+await runTransaction(ref(db,'users/'+parent),(p)=>{
+if(p){
+let rewardUSDT=(commissionUSDT*perc[i])/100;
+let tmpl=rewardUSDT/price;
+p.balance=(p.balance||0)+tmpl;
+p.referralIncome=(p.referralIncome||0)+tmpl;
+parent=p.ref;
+}
+return p;
 });
 }
 
-function approveJoin(mobile){
-let amt=parseFloat(prompt("Investment amount"));
-processJoin(mobile,amt);
+alert("Approved ✅");
+adminLogin();
 }
 
-/* ---------- BUSINESS LOGIC ---------- */
-function processJoin(mobile,amount){
-splitInvestment(mobile,amount);
-db.ref("users/"+mobile+"/investment")
-.transaction(v=>(v||0)+amount);
+/* EDIT USER */
+window.editUser=async(uid)=>{
+let name=prompt("New Name");
+if(!name) return;
+await update(ref(db,'users/'+uid),{name});
+alert("Updated");
+adminLogin();
 }
 
-function splitInvestment(mobile,amount){
-let liquidity=amount*0.5;
-let commission=amount*0.3;
-let company=amount*0.2;
-
-db.ref("stats/liquidity").transaction(v=>(v||0)+liquidity);
-db.ref("companyFund").transaction(v=>(v||0)+company);
-
-addLiquidityLog(liquidity);
-distributeCommission(mobile,commission);
+/* DELETE USER */
+window.deleteUser=async(uid)=>{
+if(!confirm("Delete user?")) return;
+await remove(ref(db,'users/'+uid));
+alert("Deleted");
+adminLogin();
 }
 
-function distributeCommission(userId,amount){
-const levels=[10,5,3,2,2,1.5,1.5,1.5,1.5,1.5,1,1,1,1,1];
+/* WITHDRAW */
+window.requestWithdraw=async()=>{
+let amt=parseFloat(withdrawAmount.value);
 
-db.ref("stats/livePrice").once("value",p=>{
-let price=p.val()||1;
-let tmplTotal=calculateTMPL(amount,price);
-
-db.ref("users/"+userId).once("value",snap=>{
-let up=snap.val().upline;
-let level=0;
-
-function pay(upline){
-if(!upline||level>=15) return;
-
-db.ref("users").orderByChild("refCode").equalTo(upline)
-.once("value",res=>{
-res.forEach(us=>{
-let share=tmplTotal*(levels[level]/100);
-db.ref("users/"+us.key+"/tmpl")
-.transaction(v=>(v||0)+share);
-level++;
-pay(us.val().upline);
+await set(ref(db,'withdrawals/'+Date.now()),{
+user:currentUser,
+amount:amt,
+status:"pending"
 });
-});
-}
-pay(up);
-});
-});
+
+alert("Withdraw Requested");
 }
 
-function calculateTMPL(usdt,price){
-return usdt/price;
-}
-
-function addLiquidityLog(value){
-db.ref("liquidityLogs/"+Date.now()).set({value});
-}
-
-/* ---------- ADMIN PRICE ---------- */
-function updatePrice(){
-db.ref("stats/livePrice").set(parseFloat(priceInput.value));
-}
-
-/* ---------- WITHDRAW ADMIN ---------- */
-function loadWithdraws(){
-db.ref("withdrawals").on("value",snap=>{
-withdrawList.innerHTML="";
-snap.forEach(c=>{
-let w=c.val();
-withdrawList.innerHTML+=`
-<div class="card">
-${w.user} - ${w.usdt} USDT
-<button onclick="approveWithdraw('${c.key}')">Approve</button>
-</div>`;
-});
-});
-}
-
-function approveWithdraw(id){
-db.ref("withdrawals/"+id+"/status").set("approved");
-}
-
-/* ---------- UI ---------- */
-function show(id){
-home.classList.add("hidden");
-team.classList.add("hidden");
-document.getElementById(id).classList.remove("hidden");
-}
-
-function copyRef(){
-navigator.clipboard.writeText(refLink.value);
-alert("Copied");
-}
-
-function logout(){
+/* LOGOUT */
+window.logout=()=>{
 localStorage.removeItem("tmplUser");
 location.reload();
 }
+
 </script>
 </body>
 </html>
