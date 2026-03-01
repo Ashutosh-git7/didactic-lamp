@@ -4,76 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TMPL PRO Ecosystem</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
-
 <style>
-body{
-margin:0;
-font-family:Poppins;
-background:#020617;
-color:white;
-}
-.header{
-background:linear-gradient(90deg,#06b6d4,#22c55e);
-padding:15px;
-text-align:center;
-font-weight:bold;
-font-size:20px;
-}
-.container{
-padding:15px;
-}
-.card{
-background:#0f172a;
-border-radius:12px;
-padding:15px;
-margin-bottom:15px;
-box-shadow:0 0 10px #000;
-}
-input{
-width:100%;
-padding:12px;
-margin:6px 0;
-border-radius:8px;
-border:none;
-background:#020617;
-color:white;
-}
-button{
-width:100%;
-padding:12px;
-border:none;
-border-radius:8px;
-background:linear-gradient(90deg,#22c55e,#06b6d4);
-color:white;
-font-weight:bold;
-margin-top:8px;
-}
+body{margin:0;font-family:Poppins;background:#020617;color:white;}
+.header{background:linear-gradient(90deg,#06b6d4,#22c55e);padding:15px;text-align:center;font-weight:bold;font-size:20px;}
+.container{padding:15px;}
+.card{background:#0f172a;border-radius:12px;padding:15px;margin-bottom:15px;box-shadow:0 0 10px #000;}
+input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;background:#020617;color:white;}
+button{width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(90deg,#22c55e,#06b6d4);color:white;font-weight:bold;margin-top:8px;}
 .hidden{display:none;}
-.balance{
-font-size:28px;
-color:#22c55e;
-font-weight:bold;
-text-align:center;
-}
-.small{
-font-size:13px;
-opacity:.7;
-}
-.team-member{
-background:#1e293b;
-padding:8px;
-margin:5px 0;
-border-radius:8px;
-}
+.balance{font-size:28px;color:#22c55e;font-weight:bold;text-align:center;}
+.small{font-size:13px;opacity:.7;}
+.team-member{background:#1e293b;padding:8px;margin:5px 0;border-radius:8px;}
 </style>
 </head>
-
 <body>
 
 <div class="header">🪙 TMPL PRO Dashboard</div>
-
 <div class="container">
 
 <!-- REGISTER -->
@@ -81,6 +28,7 @@ border-radius:8px;
 <h3>Create Account</h3>
 <input id="rname" placeholder="Full Name">
 <input id="rmobile" placeholder="Mobile Number">
+<input id="rpassword" placeholder="Password" type="password">
 <input id="rwallet" placeholder="USDT Wallet Address">
 <input id="rref" placeholder="Referral Code (optional)">
 <button onclick="register()">Register</button>
@@ -90,15 +38,16 @@ border-radius:8px;
 <div id="login" class="card">
 <h3>Login</h3>
 <input id="lmobile" placeholder="Mobile Number">
+<input id="lpassword" placeholder="Password" type="password">
 <button onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="hidden">
-
 <div class="card">
 <h3>Account</h3>
 <p id="userinfo"></p>
+<p>USDT Deposit Address: <b>0x49F7A836A32C1aCF04d4d20Fa87A14C7a19aB74B</b></p>
 </div>
 
 <div class="card">
@@ -123,19 +72,15 @@ border-radius:8px;
 <!-- ADMIN PANEL -->
 <div class="card">
 <h3>Admin Panel</h3>
-<input id="adminpass" placeholder="Admin Password">
+<input id="adminpass" placeholder="Admin Password" type="password">
 <button onclick="adminLogin()">Open Admin</button>
 <div id="admin" class="hidden"></div>
-</div>
-
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-getDatabase, ref, set, get, child, update
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, update, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -153,27 +98,46 @@ let currentUser=null;
 
 /* REGISTER */
 window.register=async function(){
-let mobile=rmobile.value;
+let mobile=rmobile.value.trim();
+let name=rname.value.trim();
+let password=rpassword.value.trim();
+let wallet=rwallet.value.trim();
+let refcode=rref.value.trim();
+
+if(!mobile || !name || !password || !wallet){ alert("All fields required!"); return; }
+
+const snap=await get(child(ref(db),'users/'+mobile));
+if(snap.exists()){ alert("User already exists!"); return; }
+
 await set(ref(db,'users/'+mobile),{
-name:rname.value,
-wallet:rwallet.value,
-ref:rref.value||"",
+name:name,
+password:password,
+wallet:wallet,
+ref:refcode||"",
 balance:0,
-investment:0
+investment:0,
+pendingInvestment:0
 });
 alert("Account Created ✅");
+rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
 }
 
 /* LOGIN */
 window.login=async function(){
-const snap=await get(child(ref(db),'users/'+lmobile.value));
+let mobile=lmobile.value.trim();
+let password=lpassword.value.trim();
+const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){
-currentUser=lmobile.value;
-dashboard.classList.remove("hidden");
-loadUser();
-loadTeam();
+  let data=snap.val();
+  if(data.password!==password){ alert("Wrong Password"); return; }
+  currentUser=mobile;
+  dashboard.classList.remove("hidden");
+  register.style.display="none";
+  login.style.display="none";
+  loadUser();
+  loadTeam();
 }else{
-alert("User Not Found");
+  alert("User Not Found");
 }
 }
 
@@ -181,61 +145,84 @@ alert("User Not Found");
 async function loadUser(){
 const snap=await get(child(ref(db),'users/'+currentUser));
 let d=snap.val();
-userinfo.innerHTML="Name: "+d.name+"<br>Wallet: "+d.wallet;
+userinfo.innerHTML="Name: "+d.name+"<br>Mobile: "+currentUser+"<br>Wallet: "+d.wallet;
 balance.innerHTML=d.balance+" TMPL";
 }
 
 /* INVEST */
 window.invest=async function(){
 let amt=parseFloat(amount.value);
+if(isNaN(amt) || amt<=0){ alert("Enter valid amount"); return; }
 const userRef=ref(db,'users/'+currentUser);
 const snap=await get(userRef);
 let data=snap.val();
-await update(userRef,{investment:data.investment+amt});
+await update(userRef,{pendingInvestment:(data.pendingInvestment||0)+amt});
 alert("Investment Submitted (Admin Approval)");
+amount.value="";
+loadUser();
 }
 
-/* LOAD TEAM (15 Level Referral) */
+/* LOAD TEAM */
 async function loadTeam(){
 team.innerHTML="";
 const snap=await get(ref(db,'users'));
 snap.forEach(u=>{
 let d=u.val();
 if(d.ref==currentUser){
-team.innerHTML+=`<div class="team-member">${d.name} (${u.key}) - Investment: ${d.investment}</div>`;
+team.innerHTML+=`<div class="team-member">${d.name} (${u.key}) - Investment: ${d.investment} TMPL</div>`;
 }
 });
 }
 
 /* ADMIN LOGIN */
 window.adminLogin=async function(){
-if(adminpass.value!=="Admin@123"){
-alert("Wrong Password"); return;
-}
+if(adminpass.value!=="Jaihanuman@7"){ alert("Wrong Password"); return; }
 admin.classList.remove("hidden");
-const snap=await get(ref(db,'users'));
+let snap=await get(ref(db,'users'));
 let html="<h4>All Users</h4>";
 snap.forEach(u=>{
 let d=u.val();
-html+=`<div class='card'>${d.name} (${u.key})<br>Investment: ${d.investment}<br>Balance: ${d.balance}<br>
-<button onclick="reward('${u.key}')">Give Reward</button></div>`;
+html+=`<div class='card'>
+<b>${d.name} (${u.key})</b><br>
+Wallet: ${d.wallet}<br>
+Balance: ${d.balance} TMPL<br>
+Investment: ${d.investment} TMPL<br>
+Pending: ${d.pendingInvestment||0} TMPL<br>
+<button onclick="approve('${u.key}')">Approve Investment</button>
+<button onclick="giveReward('${u.key}')">Give Reward 10%</button>
+</div>`;
 });
 admin.innerHTML=html;
 }
 
-/* GIVE REWARD */
-window.reward=async function(uid){
+/* APPROVE INVESTMENT */
+window.approve=async function(uid){
 const userRef=ref(db,'users/'+uid);
 const snap=await get(userRef);
 let d=snap.val();
-let reward=d.investment*0.1; // 10% reward simulation
-await update(userRef,{balance:d.balance+reward});
+let amt=d.pendingInvestment||0;
+if(amt>0){
+await update(userRef,{investment:(d.investment||0)+amt, pendingInvestment:0});
+alert("Investment Approved ✅");
+adminLogin();
+}else{
+alert("No Pending Investment");
+}
+}
+
+/* GIVE REWARD */
+window.giveReward=async function(uid){
+const userRef=ref(db,'users/'+uid);
+const snap=await get(userRef);
+let d=snap.val();
+let reward=d.investment*0.1;
+await update(userRef,{balance:(d.balance||0)+reward});
 alert("Reward Added ✅");
+adminLogin();
 }
 
 window.logout=function(){location.reload();}
 
 </script>
-
 </body>
 </html>
