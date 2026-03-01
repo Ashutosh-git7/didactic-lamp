@@ -22,6 +22,9 @@ h3,h4{margin-top:0;}
 .toggle{cursor:pointer;color:#22c55e;font-weight:bold;}
 .admin-input{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:none;background:#020617;color:white;}
 .admin-section{margin-top:10px;padding:10px;border-radius:8px;background:#1e293b;}
+.progress-container{background:#1e293b;border-radius:8px;height:20px;margin-top:5px;overflow:hidden;}
+.progress-bar{background:#22c55e;height:100%;width:0%;transition:width 0.5s;}
+.referral-history{background:#1e293b;padding:8px;margin:5px 0;border-radius:6px;max-height:150px;overflow-y:auto;}
 </style>
 </head>
 <body>
@@ -66,6 +69,9 @@ h3,h4{margin-top:0;}
 <div class="small">Total Investment: <span id="totalInvestment">0</span> TMPL</div>
 <div class="small">USDT Invested: <span id="usdtInvested">0</span> USDT</div>
 <div class="small">Next Monthly 5% Income in: <span id="incomeCountdown">0</span> days</div>
+
+<div class="small">Progress to 2x:</div>
+<div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
 </div>
 
 <div class="card">
@@ -77,6 +83,11 @@ h3,h4{margin-top:0;}
 <div class="card">
 <h3>Team</h3>
 <div id="team"></div>
+</div>
+
+<div class="card">
+<h3>Referral History</h3>
+<div id="refHistory" class="referral-history"></div>
 </div>
 
 <div class="card">
@@ -124,7 +135,7 @@ await set(ref(db,'users/'+mobile),{
 name,password,wallet,ref:refcode||"",
 balance:0,investment:0,pendingInvestment:0,withdrawRequest:0,
 referralIncome:0,totalEarned:0,lastIncomeDate:Date.now(),
-liquidityPool:0
+liquidityPool:0, referralHistory:[]
 });
 alert("Account Created ✅"); rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
 }
@@ -136,9 +147,11 @@ const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){
 let data=snap.val();
 if(data.password!==password){ alert("Wrong Password"); return; }
-currentUser=mobile;
-dashboard.classList.remove("hidden"); register.style.display="none"; login.style.display="none";
-await loadUser(); await loadTeamTree();
+currentUser = mobile;
+dashboard.classList.remove("hidden");
+register.style.display = "none";
+login.style.display = "none";
+await loadUser(); await loadTeamTree(); await loadReferralHistory();
 }else{ alert("User Not Found"); }
 }
 
@@ -169,6 +182,21 @@ totalInvestment.innerText=d.investment||0;
 usdtInvested.innerText=d.investment||0;
 let nextIncome=Math.ceil(((d.lastIncomeDate+30*24*60*60*1000)-now)/(24*60*60*1000));
 incomeCountdown.innerText=nextIncome>0?nextIncome:0;
+// Update 2x progress bar
+let progress = Math.min(((d.totalEarned||0)/(d.investment*2))*100,100);
+document.getElementById('progressBar').style.width = progress+"%";
+}
+
+/* REFERRAL HISTORY */
+async function loadReferralHistory(){
+const snap = await get(child(ref(db),'users/'+currentUser+'/referralHistory'));
+let html="";
+if(snap.exists()){
+snap.val().forEach((r)=>{
+html+=`<div>Level ${r.level}: ${r.name} - ${r.amount} TMPL</div>`;
+});
+}
+refHistory.innerHTML = html || "No referral income yet.";
 }
 
 /* INVESTMENT */
@@ -233,7 +261,6 @@ html+=`<div class='card'>
 <b>User ID: ${u.key}</b><br>
 <div class='admin-section'>
 <label>Name</label><input class='admin-input' id='name_${u.key}' value='${d.name}'>
-<label>Mobile</label><input class='admin-input' id='mobile_${u.key}' value='${u.key}'>
 <label>Wallet</label><input class='admin-input' id='wallet_${u.key}' value='${d.wallet}'>
 <label>Balance</label><input class='admin-input' id='balance_${u.key}' value='${d.balance}'>
 <label>Investment</label><input class='admin-input' id='investment_${u.key}' value='${d.investment}'>
@@ -273,11 +300,12 @@ let d=snap.val();
 let amt=d.pendingInvestment||0;
 if(amt>0){
 await update(userRef,{investment:(d.investment||0)+amt,pendingInvestment:0});
+// Referral distribution
 let parent=d.ref;
 for(let lvl=0; lvl<15; lvl++){
 if(!parent) break;
 const parentRef=ref(db,'users/'+parent);
-await runTransaction(parentRef, (pdata)=>{
+await runTransaction(parentRef,(pdata)=>{
 if(pdata){
 let reward=amt*referralPercents[lvl];
 let maxReward=(pdata.investment*2)-(pdata.totalEarned||0);
@@ -285,19 +313,21 @@ if(reward>maxReward) reward=maxReward;
 pdata.balance=(pdata.balance||0)+reward;
 pdata.referralIncome=(pdata.referralIncome||0)+reward;
 pdata.totalEarned=(pdata.totalEarned||0)+reward;
+pdata.referralHistory=pdata.referralHistory||[];
+pdata.referralHistory.push({level:lvl+1,name:d.name,amount:reward});
 parent=pdata.ref;
 }
 return pdata;
 });
 }
-alert("Investment Approved & Referral Distributed ✅"); adminLogin();
+alert("Investment Approved & Referral Distributed ✅"); adminLogin(); loadReferralHistory();
 }else alert("No Pending Investment");
 }
 
 /* APPROVE WITHDRAWAL */
 window.approveWithdraw=async function(uid){
 const userRef=ref(db,'users/'+uid);
-await runTransaction(userRef, (user)=>{
+await runTransaction(userRef,(user)=>{
 if(user){
 let amt=user.withdrawRequest||0;
 if(amt>0){
@@ -312,8 +342,24 @@ return user;
 adminLogin();
 }
 
-window.logout=function(){location.reload();}
+/* LOGOUT */
+window.logout=function(){
+currentUser = null;
+dashboard.classList.add("hidden");
+register.style.display = "block";
+login.style.display = "block";
+admin.classList.add("hidden");
+admin.innerHTML = "";
+userinfo.innerHTML = "";
+balance.innerHTML = "0 TMPL";
+pending.innerText = "0";
+totalInvestment.innerText = "0";
+usdtInvested.innerText = "0";
+refincome.innerText = "0";
+incomeCountdown.innerText = "0";
+progressBar.style.width = "0%";
+refHistory.innerHTML = "";
+}
 </script>
-
 </body>
 </html>
