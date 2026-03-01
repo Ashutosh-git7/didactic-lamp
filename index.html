@@ -1,62 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>TMPL PRO Ecosystem</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box;font-family:Poppins}
 body{
 margin:0;
-font-family:Poppins;
-background:linear-gradient(180deg,#020617,#020617,#020617);
+background:#020617;
 color:#fff;
 }
+
+.hidden{display:none}
+
 .header{
 background:linear-gradient(90deg,#06b6d4,#22c55e);
 padding:15px;
 text-align:center;
-font-size:20px;
+font-size:22px;
 font-weight:600;
 }
-.container{padding:15px;max-width:900px;margin:auto;}
+
+.container{padding:15px;max-width:700px;margin:auto}
+
 .card{
-background:#0f172a;
-border-radius:14px;
+background:rgba(15,23,42,.9);
 padding:15px;
 margin-bottom:15px;
+border-radius:12px;
 box-shadow:0 0 20px rgba(0,0,0,.5);
+backdrop-filter:blur(10px);
 }
-input{
+
+input,button{
 width:100%;
 padding:12px;
 margin:6px 0;
 border-radius:8px;
 border:none;
+font-size:14px;
+}
+
+input{
 background:#020617;
 color:#fff;
 }
+
 button{
-width:100%;
-padding:12px;
-border:none;
-border-radius:8px;
 background:linear-gradient(90deg,#22c55e,#06b6d4);
-color:white;
-font-weight:bold;
-margin-top:8px;
+color:#fff;
+font-weight:600;
 cursor:pointer;
 }
-.hidden{display:none;}
+
 .balance{
 font-size:28px;
 text-align:center;
 color:#22c55e;
-font-weight:bold;
+font-weight:600;
 }
-.small{opacity:.7;font-size:13px;}
+
+.small{opacity:.7;font-size:13px}
+
+.linkbox{
+background:#020617;
+padding:10px;
+border-radius:8px;
+word-break:break-all;
+}
 </style>
 </head>
 
@@ -66,288 +81,283 @@ font-weight:bold;
 
 <div class="container">
 
-<!-- REGISTER -->
-<div id="register" class="card">
-<h3>Register</h3>
+<!-- AUTH PAGE -->
+<div id="authPage">
+
+<div class="card">
+<h3>Create Account</h3>
 <input id="rname" placeholder="Full Name">
 <input id="rmobile" placeholder="Mobile Number">
 <input id="rpassword" type="password" placeholder="Password">
-<input id="rwallet" placeholder="USDT Wallet Address">
-<input id="rref" placeholder="Referral Code (optional)">
-<button onclick="register()">Create Account</button>
+<input id="rwallet" placeholder="BEP20 USDT Wallet">
+<input id="rref" placeholder="Referral Code (auto)">
+<button onclick="register()">Register</button>
 </div>
 
-<!-- LOGIN -->
-<div id="login" class="card">
+<div class="card">
 <h3>Login</h3>
-<input id="lmobile" placeholder="Mobile">
+<input id="lmobile" placeholder="Mobile Number">
 <input id="lpassword" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard" class="hidden">
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div id="dashboardPage" class="hidden">
 
 <div class="card">
-<h3>User Info</h3>
+<h3>Account</h3>
 <div id="userinfo"></div>
 </div>
 
 <div class="card">
 <div class="balance" id="balance">0 TMPL</div>
-<div class="small">Investment: <span id="investment">0</span> USDT</div>
-<div class="small">Referral Earnings: <span id="refincome">0</span> TMPL</div>
-<div class="small">Live Price: <span id="liveprice">0</span> USDT</div>
-<div class="small">Liquidity: <span id="liquidity">0</span> USDT</div>
+<div class="small">TMPL Balance</div>
+<hr>
+Investment: <span id="investment">0</span> USDT<br>
+Referral Earnings: <span id="refincome">0</span> TMPL<br>
+Team Size: <span id="teamsize">0</span><br>
+Live Price: <span id="liveprice">0</span> USDT<br>
+Liquidity Pool: <span id="liquidity">0</span> USDT
 </div>
 
 <div class="card">
-<h3>Invest (Min 20 USDT)</h3>
-<input id="amount" placeholder="Amount">
-<button onclick="invest()">Submit Investment</button>
+<h3>Your Referral Link</h3>
+<div id="reflink" class="linkbox"></div>
+<button onclick="copyRef()">Copy Link</button>
 </div>
 
 <div class="card">
-<h3>Withdraw (Min 5 USDT)</h3>
-<input id="withdrawAmount" placeholder="TMPL Amount">
+<h3>Invest</h3>
+<input id="amount" placeholder="Minimum 20 USDT">
+<button onclick="submitInvestment()">Submit Investment</button>
+</div>
+
+<div class="card">
+<h3>Withdraw</h3>
+<input id="withdrawAmount" placeholder="Min 5 USDT equivalent">
 <button onclick="requestWithdraw()">Request Withdraw</button>
 </div>
 
 <button onclick="logout()">Logout</button>
+
 </div>
 
-<!-- ADMIN -->
+<!-- ADMIN PAGE -->
+<div id="adminPage" class="hidden">
 <div class="card">
-<h3>Admin Panel</h3>
+<h3>Admin Login</h3>
 <input id="adminpass" type="password" placeholder="Admin Password">
-<button onclick="adminLogin()">Open Admin</button>
-<div id="admin"></div>
+<button onclick="adminLogin()">Enter Admin</button>
+</div>
+
+<div id="adminPanel"></div>
 </div>
 
 </div>
 
 <script type="module">
 
+/* ================= FIREBASE ================= */
+/* EDITABLE CONFIG */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-getDatabase, ref, set, get, update,
-runTransaction, remove
+getDatabase,
+ref,
+set,
+get,
+update,
+runTransaction,
+child,
+onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* FIREBASE CONFIG */
 const firebaseConfig={
-apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
-authDomain:"tmpl-cd770.firebaseapp.com",
-databaseURL:"https://tmpl-cd770-default-rtdb.firebaseio.com",
-projectId:"tmpl-cd770",
-storageBucket:"tmpl-cd770.firebasestorage.app",
-messagingSenderId:"383728687521",
-appId:"1:383728687521:web:b3ac6cd7fde979cb8b13e0"
+apiKey:"YOUR_API_KEY",
+authDomain:"YOUR_AUTH_DOMAIN",
+databaseURL:"YOUR_DB_URL",
+projectId:"YOUR_PROJECT_ID",
+storageBucket:"YOUR_BUCKET",
+messagingSenderId:"XXXX",
+appId:"XXXX"
 };
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 
-let currentUser=null;
+/* ================= GLOBAL ================= */
 
-/* SESSION AUTO LOGIN */
-if(localStorage.getItem("tmplUser")){
-currentUser=localStorage.getItem("tmplUser");
-register.classList.add("hidden");
-login.classList.add("hidden");
-dashboard.classList.remove("hidden");
-loadUser();
+let currentUser=null;
+let currentData=null;
+
+/* referral capture */
+const urlParams=new URLSearchParams(window.location.search);
+if(urlParams.get("ref")){
+document.getElementById("rref").value=urlParams.get("ref");
 }
 
-/* REGISTER */
-window.register=async()=>{
-let mobile=rmobile.value.trim();
-if(!mobile) return alert("Enter mobile");
+/* ================= SESSION ================= */
 
-let snap=await get(ref(db,'users/'+mobile));
-if(snap.exists()) return alert("User exists");
+function saveSession(id){
+localStorage.setItem("tmplUser",id);
+}
+
+function loadSession(){
+let id=localStorage.getItem("tmplUser");
+if(id){
+currentUser=id;
+openDashboard();
+}
+}
+loadSession();
+
+/* ================= REGISTER ================= */
+
+window.register=async()=>{
+let name=rname.value.trim();
+let mobile=rmobile.value.trim();
+let pass=rpassword.value.trim();
+let wallet=rwallet.value.trim();
+let refcode=rref.value.trim();
+
+if(!name||!mobile||!pass||!wallet)
+return alert("All fields required");
+
+let check=await get(ref(db,'users/'+mobile));
+if(check.exists()) return alert("User exists");
+
+let myRef=Math.random().toString(36).substring(2,6);
 
 await set(ref(db,'users/'+mobile),{
-name:rname.value,
-password:rpassword.value,
-wallet:rwallet.value,
-ref:rref.value||"",
+name,
+password:pass,
+wallet,
+ref:refcode||"",
+myRef,
 balance:0,
 investment:0,
-pending:0,
-referralIncome:0
+referralIncome:0,
+team:0
 });
-alert("Registered ✅");
-}
 
-/* LOGIN */
+alert("Registered Successfully");
+};
+
+/* ================= LOGIN ================= */
+
 window.login=async()=>{
-let mobile=lmobile.value;
-let pass=lpassword.value;
+let mobile=lmobile.value.trim();
+let pass=lpassword.value.trim();
+
 let snap=await get(ref(db,'users/'+mobile));
-if(!snap.exists()) return alert("No user");
+if(!snap.exists()) return alert("User not found");
 
 if(snap.val().password!==pass)
 return alert("Wrong password");
 
 currentUser=mobile;
-localStorage.setItem("tmplUser",mobile);
+saveSession(mobile);
+openDashboard();
+};
 
-register.classList.add("hidden");
-login.classList.add("hidden");
-dashboard.classList.remove("hidden");
+/* ================= ROUTING ================= */
 
+function openDashboard(){
+authPage.classList.add("hidden");
+dashboardPage.classList.remove("hidden");
 loadUser();
 }
 
-/* LOAD USER */
+/* ================= LOAD USER ================= */
+
 async function loadUser(){
-let s=await get(ref(db,'users/'+currentUser));
-let d=s.val();
+
+let snap=await get(ref(db,'users/'+currentUser));
+currentData=snap.val();
 
 userinfo.innerHTML=
-`Name: ${d.name}<br>
-Wallet: ${d.wallet}`;
+`Name: ${currentData.name}<br>
+Wallet: ${currentData.wallet}`;
 
-balance.innerHTML=d.balance+" TMPL";
-investment.innerText=d.investment;
-refincome.innerText=d.referralIncome;
+balance.innerText=currentData.balance+" TMPL";
+investment.innerText=currentData.investment||0;
+refincome.innerText=currentData.referralIncome||0;
 
-let price=(await get(ref(db,'stats/livePrice'))).val()||0;
-liveprice.innerText=price;
-
-let liq=(await get(ref(db,'stats/liquidity'))).val()||0;
-liquidity.innerText=liq;
+let stats=await get(ref(db,'stats'));
+if(stats.exists()){
+let s=stats.val();
+liveprice.innerText=s.livePrice||0;
+liquidity.innerText=s.liquidity||0;
 }
 
-/* INVEST */
-window.invest=async()=>{
+reflink.innerText=
+location.origin+location.pathname+"?ref="+currentData.myRef;
+
+}
+
+/* ================= COPY LINK ================= */
+
+window.copyRef=()=>{
+navigator.clipboard.writeText(reflink.innerText);
+alert("Referral link copied");
+};
+
+/* ================= INVEST REQUEST ================= */
+
+window.submitInvestment=async()=>{
 let amt=parseFloat(amount.value);
-if(amt<20) return alert("Minimum 20");
+if(isNaN(amt)||amt<20) return alert("Minimum 20 USDT");
 
-await runTransaction(ref(db,'users/'+currentUser),(u)=>{
-if(u) u.pending=(u.pending||0)+amt;
-return u;
-});
-alert("Pending Approval");
-}
+let id=Date.now();
 
-/* ADMIN LOGIN */
-window.adminLogin=async()=>{
-if(adminpass.value!=="Jaihanuman@7") return alert("Wrong");
-
-let users=await get(ref(db,'users'));
-let html="<h4>Users</h4>";
-
-users.forEach(u=>{
-let d=u.val();
-html+=`
-<div class="card">
-<b>${d.name}</b> (${u.key})<br>
-Invest: ${d.investment}<br>
-Pending: ${d.pending||0}<br>
-<button onclick="approve('${u.key}')">Approve</button>
-<button onclick="editUser('${u.key}')">Edit</button>
-<button onclick="deleteUser('${u.key}')">Delete</button>
-</div>`;
-});
-
-html+=`
-<h4>Update TMPL Price</h4>
-<input id="newPrice" placeholder="Price USDT">
-<button onclick="updatePrice()">Update Price</button>
-`;
-
-admin.innerHTML=html;
-}
-
-/* PRICE UPDATE */
-window.updatePrice=async()=>{
-let p=parseFloat(newPrice.value);
-await set(ref(db,'stats/livePrice'),p);
-alert("Price Updated");
-}
-
-/* APPROVE JOIN */
-window.approve=async(uid)=>{
-let s=await get(ref(db,'users/'+uid));
-let d=s.val();
-let amt=d.pending||0;
-if(!amt) return;
-
-let price=(await get(ref(db,'stats/livePrice'))).val()||1;
-
-/* SPLIT */
-let liquidity=amt*0.5;
-let commissionUSDT=amt*0.3;
-let company=amt*0.2;
-
-await runTransaction(ref(db,'stats/liquidity'),v=>(v||0)+liquidity);
-await runTransaction(ref(db,'stats/companyFund'),v=>(v||0)+company);
-
-/* UPDATE USER */
-await update(ref(db,'users/'+uid),{
-investment:(d.investment||0)+amt,
-pending:0
-});
-
-/* DISTRIBUTE 15 LEVEL */
-const perc=[10,5,3,2,2,1.5,1.5,1.5,1.5,1.5,1,1,1,1,1];
-
-let parent=d.ref;
-for(let i=0;i<15;i++){
-if(!parent) break;
-
-await runTransaction(ref(db,'users/'+parent),(p)=>{
-if(p){
-let rewardUSDT=(commissionUSDT*perc[i])/100;
-let tmpl=rewardUSDT/price;
-p.balance=(p.balance||0)+tmpl;
-p.referralIncome=(p.referralIncome||0)+tmpl;
-parent=p.ref;
-}
-return p;
-});
-}
-
-alert("Approved ✅");
-adminLogin();
-}
-
-/* EDIT USER */
-window.editUser=async(uid)=>{
-let name=prompt("New Name");
-if(!name) return;
-await update(ref(db,'users/'+uid),{name});
-alert("Updated");
-adminLogin();
-}
-
-/* DELETE USER */
-window.deleteUser=async(uid)=>{
-if(!confirm("Delete user?")) return;
-await remove(ref(db,'users/'+uid));
-alert("Deleted");
-adminLogin();
-}
-
-/* WITHDRAW */
-window.requestWithdraw=async()=>{
-let amt=parseFloat(withdrawAmount.value);
-
-await set(ref(db,'withdrawals/'+Date.now()),{
+await set(ref(db,'joins/'+id),{
 user:currentUser,
 amount:amt,
-status:"pending"
+status:"pending",
+time:id
 });
 
-alert("Withdraw Requested");
-}
+alert("Investment Submitted");
+};
 
-/* LOGOUT */
+/* ================= WITHDRAW REQUEST ================= */
+
+window.requestWithdraw=async()=>{
+let amt=parseFloat(withdrawAmount.value);
+if(isNaN(amt)||amt<=0) return;
+
+let id=Date.now();
+
+await set(ref(db,'withdrawals/'+id),{
+user:currentUser,
+amount:amt,
+status:"pending",
+time:id
+});
+
+alert("Withdraw Request Sent");
+};
+
+/* ================= LOGOUT ================= */
+
 window.logout=()=>{
 localStorage.removeItem("tmplUser");
 location.reload();
+};
+
+/* ================= ADMIN LOGIN ================= */
+
+window.adminLogin=()=>{
+if(adminpass.value!=="Jaihanuman@7")
+return alert("Wrong Password");
+
+loadAdminPanel();
+};
+
+/* ADMIN PANEL LOADER (logic added in Part 2) */
+async function loadAdminPanel(){
+adminPanel.innerHTML=`<div class="card">Admin Panel Loading...</div>`;
 }
 
 </script>
