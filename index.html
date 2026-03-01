@@ -689,8 +689,200 @@ status:"approved"
 alert("Withdrawal Approved ✅");
 loadAdminPanel();
 };
+<!-- ========================= PART 3 : ADVANCED FEATURES + LIQUIDITY REWARD + TEAM ========================= -->
+<script type="module">
+
+/* =========================================================
+   MONTHLY LIQUIDITY REWARD SYSTEM
+   Admin Controlled Distribution
+========================================================= */
+
+window.addMonthlyLiquidityReward = async ()=>{
+
+let percent = parseFloat(prompt("Enter Liquidity Reward %"));
+if(!percent || percent<=0) return alert("Invalid percent");
+
+let liqSnap = await get(ref(db,'stats/liquidity'));
+let liquidity = liqSnap.val()||0;
+
+let rewardUSDT = liquidity*(percent/100);
+
+await addLiquidityLog(rewardUSDT);
+
+let usersSnap = await get(ref(db,'users'));
+let priceSnap = await get(ref(db,'stats/livePrice'));
+let price = priceSnap.val()||0.01;
+
+usersSnap.forEach(async(u)=>{
+
+let d=u.val();
+
+if((d.investment||0)>0){
+
+let share = rewardUSDT*(d.investment/liquidity);
+let tmplReward = share/price;
+
+await runTransaction(ref(db,'users/'+u.key),(user)=>{
+if(user){
+user.balance=(user.balance||0)+tmplReward;
+}
+return user;
+});
+
+}
+
+});
+
+alert("Liquidity Reward Distributed ✅");
+};
+
+/* =========================================================
+   ADD LIQUIDITY LOG
+========================================================= */
+
+async function addLiquidityLog(amount){
+
+let id="liq_"+Date.now();
+
+await set(ref(db,'liquidityLogs/'+id),{
+amount,
+time:Date.now()
+});
+}
+
+/* =========================================================
+   TEAM SIZE CALCULATION
+========================================================= */
+
+async function calculateTeamSize(uid){
+
+let snap=await get(ref(db,'users'));
+let count=0;
+
+snap.forEach(u=>{
+if(u.val().ref===uid) count++;
+});
+
+return count;
+}
+
+/* =========================================================
+   REFERRAL LINK COPY
+========================================================= */
+
+window.copyReferral = ()=>{
+let link = location.origin + location.pathname + "?ref="+currentUser;
+navigator.clipboard.writeText(link);
+alert("Referral Link Copied ✅");
+};
+
+/* =========================================================
+   AUTO REFERRAL CAPTURE
+========================================================= */
+
+(function captureReferral(){
+const params=new URLSearchParams(window.location.search);
+const refCode=params.get("ref");
+if(refCode){
+localStorage.setItem("tmpl_ref",refCode);
+}
+})();
+
+/* =========================================================
+   SECURE REGISTRATION PATCH
+========================================================= */
+
+window.register = async ()=>{
+
+let mobile=rmobile.value.trim();
+let name=rname.value.trim();
+let pass=rpassword.value.trim();
+let wallet=rwallet.value.trim();
+
+if(!mobile||!name||!pass||!wallet)
+return alert("All fields required");
+
+let exists=await get(ref(db,'users/'+mobile));
+if(exists.exists()) return alert("User exists");
+
+let refCode=localStorage.getItem("tmpl_ref")||"";
+
+await set(ref(db,'users/'+mobile),{
+name,
+password:pass,
+wallet,
+ref:refCode,
+balance:0,
+investment:0,
+referralIncome:0,
+created:Date.now()
+});
+
+alert("Registration Successful ✅");
+location.reload();
+};
+
+/* =========================================================
+   DASHBOARD AUTO LOAD ENHANCEMENT
+========================================================= */
+
+async function refreshDashboard(){
+
+if(!currentUser) return;
+
+let snap=await get(ref(db,'users/'+currentUser));
+if(!snap.exists()) return;
+
+let d=snap.val();
+
+let statsSnap=await get(ref(db,'stats'));
+let stats=statsSnap.val()||{};
+
+userinfo.innerHTML=`
+<b>${d.name}</b><br>
+Wallet: ${d.wallet}
+`;
+
+balance.innerHTML=(d.balance||0).toFixed(2)+" TMPL";
+investment.innerText=d.investment||0;
+refincome.innerText=(d.referralIncome||0).toFixed(2);
+
+livePrice.innerText=stats.livePrice||0.01;
+liquidityValue.innerText=stats.liquidity||0;
+
+teamSize.innerText=await calculateTeamSize(currentUser);
+}
+
+/* refresh every 10 sec */
+setInterval(refreshDashboard,10000);
+
+/* =========================================================
+   SESSION AUTO LOGIN
+========================================================= */
+
+(function autoLogin(){
+
+let saved=localStorage.getItem("tmpl_session");
+
+if(saved){
+currentUser=saved;
+authPage.classList.add("hidden");
+dashboardPage.classList.remove("hidden");
+refreshDashboard();
+}
+
+})();
+
+/* =========================================================
+   LOGOUT SAFE
+========================================================= */
+
+window.logout=()=>{
+localStorage.removeItem("tmpl_session");
+location.href=location.pathname;
+};
 
 </script>
-</script>
+
 </body>
 </html>
