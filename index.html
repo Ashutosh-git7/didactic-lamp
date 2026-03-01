@@ -18,6 +18,8 @@ button:hover{opacity:0.9;}
 .small{font-size:13px;opacity:.7;}
 .team-member{background:#1e293b;padding:10px;margin:5px 0;border-radius:8px;}
 h3,h4{margin-top:0;}
+.tree{margin-left:20px;}
+.toggle{cursor:pointer;color:#22c55e;font-weight:bold;}
 </style>
 </head>
 <body>
@@ -58,6 +60,8 @@ h3,h4{margin-top:0;}
 <div class="balance" id="balance">0 TMPL</div>
 <p class="small">Reward Balance</p>
 <div class="small">Pending Investment: <span id="pending">0</span> TMPL</div>
+<div class="small">Referral Income: <span id="refincome">0</span> TMPL</div>
+<div class="small">Next Monthly 5% Income in: <span id="incomeCountdown">0</span> days</div>
 </div>
 
 <div class="card">
@@ -90,7 +94,7 @@ h3,h4{margin-top:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, child, update, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -105,49 +109,64 @@ const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 let currentUser=null;
 
+/* Referral percentages 15 levels */
+const referralPercents=[0.05,0.03,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
+
 /* REGISTER */
 window.register=async function(){
-let mobile=rmobile.value.trim();
-let name=rname.value.trim();
-let password=rpassword.value.trim();
-let wallet=rwallet.value.trim();
-let refcode=rref.value.trim();
-if(!mobile || !name || !password || !wallet){ alert("All fields required!"); return; }
+let mobile=rmobile.value.trim(),name=rname.value.trim(),password=rpassword.value.trim(),wallet=rwallet.value.trim(),refcode=rref.value.trim();
+if(!mobile||!name||!password||!wallet){ alert("All fields required!"); return; }
 const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){ alert("User already exists!"); return; }
 await set(ref(db,'users/'+mobile),{
-name:name,password:password,wallet:wallet,ref:refcode||"",
-balance:0,investment:0,pendingInvestment:0,withdrawRequest:0
+name,password,wallet,ref:refcode||"",
+balance:0,investment:0,pendingInvestment:0,withdrawRequest:0,
+referralIncome:0,totalEarned:0,lastIncomeDate:Date.now()
 });
-alert("Account Created ✅");
-rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
+alert("Account Created ✅"); rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
 }
 
 /* LOGIN */
 window.login=async function(){
-let mobile=lmobile.value.trim();
-let password=lpassword.value.trim();
+let mobile=lmobile.value.trim(),password=lpassword.value.trim();
 const snap=await get(child(ref(db),'users/'+mobile));
 if(snap.exists()){
-  let data=snap.val();
-  if(data.password!==password){ alert("Wrong Password"); return; }
-  currentUser=mobile;
-  dashboard.classList.remove("hidden");
-  register.style.display="none"; login.style.display="none";
-  loadUser(); loadTeam();
+let data=snap.val();
+if(data.password!==password){ alert("Wrong Password"); return; }
+currentUser=mobile;
+dashboard.classList.remove("hidden"); register.style.display="none"; login.style.display="none";
+await loadUser(); await loadTeamTree();
 }else{ alert("User Not Found"); }
 }
 
-/* LOAD USER */
+/* LOAD USER WITH MONTHLY INCOME & COUNTDOWN */
 async function loadUser(){
 const snap=await get(child(ref(db),'users/'+currentUser));
 let d=snap.val();
-userinfo.innerHTML="Name: "+d.name+"<br>Mobile: "+currentUser+"<br>Wallet: "+d.wallet;
+let now=Date.now();
+let months=Math.floor((now-d.lastIncomeDate)/(30*24*60*60*1000));
+let newIncome=0;
+if(months>0 && d.totalEarned<(d.investment*2)){
+  newIncome=(d.investment*0.05)*months;
+  if(d.totalEarned+newIncome>d.investment*2) newIncome=(d.investment*2)-d.totalEarned;
+  await update(ref(db,'users/'+currentUser),{
+    balance:(d.balance||0)+newIncome,
+    totalEarned:(d.totalEarned||0)+newIncome,
+    lastIncomeDate:now
+  });
+  d.balance=(d.balance||0)+newIncome;
+  d.totalEarned=(d.totalEarned||0)+newIncome;
+  d.lastIncomeDate=now;
+}
+userinfo.innerHTML=`Name: ${d.name}<br>Mobile: ${currentUser}<br>Wallet: ${d.wallet}`;
 balance.innerHTML=d.balance+" TMPL";
 pending.innerText=d.pendingInvestment||0;
+refincome.innerText=d.referralIncome||0;
+let nextIncome=Math.ceil(((d.lastIncomeDate+30*24*60*60*1000)-now)/(24*60*60*1000));
+incomeCountdown.innerText=nextIncome>0?nextIncome:0;
 }
 
-/* INVEST */
+/* INVESTMENT */
 window.invest=async function(){
 let amt=parseFloat(amount.value);
 if(isNaN(amt)||amt<=0){ alert("Enter valid amount"); return; }
@@ -155,20 +174,26 @@ const userRef=ref(db,'users/'+currentUser);
 const snap=await get(userRef);
 let data=snap.val();
 await update(userRef,{pendingInvestment:(data.pendingInvestment||0)+amt});
-alert("Investment Submitted (Admin Approval)");
-amount.value=""; loadUser();
+alert("Investment Submitted (Admin Approval)"); amount.value=""; loadUser();
 }
 
-/* TEAM */
-async function loadTeam(){
+/* TEAM TREE (collapsible) */
+async function loadTeamTree(){
 team.innerHTML="";
+async function buildTree(userId,level){
 const snap=await get(ref(db,'users'));
 snap.forEach(u=>{
 let d=u.val();
-if(d.ref==currentUser){
-team.innerHTML+=`<div class="team-member">${d.name} (${u.key}) - Investment: ${d.investment} TMPL</div>`;
+if(d.ref==userId){
+let div=document.createElement('div');
+div.className='team-member tree';
+div.innerHTML=`<span class="toggle">Level ${level}: ${d.name} (${u.key}) - Invest: ${d.investment} TMPL</span>`;
+team.appendChild(div);
+buildTree(u.key,level+1);
 }
 });
+}
+buildTree(currentUser,1);
 }
 
 /* WITHDRAW */
@@ -183,7 +208,7 @@ await update(userRef,{withdrawRequest:(d.withdrawRequest||0)+amt});
 alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser();
 }
 
-/* ADMIN LOGIN */
+/* ADMIN PANEL */
 window.adminLogin=async function(){
 if(adminpass.value!=="Jaihanuman@7"){ alert("Wrong Password"); return; }
 admin.classList.remove("hidden");
@@ -192,10 +217,12 @@ let html="<h4>All Users</h4>";
 snap.forEach(u=>{
 let d=u.val();
 html+=`<div class='card'>
-<b>${d.name} (${u.key})</b><br>Wallet: ${d.wallet}<br>
+<b>${d.name} (${u.key})</b><br>
+Wallet: ${d.wallet}<br>
 Balance: ${d.balance} TMPL<br>
 Investment: ${d.investment} TMPL<br>
 Pending: ${d.pendingInvestment||0} TMPL<br>
+Referral Income: ${d.referralIncome||0} TMPL<br>
 Withdrawal Request: ${d.withdrawRequest||0} TMPL<br>
 <button onclick="approve('${u.key}')">Approve Investment</button>
 <button onclick="giveReward('${u.key}')">Give Reward 10%</button>
@@ -205,7 +232,7 @@ Withdrawal Request: ${d.withdrawRequest||0} TMPL<br>
 admin.innerHTML=html;
 }
 
-/* APPROVE INVESTMENT */
+/* APPROVE INVESTMENT WITH REFERRAL DISTRIBUTION */
 window.approve=async function(uid){
 const userRef=ref(db,'users/'+uid);
 const snap=await get(userRef);
@@ -213,8 +240,27 @@ let d=snap.val();
 let amt=d.pendingInvestment||0;
 if(amt>0){
 await update(userRef,{investment:(d.investment||0)+amt,pendingInvestment:0});
-alert("Investment Approved ✅"); adminLogin();
-}else{ alert("No Pending Investment"); }
+// 15-level referral distribution (30%)
+let refAmt=amt*0.3;
+let parent=d.ref;
+for(let lvl=0;lvl<15;lvl++){
+if(!parent) break;
+const parentRef=ref(db,'users/'+parent);
+const psnap=await get(parentRef);
+if(psnap.exists()){
+let pdata=psnap.val();
+let pReward=refAmt*(referralPercents[lvl]/0.3);
+if((pdata.totalEarned||0)+pReward>pdata.investment*2) pReward=(pdata.investment*2)-(pdata.totalEarned||0);
+await update(parentRef,{
+balance:(pdata.balance||0)+pReward,
+referralIncome:(pdata.referralIncome||0)+pReward,
+totalEarned:(pdata.totalEarned||0)+pReward
+});
+parent=pdata.ref;
+}else break;
+}
+alert("Investment Approved & Referral Distributed ✅"); adminLogin();
+}else alert("No Pending Investment");
 }
 
 /* GIVE REWARD */
@@ -237,7 +283,7 @@ if(amt>0){
 if(amt>d.balance){ alert("Insufficient Balance"); return; }
 await update(userRef,{balance:d.balance-amt,withdrawRequest:0});
 alert("Withdrawal Approved ✅"); adminLogin();
-}else{ alert("No Withdrawal Request"); }
+}else alert("No Withdrawal Request");
 }
 
 window.logout=function(){location.reload();}
