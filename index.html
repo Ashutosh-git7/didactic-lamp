@@ -58,11 +58,13 @@ h3,h4{margin-top:0;}
 </div>
 
 <div class="card">
-<h3>Balance</h3>
+<h3>Balance & Investments</h3>
 <div class="balance" id="balance">0 TMPL</div>
-<p class="small">Reward Balance</p>
+<p class="small">Reward Balance (TMPL)</p>
 <div class="small">Pending Investment: <span id="pending">0</span> TMPL</div>
 <div class="small">Referral Income: <span id="refincome">0</span> TMPL</div>
+<div class="small">Total Investment: <span id="totalInvestment">0</span> TMPL</div>
+<div class="small">USDT Invested: <span id="usdtInvested">0</span> USDT</div>
 <div class="small">Next Monthly 5% Income in: <span id="incomeCountdown">0</span> days</div>
 </div>
 
@@ -110,8 +112,6 @@ appId:"1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 let currentUser=null;
-
-/* Referral percentages 15 levels */
 const referralPercents=[0.10,0.05,0.03,0.02,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
 
 /* REGISTER */
@@ -142,7 +142,7 @@ await loadUser(); await loadTeamTree();
 }else{ alert("User Not Found"); }
 }
 
-/* LOAD USER WITH MONTHLY INCOME & COUNTDOWN */
+/* LOAD USER */
 async function loadUser(){
 const snap=await get(child(ref(db),'users/'+currentUser));
 let d=snap.val();
@@ -165,6 +165,8 @@ userinfo.innerHTML=`Name: ${d.name}<br>Mobile: ${currentUser}<br>Wallet: ${d.wal
 balance.innerHTML=d.balance+" TMPL";
 pending.innerText=d.pendingInvestment||0;
 refincome.innerText=d.referralIncome||0;
+totalInvestment.innerText=d.investment||0;
+usdtInvested.innerText=d.investment||0;
 let nextIncome=Math.ceil(((d.lastIncomeDate+30*24*60*60*1000)-now)/(24*60*60*1000));
 incomeCountdown.innerText=nextIncome>0?nextIncome:0;
 }
@@ -219,7 +221,7 @@ return user;
 alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser();
 }
 
-/* ADMIN PANEL FULL PERMISSIONS */
+/* ADMIN PANEL */
 window.adminLogin=async function(){
 if(adminpass.value!=="Jaihanuman@7"){ alert("Wrong Password"); return; }
 admin.classList.remove("hidden");
