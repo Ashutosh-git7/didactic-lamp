@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TMPL PRO Ecosystem</title>
+<title>TMPL PRO Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
 body{margin:0;font-family:Poppins;background:#020617;color:white;}
-.header{background:linear-gradient(90deg,#06b6d4,#22c55e);padding:15px;text-align:center;font-weight:bold;font-size:22px;}
+.header{background:linear-gradient(90deg,#06b6d4,#22c55e);padding:20px;text-align:center;font-weight:bold;font-size:24px;border-bottom-left-radius:20px;border-bottom-right-radius:20px;box-shadow:0 4px 10px #000;}
 .container{padding:15px;}
-.card{background:#0f172a;border-radius:12px;padding:15px;margin-bottom:15px;box-shadow:0 0 15px #000;}
-input,select{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;background:#020617;color:white;}
-button{width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(90deg,#22c55e,#06b6d4);color:white;font-weight:bold;margin-top:8px;cursor:pointer;}
+.card{background:#0f172a;border-radius:12px;padding:15px;margin-bottom:15px;box-shadow:0 4px 12px #000;}
+input,select{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;background:#1e293b;color:white;}
+button{width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(90deg,#22c55e,#06b6d4);color:white;font-weight:bold;margin-top:8px;cursor:pointer;transition:0.3s;}
 button:hover{opacity:0.9;}
 .hidden{display:none;}
-.balance{font-size:28px;color:#22c55e;font-weight:bold;text-align:center;}
+.balance{font-size:28px;color:#22c55e;font-weight:bold;text-align:center;margin-bottom:5px;}
 .small{font-size:13px;opacity:.7;}
 .team-member{background:#1e293b;padding:10px;margin:5px 0;border-radius:8px;}
 h3,h4{margin-top:0;}
 .tree{margin-left:20px;}
 .toggle{cursor:pointer;color:#22c55e;font-weight:bold;}
+.admin-input{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:none;background:#020617;color:white;}
+.admin-section{margin-top:10px;padding:10px;border-radius:8px;background:#1e293b;}
 </style>
 </head>
 <body>
@@ -109,7 +111,7 @@ const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 let currentUser=null;
 
-/* Referral percentages 15 levels (Level1=10%, then decreasing) */
+/* Referral percentages 15 levels */
 const referralPercents=[0.10,0.05,0.03,0.02,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
 
 /* REGISTER */
@@ -182,7 +184,7 @@ return user;
 alert("Investment Submitted (Admin Approval)"); amount.value=""; loadUser();
 }
 
-/* TEAM TREE (collapsible) */
+/* TEAM TREE */
 async function loadTeamTree(){
 team.innerHTML="";
 async function buildTree(userId,level){
@@ -217,7 +219,7 @@ return user;
 alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser();
 }
 
-/* ADMIN PANEL */
+/* ADMIN PANEL FULL PERMISSIONS */
 window.adminLogin=async function(){
 if(adminpass.value!=="Jaihanuman@7"){ alert("Wrong Password"); return; }
 admin.classList.remove("hidden");
@@ -226,18 +228,39 @@ let html="<h4>All Users</h4>";
 snap.forEach(u=>{
 let d=u.val();
 html+=`<div class='card'>
-<b>${d.name} (${u.key})</b><br>
-Wallet: ${d.wallet}<br>
-Balance: ${d.balance} TMPL<br>
-Investment: ${d.investment} TMPL<br>
-Pending: ${d.pendingInvestment||0} TMPL<br>
-Referral Income: ${d.referralIncome||0} TMPL<br>
-Withdrawal Request: ${d.withdrawRequest||0} TMPL<br>
+<b>User ID: ${u.key}</b><br>
+<div class='admin-section'>
+<label>Name</label><input class='admin-input' id='name_${u.key}' value='${d.name}'>
+<label>Mobile</label><input class='admin-input' id='mobile_${u.key}' value='${u.key}'>
+<label>Wallet</label><input class='admin-input' id='wallet_${u.key}' value='${d.wallet}'>
+<label>Balance</label><input class='admin-input' id='balance_${u.key}' value='${d.balance}'>
+<label>Investment</label><input class='admin-input' id='investment_${u.key}' value='${d.investment}'>
+<label>Pending</label><input class='admin-input' id='pending_${u.key}' value='${d.pendingInvestment}'>
+<label>Referral Income</label><input class='admin-input' id='ref_${u.key}' value='${d.referralIncome}'>
+<label>Withdraw Request</label><input class='admin-input' id='withdraw_${u.key}' value='${d.withdrawRequest}'>
+<button onclick="saveUser('${u.key}')">Save Changes</button>
 <button onclick="approve('${u.key}')">Approve Investment</button>
 <button onclick="approveWithdraw('${u.key}')">Approve Withdrawal</button>
+</div>
 </div>`;
 });
 admin.innerHTML=html;
+}
+
+/* SAVE USER DATA BY ADMIN */
+window.saveUser=async function(uid){
+const userRef=ref(db,'users/'+uid);
+await update(userRef,{
+name: document.getElementById('name_'+uid).value,
+wallet: document.getElementById('wallet_'+uid).value,
+balance: parseFloat(document.getElementById('balance_'+uid).value),
+investment: parseFloat(document.getElementById('investment_'+uid).value),
+pendingInvestment: parseFloat(document.getElementById('pending_'+uid).value),
+referralIncome: parseFloat(document.getElementById('ref_'+uid).value),
+withdrawRequest: parseFloat(document.getElementById('withdraw_'+uid).value)
+});
+alert("User Data Updated ✅");
+adminLogin();
 }
 
 /* APPROVE INVESTMENT WITH 15-LEVEL REFERRAL */
@@ -248,7 +271,6 @@ let d=snap.val();
 let amt=d.pendingInvestment||0;
 if(amt>0){
 await update(userRef,{investment:(d.investment||0)+amt,pendingInvestment:0});
-// Referral distribution 15 levels
 let parent=d.ref;
 for(let lvl=0; lvl<15; lvl++){
 if(!parent) break;
