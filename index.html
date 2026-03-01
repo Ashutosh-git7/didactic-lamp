@@ -94,7 +94,7 @@ h3,h4{margin-top:0;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -109,8 +109,8 @@ const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
 let currentUser=null;
 
-/* Referral percentages 15 levels */
-const referralPercents=[0.05,0.03,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
+/* Referral percentages 15 levels (Level1=10%, then decreasing) */
+const referralPercents=[0.10,0.05,0.03,0.02,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
 
 /* REGISTER */
 window.register=async function(){
@@ -121,7 +121,8 @@ if(snap.exists()){ alert("User already exists!"); return; }
 await set(ref(db,'users/'+mobile),{
 name,password,wallet,ref:refcode||"",
 balance:0,investment:0,pendingInvestment:0,withdrawRequest:0,
-referralIncome:0,totalEarned:0,lastIncomeDate:Date.now()
+referralIncome:0,totalEarned:0,lastIncomeDate:Date.now(),
+liquidityPool:0
 });
 alert("Account Created ✅"); rmobile.value=""; rname.value=""; rpassword.value=""; rwallet.value=""; rref.value="";
 }
@@ -171,9 +172,13 @@ window.invest=async function(){
 let amt=parseFloat(amount.value);
 if(isNaN(amt)||amt<=0){ alert("Enter valid amount"); return; }
 const userRef=ref(db,'users/'+currentUser);
-const snap=await get(userRef);
-let data=snap.val();
-await update(userRef,{pendingInvestment:(data.pendingInvestment||0)+amt});
+await runTransaction(userRef, (user)=>{
+if(user){
+user.pendingInvestment=(user.pendingInvestment||0)+amt;
+user.liquidityPool=(user.liquidityPool||0)+(amt*0.5);
+}
+return user;
+});
 alert("Investment Submitted (Admin Approval)"); amount.value=""; loadUser();
 }
 
@@ -187,7 +192,8 @@ let d=u.val();
 if(d.ref==userId){
 let div=document.createElement('div');
 div.className='team-member tree';
-div.innerHTML=`<span class="toggle">Level ${level}: ${d.name} (${u.key}) - Invest: ${d.investment} TMPL</span>`;
+div.innerHTML=`<span class="toggle" onclick="this.nextSibling.classList.toggle('hidden')">Level ${level}: ${d.name} (${u.key}) - Invest: ${d.investment} TMPL</span>
+<div class="hidden"></div>`;
 team.appendChild(div);
 buildTree(u.key,level+1);
 }
@@ -201,10 +207,13 @@ window.requestWithdraw=async function(){
 let amt=parseFloat(withdrawAmount.value);
 if(isNaN(amt)||amt<=0){ alert("Enter valid amount"); return; }
 const userRef=ref(db,'users/'+currentUser);
-const snap=await get(userRef);
-let d=snap.val();
-if(amt>d.balance){ alert("Insufficient Balance"); return; }
-await update(userRef,{withdrawRequest:(d.withdrawRequest||0)+amt});
+await runTransaction(userRef, (user)=>{
+if(user){
+if(amt>user.balance){ alert("Insufficient Balance"); return user; }
+user.withdrawRequest=(user.withdrawRequest||0)+amt;
+}
+return user;
+});
 alert("Withdrawal Requested ✅"); withdrawAmount.value=""; loadUser();
 }
 
@@ -225,14 +234,13 @@ Pending: ${d.pendingInvestment||0} TMPL<br>
 Referral Income: ${d.referralIncome||0} TMPL<br>
 Withdrawal Request: ${d.withdrawRequest||0} TMPL<br>
 <button onclick="approve('${u.key}')">Approve Investment</button>
-<button onclick="giveReward('${u.key}')">Give Reward 10%</button>
 <button onclick="approveWithdraw('${u.key}')">Approve Withdrawal</button>
 </div>`;
 });
 admin.innerHTML=html;
 }
 
-/* APPROVE INVESTMENT WITH REFERRAL DISTRIBUTION */
+/* APPROVE INVESTMENT WITH 15-LEVEL REFERRAL */
 window.approve=async function(uid){
 const userRef=ref(db,'users/'+uid);
 const snap=await get(userRef);
@@ -240,50 +248,44 @@ let d=snap.val();
 let amt=d.pendingInvestment||0;
 if(amt>0){
 await update(userRef,{investment:(d.investment||0)+amt,pendingInvestment:0});
-// 15-level referral distribution (30%)
-let refAmt=amt*0.3;
+// Referral distribution 15 levels
 let parent=d.ref;
-for(let lvl=0;lvl<15;lvl++){
+for(let lvl=0; lvl<15; lvl++){
 if(!parent) break;
 const parentRef=ref(db,'users/'+parent);
-const psnap=await get(parentRef);
-if(psnap.exists()){
-let pdata=psnap.val();
-let pReward=refAmt*(referralPercents[lvl]/0.3);
-if((pdata.totalEarned||0)+pReward>pdata.investment*2) pReward=(pdata.investment*2)-(pdata.totalEarned||0);
-await update(parentRef,{
-balance:(pdata.balance||0)+pReward,
-referralIncome:(pdata.referralIncome||0)+pReward,
-totalEarned:(pdata.totalEarned||0)+pReward
-});
+await runTransaction(parentRef, (pdata)=>{
+if(pdata){
+let reward=amt*referralPercents[lvl];
+let maxReward=(pdata.investment*2)-(pdata.totalEarned||0);
+if(reward>maxReward) reward=maxReward;
+pdata.balance=(pdata.balance||0)+reward;
+pdata.referralIncome=(pdata.referralIncome||0)+reward;
+pdata.totalEarned=(pdata.totalEarned||0)+reward;
 parent=pdata.ref;
-}else break;
+}
+return pdata;
+});
 }
 alert("Investment Approved & Referral Distributed ✅"); adminLogin();
 }else alert("No Pending Investment");
 }
 
-/* GIVE REWARD */
-window.giveReward=async function(uid){
-const userRef=ref(db,'users/'+uid);
-const snap=await get(userRef);
-let d=snap.val();
-let reward=d.investment*0.1;
-await update(userRef,{balance:(d.balance||0)+reward});
-alert("Reward Added ✅"); adminLogin();
-}
-
 /* APPROVE WITHDRAWAL */
 window.approveWithdraw=async function(uid){
 const userRef=ref(db,'users/'+uid);
-const snap=await get(userRef);
-let d=snap.val();
-let amt=d.withdrawRequest||0;
+await runTransaction(userRef, (user)=>{
+if(user){
+let amt=user.withdrawRequest||0;
 if(amt>0){
-if(amt>d.balance){ alert("Insufficient Balance"); return; }
-await update(userRef,{balance:d.balance-amt,withdrawRequest:0});
-alert("Withdrawal Approved ✅"); adminLogin();
-}else alert("No Withdrawal Request");
+if(amt>user.balance){ alert("Insufficient Balance"); return user; }
+user.balance=user.balance-amt;
+user.withdrawRequest=0;
+alert("Withdrawal Approved ✅");
+}
+}
+return user;
+});
+adminLogin();
 }
 
 window.logout=function(){location.reload();}
