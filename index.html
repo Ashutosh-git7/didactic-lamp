@@ -269,43 +269,6 @@ document.getElementById("withdraw-btn").addEventListener("click",async()=>{
 
 // Auto release tokens
 async function autoReleaseTokens(){
-
-  const userRef = ref(db,'users/'+currentUser);
-
-  await runTransaction(userRef,(current)=>{
-
-    if(!current || current.lockedTokens <= 0) return current;
-
-    const now = Date.now();
-    const last = current.lastReleaseDate || now;
-
-    // 30 days = 1 month
-    const monthMS = 30*24*60*60*1000;
-
-    if(now - last >= monthMS){
-
-      // ✅ Release 5% of CURRENT LOCKED TOKENS
-      let releaseAmount = current.lockedTokens * 0.05;
-
-      // Safety check (avoid negative)
-      if(releaseAmount > current.lockedTokens){
-        releaseAmount = current.lockedTokens;
-      }
-
-      current.lockedTokens -= releaseAmount;
-      current.releasedTokens = (current.releasedTokens || 0) + releaseAmount;
-
-      current.lastReleaseDate = now;
-
-      // Auto finish when completed
-      if(current.lockedTokens <= 0.0001){
-        current.lockedTokens = 0;
-      }
-    }
-
-    return current;
-  });
-}
   const userRef=ref(db,'users/'+currentUser);
   await runTransaction(userRef,current=>{
     if(current&&current.lockedTokens>0){
