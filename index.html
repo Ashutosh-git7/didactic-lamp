@@ -6,94 +6,96 @@
 <title>TMPL Pro Ecosystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:Poppins;background:#0d1117;color:#fff;}
-button{cursor:pointer;padding:10px 20px;margin:5px;border:none;border-radius:5px;background:#1c1f26;color:#fff;}
-input, select{padding:10px;margin:5px;border-radius:5px;border:1px solid #333;background:#0d1117;color:#fff;width:100%;}
-.container{max-width:500px;margin:auto;padding:20px;}
-h2{margin-top:0;text-align:center;}
-.nav{display:flex;justify-content:space-around;background:#111520;padding:10px;}
-.nav button{flex:1;margin:0 5px;}
-.dashboard, .adminpanel{display:none;}
-.card{background:#1c1f26;padding:15px;margin:10px 0;border-radius:10px;}
-.progress{background:#111520;height:20px;border-radius:10px;overflow:hidden;}
-.progress div{height:100%;background:#4caf50;width:0%;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-table, th, td{border:1px solid #333;}
-th, td{padding:8px;text-align:center;}
+body {margin:0;font-family:Poppins;background:#0a0a1a;color:#fff;}
+header {background:#111;padding:15px;text-align:center;font-size:1.5rem;font-weight:700;color:#0ff;}
+.container {padding:15px; max-width:600px;margin:auto;}
+input, button, select {width:100%;padding:10px;margin:5px 0;border:none;border-radius:5px;}
+button {background:#0ff;color:#111;font-weight:700;cursor:pointer;}
+button:hover {opacity:0.9;}
+.card {background:#111;margin:10px 0;padding:10px;border-radius:10px;}
+h3 {margin:5px 0;}
+.dashboard-grid {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:400px){.dashboard-grid{grid-template-columns:1fr;}}
+.section-title {font-weight:700;font-size:1.2rem;margin-top:15px;text-align:center;color:#0ff;}
+.hidden {display:none;}
+.table {width:100%;border-collapse:collapse;}
+.table th,.table td {border:1px solid #0ff;padding:5px;text-align:left;}
 </style>
 </head>
 <body>
-<div class="container" id="auth">
-<h2>TMPL Pro Ecosystem</h2>
-<div id="registerDiv">
-<h3>Register</h3>
-<input type="text" id="regName" placeholder="Full Name">
-<input type="text" id="regMobile" placeholder="Mobile Number">
-<input type="password" id="regPass" placeholder="Password">
-<input type="text" id="regWallet" placeholder="Wallet Address (Non-Editable)">
-<input type="text" id="regReferral" placeholder="Referral Code (Optional)">
-<button onclick="registerUser()">Register</button>
-<p>Already registered? <a href="#" onclick="showLogin()">Login</a></p>
-</div>
-<div id="loginDiv" style="display:none;">
-<h3>Login</h3>
-<input type="text" id="loginMobile" placeholder="Mobile Number">
-<input type="password" id="loginPass" placeholder="Password">
-<button onclick="loginUser()">Login</button>
-<p>New user? <a href="#" onclick="showRegister()">Register</a></p>
-</div>
+
+<header>TMPL Pro Ecosystem</header>
+<div class="container">
+
+<!-- REGISTRATION & LOGIN -->
+<div id="auth-section">
+  <div id="register-div" class="card">
+    <h3>Register</h3>
+    <input type="text" id="reg-name" placeholder="Name">
+    <input type="text" id="reg-mobile" placeholder="Mobile Number">
+    <input type="password" id="reg-password" placeholder="Password">
+    <input type="text" id="reg-wallet" placeholder="Wallet Address (Non-editable)">
+    <input type="text" id="reg-ref" placeholder="Referral Code (Optional)">
+    <button onclick="registerUser()">Register</button>
+  </div>
+  <div id="login-div" class="card">
+    <h3>Login</h3>
+    <input type="text" id="login-mobile" placeholder="Mobile Number">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="loginUser()">Login</button>
+    <button onclick="adminLoginPrompt()">Admin Login</button>
+  </div>
 </div>
 
-<div class="nav">
-<button onclick="showDashboard()">User Dashboard</button>
-<button onclick="showAdminPanel()">Admin Panel</button>
-<button onclick="logout()">Logout</button>
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+  <h3 class="section-title">User Dashboard</h3>
+  <div class="card">
+    <div class="dashboard-grid">
+      <div>Total Investment: <span id="total-invest">0</span> USDT</div>
+      <div>Locked Tokens: <span id="locked-tokens">0</span></div>
+      <div>Released Tokens: <span id="released-tokens">0</span></div>
+      <div>Withdrawable Tokens: <span id="withdrawable-tokens">0</span></div>
+      <div>Referral Income: <span id="ref-income">0</span> USDT</div>
+      <div>Live TMPL Price: $<span id="live-price">0</span></div>
+    </div>
+    <div class="card">
+      <input type="number" id="invest-amount" placeholder="Investment Amount USDT">
+      <button onclick="submitInvestment()">Invest</button>
+      <button onclick="requestWithdrawal()">Withdraw Released Tokens</button>
+    </div>
+    <div class="card">
+      <h4>Referral Team</h4>
+      <ul id="ref-team"></ul>
+    </div>
+    <button onclick="logout()">Logout</button>
+  </div>
 </div>
 
-<div class="container dashboard" id="dashboard">
-<h2>User Dashboard</h2>
-<div class="card">Total Investment: <span id="totalInvestment">0</span> USDT</div>
-<div class="card">Locked TMPL Tokens: <span id="lockedTokens">0</span></div>
-<div class="card">Released TMPL Tokens: <span id="releasedTokens">0</span></div>
-<div class="card">Withdrawable Balance: <span id="withdrawBalance">0</span> USDT</div>
-<div class="card">Monthly Release Progress
-<div class="progress"><div id="monthlyProgress"></div></div></div>
-<div class="card">Referral Income: <span id="refIncome">0</span> USDT</div>
-<div class="card">Live TMPL Price: <span id="livePrice">0</span> USDT</div>
-<input type="number" id="investAmount" placeholder="Invest USDT">
-<button onclick="invest()">Invest</button>
-<button onclick="withdraw()">Withdraw</button>
-<h3>Referral Team</h3>
-<div id="teamView"></div>
-<h3>Investment History</h3>
-<div id="investHistory"></div>
-<h3>Withdrawal History</h3>
-<div id="withdrawHistory"></div>
+<!-- ADMIN PANEL -->
+<div id="admin-panel" class="hidden">
+  <h3 class="section-title">Admin Panel</h3>
+  <div class="card">
+    <input type="number" id="admin-price" placeholder="Update TMPL Live Price">
+    <button onclick="updatePrice()">Update Price</button>
+  </div>
+  <div class="card">
+    <h4>All Users</h4>
+    <table class="table" id="users-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Balance</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Withdrawals</h4>
+    <table class="table" id="withdrawals-table">
+      <thead><tr><th>UserID</th><th>Amount</th><th>Status</th><th>Approve</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <button onclick="logoutAdmin()">Logout Admin</button>
 </div>
 
-<div class="container adminpanel" id="adminpanel">
-<h2>Admin Panel</h2>
-<div id="adminLoginDiv">
-<h3>Admin Login</h3>
-<input type="text" id="adminID" placeholder="Admin ID">
-<input type="password" id="adminPass" placeholder="Password">
-<button onclick="adminLogin()">Login</button>
-</div>
-<div id="adminContent" style="display:none;">
-<h3>Live TMPL Price</h3>
-<input type="number" id="adminPrice">
-<button onclick="updatePrice()">Update Price</button>
-<h3>Users</h3>
-<div id="allUsers"></div>
-<h3>Withdrawals Pending</h3>
-<div id="withdrawRequests"></div>
-<h3>Investments</h3>
-<div id="allInvestments"></div>
-<h3>Funds Overview</h3>
-<div class="card">Liquidity Pool: <span id="liquidityFund">0</span> USDT</div>
-<div class="card">Company Fund: <span id="companyFund">0</span> USDT</div>
-<div class="card">Referral Rewards Fund: <span id="referralFund">0</span> USDT</div>
-</div>
 </div>
 
 <script type="module">
@@ -110,185 +112,243 @@ const firebaseConfig = {
   messagingSenderId: "383728687521",
   appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 };
-
-/* Initialize Firebase */
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let currentUser=null;
-let adminLoggedIn=false;
+let currentUser = null;
+let adminLoggedIn = false;
 
-// UTILS
-function generateID(){return 'U'+Math.random().toString(36).substring(2,9);}
-function generateReferral(){return Math.random().toString(36).substring(2,7);}
+/* HELPER FUNCTIONS */
+function generateID(){ return 'u'+Math.random().toString(36).substr(2,6);}
+function generateRefCode(){ return Math.random().toString(36).substr(2,5);}
+function show(elem){elem.classList.remove('hidden');}
+function hide(elem){elem.classList.add('hidden');}
 
-// SHOW/HIDE
-function showLogin(){document.getElementById('registerDiv').style.display='none';document.getElementById('loginDiv').style.display='block';}
-function showRegister(){document.getElementById('loginDiv').style.display='none';document.getElementById('registerDiv').style.display='block';}
-function showDashboard(){if(currentUser){document.getElementById('dashboard').style.display='block';document.getElementById('adminpanel').style.display='none';loadDashboard();}else{alert('Login required');}}
-function showAdminPanel(){if(adminLoggedIn){document.getElementById('dashboard').style.display='none';document.getElementById('adminpanel').style.display='block';loadAdminPanel();}else{alert('Admin login required');}}
-function logout(){currentUser=null;adminLoggedIn=false;document.getElementById('dashboard').style.display='none';document.getElementById('adminpanel').style.display='none';document.getElementById('auth').style.display='block';}
-
-// REGISTER USER
+/* REGISTRATION */
 async function registerUser(){
-  let name=document.getElementById('regName').value;
-  let mobile=document.getElementById('regMobile').value;
-  let pass=document.getElementById('regPass').value;
-  let wallet=document.getElementById('regWallet').value;
-  let referral=document.getElementById('regReferral').value || '';
-  if(!name || !mobile || !pass || !wallet){alert('All fields required');return;}
-  let userID=generateID();
-  let refCode=generateReferral();
-  await set(ref(db,'users/'+userID),{
-    name:name,
-    mobile:mobile,
-    password:pass,
-    wallet:wallet,
-    referral:referral,
-    userID:userID,
-    refCode:refCode,
-    investment:0,
-    locked:0,
-    released:0,
-    withdrawable:0,
-    team:[]
+  const name = document.getElementById('reg-name').value.trim();
+  const mobile = document.getElementById('reg-mobile').value.trim();
+  const password = document.getElementById('reg-password').value.trim();
+  const wallet = document.getElementById('reg-wallet').value.trim();
+  const refCode = document.getElementById('reg-ref').value.trim();
+  if(!name || !mobile || !password || !wallet){alert('Fill all fields'); return;}
+  const uid = generateID();
+  const myRefCode = generateRefCode();
+  await set(ref(db,'users/'+uid),{
+    uid, name, mobile, password, wallet, myRefCode, referredBy: refCode||'', totalInvestment:0, lockedTokens:0, releasedTokens:0, withdrawableTokens:0, referralIncome:0, investments:{}
   });
-  alert('Registration Successful! Your Referral Code: '+refCode);
+  alert('Registered ✅ Your Referral Code: '+myRefCode);
+  hide(document.getElementById('auth-section'));
+  currentUser = uid;
+  loadDashboard();
 }
 
-// LOGIN USER
+/* LOGIN */
 async function loginUser(){
-  let mobile=document.getElementById('loginMobile').value;
-  let pass=document.getElementById('loginPass').value;
-  if(!mobile || !pass){alert('All fields required');return;}
-  const snapshot = await get(child(ref(db),'users'));
-  let found=false;
-  snapshot.forEach(user=>{
-    if(user.val().mobile===mobile && user.val().password===pass){
-      currentUser=user.val();
-      found=true;
-    }
-  });
-  if(found){document.getElementById('auth').style.display='none';showDashboard();}else{alert('Invalid login');}
-}
-
-// ADMIN LOGIN
-function adminLogin(){
-  let id=document.getElementById('adminID').value;
-  let pass=document.getElementById('adminPass').value;
-  if(id==='Admin' && pass==='Jaihanuman@7'){adminLoggedIn=true;document.getElementById('adminLoginDiv').style.display='none';document.getElementById('adminContent').style.display='block';loadAdminPanel();}else{alert('Invalid Admin Credentials');}
-}
-
-// INVEST
-async function invest(){
-  let amount=parseFloat(document.getElementById('investAmount').value);
-  if(isNaN(amount) || amount<=0){alert('Enter valid amount');return;}
-  let priceSnap=await get(ref(db,'price/live'));
-  let price=priceSnap.exists()?priceSnap.val():1;
-  let tokens=amount/price;
-  currentUser.investment+=amount;
-  currentUser.locked+=tokens;
-  currentUser.withdrawable=currentUser.released;
-  await update(ref(db,'users/'+currentUser.userID),{
-    investment:currentUser.investment,
-    locked:currentUser.locked,
-    withdrawable:currentUser.withdrawable
-  });
-  await push(ref(db,'investments'),{
-    userID:currentUser.userID,
-    amount:amount,
-    tokens:tokens,
-    date:Date.now()
-  });
-  // Distribute: 50% liquidity, 30% referral rewards, 20% company fund
-  let liqSnap=await get(ref(db,'liquidity/fund'));let liquidity=liqSnap.exists()?liqSnap.val():0;
-  let compSnap=await get(ref(db,'company/fund'));let company=compSnap.exists()?compSnap.val():0;
-  let refSnap=await get(ref(db,'rewards/fund'));let rewards=refSnap.exists()?refSnap.val():0;
-  await set(ref(db,'liquidity/fund'),liquidity+amount*0.5);
-  await set(ref(db,'company/fund'),company+amount*0.2);
-  await set(ref(db,'rewards/fund'),rewards+amount*0.3);
-  alert('Investment Successful! Tokens Locked: '+tokens.toFixed(2));
-  loadDashboard();
-}
-
-// AUTOMATION: RELEASE 5% MONTHLY TOKENS
-async function autoRelease(){
+  const mobile = document.getElementById('login-mobile').value.trim();
+  const password = document.getElementById('login-password').value.trim();
   const snapshot = await get(ref(db,'users'));
-  snapshot.forEach(async user=>{
-    let data=user.val();
-    if(data.locked>0){
-      let release=data.locked*0.05;
-      data.locked-=release;
-      data.released+=release;
-      data.withdrawable+=release;
-      await update(ref(db,'users/'+data.userID),{
-        locked:data.locked,
-        released:data.released,
-        withdrawable:data.withdrawable
-      });
+  let found = false;
+  snapshot.forEach(userSnap=>{
+    const u = userSnap.val();
+    if(u.mobile===mobile && u.password===password){
+      found = true;
+      currentUser = u.uid;
+    }
+  });
+  if(found){alert('Login Successful ✅');hide(document.getElementById('auth-section')); loadDashboard();}
+  else alert('Invalid credentials ❌');
+}
+
+/* DASHBOARD */
+async function loadDashboard(){
+  show(document.getElementById('dashboard'));
+  const userRef = ref(db,'users/'+currentUser);
+  onValue(userRef, async snapshot=>{
+    if(snapshot.exists()){
+      let u = snapshot.val();
+      await processMonthlyRelease(u);
+      document.getElementById('total-invest').innerText = u.totalInvestment.toFixed(2);
+      document.getElementById('locked-tokens').innerText = u.lockedTokens.toFixed(2);
+      document.getElementById('released-tokens').innerText = u.releasedTokens.toFixed(2);
+      document.getElementById('withdrawable-tokens').innerText = u.withdrawableTokens.toFixed(2);
+      document.getElementById('ref-income').innerText = u.referralIncome.toFixed(2);
+      const livePriceSnap = await get(ref(db,'price/live'));
+      const livePrice = livePriceSnap.exists()?livePriceSnap.val():0;
+      document.getElementById('live-price').innerText = livePrice;
+      loadReferralTeam(u.myRefCode);
     }
   });
 }
 
-// WITHDRAW
-async function withdraw(){
-  if(currentUser.withdrawable<=0){alert('No withdrawable balance');return;}
-  let priceSnap=await get(ref(db,'price/live'));
-  let price=priceSnap.exists()?priceSnap.val():1;
-  let value=currentUser.withdrawable*price;
-  await push(ref(db,'withdrawals'),{
-    userID:currentUser.userID,
-    tokens:currentUser.withdrawable,
-    value:value,
-    date:Date.now()
+/* MONTHLY RELEASE */
+async function processMonthlyRelease(user){
+  const now = Date.now();
+  const investments = user.investments || {};
+  let updated = false;
+  for(const key in investments){
+    let inv = investments[key];
+    const last = inv.lastReleaseDate || inv.investmentDate;
+    const months = Math.floor((now - last)/ (30*24*60*60*1000));
+    if(months>0){
+      const releaseTokens = inv.totalTokens*0.05*months;
+      inv.releasedTokens = (inv.releasedTokens||0)+releaseTokens;
+      inv.remainingLockedTokens = inv.remainingLockedTokens - releaseTokens;
+      inv.lastReleaseDate = last + months*30*24*60*60*1000;
+      updated = true;
+      user.releasedTokens = (user.releasedTokens||0)+releaseTokens;
+      user.withdrawableTokens = (user.withdrawableTokens||0)+releaseTokens;
+    }
+  }
+  if(updated) await update(ref(db,'users/'+user.uid),{investments,user});
+}
+
+/* INVESTMENT */
+async function submitInvestment(){
+  const amt = parseFloat(document.getElementById('invest-amount').value);
+  if(!amt || amt<=0){alert('Enter valid amount'); return;}
+  const livePriceSnap = await get(ref(db,'price/live'));
+  const livePrice = livePriceSnap.exists()?livePriceSnap.val():1;
+  const tokens = amt/livePrice;
+  const userRef = ref(db,'users/'+currentUser+'/investments');
+  const invKey = push(child(ref(db,'users/'+currentUser+'/investments'))).key;
+  const investmentData = {investmentDate:Date.now(), totalTokens:tokens, remainingLockedTokens:tokens, releasedTokens:0, lastReleaseDate:Date.now()};
+  await set(ref(db,'users/'+currentUser+'/investments/'+invKey), investmentData);
+  const userSnap = await get(ref(db,'users/'+currentUser));
+  const user = userSnap.val();
+  user.totalInvestment = (user.totalInvestment||0)+amt;
+  user.lockedTokens = (user.lockedTokens||0)+tokens;
+  await update(ref(db,'users/'+currentUser),user);
+  await distributeInvestmentRewards(currentUser, amt);
+  alert('Investment Submitted ✅');
+}
+
+/* REFERRAL DISTRIBUTION */
+async function distributeInvestmentRewards(uid, amt){
+  const userSnap = await get(ref(db,'users/'+uid));
+  const user = userSnap.val();
+  let uplines = [];
+  let currentRef = user.referredBy;
+  for(let i=0;i<15;i++){
+    if(!currentRef) break;
+    const snap = await get(ref(db,'users'));
+    let found = false;
+    snap.forEach(s=>{
+      const u = s.val();
+      if(u.myRefCode===currentRef){
+        uplines.push(u.uid);
+        currentRef = u.referredBy;
+        found=true;
+      }
+    });
+    if(!found) break;
+  }
+  const percentages=[0.10,0.05,0.03,0.02,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01];
+  for(let i=0;i<uplines.length;i++){
+    const upSnap = await get(ref(db,'users/'+uplines[i]));
+    const up = upSnap.val();
+    const reward = amt*percentages[i];
+    await update(ref(db,'users/'+uplines[i]),{referralIncome:(up.referralIncome||0)+reward});
+  }
+  const liquidity = amt*0.5;
+  const rewards = amt*0.3;
+  const company = amt*0.2;
+  await update(ref(db,'liquidity/total'),{value: (await get(ref(db,'liquidity/total'))).val()||0 + liquidity});
+  await update(ref(db,'rewards/total'),{value:(await get(ref(db,'rewards/total'))).val()||0 + rewards});
+  await update(ref(db,'companyFund/total'),{value:(await get(ref(db,'companyFund/total'))).val()||0 + company});
+}
+
+/* REFERRAL TEAM VIEW */
+async function loadReferralTeam(refCode){
+  const snap = await get(ref(db,'users'));
+  const list = document.getElementById('ref-team');
+  list.innerHTML='';
+  snap.forEach(s=>{
+    const u = s.val();
+    if(u.referredBy===refCode){
+      const li = document.createElement('li');
+      li.innerText = u.name + ' ('+u.mobile+')';
+      list.appendChild(li);
+    }
   });
-  currentUser.withdrawable=0;
-  await update(ref(db,'users/'+currentUser.userID),{withdrawable:0});
-  alert('Withdrawal Requested: '+value.toFixed(2)+' USDT');
-  loadDashboard();
 }
 
-// DASHBOARD
-async function loadDashboard(){
-  if(!currentUser)return;
-  let priceSnap=await get(ref(db,'price/live'));
-  let price=priceSnap.exists()?priceSnap.val():1;
-  document.getElementById('totalInvestment').innerText=currentUser.investment.toFixed(2);
-  document.getElementById('lockedTokens').innerText=currentUser.locked.toFixed(2);
-  document.getElementById('releasedTokens').innerText=currentUser.released.toFixed(2);
-  document.getElementById('withdrawBalance').innerText=(currentUser.withdrawable*price).toFixed(2);
-  document.getElementById('livePrice').innerText=price.toFixed(2);
-  document.getElementById('monthlyProgress').style.width=((currentUser.released/(currentUser.released+currentUser.locked))*100).toFixed(2)+'%';
-  // Team View
-  let teamHtml='';if(currentUser.team.length>0){currentUser.team.forEach(t=>{teamHtml+='<div>'+t+'</div>';});}else{teamHtml='No team yet';}
-  document.getElementById('teamView').innerHTML=teamHtml;
+/* WITHDRAWAL */
+async function requestWithdrawal(){
+  const userSnap = await get(ref(db,'users/'+currentUser));
+  const user = userSnap.val();
+  const withdrawAmount = user.withdrawableTokens;
+  if(withdrawAmount<=0){alert('No tokens to withdraw'); return;}
+  const wKey = push(ref(db,'withdrawals')).key;
+  await set(ref(db,'withdrawals/'+wKey),{uid:currentUser, amount:withdrawAmount, status:'Pending', timestamp:Date.now()});
+  await update(ref(db,'users/'+currentUser),{withdrawableTokens:0});
+  alert('Withdrawal Requested ✅ Waiting for Admin Approval');
 }
 
-// ADMIN
+/* LOGOUT */
+function logout(){
+  currentUser=null;
+  hide(document.getElementById('dashboard'));
+  show(document.getElementById('auth-section'));
+}
+
+/* ADMIN LOGIN */
+async function adminLoginPrompt(){
+  const pass = prompt('Enter Admin Password:');
+  if(pass==='Jaihanuman@7'){
+    adminLoggedIn=true;
+    hide(document.getElementById('auth-section'));
+    show(document.getElementById('admin-panel'));
+    loadAdminData();
+  } else alert('Wrong Password ❌');
+}
+
+/* ADMIN PANEL */
 async function updatePrice(){
-  let price=parseFloat(document.getElementById('adminPrice').value);
-  if(isNaN(price) || price<=0){alert('Enter valid price');return;}
+  const price = parseFloat(document.getElementById('admin-price').value);
+  if(!price || price<=0){alert('Invalid Price'); return;}
   await set(ref(db,'price/live'),price);
-  alert('Price Updated');
-  autoRelease();
+  alert('Price Updated ✅');
 }
 
-// ADMIN PANEL
-async function loadAdminPanel(){
-  // Users
-  const usersSnap=await get(ref(db,'users'));
-  let usersHtml='<table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Wallet</th><th>Investment</th><th>Locked</th><th>Released</th></tr>';
-  usersSnap.forEach(u=>{
-    let d=u.val();
-    usersHtml+='<tr><td>'+d.userID+'</td><td>'+d.name+'</td><td>'+d.mobile+'</td><td>'+d.wallet+'</td><td>'+d.investment+'</td><td>'+d.locked.toFixed(2)+'</td><td>'+d.released.toFixed(2)+'</td></tr>';
+async function loadAdminData(){
+  const usersSnap = await get(ref(db,'users'));
+  const usersTable = document.querySelector('#users-table tbody');
+  usersTable.innerHTML='';
+  usersSnap.forEach(s=>{
+    const u = s.val();
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${u.uid}</td><td>${u.name}</td><td>${u.mobile}</td><td>${u.wallet}</td><td>${(u.releasedTokens||0).toFixed(2)}</td><td><button onclick="deleteUser('${u.uid}')">Delete</button></td>`;
+    usersTable.appendChild(tr);
   });
-  usersHtml+='</table>';
-  document.getElementById('allUsers').innerHTML=usersHtml;
-  // Funds
-  let liqSnap=await get(ref(db,'liquidity/fund'));document.getElementById('liquidityFund').innerText=liqSnap.exists()?liqSnap.val():0;
-  let compSnap=await get(ref(db,'company/fund'));document.getElementById('companyFund').innerText=compSnap.exists()?compSnap.val():0;
-  let refSnap=await get(ref(db,'rewards/fund'));document.getElementById('referralFund').innerText=refSnap.exists()?refSnap.val():0;
+  const wSnap = await get(ref(db,'withdrawals'));
+  const wTable = document.querySelector('#withdrawals-table tbody');
+  wTable.innerHTML='';
+  wSnap.forEach(s=>{
+    const w = s.val();
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td>${w.uid}</td><td>${w.amount.toFixed(2)}</td><td>${w.status}</td><td><button onclick="approveWithdrawal('${s.key}')">Approve</button></td>`;
+    wTable.appendChild(tr);
+  });
 }
+
+/* ADMIN ACTIONS */
+async function approveWithdrawal(wid){
+  const wSnap = await get(ref(db,'withdrawals/'+wid));
+  if(!wSnap.exists()) return;
+  const w = wSnap.val();
+  await update(ref(db,'withdrawals/'+wid),{status:'Approved'});
+  const userSnap = await get(ref(db,'users/'+w.uid));
+  const user = userSnap.val();
+  user.releasedTokens = (user.releasedTokens||0)-w.amount;
+  await update(ref(db,'users/'+w.uid),{releasedTokens:user.releasedTokens});
+  alert('Withdrawal Approved ✅');
+  loadAdminData();
+}
+async function deleteUser(uid){
+  if(confirm('Delete user?')){await set(ref(db,'users/'+uid),null); loadAdminData();}
+}
+function logoutAdmin(){adminLoggedIn=false; hide(document.getElementById('admin-panel')); show(document.getElementById('auth-section'));}
 
 </script>
 </body>
