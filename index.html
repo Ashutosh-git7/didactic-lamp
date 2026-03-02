@@ -213,14 +213,17 @@ document.getElementById("invest-btn").addEventListener("click",async()=>{
   await runTransaction(userRef,current=>{
     if(current){
       current.investment=(current.investment||0)+amount;
-      const tokens=(amount/livePrice);
-      current.lockedTokens=(current.lockedTokens||0)+tokens;
-      current.totalTokens=(current.totalTokens||0)+tokens;
-      current.investmentDate=Date.now();
-      current.lastReleaseDate=Date.now();
-    }
-    return current;
-  });
+      // Calculate TMPL tokens based on live price
+const tokens = amount / livePrice;
+
+// Lock tokens
+current.lockedTokens = (current.lockedTokens || 0) + tokens;
+
+// Save original allocation (never changes)
+current.totalTokens = (current.totalTokens || 0) + tokens;
+
+// reset vesting timer
+current.lastReleaseDate = Date.now();
   // Distribute investment: 50% liquidity, 30% referral, 20% company
   await runTransaction(ref(db,'global'),current=>{
     if(!current){current={liquidityPool:0,companyFund:0};}
