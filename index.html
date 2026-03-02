@@ -136,10 +136,11 @@ document.getElementById("auth-register").addEventListener("click", async()=>{
     const snapshot = await get(userRef);
     if(snapshot.exists()) { message(document.getElementById("auth-message"), "User already exists", 'error'); return; }
     
-    await set(userRef, {
-      name, password, wallet, investment:0, releasedTokens:0, lockedTokens:0, 
-      referralIncome:0, upline, team:[], totalTokens:0, lastReleaseDate: Date.now()
-    });
+    await update(userRef, {
+  investment: (userData.investment || 0) + amount,
+  lockedTokens: (userData.lockedTokens || 0) + tokens,
+  totalTokens: (userData.totalTokens || 0) + tokens
+});
     message(document.getElementById("auth-message"), "Registered successfully ✅", 'success');
   } catch(e) { message(document.getElementById("auth-message"), "Registration failed", 'error'); }
 });
