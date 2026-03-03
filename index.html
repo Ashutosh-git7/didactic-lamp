@@ -6,50 +6,22 @@
 <title>TMPL Pro Ecosystem</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
-body {
-  font-family:'Segoe UI',Tahoma,Verdana;
-  background:#121212;
-  color:#e0e0e0;
-  margin:0;
-  padding:15px;
-}
-
-.box{
-  background:#1e1e1e;
-  padding:24px;
-  border-radius:12px;
-  box-shadow:0 0 18px #00ffe170;
-  margin:20px auto;
-  max-width:650px;
-}
-
-h2,h3,h4{
-  color:#00ffe1;
-  text-align:center;
-}
-
-input,button{
-  width:100%;
-  padding:12px;
-  margin:10px 0;
-  border-radius:6px;
-  border:none;
-  background:#2a2a2a;
-  color:#fff;
-}
-
-button{
-  background:#00ffe1;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-button:hover{
-  background:#00c7aa;
-}
-
-.hidden{display:none;}
+body{margin:0;font-family:Poppins;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;}
+*{box-sizing:border-box;}
+button,input{font-family:Poppins;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+.card{background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border-radius:15px;padding:20px;margin-bottom:20px;transition:0.3s;}
+.card:hover{background:rgba(255,255,255,0.1);}
+input,button{padding:10px;border:none;border-radius:8px;margin:5px 0;}
+button{background:#00c6ff;background:linear-gradient(90deg,#00c6ff,#0072ff);color:#fff;cursor:pointer;transition:0.3s;}
+button:hover{opacity:0.8;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;}
+h2,h3,h4{margin:0 0 10px 0;}
+nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+nav a{color:#fff;text-decoration:none;margin-left:15px;}
+.hide{display:none;}
+.error{color:#ff6b6b;}
+.success{color:#51cf66;}
 </style>
 </head>
 <body>
@@ -64,39 +36,45 @@ button:hover{
 </nav>
 
 <!-- Auth Card -->
-<div id="loginBox" class="box">
-  <h3>🔐 TMPL Login</h3>
-  <input id="loginId" placeholder="User ID">
-  <input id="loginPass" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+<div id="auth-card" class="card">
+<h3>Login / Register</h3>
+<input type="text" id="auth-name" placeholder="Full Name">
+<input type="text" id="auth-wallet" placeholder="Wallet Address (0x...)">
+<input type="text" id="auth-phone" placeholder="Phone Number">
+<input type="password" id="auth-password" placeholder="Password">
+<input type="text" id="auth-upline" placeholder="Referral Code (optional)">
+<button id="auth-register">Register</button>
+<button id="auth-login">Login</button>
+<div id="auth-message"></div>
 </div>
+
 <!-- Admin Login Show Button -->
 <button id="show-admin-login" style="background:#ff4d4d;margin-bottom:10px;">Admin Login</button>
 
 <!-- Dashboard Card -->
-<div id="userDashboard" class="box hidden">
-
-<h3>👋 Welcome <span id="userName"></span></h3>
-
-<p>💰 Deposit: <b><span id="userDeposit">0</span></b></p>
-<p>📈 Income: <b><span id="userIncome">0</span></b></p>
-<p>🏦 Wallet Balance: <b><span id="walletBalance">0</span></b></p>
-
-<hr>
-
-<h4>📥 Buy TMPL</h4>
-<input type="number" id="buyAmount" placeholder="Enter Amount">
-<button onclick="buyToken()">Buy</button>
-
-<h4>📤 Sell TMPL</h4>
-<input type="number" id="sellAmount" placeholder="Enter Amount">
-<button onclick="sellToken()">Sell</button>
-
-<button onclick="logout()">Logout</button>
-
+<div id="dashboard-card" class="hide">
+<h3>Dashboard</h3>
+<div class="grid" id="dashboard-grid">
+<div class="card"><h4>Investment</h4><p id="dashboard-investment">0 USDT</p></div>
+<div class="card"><h4>Locked Tokens</h4><p id="dashboard-locked">0 TMPL</p></div>
+<div class="card"><h4>Released Tokens</h4><p id="dashboard-released">0 TMPL</p></div>
+<div class="card"><h4>Withdrawable</h4><p id="dashboard-withdrawable">0 USDT</p></div>
+<div class="card"><h4>Referral Earnings</h4><p id="dashboard-referral">0 TMPL</p></div>
+<div class="card"><h4>Live Price</h4><p id="dashboard-price">0 USDT/TMPL</p></div>
+<div class="card"><h4>Liquidity Pool</h4><p id="dashboard-liquidity">0 USDT</p></div>
+<div class="card"><h4>Company Fund</h4><p id="dashboard-company">0 USDT</p></div>
+<div class="card"><h4>Team Size</h4><p id="dashboard-team">0</p></div>
 </div>
+<h4>Invest</h4>
+<input type="number" id="invest-amount" placeholder="Amount USDT (min 20)" min="20">
+<button id="invest-btn">Invest Now</button>
+<h4>Request Withdrawal</h4>
+<button id="withdraw-btn">Withdraw All</button>
+<div id="dashboard-message"></div>
+</div>
+
 <!-- Admin Card -->
-<div id="adminPanel" class="box admin-section hidden">
+<div id="admin-card" class="card hide">
 <h3>Admin Panel</h3>
 <input type="password" id="admin-password" placeholder="Admin Password">
 <button id="admin-login-btn">Admin Login</button>
@@ -140,7 +118,7 @@ function show(el){el.classList.remove("hide");}
 function hide(el){el.classList.add("hide");}
 function message(el, text, type='') { el.innerHTML = `<p class="${type}">${text}</p>`; setTimeout(()=>el.innerHTML='',5000); }
 
-// ? FIXED REGISTER FUNCTION
+// ✅ FIXED REGISTER FUNCTION
 document.getElementById("auth-register").addEventListener("click", async()=>{
   const name = document.getElementById("auth-name").value.trim();
   const wallet = document.getElementById("auth-wallet").value.trim();
@@ -159,7 +137,7 @@ document.getElementById("auth-register").addEventListener("click", async()=>{
       message(document.getElementById("auth-message"), "User already exists", 'error'); return; 
     }
     
-    // ? FIXED: Complete user data save
+    // ✅ FIXED: Complete user data save
     await set(userRef, {
       name, wallet, phone, password, upline,
       investment: 0,
@@ -170,7 +148,7 @@ document.getElementById("auth-register").addEventListener("click", async()=>{
       lastReleaseDate: Date.now()
     });
     
-    message(document.getElementById("auth-message"), "Registered successfully ?", 'success');
+    message(document.getElementById("auth-message"), "Registered successfully ✅", 'success');
   } catch(e) { 
     message(document.getElementById("auth-message"), "Registration failed", 'error'); 
   }
@@ -259,8 +237,8 @@ async function loadDashboard() {
   });
 }
 
-// ? FIXED INVEST FUNCTION
-// ? SUPER FIXED INVEST FUNCTION - 100% WORKING
+// ✅ FIXED INVEST FUNCTION
+// ✅ SUPER FIXED INVEST FUNCTION - 100% WORKING
 document.getElementById("invest-btn").addEventListener("click", async()=>{
   const amount = parseFloat(document.getElementById("invest-amount").value);
   if(!amount || amount < 20) { 
@@ -303,7 +281,7 @@ document.getElementById("invest-btn").addEventListener("click", async()=>{
     await distributeReferral(amount);
     
     console.log("Investment SUCCESS:", amount);
-    message(document.getElementById("dashboard-message"), `? ${amount} USDT invested! ${tokens.toFixed(2)} TMPL locked`, 'success');
+    message(document.getElementById("dashboard-message"), `✅ ${amount} USDT invested! ${tokens.toFixed(2)} TMPL locked`, 'success');
     document.getElementById("invest-amount").value = '';
     
   } catch(error) {
@@ -346,7 +324,7 @@ document.getElementById("admin-login-btn").addEventListener("click", ()=>{
     show(document.getElementById("admin-actions"));
     show(document.getElementById("nav-admin"));
     loadAdminUsers();
-    message(document.getElementById("admin-message"), "Admin logged in ?", 'success');
+    message(document.getElementById("admin-message"), "Admin logged in ✅", 'success');
   } else {
     message(document.getElementById("admin-message"), "Wrong password", 'error');
   }
@@ -357,7 +335,7 @@ document.getElementById("admin-update-price").addEventListener("click", async()=
   const price = parseFloat(document.getElementById("admin-liveprice").value);
   if(price > 0 && price < 100) {
     await set(ref(db, 'global/livePrice'), price);
-    message(document.getElementById("admin-message"), "Price updated ?", 'success');
+    message(document.getElementById("admin-message"), "Price updated ✅", 'success');
   } else {
     message(document.getElementById("admin-message"), "Invalid price (0.0001-100)", 'error');
   }
@@ -375,10 +353,10 @@ async function loadAdminUsers() {
         card.className = "card";
         card.innerHTML = `
           <h4>${user.name || 'N/A'} (${phone})</h4>
-          <p>?? Investment: ${(user.investment || 0).toFixed(2)} USDT</p>
-          <p>?? Locked: ${(user.lockedTokens || 0).toFixed(2)} TMPL</p>
-          <p>? Released: ${(user.releasedTokens || 0).toFixed(2)} TMPL</p>
-          <p>?? Referral: ${(user.referralIncome || 0).toFixed(2)} TMPL</p>
+          <p>💰 Investment: ${(user.investment || 0).toFixed(2)} USDT</p>
+          <p>🔒 Locked: ${(user.lockedTokens || 0).toFixed(2)} TMPL</p>
+          <p>✅ Released: ${(user.releasedTokens || 0).toFixed(2)} TMPL</p>
+          <p>👥 Referral: ${(user.referralIncome || 0).toFixed(2)} TMPL</p>
           <button onclick="approveInvestment('${phone}')" style="background:#51cf66;margin:2px;">Approve Invest</button>
           <button onclick="approveWithdrawals('${phone}')" style="background:#00c6ff;margin:2px;">Approve Withdraw</button>
           <button onclick="deleteUser('${phone}')" style="background:#ff4444;margin:2px;">Delete</button>
@@ -410,7 +388,7 @@ window.approveInvestment = async(phone) => {
   });
 
   message(document.getElementById("admin-message"),
-  "5% Tokens Released ?",'success');
+  "5% Tokens Released ✅",'success');
 };
 
 window.approveWithdrawals = async(phone) => {
@@ -425,7 +403,7 @@ window.approveWithdrawals = async(phone) => {
   });
 
   message(document.getElementById("admin-message"),
-  "Withdrawal Approved ?",'success');
+  "Withdrawal Approved ✅",'success');
 };
 
 window.deleteUser = async(phone) => {
