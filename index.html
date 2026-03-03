@@ -369,25 +369,41 @@ async function loadAdminUsers() {
 
 // Admin Functions (Global)
 window.approveInvestment = async(phone) => {
-  await runTransaction(ref(db, 'users/' + phone), current => {
-    if(current.exists() && (current.value.lockedTokens || 0) > 0) {
-      const release = (current.value.totalTokens || 0) * 0.05; // 5%
-      current.value.releasedTokens = (current.value.releasedTokens || 0) + release;
-      current.value.lockedTokens = (current.value.lockedTokens || 0) - release;
-    }
-    return current;
+
+  await runTransaction(ref(db, 'users/' + phone), (user) => {
+
+    if(!user) return user;
+
+    if((user.lockedTokens || 0) <= 0) return user;
+
+    const release = (user.totalTokens || 0) * 0.05;
+
+    user.releasedTokens =
+      (user.releasedTokens || 0) + release;
+
+    user.lockedTokens =
+      Math.max(0,(user.lockedTokens || 0) - release);
+
+    return user;
   });
-  message(document.getElementById("admin-message"), "Investment approved & 5% tokens released ✅", 'success');
+
+  message(document.getElementById("admin-message"),
+  "5% Tokens Released ✅",'success');
 };
 
 window.approveWithdrawals = async(phone) => {
-  await runTransaction(ref(db, 'users/' + phone), current => {
-    if(current.exists()) {
-      current.value.releasedTokens = 0; // Reset released tokens
-    }
-    return current;
+
+  await runTransaction(ref(db,'users/'+phone),(user)=>{
+
+    if(!user) return user;
+
+    user.releasedTokens = 0;
+
+    return user;
   });
-  message(document.getElementById("admin-message"), "All withdrawals approved for user ✅", 'success');
+
+  message(document.getElementById("admin-message"),
+  "Withdrawal Approved ✅",'success');
 };
 
 window.deleteUser = async(phone) => {
