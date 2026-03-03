@@ -92,7 +92,6 @@ nav a{color:#fff;text-decoration:none;margin-left:15px;}
 <div id="admin-message"></div>
 </div>
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, child, update, onValue, runTransaction, push, remove, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -112,14 +111,14 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let livePrice = 1;
-const ADMIN_PASSWORD = "Admin@123"; // Production mein change karo
+const ADMIN_PASSWORD = "Admin@123";
 const referralPercent = [10,4,3,2,2,1.5,1.5,1,1,1,0.5,0.5,0.5,0.5,0.5];
 
 function show(el){el.classList.remove("hide");}
 function hide(el){el.classList.add("hide");}
 function message(el, text, type='') { el.innerHTML = `<p class="${type}">${text}</p>`; setTimeout(()=>el.innerHTML='',5000); }
 
-// Auth Register
+// ✅ FIXED REGISTER FUNCTION
 document.getElementById("auth-register").addEventListener("click", async()=>{
   const name = document.getElementById("auth-name").value.trim();
   const wallet = document.getElementById("auth-wallet").value.trim();
@@ -134,15 +133,25 @@ document.getElementById("auth-register").addEventListener("click", async()=>{
   try {
     const userRef = ref(db, 'users/' + phone);
     const snapshot = await get(userRef);
-    if(snapshot.exists()) { message(document.getElementById("auth-message"), "User already exists", 'error'); return; }
+    if(snapshot.exists()) { 
+      message(document.getElementById("auth-message"), "User already exists", 'error'); return; 
+    }
     
-    await update(userRef, {
-  investment: (userData.investment || 0) + amount,
-  lockedTokens: (userData.lockedTokens || 0) + tokens,
-  totalTokens: (userData.totalTokens || 0) + tokens
-});
+    // ✅ FIXED: Complete user data save
+    await set(userRef, {
+      name, wallet, phone, password, upline,
+      investment: 0,
+      lockedTokens: 0,
+      releasedTokens: 0,
+      totalTokens: 0,
+      referralIncome: 0,
+      lastReleaseDate: Date.now()
+    });
+    
     message(document.getElementById("auth-message"), "Registered successfully ✅", 'success');
-  } catch(e) { message(document.getElementById("auth-message"), "Registration failed", 'error'); }
+  } catch(e) { 
+    message(document.getElementById("auth-message"), "Registration failed", 'error'); 
+  }
 });
 
 // Auth Login
@@ -159,11 +168,15 @@ document.getElementById("auth-login").addEventListener("click", async()=>{
     } else {
       message(document.getElementById("auth-message"), "Invalid credentials", 'error');
     }
-  } catch(e) { message(document.getElementById("auth-message"), "Login failed", 'error'); }
+  } catch(e) { 
+    message(document.getElementById("auth-message"), "Login failed", 'error'); 
+  }
 });
 
 // Show Admin Login
-document.getElementById("show-admin-login").addEventListener("click", ()=>{ show(document.getElementById("admin-card")); });
+document.getElementById("show-admin-login").addEventListener("click", ()=>{ 
+  show(document.getElementById("admin-card")); 
+});
 
 // Dashboard
 function showDashboard() {
@@ -174,18 +187,17 @@ function showDashboard() {
   document.getElementById("nav-logout").onclick = () => location.reload();
   loadDashboard();
 }
-
 // Load Dashboard Data
 async function loadDashboard() {
   const userRef = ref(db, 'users/' + currentUser);
   onValue(userRef, snap => {
     if(snap.exists()) {
       const data = snap.val();
-      document.getElementById("dashboard-investment").innerText = data.investment?.toFixed(2) || 0 + " USDT";
-      document.getElementById("dashboard-locked").innerText = data.lockedTokens?.toFixed(2) || 0 + " TMPL";
-      document.getElementById("dashboard-released").innerText = data.releasedTokens?.toFixed(2) || 0 + " TMPL";
-      document.getElementById("dashboard-withdrawable").innerText = (data.releasedTokens * livePrice).toFixed(2) + " USDT";
-      document.getElementById("dashboard-referral").innerText = data.referralIncome?.toFixed(2) || 0 + " TMPL";
+      document.getElementById("dashboard-investment").innerText = (data.investment || 0).toFixed(2) + " USDT";
+      document.getElementById("dashboard-locked").innerText = (data.lockedTokens || 0).toFixed(2) + " TMPL";
+      document.getElementById("dashboard-released").innerText = (data.releasedTokens || 0).toFixed(2) + " TMPL";
+      document.getElementById("dashboard-withdrawable").innerText = ((data.releasedTokens || 0) * livePrice).toFixed(2) + " USDT";
+      document.getElementById("dashboard-referral").innerText = (data.referralIncome || 0).toFixed(2) + " TMPL";
     }
   });
 
@@ -201,19 +213,36 @@ async function loadDashboard() {
 
   // Live price & globals
   const liveRef = ref(db, 'global/livePrice');
-  onValue(liveRef, snap => { if(snap.exists()) { livePrice = snap.val(); document.getElementById("dashboard-price").innerText = livePrice + " USDT/TMPL"; } });
+  onValue(liveRef, snap => { 
+    if(snap.exists()) { 
+      livePrice = snap.val(); 
+      document.getElementById("dashboard-price").innerText = livePrice + " USDT/TMPL"; 
+    } 
+  });
 
   const lpRef = ref(db, 'global/liquidityPool');
-  onValue(lpRef, snap => { if(snap.exists()) { document.getElementById("dashboard-liquidity").innerText = snap.val().toFixed(2) + " USDT"; document.getElementById("admin-liquidity").innerText = snap.val().toFixed(2) + " USDT"; } });
+  onValue(lpRef, snap => { 
+    if(snap.exists()) { 
+      document.getElementById("dashboard-liquidity").innerText = snap.val().toFixed(2) + " USDT"; 
+      document.getElementById("admin-liquidity").innerText = snap.val().toFixed(2) + " USDT"; 
+    } 
+  });
 
   const cfRef = ref(db, 'global/companyFund');
-  onValue(cfRef, snap => { if(snap.exists()) { document.getElementById("dashboard-company").innerText = snap.val().toFixed(2) + " USDT"; document.getElementById("admin-company").innerText = snap.val().toFixed(2) + " USDT"; } });
+  onValue(cfRef, snap => { 
+    if(snap.exists()) { 
+      document.getElementById("dashboard-company").innerText = snap.val().toFixed(2) + " USDT"; 
+      document.getElementById("admin-company").innerText = snap.val().toFixed(2) + " USDT"; 
+    } 
+  });
 }
 
-// Invest
+// ✅ FIXED INVEST FUNCTION
 document.getElementById("invest-btn").addEventListener("click", async()=>{
   const amount = parseFloat(document.getElementById("invest-amount").value);
-  if(!amount || amount < 20) { message(document.getElementById("dashboard-message"), "Minimum 20 USDT", 'error'); return; }
+  if(!amount || amount < 20) { 
+    message(document.getElementById("dashboard-message"), "Minimum 20 USDT", 'error'); return; 
+  }
 
   try {
     const userRef = ref(db, 'users/' + currentUser);
@@ -228,9 +257,9 @@ document.getElementById("invest-btn").addEventListener("click", async()=>{
       return current;
     });
 
-    // Global funds
+    // Global funds ✅ FIXED
     await runTransaction(ref(db, 'global'), current => {
-      if(!current.exists()) current.value = { liquidityPool:0, companyFund:0 };
+      if(!current.exists()) current.value = { liquidityPool:0, companyFund:0, livePrice:1 };
       current.value.liquidityPool = (current.value.liquidityPool || 0) + amount * 0.5;
       current.value.companyFund = (current.value.companyFund || 0) + amount * 0.2;
       return current;
@@ -240,19 +269,23 @@ document.getElementById("invest-btn").addEventListener("click", async()=>{
     await distributeReferral(amount);
     message(document.getElementById("dashboard-message"), "Investment successful! Tokens locked. Monthly release starts.", 'success');
     document.getElementById("invest-amount").value = '';
-  } catch(e) { message(document.getElementById("dashboard-message"), "Investment failed", 'error'); }
+  } catch(e) { 
+    message(document.getElementById("dashboard-message"), "Investment failed", 'error'); 
+  }
 });
 
-// Referral Distribution
+// Referral Distribution ✅ FIXED
 async function distributeReferral(amount) {
   let currentPhone = currentUser;
   for(let i = 0; i < referralPercent.length; i++) {
     const snap = await get(ref(db, 'users/' + currentPhone));
     if(!snap.exists() || !snap.val().upline) break;
     const upline = snap.val().upline;
-    const bonus = (amount * referralPercent[i] / 100) / livePrice; // TMPL tokens
+    const bonus = (amount * referralPercent[i] / 100) / livePrice;
     await runTransaction(ref(db, 'users/' + upline), current => {
-      if(current.exists()) current.value.referralIncome = (current.value.referralIncome || 0) + bonus;
+      if(current.exists()) {
+        current.value.referralIncome = (current.value.referralIncome || 0) + bonus;
+      }
       return current;
     });
     currentPhone = upline;
@@ -264,14 +297,24 @@ document.getElementById("withdraw-btn").addEventListener("click", async()=>{
   const userSnap = await get(ref(db, 'users/' + currentUser));
   if(!userSnap.exists()) return;
   const data = userSnap.val();
-  const withdrawable = data.releasedTokens * livePrice;
-  if(withdrawable <= 0) { message(document.getElementById("dashboard-message"), "No withdrawable tokens", 'error'); return; }
+  const withdrawable = (data.releasedTokens || 0) * livePrice;
+  if(withdrawable <= 0) { 
+    message(document.getElementById("dashboard-message"), "No withdrawable tokens", 'error'); return; 
+  }
 
   try {
     const withdrawalsRef = ref(db, 'withdrawals');
-    await push(withdrawalsRef, { user: currentUser, amount: withdrawable, status: "pending", timestamp: Date.now(), wallet: data.wallet });
+    await push(withdrawalsRef, { 
+      user: currentUser, 
+      amount: withdrawable, 
+      status: "pending", 
+      timestamp: Date.now(), 
+      wallet: data.wallet 
+    });
     message(document.getElementById("dashboard-message"), "Withdrawal requested! Pending admin approval.", 'success');
-  } catch(e) { message(document.getElementById("dashboard-message"), "Withdrawal request failed", 'error'); }
+  } catch(e) { 
+    message(document.getElementById("dashboard-message"), "Withdrawal request failed", 'error'); 
+  }
 });
 
 // Admin Login
@@ -284,7 +327,9 @@ document.getElementById("admin-login-btn").addEventListener("click", ()=>{
     show(document.getElementById("nav-admin"));
     loadAdminUsers();
     message(document.getElementById("admin-message"), "Admin logged in ✅", 'success');
-  } else message(document.getElementById("admin-message"), "Wrong password", 'error');
+  } else {
+    message(document.getElementById("admin-message"), "Wrong password", 'error');
+  }
 });
 
 // Admin Update Price
@@ -293,7 +338,9 @@ document.getElementById("admin-update-price").addEventListener("click", async()=
   if(price > 0 && price < 100) {
     await set(ref(db, 'global/livePrice'), price);
     message(document.getElementById("admin-message"), "Price updated ✅", 'success');
-  } else message(document.getElementById("admin-message"), "Invalid price (0-100)", 'error');
+  } else {
+    message(document.getElementById("admin-message"), "Invalid price (0.0001-100)", 'error');
+  }
 });
 
 // Load Admin Users
@@ -308,13 +355,13 @@ async function loadAdminUsers() {
         card.className = "card";
         card.innerHTML = `
           <h4>${user.name || 'N/A'} (${phone})</h4>
-          <p>💰 Investment: ${user.investment?.toFixed(2) || 0} USDT</p>
-          <p>🔒 Locked: ${user.lockedTokens?.toFixed(2) || 0} TMPL</p>
-          <p>✅ Released: ${user.releasedTokens?.toFixed(2) || 0} TMPL</p>
-          <p>👥 Referral: ${user.referralIncome?.toFixed(2) || 0} TMPL</p>
-          <button onclick="approveInvestment('${phone}')">Approve Invest</button>
-          <button onclick="approveWithdrawals('${phone}')">Approve Withdraw</button>
-          <button onclick="deleteUser('${phone}')" style="background:#ff4444;">Delete</button>
+          <p>💰 Investment: ${(user.investment || 0).toFixed(2)} USDT</p>
+          <p>🔒 Locked: ${(user.lockedTokens || 0).toFixed(2)} TMPL</p>
+          <p>✅ Released: ${(user.releasedTokens || 0).toFixed(2)} TMPL</p>
+          <p>👥 Referral: ${(user.referralIncome || 0).toFixed(2)} TMPL</p>
+          <button onclick="approveInvestment('${phone}')" style="background:#51cf66;margin:2px;">Approve Invest</button>
+          <button onclick="approveWithdrawals('${phone}')" style="background:#00c6ff;margin:2px;">Approve Withdraw</button>
+          <button onclick="deleteUser('${phone}')" style="background:#ff4444;margin:2px;">Delete</button>
         `;
         div.appendChild(card);
       });
@@ -325,43 +372,43 @@ async function loadAdminUsers() {
 // Admin Functions (Global)
 window.approveInvestment = async(phone) => {
   await runTransaction(ref(db, 'users/' + phone), current => {
-    if(current.exists() && current.value.lockedTokens > 0) {
-      const release = current.value.totalTokens * 0.05; // 5%
+    if(current.exists() && (current.value.lockedTokens || 0) > 0) {
+      const release = (current.value.totalTokens || 0) * 0.05; // 5%
       current.value.releasedTokens = (current.value.releasedTokens || 0) + release;
-      current.value.lockedTokens -= release;
+      current.value.lockedTokens = (current.value.lockedTokens || 0) - release;
     }
     return current;
   });
-  message(document.getElementById("admin-message"), "Investment approved & tokens released", 'success');
+  message(document.getElementById("admin-message"), "Investment approved & 5% tokens released ✅", 'success');
 };
 
 window.approveWithdrawals = async(phone) => {
-  const withdrawalsRef = query(ref(db, 'withdrawals'), orderByChild('user'), child(phone));
-  // Simplified approval - production mein individual approve karo
   await runTransaction(ref(db, 'users/' + phone), current => {
-    if(current.exists()) current.value.releasedTokens = 0; // Reset released
+    if(current.exists()) {
+      current.value.releasedTokens = 0; // Reset released tokens
+    }
     return current;
   });
-  message(document.getElementById("admin-message"), "Withdrawals approved", 'success');
+  message(document.getElementById("admin-message"), "All withdrawals approved for user ✅", 'success');
 };
 
 window.deleteUser = async(phone) => {
-  if(confirm("Delete user?")) {
+  if(confirm("Delete user permanently?")) {
     await remove(ref(db, 'users/' + phone));
-    message(document.getElementById("admin-message"), "User deleted", 'success');
+    message(document.getElementById("admin-message"), "User deleted successfully", 'success');
   }
 };
 
-// Auto token release every 30s (demo - production mein cron job)
+// Auto token release every 30s (DEMO - production cron job use karo)
 setInterval(async() => {
   if(currentUser) {
     await runTransaction(ref(db, 'users/' + currentUser), current => {
-      if(current.exists() && current.value.lockedTokens > 0) {
+      if(current.exists() && (current.value.lockedTokens || 0) > 0) {
         const months = Math.floor((Date.now() - (current.value.lastReleaseDate || Date.now())) / (30*24*60*60*1000));
         if(months > 0) {
-          const release = current.value.totalTokens * 0.05 * months;
+          const release = (current.value.totalTokens || 0) * 0.05 * months;
           current.value.releasedTokens = (current.value.releasedTokens || 0) + release;
-          current.value.lockedTokens -= release;
+          current.value.lockedTokens = (current.value.lockedTokens || 0) - release;
           current.value.lastReleaseDate = Date.now();
         }
       }
@@ -370,6 +417,7 @@ setInterval(async() => {
   }
 }, 30000);
 
+// Nav Admin
 document.getElementById("nav-admin").addEventListener("click", (e) => {
   e.preventDefault();
   show(document.getElementById("admin-card"));
