@@ -121,6 +121,7 @@ function message(el, text, type='') { el.innerHTML = `<p class="${type}">${text}
 
 // Auth Register
 document.getElementById("auth-register").addEventListener("click", async()=>{
+document.getElementById("auth-register").addEventListener("click", async()=>{
   const name = document.getElementById("auth-name").value.trim();
   const wallet = document.getElementById("auth-wallet").value.trim();
   const phone = document.getElementById("auth-phone").value.trim();
@@ -128,21 +129,30 @@ document.getElementById("auth-register").addEventListener("click", async()=>{
   const upline = document.getElementById("auth-upline").value.trim() || null;
   
   if(!name || !wallet || !phone || !password || !wallet.startsWith('0x')) {
-    message(document.getElementById("auth-message"), "All fields required. Wallet must start with 0x", 'error'); return;
+    message(document.getElementById("auth-message"), "All fields required. Wallet must start with 0x", 'error'); 
+    return;
   }
   
   try {
     const userRef = ref(db, 'users/' + phone);
     const snapshot = await get(userRef);
-    if(snapshot.exists()) { message(document.getElementById("auth-message"), "User already exists", 'error'); return; }
+    if(snapshot.exists()) { 
+      message(document.getElementById("auth-message"), "User already exists", 'error'); 
+      return; 
+    }
     
-    await update(userRef, {
-  investment: (userData.investment || 0) + amount,
-  lockedTokens: (userData.lockedTokens || 0) + tokens,
-  totalTokens: (userData.totalTokens || 0) + tokens
-});
+    await set(userRef, {
+      name, wallet, phone, password, upline,
+      investment: 0, lockedTokens: 0, releasedTokens: 0,
+      totalTokens: 0, referralIncome: 0, lastReleaseDate: Date.now()
+    });
+    
     message(document.getElementById("auth-message"), "Registered successfully ✅", 'success');
-  } catch(e) { message(document.getElementById("auth-message"), "Registration failed", 'error'); }
+    currentUser = phone;
+    showDashboard();
+  } catch(e) { 
+    message(document.getElementById("auth-message"), "Registration failed: " + e.message, 'error'); 
+  }
 });
 
 // Auth Login
