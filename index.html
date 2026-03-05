@@ -3,190 +3,195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMPL Pro Ecosystem</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<title>TMPL Investment Platform</title>
+
 <style>
-body {
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  background: #f4f4f4;
-  color: #333;
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:#f5f7fb;color:#333}
+header{background:linear-gradient(90deg,#0f2027,#203a43,#2c5364);color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:20px}
+
+.container{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#111;color:#fff;padding:20px}
+.sidebar a{display:block;color:#fff;text-decoration:none;padding:10px;margin-bottom:5px;border-radius:6px}
+.sidebar a:hover{background:#444}
+
+.main{flex:1;padding:20px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:20px}
+.card{background:#fff;border-radius:10px;padding:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}
+
+button{padding:10px 15px;border:none;border-radius:6px;background:#2c5364;color:#fff;cursor:pointer}
+button:hover{opacity:0.9}
+
+table{width:100%;border-collapse:collapse;background:#fff;margin-top:15px}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+
+input{width:100%;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:5px}
+
+.modal{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center}
+.modal-content{background:#fff;padding:20px;border-radius:10px;width:90%;max-width:400px}
+
+.center{max-width:400px;margin:auto;margin-top:60px;background:#fff;padding:25px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.1)}
+
+.hidden{display:none}
+
+@media(max-width:768px){
+.sidebar{display:none}
+.container{flex-direction:column}
 }
-
-* {
-  box-sizing: border-box;
-}
-
-button, input {
-  font-family: Arial, sans-serif;
-}
-
-.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-  background: #fff;
-}
-
-.card {
-  background: #fff;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  padding: 25px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  transition: 0.3s;
-}
-
-.card:hover {
-  border-color: #007cba;
-  box-shadow: 0 4px 20px rgba(0,124,186,0.2);
-}
-
-input, button {
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 5px;
-  margin: 8px 0;
-  font-size: 14px;
-}
-
-input:focus {
-  outline: none;
-  border-color: #007cba;
-  box-shadow: 0 0 5px rgba(0,124,186,0.3);
-}
-
-button {
-  background: #007cba;
-  color: #fff;
-  cursor: pointer;
-  transition: 0.3s;
-  font-weight: bold;
-}
-
-button:hover {
-  background: #005a87;
-  transform: translateY(-1px);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-h2, h3, h4 {
-  margin: 0 0 15px 0;
-  color: #333;
-}
-
-h2 { font-size: 28px; color: #007cba; }
-h3 { font-size: 22px; color: #333; }
-h4 { font-size: 18px; color: #555; }
-
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-nav a {
-  color: #007cba;
-  text-decoration: none;
-  margin-left: 15px;
-  font-weight: 500;
-  padding: 8px 15px;
-  border-radius: 5px;
-  transition: 0.3s;
-}
-
-nav a:hover {
-  background: #007cba;
-  color: #fff;
-}
-
-.hide { display: none; }
-.error { color: #d32f2f; }
-.success { color: #388e3c; }
 </style>
 </head>
+
 <body>
-<div class="container">
-<nav>
-<h2>TMPL Pro Ecosystem</h2>
-<div>
-<a href="#dashboard" id="nav-dashboard" class="hide">Dashboard</a>
-<a href="#admin" id="nav-admin" class="hide">Admin</a>
-<a href="#" id="nav-logout" class="hide">Logout</a>
-</div>
-</nav>
 
-<!-- Auth Card -->
-<div id="auth-card" class="card">
-<h3>Login / Register</h3>
-<input type="text" id="auth-name" placeholder="Full Name">
-<input type="text" id="auth-wallet" placeholder="Wallet Address (0x...)">
-<input type="text" id="auth-phone" placeholder="Phone Number">
-<input type="password" id="auth-password" placeholder="Password">
-<input type="text" id="auth-upline" placeholder="Referral Code (optional)">
-<button id="auth-register">Register</button>
-<button id="auth-login">Login</button>
-<div id="auth-message"></div>
-</div>
+<header>
+<div><h1>TMPL Investment Platform</h1></div>
+<div id="userInfo"></div>
+</header>
 
-<!-- Admin Login Show Button -->
-<button id="show-admin-login" style="background:#ff4d4d;margin-bottom:10px;">Admin Login</button>
+<div id="authPage" class="center">
 
-<!-- Dashboard Card -->
-<div id="dashboard-card" class="hide">
-<h3>Dashboard</h3>
-<div class="grid" id="dashboard-grid">
-<div class="card"><h4>Investment</h4><p id="dashboard-investment">0 USDT</p></div>
-<div class="card"><h4>Locked Tokens</h4><p id="dashboard-locked">0 TMPL</p></div>
-<div class="card"><h4>Released Tokens</h4><p id="dashboard-released">0 TMPL</p></div>
-<div class="card"><h4>Withdrawable</h4><p id="dashboard-withdrawable">0 USDT</p></div>
-<div class="card"><h4>Referral Earnings</h4><p id="dashboard-referral">0 TMPL</p></div>
-<div class="card"><h4>Live Price</h4><p id="dashboard-price">0 USDT/TMPL</p></div>
-<div class="card"><h4>Liquidity Pool</h4><p id="dashboard-liquidity">0 USDT</p></div>
-<div class="card"><h4>Company Fund</h4><p id="dashboard-company">0 USDT</p></div>
-<div class="card"><h4>Team Size</h4><p id="dashboard-team">0</p></div>
-</div>
-<h4>Invest</h4>
-<input type="number" id="invest-amount" placeholder="Amount USDT (min 20)" min="20">
-<button id="invest-btn">Invest Now</button>
-<h4>Request Withdrawal</h4>
-<button id="withdraw-btn">Withdraw All</button>
-<div id="dashboard-message"></div>
+<h2>Login</h2>
+<input id="loginUsername" placeholder="Username">
+<input id="loginPassword" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h2>Register</h2>
+<input id="name" placeholder="Full Name">
+<input id="username" placeholder="Username">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<input id="confirmPassword" type="password" placeholder="Confirm Password">
+<input id="wallet" placeholder="BEP20 Wallet Address (0x...)">
+<input id="sponsor" placeholder="Sponsor ID">
+<button onclick="register()">Register</button>
+
 </div>
 
-<!-- Admin Card -->
-<div id="admin-card" class="card hide">
-<h3>Admin Panel</h3>
-<input type="password" id="admin-password" placeholder="Admin Password">
-<button id="admin-login-btn">Admin Login</button>
-<div id="admin-actions" class="hide">
-<h4>Live Price Update</h4>
-<input type="number" id="admin-liveprice" placeholder="Price USDT/TMPL" step="0.0001">
-<button id="admin-update-price">Update Price</button>
-<h4>Global Funds</h4>
-<p id="admin-liquidity">0 USDT</p>
-<p id="admin-company">0 USDT</p>
-<h4>Users Management</h4>
-<div id="admin-users"></div>
-<button id="admin-generate-rewards">Generate Monthly Rewards</button>
+
+<div id="app" class="container hidden">
+
+<div class="sidebar">
+<a href="#" onclick="showSection('dashboard')">Dashboard</a>
+<a href="#" onclick="showSection('investments')">Investments</a>
+<a href="#" onclick="showSection('withdrawals')">Withdrawals</a>
+<a href="#" onclick="showSection('admin')" id="adminLink">Admin</a>
+<a href="#" onclick="logout()">Logout</a>
 </div>
-<div id="admin-message"></div>
+
+<div class="main">
+
+<div id="dashboard">
+
+<div class="cards">
+<div class="card">TMPL Price<br><b id="price">$0</b></div>
+<div class="card">USDT Balance<br><b id="usdtBal">0</b></div>
+<div class="card">TMPL Balance<br><b id="tmplBal">0</b></div>
+<div class="card">Locked TMPL<br><b id="lockedBal">0</b></div>
+</div>
+
+<button onclick="openModal('buyModal')">Buy TMPL</button>
+<button onclick="openModal('withdrawModal')">Request Withdrawal</button>
+
+<h3>Referral</h3>
+<p>Your Link: <span id="refLink"></span></p>
+
+</div>
+
+
+<div id="investments" class="hidden">
+<h2>My Investments</h2>
+<table>
+<thead>
+<tr>
+<th>USDT</th>
+<th>TMPL</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="investmentsTable"></tbody>
+</table>
+</div>
+
+
+<div id="withdrawals" class="hidden">
+<h2>Withdrawals</h2>
+<table>
+<thead>
+<tr>
+<th>TMPL</th>
+<th>USDT Value</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="withdrawTable"></tbody>
+</table>
+</div>
+
+
+<div id="admin" class="hidden">
+
+<h2>Admin Panel</h2>
+
+<div class="cards">
+<div class="card">Users<br><b id="totalUsers">0</b></div>
+<div class="card">Liquidity<br><b id="liqPool">0</b></div>
+<div class="card">Distribution<br><b id="distPool">0</b></div>
+<div class="card">Company<br><b id="compPool">0</b></div>
+</div>
+
+<h3>Update TMPL Price</h3>
+<input id="newPrice" placeholder="Price">
+<button onclick="updatePrice()">Update</button>
+
+<h3>Investments</h3>
+<table>
+<thead>
+<tr><th>User</th><th>USDT</th><th>TMPL</th><th>Status</th><th>Action</th></tr>
+</thead>
+<tbody id="adminInvestments"></tbody>
+</table>
+
+<h3>Withdrawals</h3>
+<table>
+<thead>
+<tr><th>User</th><th>TMPL</th><th>Status</th><th>Action</th></tr>
+</thead>
+<tbody id="adminWithdrawals"></tbody>
+</table>
+
+</div>
+
 </div>
 </div>
+
+
+<div id="buyModal" class="modal">
+<div class="modal-content">
+<h3>Buy TMPL</h3>
+<input id="buyUsdt" placeholder="USDT Amount">
+<button onclick="buyTmpl()">Submit</button>
+<button onclick="closeModal()">Cancel</button>
+</div>
+</div>
+
+<div id="withdrawModal" class="modal">
+<div class="modal-content">
+<h3>Withdrawal</h3>
+<input id="withdrawTmpl" placeholder="TMPL Amount">
+<button onclick="withdraw()">Submit</button>
+<button onclick="closeModal()">Cancel</button>
+</div>
+</div>
+
+
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, child, update, onValue, runTransaction, push, remove, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -201,334 +206,215 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-let currentUser = null;
-let livePrice = 1;
-const ADMIN_PASSWORD = "Admin@123";
-const referralPercent = [10,4,3,2,2,1.5,1.5,1,1,1,0.5,0.5,0.5,0.5,0.5];
+let currentUser=null;
+let tmplPrice=0;
 
-function show(el){el.classList.remove("hide");}
-function hide(el){el.classList.add("hide");}
-function message(el, text, type='') { el.innerHTML = `<p class="${type}">${text}</p>`; setTimeout(()=>el.innerHTML='',5000); }
-
-// ✅ FIXED REGISTER FUNCTION
-document.getElementById("auth-register").addEventListener("click", async()=>{
-  const name = document.getElementById("auth-name").value.trim();
-  const wallet = document.getElementById("auth-wallet").value.trim();
-  const phone = document.getElementById("auth-phone").value.trim();
-  const password = document.getElementById("auth-password").value.trim();
-  const upline = document.getElementById("auth-upline").value.trim() || null;
-  
-  if(!name || !wallet || !phone || !password || !wallet.startsWith('0x')) {
-    message(document.getElementById("auth-message"), "All fields required. Wallet must start with 0x", 'error'); return;
-  }
-  
-  try {
-    const userRef = ref(db, 'users/' + phone);
-    const snapshot = await get(userRef);
-    if(snapshot.exists()) { 
-      message(document.getElementById("auth-message"), "User already exists", 'error'); return; 
-    }
-    
-    // ✅ FIXED: Complete user data save
-    await set(userRef, {
-      name, wallet, phone, password, upline,
-      investment: 0,
-      lockedTokens: 0,
-      releasedTokens: 0,
-      totalTokens: 0,
-      referralIncome: 0,
-      lastReleaseDate: Date.now()
-    });
-    
-    message(document.getElementById("auth-message"), "Registered successfully ✅", 'success');
-  } catch(e) { 
-    message(document.getElementById("auth-message"), "Registration failed", 'error'); 
-  }
-});
-
-// Auth Login
-document.getElementById("auth-login").addEventListener("click", async()=>{
-  const phone = document.getElementById("auth-phone").value.trim();
-  const password = document.getElementById("auth-password").value.trim();
-  
-  try {
-    const userRef = ref(db, 'users/' + phone);
-    const snapshot = await get(userRef);
-    if(snapshot.exists() && snapshot.val().password === password) {
-      currentUser = phone;
-      showDashboard();
-    } else {
-      message(document.getElementById("auth-message"), "Invalid credentials", 'error');
-    }
-  } catch(e) { 
-    message(document.getElementById("auth-message"), "Login failed", 'error'); 
-  }
-});
-
-// Show Admin Login
-document.getElementById("show-admin-login").addEventListener("click", ()=>{ 
-  show(document.getElementById("admin-card")); 
-});
-
-// Dashboard
-function showDashboard() {
-  hide(document.getElementById("auth-card"));
-  show(document.getElementById("dashboard-card"));
-  show(document.getElementById("nav-dashboard"));
-  show(document.getElementById("nav-logout"));
-  document.getElementById("nav-logout").onclick = () => location.reload();
-  loadDashboard();
-}
-// Load Dashboard Data
-async function loadDashboard() {
-  const userRef = ref(db, 'users/' + currentUser);
-  onValue(userRef, snap => {
-    if(snap.exists()) {
-      const data = snap.val();
-      document.getElementById("dashboard-investment").innerText = (data.investment || 0).toFixed(2) + " USDT";
-      document.getElementById("dashboard-locked").innerText = (data.lockedTokens || 0).toFixed(2) + " TMPL";
-      document.getElementById("dashboard-released").innerText = (data.releasedTokens || 0).toFixed(2) + " TMPL";
-      document.getElementById("dashboard-withdrawable").innerText = ((data.releasedTokens || 0) * livePrice).toFixed(2) + " USDT";
-      document.getElementById("dashboard-referral").innerText = (data.referralIncome || 0).toFixed(2) + " TMPL";
-    }
-  });
-
-  // Team size
-  const usersRef = ref(db, 'users');
-  onValue(usersRef, snap => {
-    if(snap.exists()) {
-      let count = 0;
-      Object.values(snap.val()).forEach(u => { if(u.upline === currentUser) count++; });
-      document.getElementById("dashboard-team").innerText = count;
-    }
-  });
-
-  // Live price & globals
-  const liveRef = ref(db, 'global/livePrice');
-  onValue(liveRef, snap => { 
-    if(snap.exists()) { 
-      livePrice = snap.val(); 
-      document.getElementById("dashboard-price").innerText = livePrice + " USDT/TMPL"; 
-    } 
-  });
-
-  const lpRef = ref(db, 'global/liquidityPool');
-  onValue(lpRef, snap => { 
-    if(snap.exists()) { 
-      document.getElementById("dashboard-liquidity").innerText = snap.val().toFixed(2) + " USDT"; 
-      document.getElementById("admin-liquidity").innerText = snap.val().toFixed(2) + " USDT"; 
-    } 
-  });
-
-  const cfRef = ref(db, 'global/companyFund');
-  onValue(cfRef, snap => { 
-    if(snap.exists()) { 
-      document.getElementById("dashboard-company").innerText = snap.val().toFixed(2) + " USDT"; 
-      document.getElementById("admin-company").innerText = snap.val().toFixed(2) + " USDT"; 
-    } 
-  });
+window.showSection=(id)=>{
+document.querySelectorAll(".main>div").forEach(x=>x.classList.add("hidden"))
+document.getElementById(id).classList.remove("hidden")
 }
 
-// ✅ FIXED INVEST FUNCTION
-// ✅ SUPER FIXED INVEST FUNCTION - 100% WORKING
-document.getElementById("invest-btn").addEventListener("click", async()=>{
-  const amount = parseFloat(document.getElementById("invest-amount").value);
-  if(!amount || amount < 20) { 
-    message(document.getElementById("dashboard-message"), "Minimum 20 USDT", 'error'); 
-    return; 
-  }
+window.openModal=(id)=>document.getElementById(id).style.display="flex"
+window.closeModal=()=>document.querySelectorAll(".modal").forEach(m=>m.style.display="none")
 
-  try {
-    console.log("Investment started:", amount, "livePrice:", livePrice);
-    
-    // Step 1: User investment update
-    const userRef = ref(db, 'users/' + currentUser);
-    const userSnap = await get(userRef);
-    if(!userSnap.exists()) throw new Error("User not found");
-    
-    const userData = userSnap.val();
-    const tokens = amount / livePrice;
-    
-    await set(userRef, {
-      ...userData,
-      investment: (userData.investment || 0) + amount,
-      lockedTokens: (userData.lockedTokens || 0) + tokens,
-      totalTokens: (userData.totalTokens || 0) + tokens,
-      lastReleaseDate: Date.now()
-    });
-
-    // Step 2: Global funds update
-    const globalRef = ref(db, 'global');
-    const globalSnap = await get(globalRef);
-    const globalData = globalSnap.exists() ? globalSnap.val() : { liquidityPool: 0, companyFund: 0, livePrice: 1 };
-    
-    await set(globalRef, {
-      ...globalData,
-      liquidityPool: (globalData.liquidityPool || 0) + amount * 0.5,
-      companyFund: (globalData.companyFund || 0) + amount * 0.2,
-      livePrice: livePrice
-    });
-
-    // Step 3: Referral bonus
-    await distributeReferral(amount);
-    
-    console.log("Investment SUCCESS:", amount);
-    message(document.getElementById("dashboard-message"), `✅ ${amount} USDT invested! ${tokens.toFixed(2)} TMPL locked`, 'success');
-    document.getElementById("invest-amount").value = '';
-    
-  } catch(error) {
-    console.error("Investment ERROR:", error.message);
-    message(document.getElementById("dashboard-message"), "Investment failed: " + error.message, 'error');
-  }
-});
-
-// Withdrawal
-document.getElementById("withdraw-btn").addEventListener("click", async()=>{
-  const userSnap = await get(ref(db, 'users/' + currentUser));
-  if(!userSnap.exists()) return;
-  const data = userSnap.val();
-  const withdrawable = (data.releasedTokens || 0) * livePrice;
-  if(withdrawable <= 0) { 
-    message(document.getElementById("dashboard-message"), "No withdrawable tokens", 'error'); return; 
-  }
-
-  try {
-    const withdrawalsRef = ref(db, 'withdrawals');
-    await push(withdrawalsRef, { 
-      user: currentUser, 
-      amount: withdrawable, 
-      status: "pending", 
-      timestamp: Date.now(), 
-      wallet: data.wallet 
-    });
-    message(document.getElementById("dashboard-message"), "Withdrawal requested! Pending admin approval.", 'success');
-  } catch(e) { 
-    message(document.getElementById("dashboard-message"), "Withdrawal request failed", 'error'); 
-  }
-});
-
-// Admin Login
-document.getElementById("admin-login-btn").addEventListener("click", ()=>{
-  const pass = document.getElementById("admin-password").value.trim();
-  if(pass === ADMIN_PASSWORD) {
-    hide(document.getElementById("admin-password"));
-    hide(document.getElementById("admin-login-btn"));
-    show(document.getElementById("admin-actions"));
-    show(document.getElementById("nav-admin"));
-    loadAdminUsers();
-    message(document.getElementById("admin-message"), "Admin logged in ✅", 'success');
-  } else {
-    message(document.getElementById("admin-message"), "Wrong password", 'error');
-  }
-});
-
-// Admin Update Price
-document.getElementById("admin-update-price").addEventListener("click", async()=>{
-  const price = parseFloat(document.getElementById("admin-liveprice").value);
-  if(price > 0 && price < 100) {
-    await set(ref(db, 'global/livePrice'), price);
-    message(document.getElementById("admin-message"), "Price updated ✅", 'success');
-  } else {
-    message(document.getElementById("admin-message"), "Invalid price (0.0001-100)", 'error');
-  }
-});
-
-// Load Admin Users
-async function loadAdminUsers() {
-  const usersRef = ref(db, 'users');
-  onValue(usersRef, snap => {
-    const div = document.getElementById("admin-users");
-    div.innerHTML = '';
-    if(snap.exists()) {
-      Object.entries(snap.val()).forEach(([phone, user]) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <h4>${user.name || 'N/A'} (${phone})</h4>
-          <p>💰 Investment: ${(user.investment || 0).toFixed(2)} USDT</p>
-          <p>🔒 Locked: ${(user.lockedTokens || 0).toFixed(2)} TMPL</p>
-          <p>✅ Released: ${(user.releasedTokens || 0).toFixed(2)} TMPL</p>
-          <p>👥 Referral: ${(user.referralIncome || 0).toFixed(2)} TMPL</p>
-          <button onclick="approveInvestment('${phone}')" style="background:#51cf66;margin:2px;">Approve Invest</button>
-          <button onclick="approveWithdrawals('${phone}')" style="background:#00c6ff;margin:2px;">Approve Withdraw</button>
-          <button onclick="deleteUser('${phone}')" style="background:#ff4444;margin:2px;">Delete</button>
-        `;
-        div.appendChild(card);
-      });
-    }
-  });
+window.logout=()=>{
+localStorage.removeItem("user")
+location.reload()
 }
 
-// Admin Functions (Global)
-window.approveInvestment = async(phone) => {
+function validateWallet(a){
+return /^0x[a-fA-F0-9]{40}$/.test(a)
+}
 
-  await runTransaction(ref(db, 'users/' + phone), (user) => {
+window.register=async()=>{
+let name=nameInput.value
+let username=usernameInput.value
+let email=emailInput.value
+let pass=passwordInput.value
+let cpass=confirmPassword.value
+let wallet=walletInput.value
+let sponsor=sponsorInput.value
 
-    if(!user) return user;
+if(pass!==cpass){alert("Passwords mismatch");return}
+if(!validateWallet(wallet)){alert("Invalid BEP20 address");return}
 
-    if((user.lockedTokens || 0) <= 0) return user;
+let id=Date.now().toString()
 
-    const release = (user.totalTokens || 0) * 0.05;
+let user={
+userId:id,
+username,
+name,
+email,
+password:pass,
+bep20WalletAddress:wallet,
+sponsorId:sponsor,
+registrationDate:new Date().toLocaleString(),
+usdtBalance:0,
+tmplBalance:0,
+lockedTmpl:{},
+investments:{}
+}
 
-    user.releasedTokens =
-      (user.releasedTokens || 0) + release;
+await set(ref(db,"users/"+id),user)
 
-    user.lockedTokens =
-      Math.max(0,(user.lockedTokens || 0) - release);
+alert("Registered")
+}
 
-    return user;
-  });
+window.login=async()=>{
 
-  message(document.getElementById("admin-message"),
-  "5% Tokens Released ✅",'success');
-};
+let u=loginUsername.value
+let p=loginPassword.value
 
-window.approveWithdrawals = async(phone) => {
+if(u==="admin"&&p==="admin123"){
+document.getElementById("authPage").classList.add("hidden")
+document.getElementById("app").classList.remove("hidden")
+document.getElementById("adminLink").style.display="block"
+loadAdmin()
+return
+}
 
-  await runTransaction(ref(db,'users/'+phone),(user)=>{
+let snapshot=await get(ref(db,"users"))
 
-    if(!user) return user;
+snapshot.forEach(s=>{
+let data=s.val()
+if(data.username===u && data.password===p){
+currentUser=data
+localStorage.setItem("user",JSON.stringify(data))
+loadUser()
+}
+})
 
-    user.releasedTokens = 0;
+}
 
-    return user;
-  });
+function loadUser(){
+document.getElementById("authPage").classList.add("hidden")
+document.getElementById("app").classList.remove("hidden")
 
-  message(document.getElementById("admin-message"),
-  "Withdrawal Approved ✅",'success');
-};
+document.getElementById("userInfo").innerText="Welcome "+currentUser.name
 
-window.deleteUser = async(phone) => {
-  if(confirm("Delete user permanently?")) {
-    await remove(ref(db, 'users/' + phone));
-    message(document.getElementById("admin-message"), "User deleted successfully", 'success');
-  }
-};
+onValue(ref(db,"global/tmplPrice"),snap=>{
+tmplPrice=snap.val()||0.1
+document.getElementById("price").innerText="$"+tmplPrice
+})
 
-// Auto token release every 30s (DEMO - production cron job use karo)
-setInterval(async() => {
-  if(currentUser) {
-    await runTransaction(ref(db, 'users/' + currentUser), current => {
-      if(current.exists() && (current.value.lockedTokens || 0) > 0) {
-        const months = Math.floor((Date.now() - (current.value.lastReleaseDate || Date.now())) / (30*24*60*60*1000));
-        if(months > 0) {
-          const release = (current.value.totalTokens || 0) * 0.05 * months;
-          current.value.releasedTokens = (current.value.releasedTokens || 0) + release;
-          current.value.lockedTokens = (current.value.lockedTokens || 0) - release;
-          current.value.lastReleaseDate = Date.now();
-        }
-      }
-      return current;
-    });
-  }
-}, 30000);
+document.getElementById("usdtBal").innerText=currentUser.usdtBalance
+document.getElementById("tmplBal").innerText=currentUser.tmplBalance
+}
 
-// Nav Admin
-document.getElementById("nav-admin").addEventListener("click", (e) => {
-  e.preventDefault();
-  show(document.getElementById("admin-card"));
-  hide(document.getElementById("dashboard-card"));
-});
+window.buyTmpl=async()=>{
+let usdt=parseFloat(buyUsdt.value)
+let tmpl=usdt/tmplPrice
+
+let inv={
+userId:currentUser.userId,
+username:currentUser.username,
+usdtAmount:usdt,
+tmplAmount:tmpl,
+status:"pending",
+createdAt:Date.now()
+}
+
+let id=push(ref(db,"investments")).key
+await set(ref(db,"investments/"+id),inv)
+
+alert("Investment Submitted")
+closeModal()
+}
+
+window.withdraw=async()=>{
+let tmpl=parseFloat(withdrawTmpl.value)
+let usdt=tmpl*tmplPrice
+
+if(usdt<5){alert("Minimum $5");return}
+
+let w={
+userId:currentUser.userId,
+username:currentUser.username,
+tmplAmount:tmpl,
+usdtValue:usdt,
+walletAddress:currentUser.bep20WalletAddress,
+status:"pending",
+createdAt:Date.now()
+}
+
+let id=push(ref(db,"withdrawals")).key
+await set(ref(db,"withdrawals/"+id),w)
+
+alert("Withdrawal Requested")
+closeModal()
+}
+
+function loadAdmin(){
+
+onValue(ref(db,"users"),snap=>{
+document.getElementById("totalUsers").innerText=snap.size
+})
+
+onValue(ref(db,"global"),snap=>{
+let g=snap.val()||{}
+document.getElementById("liqPool").innerText=g.liquidityPoolUsdt||0
+document.getElementById("distPool").innerText=g.distributionPoolUsdt||0
+document.getElementById("compPool").innerText=g.companyFundUsdt||0
+})
+
+onValue(ref(db,"investments"),snap=>{
+let html=""
+snap.forEach(s=>{
+let d=s.val()
+html+=`<tr>
+<td>${d.username}</td>
+<td>${d.usdtAmount}</td>
+<td>${d.tmplAmount}</td>
+<td>${d.status}</td>
+<td>
+<button onclick="approveInv('${s.key}')">Approve</button>
+<button onclick="rejectInv('${s.key}')">Reject</button>
+</td>
+</tr>`
+})
+adminInvestments.innerHTML=html
+})
+
+onValue(ref(db,"withdrawals"),snap=>{
+let html=""
+snap.forEach(s=>{
+let d=s.val()
+html+=`<tr>
+<td>${d.username}</td>
+<td>${d.tmplAmount}</td>
+<td>${d.status}</td>
+<td>
+<button onclick="approveW('${s.key}')">Approve</button>
+<button onclick="rejectW('${s.key}')">Reject</button>
+</td>
+</tr>`
+})
+adminWithdrawals.innerHTML=html
+})
+
+}
+
+window.updatePrice=async()=>{
+await set(ref(db,"global/tmplPrice"),parseFloat(newPrice.value))
+}
+
+window.approveInv=async(id)=>{
+await update(ref(db,"investments/"+id),{status:"approved"})
+}
+
+window.rejectInv=async(id)=>{
+await update(ref(db,"investments/"+id),{status:"rejected"})
+}
+
+window.approveW=async(id)=>{
+await update(ref(db,"withdrawals/"+id),{status:"approved"})
+}
+
+window.rejectW=async(id)=>{
+await update(ref(db,"withdrawals/"+id),{status:"rejected"})
+}
+
 </script>
+
 </body>
 </html>
