@@ -3,143 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMPL Pro Ecosystem</title>
+<title>TMPL Ultimate Ecosystem</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-font-family:Arial,Helvetica,sans-serif;
-}
-
-body{
-background:#0b0f19;
-color:white;
-min-height:100vh;
-}
-
-a{
-color:#00e1ff;
-text-decoration:none;
-}
-
-nav{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:15px;
-background:rgba(255,255,255,0.05);
-backdrop-filter:blur(10px);
-border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-.logo{
-font-weight:bold;
-font-size:18px;
-}
-
-.container{
-padding:20px;
-max-width:1100px;
-margin:auto;
-}
-
-.card{
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.1);
-padding:20px;
-border-radius:12px;
-margin-bottom:20px;
-backdrop-filter:blur(12px);
-}
-
-input,button,select{
-width:100%;
-padding:10px;
-margin-top:8px;
-margin-bottom:12px;
-border:none;
-border-radius:6px;
-}
-
-input{
-background:#111826;
-color:white;
-}
-
-button{
-background:linear-gradient(45deg,#00e1ff,#0077ff);
-color:white;
-cursor:pointer;
-font-weight:bold;
-}
-
-button:hover{
-opacity:0.9;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-td,th{
-padding:8px;
-border-bottom:1px solid rgba(255,255,255,0.1);
-font-size:13px;
-}
-
-th{
-text-align:left;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:15px;
-}
-
-.badge{
-padding:4px 8px;
-background:#222;
-border-radius:5px;
-font-size:12px;
-}
-
-#map{
-height:300px;
-border-radius:10px;
-}
-
-.center{
-text-align:center;
-}
-
-.hidden{
-display:none;
-}
-
-@media(max-width:700px){
-nav{
-flex-direction:column;
-gap:8px;
-}
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#0b0f1a;color:#fff;min-height:100vh}
+nav{display:flex;justify-content:space-between;align-items:center;padding:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(10px)}
+nav a{color:#00e1ff;text-decoration:none;margin-left:10px}
+.container{max-width:1100px;margin:auto;padding:20px}
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:20px;border-radius:12px;margin-bottom:20px}
+input,button{width:100%;padding:10px;margin:8px 0;border:none;border-radius:6px}
+input{background:#111826;color:#fff}
+button{background:linear-gradient(45deg,#00e1ff,#0077ff);color:#fff;font-weight:bold;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:13px}
+#map{height:300px;border-radius:10px}
+.center{text-align:center}
+.small{font-size:12px;color:#aaa}
 </style>
 </head>
 
 <body>
 
 <nav>
-<div class="logo">TMPL PRO</div>
+<div>TMPL ULTIMATE</div>
 <div>
-<a href="#">Home</a> |
-<a href="#login">Login</a> |
+<a href="#">Home</a>
+<a href="#login">Login</a>
 <a href="#register">Register</a>
 </div>
 </nav>
@@ -161,80 +54,69 @@ messagingSenderId: "383728687521",
 appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app=initializeApp(firebaseConfig)
+const db=getDatabase(app)
 
-const walletRegex=/^0x[a-fA-F0-9]{40}$/;
+const walletRegex=/^0x[a-fA-F0-9]{40}$/
 
 const routes={
 "#":landing,
 "#login":loginPage,
 "#register":registerPage,
-"#user-dashboard":userDashboard,
-"#admin-dashboard":adminDashboard
-};
+"#user":userDashboard,
+"#admin":adminDashboard
+}
 
-window.addEventListener("hashchange",router);
-router();
+window.addEventListener("hashchange",router)
+router()
 
 function router(){
-const hash=location.hash||"#";
-(routes[hash]||landing)();
+(routes[location.hash||"#"]||landing)()
 }
 
 function landing(){
-
 appDiv().innerHTML=`
 <div class="card center">
-<h2>TMPL Pro Ecosystem</h2>
-<p>Decentralized investment platform with multi-level referral rewards.</p>
+<h2>TMPL Ultimate Web3 Platform</h2>
+<p>Crypto investment with auto rewards & 15 level referrals</p>
 <br>
 <a href="#register"><button>Register</button></a>
 <a href="#login"><button>Login</button></a>
-</div>
-`;
-
+</div>`
 }
 
 function registerPage(){
 
+const refPhone=(location.hash.includes("ref=")?location.hash.split("ref=")[1]:"")
+
 appDiv().innerHTML=`
 <div class="card">
-<h2>Register</h2>
+<h2>Create Account</h2>
 
-<input id="name" placeholder="Name">
-<input id="phone" placeholder="Phone (User ID)">
-<input id="wallet" placeholder="BEP20 Wallet">
+<input id="name" placeholder="Full name">
+<input id="phone" placeholder="Phone number">
+<input id="wallet" placeholder="BEP20 wallet address">
 <input id="password" type="password" placeholder="Password">
-<input id="ref" placeholder="Referral Phone (optional)">
-
-<label><input type="checkbox" id="terms"> Accept Terms</label>
-
+<input id="ref" placeholder="Referral phone" value="${refPhone}">
 <button onclick="registerUser()">Register</button>
 
-</div>
-`;
-
+</div>`
 }
 
 window.registerUser=async()=>{
 
-const name=v("name");
-const phone=v("phone");
-const wallet=v("wallet");
-const password=v("password");
-const referrer=v("ref");
+const name=v("name")
+const phone=v("phone")
+const wallet=v("wallet")
+const password=v("password")
+const referrer=v("ref")
 
-if(!walletRegex.test(wallet))return alert("Invalid wallet");
+if(!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet")
 
-const snap=await get(ref(db,"users/"+phone));
-
-if(snap.exists())return alert("User exists");
-
-const loc=randomLocation();
+const userSnap=await get(ref(db,"users/"+phone))
+if(userSnap.exists()) return alert("User exists")
 
 await set(ref(db,"users/"+phone),{
-
 name,
 wallet,
 password:btoa(password),
@@ -243,392 +125,394 @@ investment:0,
 locked:0,
 lockDate:0,
 referrer:referrer||"",
-referrals:[],
-investments:[],
-withdrawals:[],
-location:loc,
+location:randomLocation(),
 createdAt:Date.now()
+})
 
-});
-
-alert("Registered");
-
-location.hash="#login";
-
+alert("Registration successful")
+location.hash="#login"
 }
 
 function loginPage(){
-
 appDiv().innerHTML=`
 <div class="card">
 <h2>Login</h2>
+
 <input id="phone" placeholder="Phone">
 <input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-</div>
-`;
 
+<button onclick="login()">Login</button>
+</div>`
 }
 
 window.login=async()=>{
 
-const phone=v("phone");
-const pass=v("password");
+const phone=v("phone")
+const pass=v("password")
 
 if(phone==="admin" && pass==="admin123"){
-localStorage.setItem("admin","1");
-location.hash="#admin-dashboard";
-return;
+localStorage.setItem("admin","1")
+location.hash="#admin"
+return
 }
 
-const snap=await get(ref(db,"users/"+phone));
+const snap=await get(ref(db,"users/"+phone))
+if(!snap.exists()) return alert("User not found")
 
-if(!snap.exists())return alert("User not found");
+const user=snap.val()
 
-const user=snap.val();
+if(atob(user.password)!==pass) return alert("Wrong password")
 
-if(atob(user.password)!==pass)return alert("Wrong password");
+localStorage.setItem("user",phone)
 
-localStorage.setItem("user",phone);
-
-location.hash="#user-dashboard";
-
+location.hash="#user"
 }
 
 function userDashboard(){
 
-const phone=localStorage.getItem("user");
-
-if(!phone)return location.hash="#login";
+const phone=localStorage.getItem("user")
+if(!phone) return location.hash="#login"
 
 onValue(ref(db,"users/"+phone),snap=>{
 
-const u=snap.val();
-
-const refLink=location.origin+location.pathname+"#ref="+phone;
+const u=snap.val()
 
 appDiv().innerHTML=`
 
 <div class="grid">
 
 <div class="card">
-<h3>Wallet</h3>
-<p>${u.wallet}</p>
-</div>
-
-<div class="card">
 <h3>Balance</h3>
-<p>${u.balance||0} TMPL</p>
+${Number(u.balance||0).toFixed(2)} TMPL
 </div>
 
 <div class="card">
 <h3>Total Investment</h3>
-<p>${u.investment||0} USDT</p>
+${u.investment||0} USDT
 </div>
 
 <div class="card">
 <h3>Locked</h3>
-<p>${u.locked||0} TMPL</p>
+${Number(u.locked||0).toFixed(2)} TMPL
 </div>
 
+<div class="card">
+<h3>Wallet</h3>
+<div class="small">${u.wallet}</div>
+</div>
+
+</div>
+
+<div class="card">
+<h3>Invest</h3>
+<input id="invest" placeholder="USDT amount">
+<button onclick="invest()">Submit Investment</button>
+</div>
+
+<div class="card">
+<h3>Withdraw</h3>
+<input id="withdraw" placeholder="TMPL amount">
+<button onclick="withdraw()">Request Withdrawal</button>
 </div>
 
 <div class="card">
 <h3>Referral Link</h3>
-<p>${refLink}</p>
+${location.origin+location.pathname+"#register?ref="+phone}
 </div>
 
 <div class="card">
-
-<h3>Invest</h3>
-
-<input id="investAmount" placeholder="USDT amount">
-<button onclick="invest()">Submit Investment</button>
-
-</div>
-
-<div class="card">
-<h3>Geology View</h3>
+<h3>Team Map</h3>
 <div id="map"></div>
 </div>
 
-`;
+`
 
-loadMap();
+autoRelease(phone,u)
 
-});
+setTimeout(loadMap,400)
 
+})
 }
 
 window.invest=async()=>{
 
-const phone=localStorage.getItem("user");
-const amount=parseFloat(v("investAmount"));
+const phone=localStorage.getItem("user")
+const amount=parseFloat(v("invest"))
 
-if(!amount)return;
+if(!amount) return alert("Enter amount")
 
-const price=await getPrice();
-
-const tmpl=amount/price;
+const price=await getPrice()
+const tmpl=Number((amount/price).toFixed(2))
 
 await set(ref(db,"investments/pending/"+phone),{
-
 amountUSDT:amount,
 tmplAmount:tmpl,
-timestamp:Date.now(),
-status:"pending"
+timestamp:Date.now()
+})
 
-});
-
-alert("Investment submitted");
-
+alert("Investment submitted for approval")
 }
 
-async function getPrice(){
+window.withdraw=async()=>{
 
-const snap=await get(ref(db,"config/tmplPrice"));
+const phone=localStorage.getItem("user")
+const amount=parseFloat(v("withdraw"))
 
-if(snap.exists())return snap.val();
+await set(ref(db,"withdrawals/pending/"+phone),{
+amount,
+timestamp:Date.now()
+})
 
-return 0.0002;
-
+alert("Withdrawal request submitted")
 }
 
 function adminDashboard(){
 
-if(!localStorage.getItem("admin"))return location.hash="#login";
+if(!localStorage.getItem("admin")) return location.hash="#login"
 
 onValue(ref(db,"users"),snap=>{
 
-const users=snap.val()||{};
+let rows=""
 
-let rows="";
-
-Object.keys(users).forEach(p=>{
-
-const u=users[p];
+snap.forEach(s=>{
+const p=s.key
+const u=s.val()
 
 rows+=`
 <tr>
 <td>${p}</td>
 <td>${u.name}</td>
-<td>${u.wallet}</td>
 <td>${u.balance}</td>
 <td>${u.investment}</td>
 <td>
-<button onclick="delUser('${p}')">Delete</button>
+<button onclick="deleteUser('${p}')">Delete</button>
 </td>
-</tr>
-`;
-
-});
+</tr>`
+})
 
 appDiv().innerHTML=`
 
 <div class="card">
-
 <h2>Admin Dashboard</h2>
 
-<div class="grid">
-
-<div class="card">
-<h3>Update TMPL Price</h3>
-<input id="price">
-<button onclick="updatePrice()">Update</button>
-</div>
-
-<div class="card">
-<h3>Liquidity Pool</h3>
-<p id="pool">Loading...</p>
-</div>
-
-</div>
+<input id="price" placeholder="Update TMPL price">
+<button onclick="updatePrice()">Update Price</button>
 
 </div>
 
 <div class="card">
+
 <h3>Users</h3>
 
 <table>
-
 <tr>
 <th>ID</th>
 <th>Name</th>
-<th>Wallet</th>
 <th>Balance</th>
 <th>Investment</th>
 <th>Action</th>
 </tr>
 
 ${rows}
-
 </table>
 
 </div>
 
 <div class="card">
-
 <h3>Pending Investments</h3>
-
-<div id="pending"></div>
-
+<div id="pendingInvest"></div>
 </div>
 
-`;
+<div class="card">
+<h3>Pending Withdrawals</h3>
+<div id="pendingWithdraw"></div>
+</div>
 
-loadPending();
+`
 
-});
+loadPendingInvest()
+loadPendingWithdraw()
 
-onValue(ref(db,"liquidityPool"),snap=>{
-document.getElementById("pool").innerText=snap.val()||0;
-});
-
+})
 }
 
-async function loadPending(){
+async function loadPendingInvest(){
 
-const snap=await get(ref(db,"investments/pending"));
-
-let html="";
+const snap=await get(ref(db,"investments/pending"))
+let html=""
 
 snap.forEach(s=>{
-
-const p=s.key;
-const d=s.val();
+const p=s.key
+const d=s.val()
 
 html+=`
 <div class="card">
-${p} invested ${d.amountUSDT} USDT
+${p} → ${d.amountUSDT} USDT
 <button onclick="approveInvest('${p}')">Approve</button>
-</div>
-`;
+</div>`
+})
 
-});
+document.getElementById("pendingInvest").innerHTML=html
+}
 
-document.getElementById("pending").innerHTML=html;
+async function loadPendingWithdraw(){
 
+const snap=await get(ref(db,"withdrawals/pending"))
+let html=""
+
+snap.forEach(s=>{
+const p=s.key
+const d=s.val()
+
+html+=`
+<div class="card">
+${p} → ${d.amount} TMPL
+<button onclick="approveWithdraw('${p}')">Approve</button>
+</div>`
+})
+
+document.getElementById("pendingWithdraw").innerHTML=html
 }
 
 window.approveInvest=async(phone)=>{
 
-const snap=await get(ref(db,"investments/pending/"+phone));
-const d=snap.val();
+const snap=await get(ref(db,"investments/pending/"+phone))
+const d=snap.val()
 
-const userSnap=await get(ref(db,"users/"+phone));
-const u=userSnap.val();
+const userSnap=await get(ref(db,"users/"+phone))
+const u=userSnap.val()
 
-const newInvestment=(u.investment||0)+d.amountUSDT;
-const newLocked=(u.locked||0)+d.tmplAmount;
+const newInvestment=(u.investment||0)+d.amountUSDT
+const newLocked=(u.locked||0)+d.tmplAmount
 
 await update(ref(db,"users/"+phone),{
 investment:newInvestment,
 locked:newLocked,
-lockDate:Date.now()
-});
+lockDate:u.lockDate||Date.now()
+})
 
-await distributeReferral(phone,d.amountUSDT);
+await distributeReferral(phone,d.amountUSDT)
 
-const poolSnap=await get(ref(db,"liquidityPool"));
-const pool=(poolSnap.val()||0)+d.amountUSDT;
+const poolSnap=await get(ref(db,"liquidityPool"))
+const pool=(poolSnap.val()||0)+d.amountUSDT
+await set(ref(db,"liquidityPool"),pool)
 
-await set(ref(db,"liquidityPool"),pool);
+await remove(ref(db,"investments/pending/"+phone))
 
-await remove(ref(db,"investments/pending/"+phone));
+alert("Investment approved")
+}
 
-alert("Approved");
+window.approveWithdraw=async(phone)=>{
 
+const snap=await get(ref(db,"withdrawals/pending/"+phone))
+const d=snap.val()
+
+const userSnap=await get(ref(db,"users/"+phone))
+const u=userSnap.val()
+
+if(u.balance<d.amount) return alert("Insufficient balance")
+
+await update(ref(db,"users/"+phone),{
+balance:u.balance-d.amount
+})
+
+await remove(ref(db,"withdrawals/pending/"+phone))
+
+alert("Withdrawal approved")
 }
 
 async function distributeReferral(phone,amount){
 
-const levels=[10,8,5,3,2,1.5,1,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1];
+const levels=[10,8,5,3,2,1.5,1,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
 
-let current=phone;
+let current=phone
+
+const price=await getPrice()
+const tmpl=amount/price
 
 for(let i=0;i<15;i++){
 
-const snap=await get(ref(db,"users/"+current));
+const s=await get(ref(db,"users/"+current))
+if(!s.exists()) break
 
-if(!snap.exists())break;
+const referrer=s.val().referrer
+if(!referrer) break
 
-const referrer=snap.val().referrer;
+const rSnap=await get(ref(db,"users/"+referrer))
+const r=rSnap.val()
 
-if(!referrer)break;
+const bonus=tmpl*(levels[i]/100)
 
-const bonus=amount*(levels[i]/100);
+await update(ref(db,"users/"+referrer),{
+balance:Number((r.balance+bonus).toFixed(2))
+})
 
-const refSnap=await get(ref(db,"users/"+referrer));
-const bal=(refSnap.val().balance||0)+bonus;
-
-await update(ref(db,"users/"+referrer),{balance:bal});
-
-current=referrer;
+current=referrer
 
 }
+}
 
+function autoRelease(phone,u){
+
+if(!u.lockDate || !u.locked) return
+
+const days=(Date.now()-u.lockDate)/(1000*60*60*24)
+
+if(days>=30){
+
+const release=u.locked*0.05
+
+update(ref(db,"users/"+phone),{
+balance:(u.balance||0)+release,
+locked:u.locked-release,
+lockDate:Date.now()
+})
+
+}
+}
+
+async function getPrice(){
+const s=await get(ref(db,"config/tmplPrice"))
+return s.exists()?s.val():0.0002
 }
 
 window.updatePrice=async()=>{
-
-const price=parseFloat(v("price"));
-
-await set(ref(db,"config/tmplPrice"),price);
-
-alert("Price updated");
-
+const p=parseFloat(v("price"))
+await set(ref(db,"config/tmplPrice"),p)
+alert("Price updated")
 }
 
-window.delUser=async(p)=>{
-
-await remove(ref(db,"users/"+p));
-
+window.deleteUser=async(id)=>{
+await remove(ref(db,"users/"+id))
 }
 
 function loadMap(){
 
-setTimeout(()=>{
+const map=L.map("map").setView([20,0],2)
 
-const map=L.map("map").setView([20,0],2);
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
 
 onValue(ref(db,"users"),snap=>{
 
 snap.forEach(s=>{
-
-const u=s.val();
-
+const u=s.val()
 if(u.location){
-
-L.marker([u.location.lat,u.location.lng]).addTo(map);
-
+L.marker([u.location.lat,u.location.lng]).addTo(map)
 }
+})
 
-});
-
-});
-
-},500);
-
+})
 }
 
 function randomLocation(){
-
 return{
 lat:(Math.random()*140)-70,
 lng:(Math.random()*360)-180
-};
-
+}
 }
 
-function v(id){
-return document.getElementById(id).value.trim();
-}
-
-function appDiv(){
-return document.getElementById("app");
-}
+function v(id){return document.getElementById(id).value.trim()}
+function appDiv(){return document.getElementById("app")}
 
 </script>
 
