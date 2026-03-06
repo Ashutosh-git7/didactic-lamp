@@ -221,15 +221,15 @@ ${location.origin+location.pathname+"#register?ref="+phone}
 </div>
 
 <div class="card">
-<h3>Direct Referrals</h3>
-<div id="refList"></div>
+<h3>Team Map</h3>
+<div id="map"></div>
 </div>
 
 `
 
 autoRelease(phone,u)
 
-loadReferrals(phone)
+setTimeout(loadMap,400)
 
 })
 }
@@ -347,7 +347,7 @@ const d=s.val()
 
 html+=`
 <div class="card">
-${p} ? ${d.amountUSDT} USDT
+${p} → ${d.amountUSDT} USDT
 <button onclick="approveInvest('${p}')">Approve</button>
 </div>`
 })
@@ -364,17 +364,12 @@ snap.forEach(s=>{
 const p=s.key
 const d=s.val()
 
-const userSnap=await get(ref(db,"users/"+p))
-const wallet=userSnap.val().wallet
-
 html+=`
 <div class="card">
-User: ${p} <br>
-Wallet: ${wallet} <br>
-Amount: ${d.amount} TMPL
-<br>
+${p} → ${d.amount} TMPL
 <button onclick="approveWithdraw('${p}')">Approve</button>
 </div>`
+})
 
 document.getElementById("pendingWithdraw").innerHTML=html
 }
@@ -491,25 +486,18 @@ window.deleteUser=async(id)=>{
 await remove(ref(db,"users/"+id))
 }
 
-async function loadReferrals(phone){
+function loadMap(){
 
-const snap=await get(ref(db,"users"))
-let html=""
+const map=L.map("map").setView([20,0],2)
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
+
+onValue(ref(db,"users"),snap=>{
 
 snap.forEach(s=>{
 const u=s.val()
-
-if(u.referrer===phone){
-html+=`
-<div class="card">
-${u.name} <br>
-<span class="small">${s.key}</span>
-</div>`
-}
-})
-
-document.getElementById("refList").innerHTML=
-html || "No referrals yet"
+if(u.location){
+L.marker([u.location.lat,u.location.lng]).addTo(map)
 }
 })
 
