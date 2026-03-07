@@ -570,6 +570,39 @@ localStorage.removeItem("admin")
 location.hash="#login"
 }
 
+  function loadWithdrawHistory(phone){
+
+onValue(ref(db,"withdrawals/history/"+phone),snap=>{
+
+let list=[]
+
+snap.forEach(s=>{
+list.push(s.val())
+})
+
+list=list.reverse().slice(0,25)
+
+let html=""
+
+list.forEach(d=>{
+
+const date=new Date(d.time).toLocaleDateString()
+
+html+=`
+<div class="small">
+${date} → ${d.amount} TMPL
+</div>
+`
+
+})
+
+document.getElementById("withdrawHistory").innerHTML=
+html || "No withdrawals yet"
+
+})
+
+}
+
 function v(id){return document.getElementById(id).value.trim()}
 function appDiv(){return document.getElementById("app")}
 
