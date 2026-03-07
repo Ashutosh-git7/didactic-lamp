@@ -1,121 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TMPL Ultimate V2</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-
-body{
-background:#0b0f1a;
-color:#fff;
-min-height:100vh
-}
-
-nav{
-display:flex;
-justify-content:space-between;
-padding:15px;
-background:rgba(255,255,255,0.05)
-}
-
-nav a{
-color:#00e1ff;
-text-decoration:none;
-margin-left:10px
-}
-
-.container{
-max-width:1100px;
-margin:auto;
-padding:20px
-}
-
-.card{
-background:rgba(255,255,255,0.05);
-padding:20px;
-border-radius:12px;
-margin-bottom:20px;
-border:1px solid rgba(255,255,255,0.08)
-}
-
-input,button{
-width:100%;
-padding:10px;
-margin:8px 0;
-border:none;
-border-radius:6px
-}
-
-input{
-background:#111826;
-color:#fff
-}
-
-button{
-background:linear-gradient(45deg,#00e1ff,#0077ff);
-color:#fff;
-font-weight:bold;
-cursor:pointer
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:15px
-}
-
-table{
-width:100%;
-border-collapse:collapse
-}
-
-td,th{
-padding:8px;
-border-bottom:1px solid rgba(255,255,255,0.1);
-font-size:13px
-}
-
-#map{
-height:300px;
-border-radius:10px
-}
-
-.center{text-align:center}
-
+body{background:#0b0f1a;color:#fff}
+nav{display:flex;justify-content:space-between;padding:15px;background:#111826}
+nav a{color:#00e1ff;margin-left:10px;text-decoration:none}
+.container{max-width:1100px;margin:auto;padding:20px}
+.card{background:#111826;padding:20px;border-radius:10px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+input,button{width:100%;padding:10px;margin:6px 0;border:none;border-radius:6px}
+input{background:#0b0f1a;color:#fff}
+button{background:#0077ff;color:#fff;font-weight:bold;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid #333;font-size:13px}
+#map{height:300px}
 </style>
-
 </head>
 
 <body>
 
 <nav>
-
-<div>TMPL Ultimate V2</div>
-
+<div>TMPL Ultimate</div>
 <div>
-
 <a href="#">Home</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
-
 </div>
-
 </nav>
 
 <div class="container" id="app"></div>
 
 <script type="module">
 
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
-import {getDatabase,ref,set,get,update,remove,onValue} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
@@ -134,10 +59,10 @@ const walletRegex=/^0x[a-fA-F0-9]{40}$/
 
 const routes={
 "#":landing,
-"#login":loginPage,
-"#register":registerPage,
-"#user":userDashboard,
-"#admin":adminDashboard
+"#login":login,
+"#register":register,
+"#user":dashboard,
+"#admin":admin
 }
 
 window.addEventListener("hashchange",router)
@@ -158,24 +83,16 @@ return document.getElementById(id).value.trim()
 function landing(){
 
 appDiv().innerHTML=`
-
-<div class="card center">
-
-<h2>TMPL Ultimate Ecosystem</h2>
-
-<p>Decentralized Web3 Investment Platform</p>
-
-<br>
-
+<div class="card">
+<h2>TMPL Ultimate Web3 Platform</h2>
 <a href="#register"><button>Register</button></a>
 <a href="#login"><button>Login</button></a>
-
 </div>
-
 `
+
 }
 
-function registerPage(){
+function register(){
 
 appDiv().innerHTML=`
 
@@ -205,12 +122,10 @@ const password=v("password")
 const referrer=v("ref")
 
 if(!walletRegex.test(wallet))
-return alert("Invalid BEP20 wallet")
+return alert("Invalid wallet")
 
 const snap=await get(ref(db,"users/"+phone))
-
-if(snap.exists())
-return alert("User exists")
+if(snap.exists()) return alert("User exists")
 
 await set(ref(db,"users/"+phone),{
 
@@ -221,20 +136,21 @@ password:btoa(password),
 balance:0,
 investment:0,
 locked:0,
+lockDate:0,
 
 referrer:referrer||"",
+location:randomLocation(),
 
 created:Date.now()
 
 })
 
-alert("Registration success")
-
+alert("Registration successful")
 location.hash="#login"
 
 }
 
-function loginPage(){
+function login(){
 
 appDiv().innerHTML=`
 
@@ -245,37 +161,32 @@ appDiv().innerHTML=`
 <input id="phone" placeholder="Phone">
 <input id="password" type="password" placeholder="Password">
 
-<button onclick="login()">Login</button>
+<button onclick="loginUser()">Login</button>
 
 </div>
 
 `
-
 }
 
-window.login=async()=>{
+window.loginUser=async()=>{
 
 const phone=v("phone")
 const pass=v("password")
 
-if(phone==="admin" && pass==="Tmpl@Admin2026"){
+if(phone==="admin" && pass==="admin123"){
 
 localStorage.setItem("admin","1")
-
 location.hash="#admin"
-
 return
 
 }
 
 const snap=await get(ref(db,"users/"+phone))
+if(!snap.exists()) return alert("User not found")
 
-if(!snap.exists())
-return alert("User not found")
+const u=snap.val()
 
-const user=snap.val()
-
-if(atob(user.password)!==pass)
+if(atob(u.password)!==pass)
 return alert("Wrong password")
 
 localStorage.setItem("user",phone)
@@ -284,15 +195,16 @@ location.hash="#user"
 
 }
 
-function userDashboard(){
+function dashboard(){
 
 const phone=localStorage.getItem("user")
-
 if(!phone) return location.hash="#login"
 
 onValue(ref(db,"users/"+phone),snap=>{
 
 const u=snap.val()
+
+autoRelease(phone,u)
 
 appDiv().innerHTML=`
 
@@ -304,7 +216,7 @@ ${Number(u.balance).toFixed(2)} TMPL
 </div>
 
 <div class="card">
-<h3>Total Investment</h3>
+<h3>Investment</h3>
 ${u.investment} USDT
 </div>
 
@@ -339,7 +251,15 @@ ${Number(u.locked).toFixed(2)} TMPL
 
 <h3>Referral Link</h3>
 
-${location.origin+location.pathname+"#register&ref="+phone}
+${location.origin+location.pathname+"#register?ref="+phone}
+
+</div>
+
+<div class="card">
+
+<h3>Team Map</h3>
+
+<div id="map"></div>
 
 </div>
 
@@ -351,6 +271,8 @@ ${location.origin+location.pathname+"#register&ref="+phone}
 
 `
 
+setTimeout(loadMap,500)
+
 })
 
 }
@@ -360,12 +282,16 @@ window.invest=async()=>{
 const phone=localStorage.getItem("user")
 const amount=parseFloat(v("invest"))
 
-if(amount<50 || amount>500)
+if(amount<50||amount>500)
 return alert("Investment must be 50-500 USDT")
+
+const price=await getPrice()
+const tmpl=(amount/price)
 
 await set(ref(db,"investments/pending/"+phone),{
 
-amount,
+amountUSDT:amount,
+tmplAmount:tmpl,
 timestamp:Date.now()
 
 })
@@ -396,7 +322,7 @@ alert("Withdrawal request sent")
 
 }
 
-function adminDashboard(){
+function admin(){
 
 if(!localStorage.getItem("admin"))
 return location.hash="#login"
@@ -413,16 +339,11 @@ const u=s.val()
 rows+=`
 
 <tr>
-
 <td>${p}</td>
 <td>${u.name}</td>
 <td>${u.balance}</td>
 <td>${u.investment}</td>
-
-<td>
-<button onclick="deleteUser('${p}')">Delete</button>
-</td>
-
+<td><button onclick="deleteUser('${p}')">Delete</button></td>
 </tr>
 
 `
@@ -461,18 +382,84 @@ ${rows}
 
 }
 
-window.deleteUser=async(id)=>{
-
-await remove(ref(db,"users/"+id))
-
-}
-
 window.logout=()=>{
 
 localStorage.removeItem("user")
 localStorage.removeItem("admin")
 
 location.hash="#"
+
+}
+
+window.deleteUser=async(id)=>{
+
+await remove(ref(db,"users/"+id))
+
+}
+
+async function getPrice(){
+
+const s=await get(ref(db,"config/tmplPrice"))
+return s.exists()?s.val():0.0002
+
+}
+
+function autoRelease(phone,u){
+
+if(!u.lockDate||!u.locked) return
+
+const days=(Date.now()-u.lockDate)/(1000*60*60*24)
+
+if(days>=30){
+
+const release=u.locked*0.05
+
+update(ref(db,"users/"+phone),{
+
+balance:(u.balance||0)+release,
+locked:u.locked-release,
+lockDate:Date.now()
+
+})
+
+}
+
+}
+
+function loadMap(){
+
+if(!document.getElementById("map")) return
+
+const map=L.map("map").setView([20,0],2)
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
+
+onValue(ref(db,"users"),snap=>{
+
+snap.forEach(s=>{
+
+const u=s.val()
+
+if(u.location){
+
+L.marker([u.location.lat,u.location.lng]).addTo(map)
+
+}
+
+})
+
+})
+
+}
+
+function randomLocation(){
+
+return{
+
+lat:(Math.random()*140)-70,
+lng:(Math.random()*360)-180
+
+}
 
 }
 
