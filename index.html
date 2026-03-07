@@ -441,6 +441,11 @@ if(u.balance<d.amount) return alert("Insufficient balance")
 await update(ref(db,"users/"+phone),{
 balance:u.balance-d.amount
 })
+  await push(ref(db,"withdrawals/history/"+phone),{
+amount:d.amount,
+wallet:d.wallet,
+time:Date.now()
+})
 
 await remove(ref(db,"withdrawals/pending/"+phone))
 
