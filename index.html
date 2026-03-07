@@ -264,7 +264,9 @@ const phone=localStorage.getItem("user")
 const amount=parseFloat(v("withdraw"))
 
 if(!amount || amount<=0) return alert("Invalid amount")
-
+  
+const pending = await get(ref(db,"withdrawals/pending/"+phone))
+if(pending.exists()) return alert("Withdrawal already pending")
 const snap=await get(ref(db,"users/"+phone))
 const u=snap.val()
 
