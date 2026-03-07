@@ -258,6 +258,13 @@ window.withdraw=async()=>{
 const phone=localStorage.getItem("user")
 const amount=parseFloat(v("withdraw"))
 
+if(!amount || amount<=0) return alert("Invalid amount")
+
+const snap=await get(ref(db,"users/"+phone))
+const u=snap.val()
+
+if(amount>u.balance) return alert("Insufficient balance")
+
 await set(ref(db,"withdrawals/pending/"+phone),{
 amount,
 timestamp:Date.now()
