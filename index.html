@@ -495,6 +495,26 @@ const p=parseFloat(v("price"))
 await set(ref(db,"config/tmplPrice"),p)
 alert("Price updated")
 }
+  window.editUser = async(oldId)=>{
+
+const newId = prompt("Enter new user ID")
+
+if(!newId) return
+
+const snap = await get(ref(db,"users/"+oldId))
+if(!snap.exists()) return alert("User not found")
+
+const data = snap.val()
+
+// new id save
+await set(ref(db,"users/"+newId),data)
+
+// old id delete
+await remove(ref(db,"users/"+oldId))
+
+alert("User ID updated")
+
+}
 
 window.deleteUser=async(id)=>{
 await remove(ref(db,"users/"+id))
