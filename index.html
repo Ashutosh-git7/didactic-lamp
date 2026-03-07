@@ -1,58 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMPL Ultimate Ecosystem</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>TMPL Ultimate V2</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
+
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-body{background:#0b0f1a;color:#fff;min-height:100vh}
-nav{display:flex;justify-content:space-between;align-items:center;padding:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(10px)}
-nav a{color:#00e1ff;text-decoration:none;margin-left:10px}
-.container{max-width:1100px;margin:auto;padding:20px}
-.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:20px;border-radius:12px;margin-bottom:20px}
-input,button{width:100%;padding:10px;margin:8px 0;border:none;border-radius:6px}
-input{background:#111826;color:#fff}
-button{background:linear-gradient(45deg,#00e1ff,#0077ff);color:#fff;font-weight:bold;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
-table{width:100%;border-collapse:collapse}
-td,th{padding:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:13px}
-#map{height:300px;border-radius:10px}
+
+body{
+background:#0b0f1a;
+color:#fff;
+min-height:100vh
+}
+
+nav{
+display:flex;
+justify-content:space-between;
+padding:15px;
+background:rgba(255,255,255,0.05)
+}
+
+nav a{
+color:#00e1ff;
+text-decoration:none;
+margin-left:10px
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+padding:20px
+}
+
+.card{
+background:rgba(255,255,255,0.05);
+padding:20px;
+border-radius:12px;
+margin-bottom:20px;
+border:1px solid rgba(255,255,255,0.08)
+}
+
+input,button{
+width:100%;
+padding:10px;
+margin:8px 0;
+border:none;
+border-radius:6px
+}
+
+input{
+background:#111826;
+color:#fff
+}
+
+button{
+background:linear-gradient(45deg,#00e1ff,#0077ff);
+color:#fff;
+font-weight:bold;
+cursor:pointer
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:15px
+}
+
+table{
+width:100%;
+border-collapse:collapse
+}
+
+td,th{
+padding:8px;
+border-bottom:1px solid rgba(255,255,255,0.1);
+font-size:13px
+}
+
+#map{
+height:300px;
+border-radius:10px
+}
+
 .center{text-align:center}
-.small{font-size:12px;color:#aaa}
+
 </style>
+
 </head>
 
 <body>
 
 <nav>
-<div>TMPL ULTIMATE</div>
+
+<div>TMPL Ultimate V2</div>
+
 <div>
+
 <a href="#">Home</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
+
 </div>
+
 </nav>
 
 <div class="container" id="app"></div>
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, update, remove, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
+import {getDatabase,ref,set,get,update,remove,onValue} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"
 
-const firebaseConfig = {
-apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
-authDomain: "tmpl-cd770.firebaseapp.com",
-databaseURL: "https://tmpl-cd770-default-rtdb.firebaseio.com/",
-projectId: "tmpl-cd770",
-storageBucket: "tmpl-cd770.firebasestorage.app",
-messagingSenderId: "383728687521",
-appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
-};
+const firebaseConfig={
+apiKey:"AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
+authDomain:"tmpl-cd770.firebaseapp.com",
+databaseURL:"https://tmpl-cd770-default-rtdb.firebaseio.com/",
+projectId:"tmpl-cd770",
+storageBucket:"tmpl-cd770.appspot.com",
+messagingSenderId:"383728687521",
+appId:"1:383728687521:web:b3ac6cd7fde979cb8b13e0"
+}
 
 const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
@@ -74,33 +147,53 @@ function router(){
 (routes[location.hash||"#"]||landing)()
 }
 
+function appDiv(){
+return document.getElementById("app")
+}
+
+function v(id){
+return document.getElementById(id).value.trim()
+}
+
 function landing(){
+
 appDiv().innerHTML=`
+
 <div class="card center">
-<h2>TMPL Ultimate Web3 Platform</h2>
-<p>Crypto investment with auto rewards & 15 level referrals</p>
+
+<h2>TMPL Ultimate Ecosystem</h2>
+
+<p>Decentralized Web3 Investment Platform</p>
+
 <br>
+
 <a href="#register"><button>Register</button></a>
 <a href="#login"><button>Login</button></a>
-</div>`
+
+</div>
+
+`
 }
 
 function registerPage(){
 
-const refPhone=(location.hash.includes("ref=")?location.hash.split("ref=")[1]:"")
-
 appDiv().innerHTML=`
+
 <div class="card">
+
 <h2>Create Account</h2>
 
-<input id="name" placeholder="Full name">
-<input id="phone" placeholder="Phone number">
-<input id="wallet" placeholder="BEP20 wallet address">
+<input id="name" placeholder="Full Name">
+<input id="phone" placeholder="Phone">
+<input id="wallet" placeholder="BEP20 Wallet">
 <input id="password" type="password" placeholder="Password">
-<input id="ref" placeholder="Referral phone" value="${refPhone}">
+<input id="ref" placeholder="Referral Phone">
+
 <button onclick="registerUser()">Register</button>
 
-</div>`
+</div>
+
+`
 }
 
 window.registerUser=async()=>{
@@ -111,38 +204,53 @@ const wallet=v("wallet")
 const password=v("password")
 const referrer=v("ref")
 
-if(!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet")
+if(!walletRegex.test(wallet))
+return alert("Invalid BEP20 wallet")
 
-const userSnap=await get(ref(db,"users/"+phone))
-if(userSnap.exists()) return alert("User exists")
+const snap=await get(ref(db,"users/"+phone))
+
+if(snap.exists())
+return alert("User exists")
 
 await set(ref(db,"users/"+phone),{
+
 name,
 wallet,
 password:btoa(password),
+
 balance:0,
 investment:0,
 locked:0,
-lockDate:0,
+
 referrer:referrer||"",
-location:randomLocation(),
-createdAt:Date.now()
+
+created:Date.now()
+
 })
 
-alert("Registration successful")
+alert("Registration success")
+
 location.hash="#login"
+
 }
 
 function loginPage(){
+
 appDiv().innerHTML=`
+
 <div class="card">
+
 <h2>Login</h2>
 
 <input id="phone" placeholder="Phone">
 <input id="password" type="password" placeholder="Password">
 
 <button onclick="login()">Login</button>
-</div>`
+
+</div>
+
+`
+
 }
 
 window.login=async()=>{
@@ -150,27 +258,36 @@ window.login=async()=>{
 const phone=v("phone")
 const pass=v("password")
 
-if(phone==="admin" && pass==="admin123"){
+if(phone==="admin" && pass==="Tmpl@Admin2026"){
+
 localStorage.setItem("admin","1")
+
 location.hash="#admin"
+
 return
+
 }
 
 const snap=await get(ref(db,"users/"+phone))
-if(!snap.exists()) return alert("User not found")
+
+if(!snap.exists())
+return alert("User not found")
 
 const user=snap.val()
 
-if(atob(user.password)!==pass) return alert("Wrong password")
+if(atob(user.password)!==pass)
+return alert("Wrong password")
 
 localStorage.setItem("user",phone)
 
 location.hash="#user"
+
 }
 
 function userDashboard(){
 
 const phone=localStorage.getItem("user")
+
 if(!phone) return location.hash="#login"
 
 onValue(ref(db,"users/"+phone),snap=>{
@@ -183,55 +300,59 @@ appDiv().innerHTML=`
 
 <div class="card">
 <h3>Balance</h3>
-${Number(u.balance||0).toFixed(2)} TMPL
+${Number(u.balance).toFixed(2)} TMPL
 </div>
 
 <div class="card">
 <h3>Total Investment</h3>
-${u.investment||0} USDT
+${u.investment} USDT
 </div>
 
 <div class="card">
 <h3>Locked</h3>
-${Number(u.locked||0).toFixed(2)} TMPL
-</div>
-
-<div class="card">
-<h3>Wallet</h3>
-<div class="small">${u.wallet}</div>
+${Number(u.locked).toFixed(2)} TMPL
 </div>
 
 </div>
 
 <div class="card">
+
 <h3>Invest</h3>
-<input id="invest" placeholder="USDT amount">
-<button onclick="invest()">Submit Investment</button>
+
+<input id="invest" placeholder="50-500 USDT">
+
+<button onclick="invest()">Submit</button>
+
 </div>
 
 <div class="card">
+
 <h3>Withdraw</h3>
-<input id="withdraw" placeholder="TMPL amount">
-<button onclick="withdraw()">Request Withdrawal</button>
+
+<input id="withdraw">
+
+<button onclick="withdraw()">Request</button>
+
 </div>
 
 <div class="card">
+
 <h3>Referral Link</h3>
-${location.origin+location.pathname+"#register?ref="+phone}
+
+${location.origin+location.pathname+"#register&ref="+phone}
+
 </div>
 
 <div class="card">
-<h3>Team Map</h3>
-<div id="map"></div>
+
+<button onclick="logout()">Logout</button>
+
 </div>
 
 `
 
-autoRelease(phone,u)
-
-setTimeout(loadMap,400)
-
 })
+
 }
 
 window.invest=async()=>{
@@ -239,18 +360,18 @@ window.invest=async()=>{
 const phone=localStorage.getItem("user")
 const amount=parseFloat(v("invest"))
 
-if(!amount) return alert("Enter amount")
-
-const price=await getPrice()
-const tmpl=Number((amount/price).toFixed(2))
+if(amount<50 || amount>500)
+return alert("Investment must be 50-500 USDT")
 
 await set(ref(db,"investments/pending/"+phone),{
-amountUSDT:amount,
-tmplAmount:tmpl,
+
+amount,
 timestamp:Date.now()
+
 })
 
-alert("Investment submitted for approval")
+alert("Investment submitted")
+
 }
 
 window.withdraw=async()=>{
@@ -258,53 +379,68 @@ window.withdraw=async()=>{
 const phone=localStorage.getItem("user")
 const amount=parseFloat(v("withdraw"))
 
+const snap=await get(ref(db,"users/"+phone))
+const u=snap.val()
+
+if(amount>u.balance)
+return alert("Insufficient balance")
+
 await set(ref(db,"withdrawals/pending/"+phone),{
+
 amount,
 timestamp:Date.now()
+
 })
 
-alert("Withdrawal request submitted")
+alert("Withdrawal request sent")
+
 }
 
 function adminDashboard(){
 
-if(!localStorage.getItem("admin")) return location.hash="#login"
+if(!localStorage.getItem("admin"))
+return location.hash="#login"
 
 onValue(ref(db,"users"),snap=>{
 
 let rows=""
 
 snap.forEach(s=>{
+
 const p=s.key
 const u=s.val()
 
 rows+=`
+
 <tr>
+
 <td>${p}</td>
 <td>${u.name}</td>
 <td>${u.balance}</td>
 <td>${u.investment}</td>
+
 <td>
 <button onclick="deleteUser('${p}')">Delete</button>
 </td>
-</tr>`
+
+</tr>
+
+`
+
 })
 
 appDiv().innerHTML=`
 
 <div class="card">
-<h2>Admin Dashboard</h2>
 
-<input id="price" placeholder="Update TMPL price">
-<button onclick="updatePrice()">Update Price</button>
+<h2>Admin Dashboard</h2>
 
 </div>
 
 <div class="card">
 
-<h3>Users</h3>
-
 <table>
+
 <tr>
 <th>ID</th>
 <th>Name</th>
@@ -314,205 +450,31 @@ appDiv().innerHTML=`
 </tr>
 
 ${rows}
+
 </table>
 
 </div>
 
-<div class="card">
-<h3>Pending Investments</h3>
-<div id="pendingInvest"></div>
-</div>
-
-<div class="card">
-<h3>Pending Withdrawals</h3>
-<div id="pendingWithdraw"></div>
-</div>
-
 `
 
-loadPendingInvest()
-loadPendingWithdraw()
-
-})
-}
-
-async function loadPendingInvest(){
-
-const snap=await get(ref(db,"investments/pending"))
-let html=""
-
-snap.forEach(s=>{
-const p=s.key
-const d=s.val()
-
-html+=`
-<div class="card">
-${p} → ${d.amountUSDT} USDT
-<button onclick="approveInvest('${p}')">Approve</button>
-</div>`
 })
 
-document.getElementById("pendingInvest").innerHTML=html
-}
-
-async function loadPendingWithdraw(){
-
-const snap=await get(ref(db,"withdrawals/pending"))
-let html=""
-
-snap.forEach(s=>{
-const p=s.key
-const d=s.val()
-
-html+=`
-<div class="card">
-${p} → ${d.amount} TMPL
-<button onclick="approveWithdraw('${p}')">Approve</button>
-</div>`
-})
-
-document.getElementById("pendingWithdraw").innerHTML=html
-}
-
-window.approveInvest=async(phone)=>{
-
-const snap=await get(ref(db,"investments/pending/"+phone))
-const d=snap.val()
-
-const userSnap=await get(ref(db,"users/"+phone))
-const u=userSnap.val()
-
-const newInvestment=(u.investment||0)+d.amountUSDT
-const newLocked=(u.locked||0)+d.tmplAmount
-
-await update(ref(db,"users/"+phone),{
-investment:newInvestment,
-locked:newLocked,
-lockDate:u.lockDate||Date.now()
-})
-
-await distributeReferral(phone,d.amountUSDT)
-
-const poolSnap=await get(ref(db,"liquidityPool"))
-const pool=(poolSnap.val()||0)+d.amountUSDT
-await set(ref(db,"liquidityPool"),pool)
-
-await remove(ref(db,"investments/pending/"+phone))
-
-alert("Investment approved")
-}
-
-window.approveWithdraw=async(phone)=>{
-
-const snap=await get(ref(db,"withdrawals/pending/"+phone))
-const d=snap.val()
-
-const userSnap=await get(ref(db,"users/"+phone))
-const u=userSnap.val()
-
-if(u.balance<d.amount) return alert("Insufficient balance")
-
-await update(ref(db,"users/"+phone),{
-balance:u.balance-d.amount
-})
-
-await remove(ref(db,"withdrawals/pending/"+phone))
-
-alert("Withdrawal approved")
-}
-
-async function distributeReferral(phone,amount){
-
-const levels=[10,8,5,3,2,1.5,1,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
-
-let current=phone
-
-const price=await getPrice()
-const tmpl=amount/price
-
-for(let i=0;i<15;i++){
-
-const s=await get(ref(db,"users/"+current))
-if(!s.exists()) break
-
-const referrer=s.val().referrer
-if(!referrer) break
-
-const rSnap=await get(ref(db,"users/"+referrer))
-const r=rSnap.val()
-
-const bonus=tmpl*(levels[i]/100)
-
-await update(ref(db,"users/"+referrer),{
-balance:Number((r.balance+bonus).toFixed(2))
-})
-
-current=referrer
-
-}
-}
-
-function autoRelease(phone,u){
-
-if(!u.lockDate || !u.locked) return
-
-const days=(Date.now()-u.lockDate)/(1000*60*60*24)
-
-if(days>=30){
-
-const release=u.locked*0.05
-
-update(ref(db,"users/"+phone),{
-balance:(u.balance||0)+release,
-locked:u.locked-release,
-lockDate:Date.now()
-})
-
-}
-}
-
-async function getPrice(){
-const s=await get(ref(db,"config/tmplPrice"))
-return s.exists()?s.val():0.0002
-}
-
-window.updatePrice=async()=>{
-const p=parseFloat(v("price"))
-await set(ref(db,"config/tmplPrice"),p)
-alert("Price updated")
 }
 
 window.deleteUser=async(id)=>{
+
 await remove(ref(db,"users/"+id))
+
 }
 
-function loadMap(){
+window.logout=()=>{
 
-const map=L.map("map").setView([20,0],2)
+localStorage.removeItem("user")
+localStorage.removeItem("admin")
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
+location.hash="#"
 
-onValue(ref(db,"users"),snap=>{
-
-snap.forEach(s=>{
-const u=s.val()
-if(u.location){
-L.marker([u.location.lat,u.location.lng]).addTo(map)
 }
-})
-
-})
-}
-
-function randomLocation(){
-return{
-lat:(Math.random()*140)-70,
-lng:(Math.random()*360)-180
-}
-}
-
-function v(id){return document.getElementById(id).value.trim()}
-function appDiv(){return document.getElementById("app")}
 
 </script>
 
