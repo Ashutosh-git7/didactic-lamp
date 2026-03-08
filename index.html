@@ -278,27 +278,31 @@ timestamp:Date.now()
 alert("Investment submitted for approval")
 }
 
-window.withdraw=async()=>{
+window.withdraw = async () => {
+  const phone = localStorage.getItem("user")
+  const amount = parseFloat(v("withdraw"))
 
-const phone=localStorage.getItem("user")
-const amount=parseFloat(v("withdraw"))
+  if (!amount || amount <= 0) return alert("Invalid amount")
 
-if(!amount || amount<=0) return alert("Invalid amount")
-  
-const pending = await get(ref(db,"withdrawals/pending/"+phone))
-if(pending.exists()) return alert("Withdrawal already pending")
-const snap=await get(ref(db,"users/"+phone))
-const u=snap.val()
+  const pending = await get(ref(db, "withdrawals/pending/" + phone))
+  if (pending.exists()) return alert("Withdrawal already pending")
 
-if(amount>u.balance) return alert("Insufficient balance")
+  const snap = await get(ref(db, "users/" + phone))
+  const u = snap.val()
 
-await set(ref(db,"withdrawals/pending/"+phone),{
-amount,
-wallet:u.wallet,
-timestamp:Date.now()
-})
+  // ✅ Block withdrawal if user never invested
+  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment")
 
-alert("Withdrawal request submitted")
+  // ✅ Only allow if requested amount <= released balance
+  if (amount > u.balance) return alert("Insufficient balance")
+
+  await set(ref(db, "withdrawals/pending/" + phone), {
+    amount,
+    wallet: u.wallet,
+    timestamp: Date.now()
+  })
+
+  alert("Withdrawal request submitted")
 }
 
 function adminDashboard(){
