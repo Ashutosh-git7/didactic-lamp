@@ -111,6 +111,16 @@ const password=v("password")
 const referrer=v("ref")
 
 if(!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet")
+  const usersSnap = await get(ref(db,"users"))
+let walletExists = false
+
+usersSnap.forEach(s=>{
+if(s.val().wallet === wallet){
+walletExists = true
+}
+})
+
+if(walletExists) return alert("This wallet is already registered")
 
 const userSnap=await get(ref(db,"users/"+phone))
 if(userSnap.exists()) return alert("User exists")
