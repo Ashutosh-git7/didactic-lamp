@@ -508,9 +508,13 @@ if(days>=30){
 
 const release=u.locked*0.05
 
+let newLocked=u.locked-release
+
+if(newLocked<0) newLocked=0
+
 update(ref(db,"users/"+phone),{
 balance:(u.balance||0)+release,
-locked:u.locked-release,
+locked:newLocked,
 lockDate:Date.now()
 })
 
