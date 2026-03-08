@@ -253,6 +253,19 @@ const amount=parseFloat(v("invest"))
 if(!amount) return alert("Enter amount")
 if(amount<20 || amount>250)
 return alert("Investment must be between 20 - 250 USDT")
+
+// pending investment check
+const pendingSnap = await get(ref(db,"investments/pending/"+phone))
+if(pendingSnap.exists())
+return alert("Your previous investment is still pending approval")
+
+// active investment check
+const userSnap = await get(ref(db,"users/"+phone))
+const u = userSnap.val()
+
+if(u.locked>0)
+return alert("You already have an active investment. Please wait until all tokens are released.")
+
 const price=await getPrice()
 const tmpl=Number((amount/price).toFixed(2))
 
