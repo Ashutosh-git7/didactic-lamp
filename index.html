@@ -531,24 +531,6 @@ window.deleteUser=async(id)=>{
 await remove(ref(db,"users/"+id))
 }
 
-function loadMap(){
-
-const map=L.map("map").setView([20,0],2)
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
-
-onValue(ref(db,"users"),snap=>{
-
-snap.forEach(s=>{
-const u=s.val()
-if(u.location){
-L.marker([u.location.lat,u.location.lng]).addTo(map)
-}
-})
-
-})
-}
-
 function randomLocation(){
 return{
 lat:(Math.random()*140)-70,
