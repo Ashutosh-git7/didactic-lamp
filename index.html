@@ -617,6 +617,39 @@ location.hash="#login"
 localStorage.removeItem("admin")
 location.hash="#login"
 }
+  
+  function loadInvestHistory(phone){
+
+onValue(ref(db,"investments/history/"+phone),snap=>{
+
+let list=[]
+
+snap.forEach(s=>{
+list.push(s.val())
+})
+
+list=list.reverse().slice(0,25)
+
+let html=""
+
+list.forEach(d=>{
+
+const date=new Date(d.time).toLocaleDateString()
+
+html+=`
+<div class="small">
+${date} → ${d.amountUSDT} USDT
+</div>
+`
+
+})
+
+document.getElementById("investHistory").innerHTML=
+html || "No investment yet"
+
+})
+
+}
 
   function loadWithdrawHistory(phone){
 
