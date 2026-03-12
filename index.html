@@ -410,12 +410,11 @@ async function loadPendingInvest(){
 const snap = await get(ref(db,"investments/pending"))
 let html=""
 
-snap.forEach(async s=>{
+for(const child of Object.entries(snap.val() || {})){
 
-const phone=s.key
-const d=s.val()
+const phone = child[0]
+const d = child[1]
 
-// user wallet fetch
 const userSnap = await get(ref(db,"users/"+phone))
 const user=userSnap.val()
 
@@ -428,10 +427,10 @@ html+=`
 <button onclick="approveInvest('${phone}')">Approve</button>
 <button onclick="rejectInvest('${phone}')">Reject</button>
 </div>`
-  
-document.getElementById("pendingInvest").innerHTML=html
 
-})
+}
+
+document.getElementById("pendingInvest").innerHTML=html || "No pending investments"
 
 }
 
