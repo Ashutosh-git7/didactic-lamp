@@ -400,21 +400,31 @@ loadPendingWithdraw()
 
 async function loadPendingInvest(){
 
-const snap=await get(ref(db,"investments/pending"))
+const snap = await get(ref(db,"investments/pending"))
 let html=""
 
-snap.forEach(s=>{
-const p=s.key
+snap.forEach(async s=>{
+
+const phone=s.key
 const d=s.val()
+
+// user wallet fetch
+const userSnap = await get(ref(db,"users/"+phone))
+const user=userSnap.val()
 
 html+=`
 <div class="card">
-${p} → ${d.amountUSDT} USDT
-<button onclick="approveInvest('${p}')">Approve</button>
+<b>User:</b> ${phone}<br>
+<b>Wallet:</b> ${user.wallet}<br>
+<b>Amount:</b> ${d.amountUSDT} USDT
+<br><br>
+<button onclick="approveInvest('${phone}')">Approve</button>
 </div>`
+  
+document.getElementById("pendingInvest").innerHTML=html
+
 })
 
-document.getElementById("pendingInvest").innerHTML=html
 }
 
 async function loadPendingWithdraw(){
