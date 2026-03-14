@@ -520,35 +520,37 @@ await remove(ref(db,"withdrawals/pending/"+phone))
 alert("Withdrawal approved")
 }
 
-async function distributeReferral(phone,amount){
+async function distributeReferral(phone, amount) {
+  const levels = [10, 8, 5, 3, 2, 1.5, 1, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  let current = phone;
 
-const levels=[10,8,5,3,2,1.5,1,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
+  const price = await getPrice();
+  const tmpl = amount / price;
 
-let current=phone
+  for (let i = 0; i < levels.length; i++) {
+    const s = await get(ref(db, "users/" + current));
+    if (!s.exists()) break;
 
-const price=await getPrice()
-const tmpl=amount/price
+    const referrer = s.val().referrer;
+    if (!referrer) break;
 
-for(let i=0;i<15;i++){
+    const bonus = tmpl * (levels[i] / 100);
 
-const s=await get(ref(db,"users/"+current))
-if(!s.exists()) break
+    // Use transaction to safely add bonus to referrer's balance
+    await runTransaction(ref(db, "users/" + referrer + "/balance"), (currentBalance) => {
+      return Math.round(((currentBalance || 0) + bonus) * 100) / 100;
+    });
 
-const referrer=s.val().referrer
-if(!referrer) break
+    // Optional: Track referral history per level
+    await push(ref(db, "users/" + referrer + "/referralHistory"), {
+      from: phone,
+      amount: Math.round(bonus * 100) / 100,
+      level: i + 1,
+      timestamp: Date.now()
+    });
 
-const rSnap=await get(ref(db,"users/"+referrer))
-const r=rSnap.val()
-
-const bonus=tmpl*(levels[i]/100)
-
-await update(ref(db,"users/"+referrer),{
-balance:Number((r.balance+bonus).toFixed(2))
-})
-
-current=referrer
-
-}
+    current = referrer;
+  }
 }
 
 function autoRelease(phone,u){
