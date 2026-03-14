@@ -520,66 +520,58 @@ await remove(ref(db,"withdrawals/pending/"+phone))
 alert("Withdrawal approved")
 }
 
-async function distributeReferral(phone, amount) {
-  const levels = [10, 8, 5, 3, 2, 1.5, 1, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
-  let current = phone;
+async function distributeReferral(phone,amount){
 
-  const price = await getPrice();
-  const tmpl = amount / price;
+const levels=[10,8,5,3,2,1.5,1,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
 
-  for (let i = 0; i < levels.length; i++) {
-    const s = await get(ref(db, "users/" + current));
-    if (!s.exists()) break;
+let current=phone
 
-    const referrer = s.val().referrer;
-    if (!referrer) break;
+const price=await getPrice()
+const tmpl=amount/price
 
-    const bonus = tmpl * (levels[i] / 100);
+for(let i=0;i<15;i++){
 
-    // Use transaction to safely add bonus to referrer's balance
-    await runTransaction(ref(db, "users/" + referrer + "/balance"), (currentBalance) => {
-      return Math.round(((currentBalance || 0) + bonus) * 100) / 100;
-    });
+const s=await get(ref(db,"users/"+current))
+if(!s.exists()) break
 
-    // Optional: Track referral history per level
-    await push(ref(db, "users/" + referrer + "/referralHistory"), {
-      from: phone,
-      amount: Math.round(bonus * 100) / 100,
-      level: i + 1,
-      timestamp: Date.now()
-    });
+const referrer=s.val().referrer
+if(!referrer) break
 
-    current = referrer;
-  }
+const rSnap=await get(ref(db,"users/"+referrer))
+const r=rSnap.val()
+
+const bonus=tmpl*(levels[i]/100)
+
+await update(ref(db,"users/"+referrer),{
+balance:Number((r.balance+bonus).toFixed(2))
+})
+
+current=referrer
+
+}
 }
 
-function autoRelease(phone, u) {
-  if (!u.lockDate || !u.locked) return;
+function autoRelease(phone,u){
 
-  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+if(!u.lockDate || !u.locked) return
 
-  if (days >= 30) {
-    const release = u.locked * 0.05;
+const days=(Date.now()-u.lockDate)/(1000*60*60*24)
 
-    const userRef = ref(db, "users/" + phone);
+if(days>=30){
 
-    // Transaction safe update
-    runTransaction(userRef, (currentData) => {
-      if (currentData) {
-        const newBalance = (currentData.balance || 0) + release;
-        let newLocked = currentData.locked - release;
-        if (newLocked < 0) newLocked = 0;
+const release=u.locked*0.05
 
-        return {
-          ...currentData,
-          balance: Math.round(newBalance * 100) / 100,
-          locked: Math.round(newLocked * 100) / 100,
-          lockDate: Date.now()
-        };
-      }
-      return currentData;
-    });
-  }
+let newLocked=u.locked-release
+
+if(newLocked<0) newLocked=0
+
+update(ref(db,"users/"+phone),{
+balance:(u.balance||0)+release,
+locked:newLocked,
+lockDate:Date.now()
+})
+
+}
 }
 
 async function getPrice(){
