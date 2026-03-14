@@ -553,27 +553,33 @@ async function distributeReferral(phone, amount) {
   }
 }
 
-function autoRelease(phone,u){
+function autoRelease(phone, u) {
+  if (!u.lockDate || !u.locked) return;
 
-if(!u.lockDate || !u.locked) return
+  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
 
-const days=(Date.now()-u.lockDate)/(1000*60*60*24)
+  if (days >= 30) {
+    const release = u.locked * 0.05;
 
-if(days>=30){
+    const userRef = ref(db, "users/" + phone);
 
-const release=u.locked*0.05
+    // Transaction safe update
+    runTransaction(userRef, (currentData) => {
+      if (currentData) {
+        const newBalance = (currentData.balance || 0) + release;
+        let newLocked = currentData.locked - release;
+        if (newLocked < 0) newLocked = 0;
 
-let newLocked=u.locked-release
-
-if(newLocked<0) newLocked=0
-
-update(ref(db,"users/"+phone),{
-balance:(u.balance||0)+release,
-locked:newLocked,
-lockDate:Date.now()
-})
-
-}
+        return {
+          ...currentData,
+          balance: Math.round(newBalance * 100) / 100,
+          locked: Math.round(newLocked * 100) / 100,
+          lockDate: Date.now()
+        };
+      }
+      return currentData;
+    });
+  }
 }
 
 async function getPrice(){
