@@ -575,6 +575,25 @@ lockDate:Date.now()
 }
 }
 
+  window.releaseLocked = async (phone) => {
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+
+  const u = snap.val();
+  if (!u.locked || u.locked <= 0) return alert("No locked tokens to release");
+
+  // Release full locked amount to balance
+  const releasedAmount = u.locked;
+
+  await update(ref(db, "users/" + phone), {
+    balance: (u.balance || 0) + releasedAmount,
+    locked: 0,
+    lockDate: 0 // reset lock date
+  });
+
+  alert(`Released ${releasedAmount} TMPL to ${phone}'s balance`);
+};
+
 async function getPrice(){
 const s=await get(ref(db,"config/tmplPrice"))
 return s.exists()?s.val():0.0002
