@@ -800,6 +800,22 @@ lockDate:0
 }
 }
 
+  async function checkCycleReset(phone){
+
+const snap = await get(ref(db,"users/"+phone))
+const u = snap.val()
+
+// ⭐ If tokens fully released → reset investment
+if((u.locked || 0) <= 0 && (u.investment || 0) > 0){
+
+await update(ref(db,"users/"+phone),{
+investment:0,
+lockDate:0
+})
+
+alert("User cycle completed. Ready for new investment.")
+}
+}
   window.releaseLocked = async (phone) => {
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return alert("User not found");
