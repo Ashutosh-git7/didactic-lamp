@@ -859,7 +859,11 @@ onValue(ref(db,"investments/history/"+phone),snap=>{
 let list=[]
 
 snap.forEach(s=>{
-list.push(s.val())
+const d=s.val()
+
+// ⭐ show ONLY real investments
+if(!d.type || d.type==="invest") list.push(d)
+
 })
 
 list=list.reverse().slice(0,25)
