@@ -630,6 +630,47 @@ await remove(ref(db,"investments/pending/"+phone))
 alert("Investment approved")
 }
 
+  window.approveUpgrade = async(phone)=>{
+
+const snap = await get(ref(db,"investments/upgrade/"+phone))
+if(!snap.exists()) return alert("Upgrade not found")
+
+const d = snap.val()
+
+const userSnap = await get(ref(db,"users/"+phone))
+const u = userSnap.val()
+
+// max limit safety
+if((u.investment || 0) + d.amountUSDT > 250){
+alert("Upgrade exceeds maximum limit")
+return
+}
+
+// ⭐ OLD LOCKED + NEW LOCKED MERGE
+const newLocked = (u.locked || 0) + d.tmplAmount
+
+await update(ref(db,"users/"+phone),{
+investment:(u.investment || 0) + d.amountUSDT,
+locked:newLocked,
+lockDate:Date.now() // ⭐ 30 days reset
+})
+
+// history save
+await push(ref(db,"investments/history/"+phone),{
+amountUSDT:d.amountUSDT,
+tmplAmount:d.tmplAmount,
+type:"upgrade",
+time:Date.now()
+})
+
+// referral income
+await distributeReferral(phone,d.amountUSDT)
+
+// remove request
+await remove(ref(db,"investments/upgrade/"+phone))
+
+alert("Upgrade approved & cycle restarted")
+}
 window.approveWithdraw=async(phone)=>{
 
 const snap=await get(ref(db,"withdrawals/pending/"+phone))
