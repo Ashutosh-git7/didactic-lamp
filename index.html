@@ -413,6 +413,11 @@ if(amount < 10) return alert("Minimum upgrade 10 USDT")
 const userSnap = await get(ref(db,"users/"+phone))
 const u = userSnap.val()
 
+// ⭐⭐⭐ ADD THIS BLOCK HERE ⭐⭐⭐
+// First investment mandatory before upgrade
+if((u.investment || 0) <= 0)
+return alert("First make your investment, then you can upgrade")
+
 // ⭐ Max limit check
 if((u.investment || 0) + amount > 250)
 return alert("Maximum total investment is 250 USDT")
