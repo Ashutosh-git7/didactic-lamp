@@ -816,23 +816,28 @@ lockDate:0
 alert("User cycle completed. Ready for new investment.")
 }
 }
+
   window.releaseLocked = async (phone) => {
-  const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User not found");
 
-  const u = snap.val();
-  if (!u.locked || u.locked <= 0) return alert("No locked tokens to release");
+const snap = await get(ref(db, "users/" + phone));
+if (!snap.exists()) return alert("User not found");
 
-  // Release full locked amount to balance
-  const releasedAmount = u.locked;
+const u = snap.val();
+if (!u.locked || u.locked <= 0) return alert("No locked tokens to release");
 
-  await update(ref(db, "users/" + phone), {
-    balance: (u.balance || 0) + releasedAmount,
-    locked: 0,
-    lockDate: 0 // reset lock date
-  });
+// release full locked tokens
+const releasedAmount = u.locked;
 
-  alert(`Released ${releasedAmount} TMPL to ${phone}'s balance`);
+await update(ref(db, "users/" + phone), {
+balance: (u.balance || 0) + releasedAmount,
+locked: 0,
+lockDate: 0,
+
+// ⭐⭐⭐ MAIN FIX ⭐⭐⭐
+investment: 0
+});
+
+alert("Full cycle completed. User can invest again.");
 };
 
 async function getPrice(){
