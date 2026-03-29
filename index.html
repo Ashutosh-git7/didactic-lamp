@@ -382,6 +382,40 @@ timestamp:Date.now()
 
 alert("Investment submitted for approval")
 }
+  window.upgrade = async ()=>{
+
+const phone = localStorage.getItem("user")
+const amount = parseFloat(v("upgradeAmount"))
+
+if(!amount) return alert("Enter amount")
+if(amount < 10) return alert("Minimum upgrade 10 USDT")
+
+// user data
+const userSnap = await get(ref(db,"users/"+phone))
+const u = userSnap.val()
+
+// ⭐ Max limit check
+if((u.investment || 0) + amount > 250)
+return alert("Maximum total investment is 250 USDT")
+
+// pending upgrade check
+const pendingSnap = await get(ref(db,"investments/upgrade/"+phone))
+if(pendingSnap.exists())
+return alert("Previous upgrade still pending approval")
+
+// price fetch
+const price = await getPrice()
+const tmpl = Number((amount/price).toFixed(2))
+
+// upgrade request save
+await set(ref(db,"investments/upgrade/"+phone),{
+amountUSDT:amount,
+tmplAmount:tmpl,
+timestamp:Date.now()
+})
+
+alert("Upgrade submitted for approval")
+}
   window.rejectInvest = async(phone)=>{
 
 await remove(ref(db,"investments/pending/"+phone))
