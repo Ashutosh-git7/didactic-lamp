@@ -905,6 +905,31 @@ html || "No withdrawals yet"
 })
 
 }
+  function loadUpgradeHistory(phone){
+
+onValue(ref(db,"investments/history/"+phone),snap=>{
+
+let list=[]
+
+snap.forEach(s=>{
+const d=s.val()
+if(d.type==="upgrade") list.push(d)
+})
+
+list=list.reverse().slice(0,25)
+
+let html=""
+
+list.forEach(d=>{
+const date=new Date(d.time).toLocaleDateString()
+html+=`<div class="small">${date} → Upgrade ${d.amountUSDT} USDT</div>`
+})
+
+document.getElementById("upgradeHistory").innerHTML =
+html || "No upgrades yet"
+
+})
+}
 
 function v(id){return document.getElementById(id).value.trim()}
 function appDiv(){return document.getElementById("app")}
