@@ -652,7 +652,30 @@ await remove(ref(db,"withdrawals/pending/"+phone))
 
 alert("Withdrawal approved")
 }
+  
+async function loadPendingUpgrade(){
 
+const snap = await get(ref(db,"investments/upgrade"))
+let html=""
+
+for(const child of Object.entries(snap.val() || {})){
+
+const phone = child[0]
+const d = child[1]
+
+html+=`
+<div class="card">
+<b>User:</b> ${phone}<br>
+<b>Upgrade:</b> ${d.amountUSDT} USDT
+<br><br>
+<button onclick="approveUpgrade('${phone}')">Approve Upgrade</button>
+</div>`
+}
+
+document.getElementById("pendingUpgrade").innerHTML =
+html || "No pending upgrades"
+
+}
 async function distributeReferral(phone,amount){
 
 const levels=[10,5,2.5,1,1,1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
