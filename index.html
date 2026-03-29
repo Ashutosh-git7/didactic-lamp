@@ -789,6 +789,13 @@ balance:(u.balance||0)+release,
 locked:newLocked,
 lockDate:Date.now()
 })
+  // ⭐ Cycle reset after full token release
+if(newLocked <= 0){
+update(ref(db,"users/"+phone),{
+investment:0,
+lockDate:0
+})
+}
 
 }
 }
