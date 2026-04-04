@@ -242,28 +242,43 @@ appDiv().innerHTML=`
 </div>`
 }
 
-window.login=async()=>{
+window.login = async () => {
+  const phone = v("phone"); // Isme Email ya Phone daal sakte hain
+  const pass = v("password");
 
-const phone=v("phone")
-const pass=v("password")
+  // --- ADMIN LOGIN (Check if input is Email) ---
+  if (phone.includes("@")) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, phone, pass);
+      const user = userCredential.user;
 
-if(phone==="admin" && pass==="Jaihanuman@7"){
-localStorage.setItem("admin","1")
-location.hash="#admin"
-return
-}
+      // Database mein UID check karein
+      const adminSnap = await get(ref(db, "admins/" + user.uid));
+      
+      if (adminSnap.exists()) {
+        localStorage.setItem("admin", "1");
+        location.hash = "#admin";
+        alert("Admin Login Successful!");
+      } else {
+        alert("Aap authenticated hain par Admin list mein nahi hain.");
+      }
+    } catch (error) {
+      alert("Admin Login Failed: " + error.message);
+    }
+    return;
+  }
 
-const snap=await get(ref(db,"users/"+phone))
-if(!snap.exists()) return alert("User not found")
+  // --- NORMAL USER LOGIN (By Phone) ---
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
 
-const user=snap.val()
+  const user = snap.val();
+  if (atob(user.password) !== pass) return alert("Wrong password");
 
-if(atob(user.password)!==pass) return alert("Wrong password")
+  localStorage.setItem("user", phone);
+  location.hash = "#user";
+};
 
-localStorage.setItem("user",phone)
-
-location.hash="#user"
-}
 
 function userDashboard(){
 
