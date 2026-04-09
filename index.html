@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMPL Ultimate Ecosystem</title>
+<title>Temple_DA Ultimate Ecosystem</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
@@ -105,7 +105,7 @@ td,th{padding:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:13px}
 <body>
 
 <nav>
-<div>TMPL ULTIMATE</div>
+<div>Temple_DA ULTIMATE</div>
 <div>
 <a href="#">Home</a>
 <a href="#login">Login</a>
@@ -164,7 +164,7 @@ function router(){
 function landing(){
 appDiv().innerHTML=`
 <div class="card center">
-<h2>TMPL Ultimate Web3 Platform</h2>
+<h2>Temple_DA Ultimate Web3 Platform</h2>
 <p>Crypto investment with auto rewards & 15 level referrals</p>
 <br>
 <a href="#register"><button>Register</button></a>
@@ -305,7 +305,7 @@ ${u.investment||0} USDT
 
 <div class="card">
 <h3>Locked</h3>
-${Number(u.locked||0).toFixed(2)} TMPL
+${Number(u.locked||0).toFixed(2)} Temple_DA
 </div>
 
 <div class="card">
@@ -351,7 +351,7 @@ Total investment 250 USDT se jyada nahi ho sakta.
 </p>
 </div>
 <h3>Withdraw</h3>
-<input id="withdraw" placeholder="TMPL amount">
+<input id="withdraw" placeholder="Temple_DA amount">
 <button onclick="withdraw()">Request Withdrawal</button>
 </div>
 
@@ -417,11 +417,11 @@ if(u.locked>0)
 return alert("You already have an active investment. Please wait until all tokens are released.")
 
 const price=await getPrice()
-const tmpl=Number((amount/price).toFixed(2))
+const temple_DA=Number((amount/price).toFixed(2))
 
 await set(ref(db,"investments/pending/"+phone),{
 amountUSDT:amount,
-tmplAmount:tmpl,
+temple_DAAmount:tmpl,
 timestamp:Date.now()
 })
 
@@ -455,12 +455,12 @@ return alert("Previous upgrade still pending approval")
 
 // price fetch
 const price = await getPrice()
-const tmpl = Number((amount/price).toFixed(2))
+const temple_DA = Number((amount/price).toFixed(2))
 
 // upgrade request save
 await set(ref(db,"investments/upgrade/"+phone),{
 amountUSDT:amount,
-tmplAmount:tmpl,
+temple_DAAmount:temple_DA,
 wallet:u.wallet, // ⭐ THIS LINE ADD
 timestamp:Date.now()
 })
@@ -520,7 +520,7 @@ rows+=`
 <td>${u.name}</td>
 <td>${Number(u.balance||0).toFixed(2)}</td>
 <td>${u.investment}</td>
-<td>${Number(u.locked||0).toFixed(2)}</td> <!-- Show locked TMPL -->
+<td>${Number(u.locked||0).toFixed(2)}</td> <!-- Show locked Temple_DA -->
 <td>
   <button onclick="editUser('${p}')">Edit ID</button>
   <button onclick="deleteUser('${p}')">Delete</button>
@@ -534,7 +534,7 @@ appDiv().innerHTML=`
 <div class="card">
 <h2>Admin Dashboard</h2>
 
-<input id="price" placeholder="Update TMPL price">
+<input id="price" placeholder="Update Temple_DA price">
 <button onclick="updatePrice()">Update Price</button>
 
 <button onclick="adminLogout()">Admin Logout</button>
@@ -623,7 +623,7 @@ const d=s.val()
 html+=`
 <div class="card">
 <b>User:</b> ${p}<br>
-<b>Amount:</b> ${d.amount} TMPL<br>
+<b>Amount:</b> ${d.amount} Temple_DA<br>
 <b>Wallet:</b> ${d.wallet}
 <br><br>
 <button onclick="approveWithdraw('${p}')">Approve</button>
@@ -643,7 +643,7 @@ const userSnap=await get(ref(db,"users/"+phone))
 const u=userSnap.val()
 
 const newInvestment=(u.investment||0)+d.amountUSDT
-const newLocked=(u.locked||0)+d.tmplAmount
+const newLocked=(u.locked||0)+d.temple_DAAmount
 
 await update(ref(db,"users/"+phone),{
 investment:newInvestment,
@@ -652,7 +652,7 @@ lockDate:u.lockDate||Date.now()
 })
   await push(ref(db,"investments/history/"+phone),{
 amountUSDT:d.amountUSDT,
-tmplAmount:d.tmplAmount,
+temple_DAAmount:d.temple_DAAmount,
 type:"invest",   // ⭐ add this
 time:Date.now()
 })
@@ -685,7 +685,7 @@ return
 }
 
 // ⭐ OLD LOCKED + NEW LOCKED MERGE
-const newLocked = (u.locked || 0) + d.tmplAmount
+const newLocked = (u.locked || 0) + d.temple_DAAmount
 
 await update(ref(db,"users/"+phone),{
 investment:(u.investment || 0) + d.amountUSDT,
@@ -696,7 +696,7 @@ lockDate:Date.now() // ⭐ 30 days reset
 // history save
 await push(ref(db,"investments/history/"+phone),{
 amountUSDT:d.amountUSDT,
-tmplAmount:d.tmplAmount,
+temple_DAAmount:d.temple_DAAmount,
 type:"upgrade",
 time:Date.now()
 })
@@ -856,7 +856,7 @@ return s.exists()?s.val():0.0002
 
 window.updatePrice=async()=>{
 const p=parseFloat(v("price"))
-await set(ref(db,"config/tmplPrice"),p)
+await set(ref(db,"config/temple_DAPrice"),p)
 alert("Price updated")
 }
   window.editUser = async(oldId)=>{
@@ -951,7 +951,7 @@ const date=new Date(d.time).toLocaleDateString()
 
 html+=`
 <div class="small">
-${date} → ${d.amount} TMPL
+${date} → ${d.amount} Temple_DA
 </div>
 `
 
