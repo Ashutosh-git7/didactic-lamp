@@ -162,15 +162,46 @@ function router(){
 }
 
 function landing(){
-appDiv().innerHTML=`
-<div class="card center">
-<h2>Temple_DA Ultimate Web3 Platform</h2>
-<p>Crypto investment with auto rewards & 15 level referrals</p>
-<br>
-<a href="#register"><button>Register</button></a>
-<a href="#login"><button>Login</button></a>
-</div>`
+  appDiv().innerHTML=`
+  <div class="card center">
+    <h2>Temple_DA Ultimate Web3 Platform</h2>
+    <p>Crypto investment with auto rewards & 15 level referrals</p>
+    
+    <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(0,225,255,0.1); border-radius: 10px; border: 1px solid #00e1ff;">
+        <p id="timer-label" style="color: #00e1ff; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px;">OFFICIAL LISTING COUNTDOWN</p>
+        <div id="timer-display" style="font-size: 24px; font-weight: bold; color: #fff;">
+            <span id="d">00</span>d : <span id="h">00</span>h : <span id="m">00</span>m : <span id="s">00</span>s
+        </div>
+    </div>
+
+    <br>
+    <a href="#register"><button>Register</button></a>
+    <a href="#login"><button>Login</button></a>
+  </div>`;
+
+  const target = new Date("April 19, 2026 07:00:00").getTime();
+  
+  const timer = setInterval(() => {
+    const now = new Date().getTime();
+    let diff = target - now;
+    const el = document.getElementById("timer-display");
+
+    if (!el) { clearInterval(timer); return; }
+
+    // Agar time nikal gaya hai, toh difference ko positive kar do "Live Since" dikhane ke liye
+    if (diff <= 0) {
+      diff = Math.abs(diff); // Negative value ko positive mein badle
+      document.getElementById("timer-label").innerText = "🚀 WE ARE LIVE SINCE:";
+      document.getElementById("timer-label").style.color = "#00ff88"; // Green color for Live status
+    }
+
+    document.getElementById("d").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+    document.getElementById("h").innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+    document.getElementById("m").innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    document.getElementById("s").innerText = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+  }, 1000);
 }
+
 
 function registerPage(){
 
