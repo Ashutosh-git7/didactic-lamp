@@ -711,44 +711,50 @@ window.approveInvest = async (phone) => {
 }
   window.approveUpgrade = async(phone)=>{
 
-const snap = await get(ref(db,"investments/upgrade/"+phone))
-if(!snap.exists()) return alert("Upgrade not found")
+    const snap = await get(ref(db,"investments/upgrade/"+phone))
+    if(!snap.exists()) return alert("Upgrade not found")
 
-const d = snap.val()
+    const d = snap.val()
 
-const userSnap = await get(ref(db,"users/"+phone))
-const u = userSnap.val()
+    const userSnap = await get(ref(db,"users/"+phone))
+    const u = userSnap.val()
 
-// max limit safety
-if((u.investment || 0) + d.amountUSDT > 250){
-alert("Upgrade exceeds maximum limit")
-return
-}
+    // 1. Current Price fetch karein (latest price lene ke liye)
+    const currentPrice = await getPrice()
 
-// ⭐ OLD LOCKED + NEW LOCKED MERGE
-const newLocked = (u.locked || 0) + d.temple_DAAmount
+    // 2. Temple_DA ko approval ke waqt ke price par recalculate karein
+    const newTemple_DAAmount = Number((d.amountUSDT / currentPrice).toFixed(2))
 
-await update(ref(db,"users/"+phone),{
-investment:(u.investment || 0) + d.amountUSDT,
-locked:newLocked,
-lockDate:Date.now() // ⭐ 30 days reset
-})
+    // Max limit safety
+    if((u.investment || 0) + d.amountUSDT > 250){
+        alert("Upgrade exceeds maximum limit")
+        return
+    }
 
-// history save
-await push(ref(db,"investments/history/"+phone),{
-amountUSDT:d.amountUSDT,
-temple_DAAmount:d.temple_DAAmount,
-type:"upgrade",
-time:Date.now()
-})
+    // 3. Purana Locked + Recalculated Naya Locked
+    const newLocked = (u.locked || 0) + newTemple_DAAmount
 
-// referral income
-await distributeReferral(phone,d.amountUSDT)
+    await update(ref(db,"users/"+phone),{
+        investment: (u.investment || 0) + d.amountUSDT,
+        locked: newLocked,
+        lockDate: Date.now() // 30 days cycle reset
+    })
 
-// remove request
-await remove(ref(db,"investments/upgrade/"+phone))
+    // History mein naya calculated amount save karein
+    await push(ref(db,"investments/history/"+phone),{
+        amountUSDT: d.amountUSDT,
+        temple_DAAmount: newTemple_DAAmount,
+        type: "upgrade",
+        time: Date.now()
+    })
 
-alert("Upgrade approved & cycle restarted")
+    // Referral distribution ab currentPrice par distributeReferral() ke andar automatic sahi hoga
+    await distributeReferral(phone, d.amountUSDT)
+
+    // Upgrade request delete karein
+    await remove(ref(db,"investments/upgrade/"+phone))
+
+    alert("Upgrade approved & tokens calculated at current price!");
 }
   window.rejectUpgrade = async(phone)=>{
 
