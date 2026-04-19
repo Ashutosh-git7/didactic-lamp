@@ -545,19 +545,32 @@ snap.forEach(s=>{
 const p=s.key
 const u=s.val()
 
-rows+=`
-<tr>
-<td>${p}</td>
-<td>${u.name}</td>
-<td>${Number(u.balance||0).toFixed(2)}</td>
-<td>${u.investment}</td>
-<td>${Number(u.locked||0).toFixed(2)}</td> <!-- Show locked Temple_DA -->
-<td>
-  <button onclick="editUser('${p}')">Edit ID</button>
-  <button onclick="deleteUser('${p}')">Delete</button>
-  <button onclick="releaseLocked('${p}')">Release Locked</button>
-</td>
-</tr>`
+window.editUser = async (phone) => {
+  // 1. Pehle user ka pura data Firebase se mangwayenge
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User nahi mila!");
+
+  const u = snap.val();
+
+  // 2. Prompt boxes khulenge jisme purani details pehle se hongi
+  const newName = prompt("User ka naya naam likhein:", u.name) || u.name;
+  const newBalance = prompt("Naya Balance (Temple_DA):", u.balance) || u.balance;
+  const newInvestment = prompt("Naya Investment (USDT):", u.investment) || u.investment;
+  const newLocked = prompt("Naye Locked Tokens:", u.locked) || u.locked;
+  const newWallet = prompt("Naya Wallet Address:", u.wallet) || u.wallet;
+
+  // 3. Ab ye saari details Firebase mein save ho jayengi
+  await update(ref(db, "users/" + phone), {
+    name: newName,
+    balance: parseFloat(newBalance),
+    investment: parseFloat(newInvestment),
+    locked: parseFloat(newLocked),
+    wallet: newWallet
+  });
+
+  alert("Badhai ho! User data update ho gaya.");
+};
+
 })
 
 appDiv().innerHTML=`
