@@ -666,80 +666,79 @@ document.getElementById("pendingWithdraw").innerHTML=html
 }
 
 window.approveInvest=async(phone)=>{
-window.approveInvest = async (phone) => {
-  const snap = await get(ref(db, "investments/pending/" + phone));
-  if (!snap.exists()) return;
-  const d = snap.val();
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
+const snap=await get(ref(db,"investments/pending/"+phone))
+const d=snap.val()
 
-  // ⭐ LIVE PRICE FETCH (Taki 0.001 wala error na aaye)
-  const currentPrice = await getPrice(); 
-  const correctTempleDA = Number((d.amountUSDT / currentPrice).toFixed(2));
+const userSnap=await get(ref(db,"users/"+phone))
+const u=userSnap.val()
 
-  const newInvestment = (u.investment || 0) + d.amountUSDT;
-  const newLocked = (u.locked || 0) + correctTempleDA;
+const newInvestment=(u.investment||0)+d.amountUSDT
+const newLocked=(u.locked||0)+d.temple_DAAmount
 
-  await update(ref(db, "users/" + phone), {
-    investment: newInvestment,
-    locked: newLocked,
-    lockDate: u.lockDate || Date.now()
-  });
+await update(ref(db,"users/"+phone),{
+investment:newInvestment,
+locked:newLocked,
+lockDate:u.lockDate||Date.now()
+})
+  await push(ref(db,"investments/history/"+phone),{
+amountUSDT:d.amountUSDT,
+temple_DAAmount:d.temple_DAAmount,
+type:"invest",   // ⭐ add this
+time:Date.now()
+})
 
-  // History mein wahi price save hoga jo approval ke waqt hai
-  await push(ref(db, "investments/history/" + phone), {
-    amountUSDT: d.amountUSDT,
-    temple_DAAmount: correctTempleDA,
-    type: "invest",
-    time: Date.now()
-  });
+await distributeReferral(phone,d.amountUSDT)
 
-  await distributeReferral(phone, d.amountUSDT);
+const poolSnap=await get(ref(db,"liquidityPool"))
+const pool=(poolSnap.val()||0)+d.amountUSDT
+await set(ref(db,"liquidityPool"),pool)
 
-  const poolSnap = await get(ref(db, "liquidityPool"));
-  const pool = (poolSnap.val() || 0) + d.amountUSDT;
-  await set(ref(db, "liquidityPool"), pool);
+await remove(ref(db,"investments/pending/"+phone))
 
-  await remove(ref(db, "investments/pending/" + phone));
-  alert(`Approved! Price: ${currentPrice} | Tokens: ${correctTempleDA}`);
+alert("Investment approved")
 }
-  window.approveUpgrade = async (phone) => {
-  const snap = await get(ref(db, "investments/upgrade/" + phone));
-  if (!snap.exists()) return;
-  const d = snap.val();
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
+  window.approveUpgrade = async(phone)=>{
 
-  // ⭐ LIVE PRICE FETCH
-  const currentPrice = await getPrice();
-  const correctTempleDA = Number((d.amountUSDT / currentPrice).toFixed(2));
+const snap = await get(ref(db,"investments/upgrade/"+phone))
+if(!snap.exists()) return alert("Upgrade not found")
 
-  if ((u.investment || 0) + d.amountUSDT > 250) {
-    alert("Upgrade exceeds maximum limit");
-    return;
-  }
+const d = snap.val()
 
-  const newLocked = (u.locked || 0) + correctTempleDA;
+const userSnap = await get(ref(db,"users/"+phone))
+const u = userSnap.val()
 
-  await update(ref(db, "users/" + phone), {
-    investment: (u.investment || 0) + d.amountUSDT,
-    locked: newLocked,
-    lockDate: Date.now() // Cycle restart
-  });
+// max limit safety
+if((u.investment || 0) + d.amountUSDT > 250){
+alert("Upgrade exceeds maximum limit")
+return
+}
 
-  await push(ref(db, "investments/history/" + phone), {
-    amountUSDT: d.amountUSDT,
-    temple_DAAmount: correctTempleDA,
-    type: "upgrade",
-    time: Date.now()
-  });
+// ⭐ OLD LOCKED + NEW LOCKED MERGE
+const newLocked = (u.locked || 0) + d.temple_DAAmount
 
-  await distributeReferral(phone, d.amountUSDT);
-  await remove(ref(db, "investments/upgrade/" + phone));
+await update(ref(db,"users/"+phone),{
+investment:(u.investment || 0) + d.amountUSDT,
+locked:newLocked,
+lockDate:Date.now() // ⭐ 30 days reset
+})
 
-  alert(`Upgrade Approved! Price: ${currentPrice}`);
+// history save
+await push(ref(db,"investments/history/"+phone),{
+amountUSDT:d.amountUSDT,
+temple_DAAmount:d.temple_DAAmount,
+type:"upgrade",
+time:Date.now()
+})
+
+// referral income
+await distributeReferral(phone,d.amountUSDT)
+
+// remove request
+await remove(ref(db,"investments/upgrade/"+phone))
+
+alert("Upgrade approved & cycle restarted")
 }
   window.rejectUpgrade = async(phone)=>{
 
