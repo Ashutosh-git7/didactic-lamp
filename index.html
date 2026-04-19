@@ -665,40 +665,50 @@ document.getElementById("pendingWithdraw").innerHTML=html
 
 }
 
-window.approveInvest=async(phone)=>{
+window.approveInvest = async (phone) => {
+    // 1. Pending investment data fetch karein
+    const snap = await get(ref(db, "investments/pending/" + phone));
+    const d = snap.val();
 
-const snap=await get(ref(db,"investments/pending/"+phone))
-const d=snap.val()
+    const userSnap = await get(ref(db, "users/" + phone));
+    const u = userSnap.val();
 
-const userSnap=await get(ref(db,"users/"+phone))
-const u=userSnap.val()
+    // 2. Naya Price fetch karein (Latest price lene ke liye)
+    const currentPrice = await getPrice();
 
-const newInvestment=(u.investment||0)+d.amountUSDT
-const newLocked=(u.locked||0)+d.temple_DAAmount
+    // 3. Locked Temple_DA ko naye price par recalculate karein
+    // Taaki locked amount aur referral dono same price par rahein
+    const newTemple_DAAmount = Number((d.amountUSDT / currentPrice).toFixed(2));
 
-await update(ref(db,"users/"+phone),{
-investment:newInvestment,
-locked:newLocked,
-lockDate:u.lockDate||Date.now()
-})
-  await push(ref(db,"investments/history/"+phone),{
-amountUSDT:d.amountUSDT,
-temple_DAAmount:d.temple_DAAmount,
-type:"invest",   // ⭐ add this
-time:Date.now()
-})
+    const newInvestment = (u.investment || 0) + d.amountUSDT;
+    const newLocked = (u.locked || 0) + newTemple_DAAmount;
 
-await distributeReferral(phone,d.amountUSDT)
+    // 4. Database Update
+    await update(ref(db, "users/" + phone), {
+        investment: newInvestment,
+        locked: newLocked,
+        lockDate: u.lockDate || Date.now()
+    });
 
-const poolSnap=await get(ref(db,"liquidityPool"))
-const pool=(poolSnap.val()||0)+d.amountUSDT
-await set(ref(db,"liquidityPool"),pool)
+    // History mein bhi updated amount save karein
+    await push(ref(db, "investments/history/" + phone), {
+        amountUSDT: d.amountUSDT,
+        temple_DAAmount: newTemple_DAAmount, // Updated amount
+        type: "invest",
+        time: Date.now()
+    });
 
-await remove(ref(db,"investments/pending/"+phone))
+    // Referral distribution ab naye price par automatic sahi calculate hoga
+    await distributeReferral(phone, d.amountUSDT);
 
-alert("Investment approved")
+    const poolSnap = await get(ref(db, "liquidityPool"));
+    const pool = (poolSnap.val() || 0) + d.amountUSDT;
+    await set(ref(db, "liquidityPool"), pool);
+
+    await remove(ref(db, "investments/pending/" + phone));
+
+    alert("Investment approved with updated price!");
 }
-
   window.approveUpgrade = async(phone)=>{
 
 const snap = await get(ref(db,"investments/upgrade/"+phone))
