@@ -666,39 +666,44 @@ document.getElementById("pendingWithdraw").innerHTML=html
 }
 
 window.approveInvest=async(phone)=>{
+window.approveInvest = async (phone) => {
+  const snap = await get(ref(db, "investments/pending/" + phone));
+  if (!snap.exists()) return;
+  const d = snap.val();
 
-const snap=await get(ref(db,"investments/pending/"+phone))
-const d=snap.val()
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
 
-const userSnap=await get(ref(db,"users/"+phone))
-const u=userSnap.val()
+  // ⭐ LIVE PRICE FETCH (Taki 0.001 wala error na aaye)
+  const currentPrice = await getPrice(); 
+  const correctTempleDA = Number((d.amountUSDT / currentPrice).toFixed(2));
 
-const newInvestment=(u.investment||0)+d.amountUSDT
-const newLocked=(u.locked||0)+d.temple_DAAmount
+  const newInvestment = (u.investment || 0) + d.amountUSDT;
+  const newLocked = (u.locked || 0) + correctTempleDA;
 
-await update(ref(db,"users/"+phone),{
-investment:newInvestment,
-locked:newLocked,
-lockDate:u.lockDate||Date.now()
-})
-  await push(ref(db,"investments/history/"+phone),{
-amountUSDT:d.amountUSDT,
-temple_DAAmount:d.temple_DAAmount,
-type:"invest",   // ⭐ add this
-time:Date.now()
-})
+  await update(ref(db, "users/" + phone), {
+    investment: newInvestment,
+    locked: newLocked,
+    lockDate: u.lockDate || Date.now()
+  });
 
-await distributeReferral(phone,d.amountUSDT)
+  // History mein wahi price save hoga jo approval ke waqt hai
+  await push(ref(db, "investments/history/" + phone), {
+    amountUSDT: d.amountUSDT,
+    temple_DAAmount: correctTempleDA,
+    type: "invest",
+    time: Date.now()
+  });
 
-const poolSnap=await get(ref(db,"liquidityPool"))
-const pool=(poolSnap.val()||0)+d.amountUSDT
-await set(ref(db,"liquidityPool"),pool)
+  await distributeReferral(phone, d.amountUSDT);
 
-await remove(ref(db,"investments/pending/"+phone))
+  const poolSnap = await get(ref(db, "liquidityPool"));
+  const pool = (poolSnap.val() || 0) + d.amountUSDT;
+  await set(ref(db, "liquidityPool"), pool);
 
-alert("Investment approved")
+  await remove(ref(db, "investments/pending/" + phone));
+  alert(`Approved! Price: ${currentPrice} | Tokens: ${correctTempleDA}`);
 }
-
   window.approveUpgrade = async(phone)=>{
 
 const snap = await get(ref(db,"investments/upgrade/"+phone))
