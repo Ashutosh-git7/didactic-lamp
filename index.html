@@ -704,46 +704,42 @@ window.approveInvest = async (phone) => {
   await remove(ref(db, "investments/pending/" + phone));
   alert(`Approved! Price: ${currentPrice} | Tokens: ${correctTempleDA}`);
 }
-  window.approveUpgrade = async(phone)=>{
+  window.approveUpgrade = async (phone) => {
+  const snap = await get(ref(db, "investments/upgrade/" + phone));
+  if (!snap.exists()) return;
+  const d = snap.val();
 
-const snap = await get(ref(db,"investments/upgrade/"+phone))
-if(!snap.exists()) return alert("Upgrade not found")
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
 
-const d = snap.val()
+  // ⭐ LIVE PRICE FETCH
+  const currentPrice = await getPrice();
+  const correctTempleDA = Number((d.amountUSDT / currentPrice).toFixed(2));
 
-const userSnap = await get(ref(db,"users/"+phone))
-const u = userSnap.val()
+  if ((u.investment || 0) + d.amountUSDT > 250) {
+    alert("Upgrade exceeds maximum limit");
+    return;
+  }
 
-// max limit safety
-if((u.investment || 0) + d.amountUSDT > 250){
-alert("Upgrade exceeds maximum limit")
-return
-}
+  const newLocked = (u.locked || 0) + correctTempleDA;
 
-// ⭐ OLD LOCKED + NEW LOCKED MERGE
-const newLocked = (u.locked || 0) + d.temple_DAAmount
+  await update(ref(db, "users/" + phone), {
+    investment: (u.investment || 0) + d.amountUSDT,
+    locked: newLocked,
+    lockDate: Date.now() // Cycle restart
+  });
 
-await update(ref(db,"users/"+phone),{
-investment:(u.investment || 0) + d.amountUSDT,
-locked:newLocked,
-lockDate:Date.now() // ⭐ 30 days reset
-})
+  await push(ref(db, "investments/history/" + phone), {
+    amountUSDT: d.amountUSDT,
+    temple_DAAmount: correctTempleDA,
+    type: "upgrade",
+    time: Date.now()
+  });
 
-// history save
-await push(ref(db,"investments/history/"+phone),{
-amountUSDT:d.amountUSDT,
-temple_DAAmount:d.temple_DAAmount,
-type:"upgrade",
-time:Date.now()
-})
+  await distributeReferral(phone, d.amountUSDT);
+  await remove(ref(db, "investments/upgrade/" + phone));
 
-// referral income
-await distributeReferral(phone,d.amountUSDT)
-
-// remove request
-await remove(ref(db,"investments/upgrade/"+phone))
-
-alert("Upgrade approved & cycle restarted")
+  alert(`Upgrade Approved! Price: ${currentPrice}`);
 }
   window.rejectUpgrade = async(phone)=>{
 
