@@ -508,30 +508,63 @@ alert("Investment rejected")
 
 window.withdraw = async () => {
   const phone = localStorage.getItem("user")
+window.withdraw = async () => {
+  const phone = localStorage.getItem("user")
   const amount = parseFloat(v("withdraw"))
 
   if (!amount || amount <= 0) return alert("Invalid amount")
 
+  // 1. Ek baar mein max 1000 Temple_DA ki limit
+  if (amount > 1000) {
+    return alert("Ek baar mein maximum 1,000 Temple_DA hi withdraw kar sakte hain.")
+  }
+
+  // 2. Pending request check (Jab tak purani request approve nahi hogi, naya nahi lagega)
   const pending = await get(ref(db, "withdrawals/pending/" + phone))
-  if (pending.exists()) return alert("Withdrawal already pending")
+  if (pending.exists()) {
+    return alert("Aapka pichla withdrawal request abhi pending hai. Approval ke baad hi naya request laga sakte hain.")
+  }
 
   const snap = await get(ref(db, "users/" + phone))
   const u = snap.val()
 
-  // ✅ Block withdrawal if user never invested
+  // 3. Investment check
   if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment")
 
-  // ✅ Only allow if requested amount <= released balance
+  // 4. Available balance check
   if (amount > u.balance) return alert("Insufficient balance")
 
+  // --- EXTRA SECURITY: 24-Gante ki total limit check ---
+  // History check karke dekhenge ki pichle 24 gante mein total kitna withdraw ho chuka hai
+  const historySnap = await get(ref(db, "withdrawals/history/" + phone))
+  let totalWithdrawnIn24Hours = 0
+  const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000)
+
+  if (historySnap.exists()) {
+    historySnap.forEach(child => {
+      const record = child.val()
+      if (record.time && record.time > twentyFourHoursAgo) {
+        totalWithdrawnIn24Hours += parseFloat(record.amount || 0)
+      }
+    })
+  }
+
+  if (totalWithdrawnIn24Hours + amount > 1000) {
+    const bachaHuaLimit = 1000 - totalWithdrawnIn24Hours
+    return alert(`Daily Limit Exceeded! Aap pichle 24 gante mein pehle hi withdraw kar chuke hain. Aaj aap maximum ${bachaHuaLimit.toFixed(2)} Temple_DA aur withdraw kar sakte hain.`)
+  }
+  // --- END OF SECURITY CHECK ---
+
+  // Request database mein save karein
   await set(ref(db, "withdrawals/pending/" + phone), {
     amount,
     wallet: u.wallet,
     timestamp: Date.now()
   })
 
-  alert("Withdrawal request submitted")
+  alert("Withdrawal request successfully submitted for approval!")
 }
+
 
 function adminDashboard(){
 
