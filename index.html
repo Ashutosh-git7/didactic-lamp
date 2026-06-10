@@ -734,9 +734,12 @@ window.approveInvest = async (phone) => {
 
     // Max limit safety
     if((u.investment || 0) + d.amountUSDT > 250){
-        alert("Upgrade exceeds maximum limit")
-        return
-    }
+    alert("Upgrade exceeds maximum limit");
+    // Queue clear karne ke liye isko remove karein
+    await remove(ref(db,"investments/upgrade/"+phone));
+    return;
+}
+
 
     // 3. Purana Locked + Recalculated Naya Locked
     const newLocked = (u.locked || 0) + newTemple_DAAmount
