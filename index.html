@@ -545,14 +545,21 @@ snap.forEach(s=>{
 const p=s.key
 const u=s.val()
 
+// ⭐ CRITICAL FIX: Admin panel check karte hi background me vesting calculation verify ho jayegi
+if (u.lockDate && u.locked && u.locked > 0) {
+  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+  if (days >= 30) {
+    autoRelease(p, u); // Background database pipeline execute trigger
+  }
+}
+
 rows+=`
 <tr>
 <td>${p}</td>
 <td>${u.name}</td>
 <td>${Number(u.balance||0).toFixed(2)}</td>
 <td>${u.investment}</td>
-<td>${Number(u.locked||0).toFixed(2)}</td> <!-- Show locked Temple_DA -->
-<td>
+<td>${Number(u.locked||0).toFixed(2)}</td> <td>
   <button onclick="editUser('${p}')">Edit ID</button>
   <button onclick="deleteUser('${p}')">Delete</button>
   <button onclick="releaseLocked('${p}')">Release Locked</button>
@@ -581,8 +588,7 @@ appDiv().innerHTML=`
 <th>Name</th>
 <th>Balance</th>
 <th>Investment</th>
-<th>Locked</th> <!-- Added this -->
-<th>Action</th>
+<th>Locked</th> <th>Action</th>
 </tr>
 
 ${rows}
@@ -612,6 +618,7 @@ loadPendingUpgrade()
 
 })
 }
+
 
 async function loadPendingInvest(){
 
