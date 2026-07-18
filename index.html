@@ -413,17 +413,21 @@ if(walletExists) return alert("This wallet is already registered")
 const userSnap=await get(ref(db,"users/"+phone))
 if(userSnap.exists()) return alert("User exists")
 
-await set(ref(db,"users/"+phone),{
-name,
-wallet,
-password:btoa(password),
-balance:0,
-investment:0,
-locked:0,
-lockDate:0,
-referrer:referrer||"",
-createdAt:Date.now()
-})
+// 1 से 10 के बीच रैंडम बोनस जेनरेट करें
+const randomBonus = Math.floor(Math.random() * 10) + 1;
+
+await set(ref(db, "users/" + phone), {
+    name,
+    wallet,
+    password: btoa(password),
+    balance: randomBonus, // यहाँ बोनस बैलेंस में जुड़ जाएगा
+    investment: 0,
+    locked: 0,
+    lockDate: 0,
+    referrer: referrer || "",
+    createdAt: Date.now()
+});
+
 
 alert("Registration successful")
 location.hash="#login"
