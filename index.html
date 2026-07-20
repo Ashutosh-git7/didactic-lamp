@@ -688,28 +688,36 @@ window.withdraw = async () => {
 
   if (!amount || amount <= 0) return alert("Invalid amount")
 
-  // 1. Ek baar mein max 1000 Temple_DA ki limit
-  if (amount > 1000) {
-    return alert("Ek baar mein maximum 1,000 Temple_DA hi withdraw kar sakte hain.")
+  const snap = await get(ref(db, "users/" + phone))
+  if (!snap.exists()) return alert("User not found")
+  const u = snap.val()
+
+  // 1. Investment check (बिना निवेश के विथड्रॉल नहीं)
+  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment")
+
+  // 2. --- Dynamic Daily Withdrawal Limit Logic (1 से 19 USDT के लिए 60 Temple_DA लिमिट) ---
+  let dailyLimit = 1000; // डिफ़ॉल्ट नॉर्मल लिमिट
+  const userInvestment = u.investment || 0;
+
+  if (userInvestment >= 1 && userInvestment < 20) {
+    dailyLimit = 60; // 1 से 19 डॉलर तक के निवेश पर दैनिक लिमिट 60 Temple_DA होगी
   }
 
-  // 2. Pending request check (Jab tak purani request approve nahi hogi, naya nahi lagega)
+  // 3. Ek baar ke request ki maximum limit check
+  if (amount > dailyLimit) {
+    return alert(`Aapke current investment (${userInvestment} USDT) ke anusar aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
+  }
+
+  // 4. Pending request check
   const pending = await get(ref(db, "withdrawals/pending/" + phone))
   if (pending.exists()) {
     return alert("Aapka pichla withdrawal request abhi pending hai. Approval ke baad hi naya request laga sakte hain.")
   }
 
-  const snap = await get(ref(db, "users/" + phone))
-  const u = snap.val()
-
-  // 3. Investment check
-  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment")
-
-  // 4. Available balance check
+  // 5. Available balance check
   if (amount > u.balance) return alert("Insufficient balance")
 
-  // --- EXTRA SECURITY: 24-Gante ki total limit check ---
-  // History check karke dekhenge ki pichle 24 gante mein total kitna withdraw ho chuka hai
+  // 6. --- 24-Gante ki total limit check ---
   const historySnap = await get(ref(db, "withdrawals/history/" + phone))
   let totalWithdrawnIn24Hours = 0
   const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000)
@@ -723,13 +731,12 @@ window.withdraw = async () => {
     })
   }
 
-  if (totalWithdrawnIn24Hours + amount > 1000) {
-    const bachaHuaLimit = 1000 - totalWithdrawnIn24Hours
-    return alert(`Daily Limit Exceeded! Aap pichle 24 gante mein pehle hi withdraw kar chuke hain. Aaj aap maximum ${bachaHuaLimit.toFixed(2)} Temple_DA aur withdraw kar sakte hain.`)
+  if (totalWithdrawnIn24Hours + amount > dailyLimit) {
+    const bachaHuaLimit = dailyLimit - totalWithdrawnIn24Hours
+    return alert(`Daily Limit Exceeded! Aap pichle 24 gante mein pehle hi withdraw kar chuke hain. Aaj aap maximum ${bachaHuaLimit.toFixed(2)} Temple_DA aur withdraw kar सकते hain.`)
   }
-  // --- END OF SECURITY CHECK ---
 
-  // Request database mein save karein
+  // 7. Request database mein save karein
   await set(ref(db, "withdrawals/pending/" + phone), {
     amount,
     wallet: u.wallet,
@@ -738,6 +745,7 @@ window.withdraw = async () => {
 
   alert("Withdrawal request successfully submitted for approval!")
 }
+
 
 
 function adminDashboard(){
