@@ -1037,36 +1037,43 @@ document.getElementById("pendingUpgrade").innerHTML =
 html || "No pending upgrades"
 
 }
-async function distributeReferral(phone,amount){
+async function distributeReferral(phone, amount) {
+    const levels = [10, 5, 2.5, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+    let current = phone;
+    const price = await getPrice();
+    const tmpl = amount / price;
 
-const levels=[10,5,2.5,1,1,1,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]
+    for (let i = 0; i < 15; i++) {
+        const s = await get(ref(db, "users/" + current));
+        if (!s.exists()) break;
 
-let current=phone
+        const userData = s.val();
+        const referrer = userData.referrer;
+        if (!referrer) break;
 
-const price=await getPrice()
-const tmpl=amount/price
+        const rSnap = await get(ref(db, "users/" + referrer));
+        if (!rSnap.exists()) break;
+        const r = rSnap.val();
 
-for(let i=0;i<15;i++){
+        // 🌟 यहाँ आपका नया नियम लागू होता है:
+        // यदि लेवल 2 या उससे आगे (i >= 1) का बोनस है, तो स्पॉन्सर का कुल इन्वेस्टमेंट कम से कम 20 USDT होना चाहिए।
+        // अगर उसका इन्वेस्टमेंट 20 से कम है, तो हम उस लेवल का बोनस स्किप कर सकते हैं (या रोक सकते हैं)।
+        if (i >= 1 && (r.investment || 0) < 20) {
+            // यह स्पॉन्सर आगे के लेवल्स के योग्य नहीं है, इसलिए इसके ऊपर चेन जारी रखेंगे पर इसे बोनस नहीं मिलेगा
+            current = referrer;
+            continue; 
+        }
 
-const s=await get(ref(db,"users/"+current))
-if(!s.exists()) break
+        const bonus = tmpl * (levels[i] / 100);
 
-const referrer=s.val().referrer
-if(!referrer) break
+        await update(ref(db, "users/" + referrer), {
+            balance: Number((r.balance + bonus).toFixed(2))
+        });
 
-const rSnap=await get(ref(db,"users/"+referrer))
-const r=rSnap.val()
-
-const bonus=tmpl*(levels[i]/100)
-
-await update(ref(db,"users/"+referrer),{
-balance:Number((r.balance+bonus).toFixed(2))
-})
-
-current=referrer
-
+        current = referrer;
+    }
 }
-}
+
 
 function autoRelease(phone, u){
 
