@@ -1067,11 +1067,12 @@ async function distributeReferral(phone, amount) {
         if (!rSnap.exists()) break;
         const r = rSnap.val();
 
-        // 🌟 यहाँ आपका नया नियम लागू होता है:
-        // यदि लेवल 2 या उससे आगे (i >= 1) का बोनस है, तो स्पॉन्सर का कुल इन्वेस्टमेंट कम से कम 20 USDT होना चाहिए।
-        // अगर उसका इन्वेस्टमेंट 20 से कम है, तो हम उस लेवल का बोनस स्किप कर सकते हैं (या रोक सकते हैं)।
+        // 🌟 Condition Check:
+        // Level 1 (i = 0) is open for everyone (even 1-19 USDT investments).
+        // For Levels 2 to 15 (i >= 1), the referrer must have an investment of at least 20 USDT.
         if (i >= 1 && (r.investment || 0) < 20) {
-            // यह स्पॉन्सर आगे के लेवल्स के योग्य नहीं है, इसलिए इसके ऊपर चेन जारी रखेंगे पर इसे बोनस नहीं मिलेगा
+            // Skip bonus for this referrer because they haven't upgraded to 20 USDT, 
+            // but continue the chain upwards.
             current = referrer;
             continue; 
         }
@@ -1085,6 +1086,7 @@ async function distributeReferral(phone, amount) {
         current = referrer;
     }
 }
+
 
 
 function autoRelease(phone, u){
