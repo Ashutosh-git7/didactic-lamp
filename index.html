@@ -153,6 +153,18 @@ button:hover {
   background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%);
 }
 
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #dfb72c;
+  color: #dfb72c;
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: rgba(223, 183, 44, 0.15);
+  color: #fff;
+}
+
 /* Grid Dashboard Metrics */
 .grid {
   display: grid;
@@ -237,7 +249,6 @@ td button {
   border: 1px solid #dfb72c;
 }
 </style>
-
 </head>
 
 <body>
@@ -722,52 +733,147 @@ async function feedPage(){
   });
 }
 
-/* Packages Page */
-function packagesPage(){
-  const phone = localStorage.getItem("user") || "";
+/* Packages Page with Both Options (Direct Balance & Deposit Request) */
+async function packagesPage(){
+  const phone = localStorage.getItem("user");
+  let userBalance = 0;
+  if(phone){
+    const userSnap = await get(ref(db, "users/" + phone));
+    if(userSnap.exists()){
+      userBalance = userSnap.val().balance || 0;
+    }
+  }
+
+  const currentPrice = await getPrice();
+  const starterTokens = Number((5 / currentPrice).toFixed(2));
+  const proTokens = Number((15 / currentPrice).toFixed(2));
+  const eliteTokens = Number((120 / currentPrice).toFixed(2));
+
   appDiv().innerHTML = `
     <div class="card center">
       <h2>Monetization & Packages</h2>
-      <p>Apna talent package activate karein aur audience se direct Temple_DA points earn karein.</p>
+      <p>Aap do tareeqon se package activate kar sakte hain: <b>Direct Balance</b> se turant active karein ya <b>USDT Transfer</b> karke request karein.</p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Your Available Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+      
+      <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
+        <p class="small" style="color: #dfb72c; font-weight: bold;">Official Deposit Address (USDT BEP20):</p>
+        <input id="pkgDepositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly style="margin: 8px 0; text-align: center;">
+        <button onclick="copyPkgAddress()" style="padding: 8px; font-size: 12px; width: 150px; margin: 0 auto;">Copy Address</button>
+      </div>
     </div>
 
     <div class="grid">
       <div class="card center">
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:28px; margin: 10px 0;">5 USDT</p>
-        <p class="small">One-time Activation</p>
+        <p class="small">≈ ${starterTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
         <p class="small">✓ 2 Posts Daily</p>
         <p class="small">✓ Earn Like & Subscribe Points</p>
         <p class="small">✓ Basic Community Support</p>
-        <button onclick="requestPackage('starter', 5)" style="margin-top:15px;">Activate Starter</button>
+        
+        <button onclick="activateWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
+        <button onclick="requestPackage('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
       <div class="card center" style="border: 2px solid #dfb72c;">
         <div class="badge-tag" style="margin-bottom:10px;">Most Popular</div>
         <h3 style="color:#dfb72c;">Pro Creator</h3>
         <p class="number" style="font-size:28px; margin: 10px 0;">15 USDT</p>
-        <p class="small">Monthly Subscription</p>
+        <p class="small">≈ ${proTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
         <p class="small">✓ Unlimited Talent Posts</p>
         <p class="small">✓ Verified Creator Badge</p>
         <p class="small">✓ 2X Leaderboard Pool Priority</p>
-        <button onclick="requestPackage('monthly', 15)" style="margin-top:15px;">Activate Monthly</button>
+        
+        <button onclick="activateWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
+        <button onclick="requestPackage('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
       </div>
 
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:28px; margin: 10px 0;">120 USDT</p>
-        <p class="small">Full 1 Year Access</p>
+        <p class="small">≈ ${eliteTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
         <p class="small">✓ Top Feed Placement</p>
         <p class="small">✓ Zero Point Conversion Fees</p>
         <p class="small">✓ Dedicated Ecosystem Growth</p>
-        <button onclick="requestPackage('yearly', 120)" style="margin-top:15px;">Activate Yearly</button>
+        
+        <button onclick="activateWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
+        <button onclick="requestPackage('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
     </div>
   `;
 }
+
+window.copyPkgAddress = () => {
+  const copyText = document.getElementById("pkgDepositAddress");
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(copyText.value);
+  alert("Deposit address copied!");
+};
+
+/* 1. Direct Pay via Temple_DA Balance (Instant) */
+window.activateWithBalance = async (tierName, usdtAmount) => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login to activate a package");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User not found");
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
+
+  if ((u.balance || 0) < requiredTokens) {
+    return alert(`Insufficient Balance! Is package ke liye ${requiredTokens} Temple_DA ki zaroorat hai. Aapka balance: ${Number(u.balance || 0).toFixed(2)} Temple_DA hai.`);
+  }
+
+  const confirmAction = confirm(`Aapke balance se ${requiredTokens} Temple_DA katega aur ${tierName.toUpperCase()} package turant active ho jayega. Kya aap aage badhna chahte hain?`);
+  if (!confirmAction) return;
+
+  const newBalance = Number((u.balance - requiredTokens).toFixed(2));
+
+  await update(ref(db, "users/" + phone), {
+    balance: newBalance,
+    tier: tierName
+  });
+
+  await push(ref(db, "investments/history/" + phone), {
+    amountUSDT: usdtAmount,
+    temple_DAAmount: requiredTokens,
+    type: "package_balance_activation",
+    time: Date.now()
+  });
+
+  alert(`Congratulations! ${tierName.toUpperCase()} package successfully activated from your balance.`);
+  location.hash = "#user";
+};
+
+/* 2. Request via Deposit (Admin Approval Queue) */
+window.requestPackage = async (tierName, amount) => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login to request a package");
+
+  const pendingSnap = await get(ref(db, "packages/pending/" + phone));
+  if (pendingSnap.exists()) {
+    return alert("Your package activation request is already pending approval from Admin.");
+  }
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  await set(ref(db, "packages/pending/" + phone), {
+    tier: tierName,
+    amountUSDT: amount,
+    wallet: u.wallet || "",
+    timestamp: Date.now()
+  });
+
+  alert(`Request for ${tierName.toUpperCase()} package (${amount} USDT) submitted! Transfer USDT to the deposit address. Admin will verify and activate.`);
+  location.hash = "#user";
+};
 
 /* Talent Logic Functions */
 window.publishTalent = async () => {
@@ -874,18 +980,6 @@ window.convertPointsToToken = async () => {
   });
 
   alert(`Congratulations! ${currentPoints} Points converted to ${tokensToCredit} Temple_DA!`);
-};
-
-window.requestPackage = async (tierName, amount) => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login to activate a package");
-
-  await update(ref(db, "users/" + phone), {
-    tier: tierName
-  });
-
-  alert(`Success! ${tierName.toUpperCase()} package activated.`);
-  location.hash = "#user";
 };
 
 /* =========================================================================
@@ -1081,6 +1175,11 @@ ${rows}
 </div>
 
 <div class="card">
+<h3>Pending Package Activations</h3>
+<div id="pendingPackages"></div>
+</div>
+
+<div class="card">
 <h3>Pending Investments</h3>
 <div id="pendingInvest"></div>
 </div>
@@ -1096,10 +1195,50 @@ ${rows}
 </div>
 `
 
+loadPendingPackages()
 loadPendingInvest()
 loadPendingWithdraw()
 loadPendingUpgrade()
 })
+}
+
+async function loadPendingPackages(){
+const snap = await get(ref(db,"packages/pending"))
+let html=""
+
+for(const child of Object.entries(snap.val() || {})){
+const phone = child[0]
+const d = child[1]
+
+html+=`
+<div class="card">
+<b>User:</b> ${phone}<br>
+<b>Package:</b> ${d.tier.toUpperCase()}<br>
+<b>Amount:</b> ${d.amountUSDT} USDT<br>
+<b>Wallet:</b> ${d.wallet}
+<br><br>
+<button onclick="approvePackage('${phone}','${d.tier}')">Approve Package</button>
+<button onclick="rejectPackage('${phone}')">Reject</button>
+</div>`
+}
+
+const el = document.getElementById("pendingPackages");
+if(el) el.innerHTML = html || "No pending package requests"
+}
+
+window.approvePackage = async(phone, tier)=>{
+await update(ref(db, "users/" + phone), {
+  tier: tier
+});
+await remove(ref(db, "packages/pending/" + phone));
+alert(`Package ${tier.toUpperCase()} approved!`);
+loadPendingPackages();
+}
+
+window.rejectPackage = async(phone)=>{
+await remove(ref(db, "packages/pending/" + phone));
+alert("Package request rejected");
+loadPendingPackages();
 }
 
 async function loadPendingInvest(){
@@ -1460,6 +1599,5 @@ function v(id){return document.getElementById(id).value.trim()}
 function appDiv(){return document.getElementById("app")}
 
 </script>
-
 </body>
 </html>
