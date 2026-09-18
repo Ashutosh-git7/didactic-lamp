@@ -336,6 +336,12 @@ function maskPhone(phone) {
   return "******" + phone.slice(-4);
 }
 
+// Daily Cap Tracking Date Key
+function getTodayDateKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Package validity calculation helper
 function getPackageDurationMs(tier) {
   if (tier === "yearly") {
@@ -648,8 +654,12 @@ function userDashboard() {
 
     <div class="card">
       <h3>Talent Rewards Studio</h3>
-      <p class="small">Har video like par 5 points, photo par 2 points, aur naye subscriber par 50 points milte hain.</p>
-      <p class="small" style="margin-top: 5px;">100 Points = 10 Temple_DA</p>
+      <p class="small">
+        • <b>Video / Reel:</b> Creator +3 Pts | Viewer +2 Pts (Max 20 rewarded likes/din)<br>
+        • <b>Photo / Graphic:</b> Creator +1 Pt | Viewer +1 Pt<br>
+        • <b>New Subscriber:</b> Creator +35 Pts | Subscriber +15 Pts (Max 5 rewarded subs/din)
+      </p>
+      <p class="small" style="margin-top: 6px; color:#dfb72c; font-weight:bold;">100 Points = 10 Temple_DA</p>
       <br>
       <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
         Convert Points To Temple_DA
@@ -662,9 +672,9 @@ function userDashboard() {
       <p class="small">Upload reels and photos. (Note: <strong>Starter Pack</strong> creators can upload max <strong>2 videos daily</strong>).</p>
       
       <select id="talentType">
-        <option value="video">Short Video / Reel (5 Pts / Like)</option>
-        <option value="photo">Art / Photo / Graphic (2 Pts / Like)</option>
-        <option value="text">Story / Motivation / Poetry (1 Pt / Like)</option>
+        <option value="video">Short Video / Reel (Creator +3 Pts, Viewer +2 Pts)</option>
+        <option value="photo">Art / Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
+        <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
       </select>
 
       <input id="talentTitle" placeholder="Title / Caption for Reel">
@@ -1073,11 +1083,13 @@ window.deleteMyPost = async (postId, storagePath) => {
   }
 };
 
+/* Like Post Function with Dual Rewards and 20 Daily Like Cap for Viewer */
 window.likePost = async (postId, authorPhone, type) => {
   const userPhone = localStorage.getItem("user");
   if (!userPhone) return alert("Please login to like");
   if (userPhone === authorPhone) return alert("You cannot like your own post");
 
+  // Duplicate like check
   const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
   if (likeCheck.exists()) return alert("You have already supported this post!");
 
@@ -1091,21 +1103,57 @@ window.likePost = async (postId, authorPhone, type) => {
     });
   }
 
-  let pts = 1;
-  if (type === "video") pts = 5;
-  else if (type === "photo") pts = 2;
+  // Integer Reward Distribution
+  let creatorPts = 1;
+  let viewerPts = 0;
 
+  if (type === "video") {
+    creatorPts = 3;
+    viewerPts = 2;
+  } else if (type === "photo") {
+    creatorPts = 1;
+    viewerPts = 1;
+  } else if (type === "text") {
+    creatorPts = 1;
+    viewerPts = 0;
+  }
+
+  // 1. Credit Creator
   const authorSnap = await get(ref(db, "users/" + authorPhone));
   if (authorSnap.exists()) {
     const aData = authorSnap.val();
     await update(ref(db, "users/" + authorPhone), {
-      points: (aData.points || 0) + pts
+      points: (aData.points || 0) + creatorPts
     });
   }
 
-  alert(`Awesome! You supported this creator. +${pts} Points awarded.`);
+  // 2. Viewer points capping check (Max 20 rewarded likes / day)
+  const today = getTodayDateKey();
+  const capRef = ref(db, `userLimits/${userPhone}/${today}/likesCount`);
+  const capSnap = await get(capRef);
+  const currentLikesToday = capSnap.val() || 0;
+  const MAX_REWARDED_LIKES_PER_DAY = 20;
+
+  if (viewerPts > 0) {
+    if (currentLikesToday < MAX_REWARDED_LIKES_PER_DAY) {
+      const viewerSnap = await get(ref(db, "users/" + userPhone));
+      if (viewerSnap.exists()) {
+        const vData = viewerSnap.val();
+        await update(ref(db, "users/" + userPhone), {
+          points: (vData.points || 0) + viewerPts
+        });
+      }
+      await set(capRef, currentLikesToday + 1);
+      alert(`❤️ Liked! Creator: +${creatorPts} Pts | You: +${viewerPts} Pts (${currentLikesToday + 1}/${MAX_REWARDED_LIKES_PER_DAY} daily rewards used).`);
+    } else {
+      alert(`❤️ Liked! Creator: +${creatorPts} Pts. (Daily 20 reward likes limit reach ho chuki hai, isliye aapko extra points nahi mile).`);
+    }
+  } else {
+    alert(`❤️ Liked! Creator: +${creatorPts} Pts awarded.`);
+  }
 };
 
+/* Subscribe Function with Dual Rewards and 5 Daily Subscribe Cap for Subscriber */
 window.subscribeCreator = async (creatorPhone) => {
   const subscriberPhone = localStorage.getItem("user");
   if (!subscriberPhone) return alert("Please login to subscribe");
@@ -1116,16 +1164,39 @@ window.subscribeCreator = async (creatorPhone) => {
 
   await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
 
+  const creatorPts = 35;
+  const subscriberPts = 15;
+
+  // 1. Credit Creator
   const creatorSnap = await get(ref(db, "users/" + creatorPhone));
   if (creatorSnap.exists()) {
     const cData = creatorSnap.val();
     await update(ref(db, "users/" + creatorPhone), {
       subscribersCount: (cData.subscribersCount || 0) + 1,
-      points: (cData.points || 0) + 50
+      points: (cData.points || 0) + creatorPts
     });
   }
 
-  alert("Subscribed! Creator received 50 Talent Points.");
+  // 2. Subscriber daily limit check (Max 5 rewarded subscriptions / day)
+  const today = getTodayDateKey();
+  const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
+  const capSnap = await get(capRef);
+  const currentSubsToday = capSnap.val() || 0;
+  const MAX_REWARDED_SUBS_PER_DAY = 5;
+
+  if (currentSubsToday < MAX_REWARDED_SUBS_PER_DAY) {
+    const subSnap = await get(ref(db, "users/" + subscriberPhone));
+    if (subSnap.exists()) {
+      const sData = subSnap.val();
+      await update(ref(db, "users/" + subscriberPhone), {
+        points: (sData.points || 0) + subscriberPts
+      });
+    }
+    await set(capRef, currentSubsToday + 1);
+    alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
+  } else {
+    alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Aapki aaj ki 5 rewarded subscriptions limit poori ho chuki hai).`);
+  }
 };
 
 window.convertPointsToToken = async () => {
