@@ -260,6 +260,18 @@ td button {
   color: #dfb72c;
   border: 1px solid #dfb72c;
 }
+
+.badge-expired {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-family: 'Orbitron', sans-serif;
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
 </style>
 </head>
 
@@ -278,7 +290,7 @@ td button {
 <div>
 <a href="#">Home</a>
 <a href="#feed">Talent Feed</a>
-<a href="#packages">Packages</a>
+<a href="#packages">Creator Packages</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
 </div>
@@ -322,6 +334,27 @@ function maskPhone(phone) {
   if (!phone || typeof phone !== 'string') return "Creator";
   if (phone.length <= 4) return phone;
   return "******" + phone.slice(-4);
+}
+
+// Package validity calculation helper
+function getPackageDurationMs(tier) {
+  if (tier === "yearly") {
+    return 365 * 24 * 60 * 60 * 1000; // 365 Days
+  }
+  return 30 * 24 * 60 * 60 * 1000; // 30 Days for starter & monthly (pro)
+}
+
+function checkAndHandlePackageExpiry(phone, u) {
+  if (!u.tier || u.tier === "none" || !u.packageExpiresAt) return u.tier || "none";
+  if (Date.now() > u.packageExpiresAt) {
+    update(ref(db, "users/" + phone), {
+      tier: "none",
+      packagePriceUSDT: 0,
+      packageExpired: true
+    });
+    return "none";
+  }
+  return u.tier;
 }
 
 const routes = {
@@ -479,6 +512,10 @@ window.registerUser = async () => {
     referrer: referrer || "",
     createdAt: Date.now(),
     tier: "none",
+    packagePriceUSDT: 0,
+    packageActivatedAt: 0,
+    packageExpiresAt: 0,
+    packageExpired: false,
     points: 0,
     subscribersCount: 0
   });
@@ -534,7 +571,7 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   TALENT ECOSYSTEM: DASHBOARD, REELS, FEED & MEDIA MANAGEMENT
+   TALENT ECOSYSTEM: DASHBOARD, REELS, PACKAGES & TIME LIMIT ENGINE
 ========================================================================= */
 
 function userDashboard() {
@@ -543,6 +580,24 @@ function userDashboard() {
 
   onValue(ref(db, "users/" + phone), snap => {
     const u = snap.val() || {};
+
+    const activeTier = checkAndHandlePackageExpiry(phone, u);
+
+    // Package expiry calculation
+    let expiryNotice = "";
+    if (activeTier !== "none" && u.packageExpiresAt) {
+      const msLeft = u.packageExpiresAt - Date.now();
+      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
+
+      if (daysLeft > 0) {
+        expiryNotice = `<span style="color:#00ff88; font-size:13px; font-weight:bold;">Active: ${daysLeft} days left (Valid till ${expDate})</span>`;
+      } else {
+        expiryNotice = `<span class="badge-expired">EXPIRED</span>`;
+      }
+    } else {
+      expiryNotice = `<span style="color:#aaa; font-size:13px;">No active package subscription</span>`;
+    }
 
     appDiv().innerHTML = `
     <div class="grid">
@@ -562,18 +617,32 @@ function userDashboard() {
       </div>
 
       <div class="card">
-        <h3>Total Investment</h3>
+        <h3>USDT Investment</h3>
         ${u.investment || 0} USDT
       </div>
 
       <div class="card">
-        <h3>Locked</h3>
+        <h3>Locked Tokens</h3>
         ${Number(u.locked || 0).toFixed(2)} Temple_DA
       </div>
 
       <div class="card">
-        <h3>Active Tier</h3>
-        <span class="badge-tag">${u.tier ? u.tier.toUpperCase() : 'NONE'}</span>
+        <h3>Creator Package</h3>
+        <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
+      </div>
+    </div>
+
+    <!-- SEPARATE PACKAGE TIME AND DURATION CARD -->
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="color:#00ff88; margin-bottom:5px;">Creator Subscription Status</h3>
+          <p class="small">Package Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
+          <p class="small" style="color:#bbb; margin-top:4px;">Starter & Pro plans 30 dino ke liye valid rehte hain aur Elite Yearly 365 dino ke liye valid rehta hai.</p>
+        </div>
+        <div>
+          <a href="#packages"><button style="width:auto; padding:10px 20px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Renew / Upgrade Package</button></a>
+        </div>
       </div>
     </div>
 
@@ -587,10 +656,10 @@ function userDashboard() {
       </button>
     </div>
 
-    <!-- POST REEL / TALENT SECTION (Direct Video Upload Added) -->
+    <!-- POST REEL / TALENT SECTION WITH 2-DAILY VIDEO RESTRICTION -->
     <div class="card">
       <h3>Post Your Talent / Reel</h3>
-      <p class="small">Apna talent upload karein aur direct Temple_DA reward points earn karein.</p>
+      <p class="small">Upload reels and photos. (Note: <strong>Starter Pack</strong> creators can upload max <strong>2 videos daily</strong>).</p>
       
       <select id="talentType">
         <option value="video">Short Video / Reel (5 Pts / Like)</option>
@@ -630,6 +699,7 @@ function userDashboard() {
       <div id="myUploadedPosts" style="margin-top:15px;">Loading your posts...</div>
     </div>
 
+    <!-- REFERRAL STATUS SECTION -->
     <div class="card">
         <h3>Referral Level Status</h3>
         <p class="small">
@@ -642,23 +712,23 @@ function userDashboard() {
         </p>
     </div>
 
+    <!-- REGULAR INVESTMENT SECTION (SEPARATE FROM PACKAGE) -->
     <div class="card">
-      <h3>Invest</h3>
+      <h3>Invest (30-Day Vesting Yield)</h3>
       <p class="small">Send USDT (BEP20) to this address:</p>
       <input id="depositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly>
       <button onclick="copyAddress()">Copy Address</button>
       <br><br>
-      <input id="invest" placeholder="USDT amount">
+      <input id="invest" placeholder="USDT amount (1 - 250 USDT)">
       <button onclick="invest()">Submit Investment</button>
       <p class="small">After sending USDT click submit. Admin will verify and approve.</p>
     </div>
 
     <div class="card">
-      <h3>Investment Upgrade</h3>
-      <p class="small">Investment badhane ke liye upgrade kare. Upgrade approve hone par 30 days cycle restart hoga.</p>
+      <h3>Investment Upgrade (Vesting Capital)</h3>
+      <p class="small">Regular investment badhane ke liye upgrade karein. (Total max 250 USDT).</p>
       <input id="upgradeAmount" placeholder="Enter upgrade USDT amount">
       <button onclick="upgrade()">Upgrade Investment</button>
-      <p class="small">Total investment 250 USDT se jyada nahi ho sakta.</p>
     </div>
 
     <div class="card">
@@ -668,8 +738,8 @@ function userDashboard() {
     </div>
 
     <div class="card">
-      <h3>Withdrawal History</h3>
-      <div id="withdrawHistory"></div>
+      <h3>Package Activation History</h3>
+      <div id="packageHistory"></div>
     </div>
 
     <div class="card">
@@ -680,6 +750,11 @@ function userDashboard() {
     <div class="card">
       <h3>Upgrade History</h3>
       <div id="upgradeHistory"></div>
+    </div>
+
+    <div class="card">
+      <h3>Withdrawal History</h3>
+      <div id="withdrawHistory"></div>
     </div>
 
     <div class="card">
@@ -696,6 +771,7 @@ function userDashboard() {
     loadInvestHistory(phone);
     loadWithdrawHistory(phone);
     loadUpgradeHistory(phone);
+    loadPackageHistory(phone);
     loadMyPosts(phone);
   });
 }
@@ -836,11 +912,42 @@ async function feedPage() {
   });
 }
 
-/* Reel / Talent Publishing With Direct File Upload */
+/* Check Daily Video Upload Limit for Starter Pack */
+async function checkDailyVideoLimit(phone, userTier) {
+  if (userTier !== "starter") return true;
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const postsSnap = await get(ref(db, "posts"));
+  let todayVideoCount = 0;
+
+  if (postsSnap.exists()) {
+    postsSnap.forEach(s => {
+      const p = s.val();
+      if (p.authorPhone === phone && p.type === "video" && (p.createdAt || 0) >= startOfDay) {
+        todayVideoCount++;
+      }
+    });
+  }
+
+  if (todayVideoCount >= 2) {
+    alert("⚠️ Daily Video Limit Reached!\n\nAap Starter Pack par hain aur aaj ki 2 video upload limit poori ho chuki hai. Unlimited video uploads ke liye 'Pro Creator' package activate karein!");
+    return false;
+  }
+  return true;
+}
+
+/* Reel / Talent Publishing With Expiry and Limit Validation */
 window.publishTalent = async () => {
   try {
     const phone = localStorage.getItem("user");
     if (!phone) return alert("Please login first");
+
+    const userSnap = await get(ref(db, "users/" + phone));
+    const u = userSnap.exists() ? userSnap.val() : {};
+
+    const activeTier = checkAndHandlePackageExpiry(phone, u);
 
     const typeEl = document.getElementById("talentType");
     const titleEl = document.getElementById("talentTitle");
@@ -856,9 +963,14 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Kripya title ya caption zaroor daalein!");
 
+    // Daily Limit Check for Starter Package on Video uploads
+    if (type === "video") {
+      const isAllowed = await checkDailyVideoLimit(phone, activeTier);
+      if (!isAllowed) return;
+    }
+
     let storagePath = "";
 
-    // Agar device se reel/video upload ho rahi hai
     if (file) {
       if (file.size > 50 * 1024 * 1024) {
         return alert("Video/File size 50MB se chhota hona chahiye!");
@@ -899,11 +1011,8 @@ window.publishTalent = async () => {
     }
 
     if (type !== "text" && !mediaUrl) {
-      return alert("Kripya video file select karein ya online media URL daalein!");
+      return alert("Kripya video file select karein ya direct media URL daalein!");
     }
-
-    const userSnap = await get(ref(db, "users/" + phone));
-    const u = userSnap.exists() ? userSnap.val() : {};
 
     const newPostRef = push(ref(db, "posts"));
     await set(newPostRef, {
@@ -945,7 +1054,6 @@ window.deleteMyPost = async (postId, storagePath) => {
       return alert("Aap sirf apni hi uploaded video/reel delete kar sakte hain!");
     }
 
-    // 1. Firebase Storage se video file delete karein (agar uploaded thi)
     if (storagePath) {
       try {
         const fileRef = sRef(storage, storagePath);
@@ -955,7 +1063,6 @@ window.deleteMyPost = async (postId, storagePath) => {
       }
     }
 
-    // 2. Database se post aur likes record hatayein
     await remove(ref(db, "posts/" + postId));
     await remove(ref(db, "likes/" + postId));
 
@@ -1042,14 +1149,25 @@ window.convertPointsToToken = async () => {
   alert(`Congratulations! ${currentPoints} Points converted to ${tokensToCredit} Temple_DA!`);
 };
 
-/* Packages Page */
+/* =========================================================================
+   PACKAGES PAGE & DURATION MANAGEMENT
+========================================================================= */
+
 async function packagesPage() {
   const phone = localStorage.getItem("user");
   let userBalance = 0;
+  let currentTier = "none";
+  let expiryDateString = "";
+
   if (phone) {
     const userSnap = await get(ref(db, "users/" + phone));
     if (userSnap.exists()) {
-      userBalance = userSnap.val().balance || 0;
+      const u = userSnap.val();
+      userBalance = u.balance || 0;
+      currentTier = checkAndHandlePackageExpiry(phone, u);
+      if (currentTier !== "none" && u.packageExpiresAt) {
+        expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
+      }
     }
   }
 
@@ -1060,9 +1178,9 @@ async function packagesPage() {
 
   appDiv().innerHTML = `
     <div class="card center">
-      <h2>Monetization & Packages</h2>
-      <p>Aap do tareeqon se package activate kar sakte hain: <b>Direct Balance</b> se turant active karein ya <b>USDT Transfer</b> karke request karein.</p>
-      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Your Available Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+      <h2>Creator Packages & Durations</h2>
+      <p>Har package ka subscription time nishchit hai. <b>Yeh aapke regular 30-days vesting plan se alag track hota hai.</b></p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? `(Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
       
       <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
         <p class="small" style="color: #dfb72c; font-weight: bold;">Official Deposit Address (USDT BEP20):</p>
@@ -1072,44 +1190,51 @@ async function packagesPage() {
     </div>
 
     <div class="grid">
-      <div class="card center">
+      <!-- STARTER PACK -->
+      <div class="card center" style="${currentTier === 'starter' ? 'border: 2px solid #00ff88;' : ''}">
         <h3 style="color:#fff;">Starter Pack</h3>
-        <p class="number" style="font-size:28px; margin: 10px 0;">5 USDT</p>
+        <p class="number" style="font-size:28px; margin: 5px 0;">5 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <p class="small">≈ ${starterTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
-        <p class="small">✓ 2 Posts Daily</p>
+        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
         <p class="small">✓ Earn Like & Subscribe Points</p>
-        <p class="small">✓ Basic Community Support</p>
         
-        <button onclick="activateWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
-        <button onclick="requestPackage('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
-      <div class="card center" style="border: 2px solid #dfb72c;">
-        <div class="badge-tag" style="margin-bottom:10px;">Most Popular</div>
+      <!-- PRO CREATOR PACK -->
+      <div class="card center" style="border: 2px solid #dfb72c; ${currentTier === 'monthly' ? 'border-color:#00ff88;' : ''}">
+        <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
         <h3 style="color:#dfb72c;">Pro Creator</h3>
-        <p class="number" style="font-size:28px; margin: 10px 0;">15 USDT</p>
+        <p class="number" style="font-size:28px; margin: 5px 0;">15 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <p class="small">≈ ${proTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
-        <p class="small">✓ Unlimited Talent Posts</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
         <p class="small">✓ Verified Creator Badge</p>
         <p class="small">✓ 2X Leaderboard Pool Priority</p>
         
-        <button onclick="activateWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
-        <button onclick="requestPackage('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
       </div>
 
-      <div class="card center">
+      <!-- ELITE YEARLY PACK -->
+      <div class="card center" style="${currentTier === 'yearly' ? 'border: 2px solid #00ff88;' : ''}">
         <h3 style="color:#fff;">Elite Yearly</h3>
-        <p class="number" style="font-size:28px; margin: 10px 0;">120 USDT</p>
+        <p class="number" style="font-size:28px; margin: 5px 0;">120 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days (1 Year)</p>
         <p class="small">≈ ${eliteTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:15px 0;">
-        <p class="small">✓ Top Feed Placement</p>
-        <p class="small">✓ Zero Point Conversion Fees</p>
-        <p class="small">✓ Dedicated Ecosystem Growth</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Full 365 Days Uninterrupted Access</p>
+        <p class="small">✓ Unlimited Reels + VIP Pinning</p>
+        <p class="small">✓ Zero Conversion Fees</p>
         
-        <button onclick="activateWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
-        <button onclick="requestPackage('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
     </div>
   `;
@@ -1123,9 +1248,10 @@ window.copyPkgAddress = () => {
   alert("Deposit address copied!");
 };
 
-window.activateWithBalance = async (tierName, usdtAmount) => {
+/* Balance Se Package Activate/Renew Karte Waqt Duration Set Hogi */
+window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login to activate a package");
+  if (!phone) return alert("Please login to activate or upgrade a package");
 
   const userSnap = await get(ref(db, "users/" + phone));
   if (!userSnap.exists()) return alert("User not found");
@@ -1138,52 +1264,68 @@ window.activateWithBalance = async (tierName, usdtAmount) => {
     return alert(`Insufficient Balance! Is package ke liye ${requiredTokens} Temple_DA ki zaroorat hai. Aapka balance: ${Number(u.balance || 0).toFixed(2)} Temple_DA hai.`);
   }
 
-  const confirmAction = confirm(`Aapke balance se ${requiredTokens} Temple_DA katega aur ${tierName.toUpperCase()} package turant active ho jayega. Continue?`);
+  const durationMs = getPackageDurationMs(tierName);
+  const durationDays = tierName === 'yearly' ? 365 : 30;
+
+  const confirmAction = confirm(`Aapke balance se ${requiredTokens} Temple_DA deduct honge aur ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye active hoga. Aage badhein?`);
   if (!confirmAction) return;
 
   const newBalance = Number((u.balance - requiredTokens).toFixed(2));
+  const activatedAt = Date.now();
+  const expiresAt = activatedAt + durationMs;
 
   await update(ref(db, "users/" + phone), {
     balance: newBalance,
-    tier: tierName
+    tier: tierName,
+    packagePriceUSDT: usdtAmount,
+    packageActivatedAt: activatedAt,
+    packageExpiresAt: expiresAt,
+    packageExpired: false
   });
 
-  await push(ref(db, "investments/history/" + phone), {
+  await push(ref(db, "packages/history/" + phone), {
+    tier: tierName,
     amountUSDT: usdtAmount,
     temple_DAAmount: requiredTokens,
-    type: "package_balance_activation",
-    time: Date.now()
+    validityDays: durationDays,
+    expiresAt: expiresAt,
+    method: "balance",
+    time: activatedAt
   });
 
-  alert(`Congratulations! ${tierName.toUpperCase()} package successfully activated.`);
+  alert(`Congratulations! ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye successfully activate ho gaya hai!`);
   location.hash = "#user";
 };
 
-window.requestPackage = async (tierName, amount) => {
+/* Package Upgrade Request via USDT Deposit */
+window.requestPackageUpgrade = async (tierName, amount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login to request a package");
+  if (!phone) return alert("Please login to request package upgrade");
 
   const pendingSnap = await get(ref(db, "packages/pending/" + phone));
   if (pendingSnap.exists()) {
-    return alert("Your package activation request is already pending approval from Admin.");
+    return alert("Aapka ek package request pehle se hi Admin review mein pending hai.");
   }
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
+  const durationDays = tierName === 'yearly' ? 365 : 30;
 
   await set(ref(db, "packages/pending/" + phone), {
     tier: tierName,
     amountUSDT: amount,
+    durationDays: durationDays,
     wallet: u.wallet || "",
+    currentTier: u.tier || "none",
     timestamp: Date.now()
   });
 
-  alert(`Request for ${tierName.toUpperCase()} package submitted. Admin verify karke activate karega.`);
+  alert(`Request for ${tierName.toUpperCase()} (${amount} USDT, Validity: ${durationDays} Days) submitted! Deposit address par USDT bhej dein. Admin verify karke activate karega.`);
   location.hash = "#user";
 };
 
 /* =========================================================================
-   CORE INVESTMENT, REFERRAL, VESTING, AND ADMIN ENGINE
+   CORE INVESTMENT (1-250 USDT), VESTING, REFERRALS & ADMIN
 ========================================================================= */
 
 window.copyAddress = () => {
@@ -1323,6 +1465,8 @@ function adminDashboard() {
       const p = s.key;
       const u = s.val();
 
+      checkAndHandlePackageExpiry(p, u);
+
       if (u.lockDate && u.locked && u.locked > 0) {
         const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
         if (days >= 30) {
@@ -1334,13 +1478,14 @@ function adminDashboard() {
       <tr>
       <td>${p}</td>
       <td>${u.name}</td>
+      <td><span class="badge-tag">${u.tier || 'none'}</span></td>
       <td>${Number(u.balance || 0).toFixed(2)}</td>
-      <td>${u.investment}</td>
+      <td>${u.investment || 0}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
-        <button onclick="editUser('${p}')">Edit ID</button>
+        <button onclick="editUser('${p}')">Edit</button>
         <button onclick="deleteUser('${p}')">Delete</button>
-        <button onclick="releaseLocked('${p}')">Release Locked</button>
+        <button onclick="releaseLocked('${p}')">Release</button>
       </td>
       </tr>`;
     });
@@ -1354,13 +1499,14 @@ function adminDashboard() {
     </div>
 
     <div class="card">
-    <h3>Users</h3>
+    <h3>Users Overview</h3>
     <table>
     <tr>
     <th>ID</th>
     <th>Name</th>
+    <th>Package</th>
     <th>Balance</th>
-    <th>Investment</th>
+    <th>Invested</th>
     <th>Locked</th>
     <th>Action</th>
     </tr>
@@ -1368,18 +1514,19 @@ function adminDashboard() {
     </table>
     </div>
 
+    <!-- SEPARATE PACKAGE UPGRADE APPROVAL QUEUE WITH TIME SPECIFICATION -->
     <div class="card">
-    <h3>Pending Package Activations</h3>
+    <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
     <div id="pendingPackages"></div>
     </div>
 
     <div class="card">
-    <h3>Pending Investments</h3>
+    <h3>Pending Investments (30-Day Vesting)</h3>
     <div id="pendingInvest"></div>
     </div>
 
     <div class="card">
-    <h3>Pending Upgrades</h3>
+    <h3>Pending Investment Upgrades</h3>
     <div id="pendingUpgrade"></div>
     </div>
 
@@ -1403,16 +1550,18 @@ async function loadPendingPackages() {
   for (const child of Object.entries(snap.val() || {})) {
     const phone = child[0];
     const d = child[1];
+    const durationDays = d.durationDays || (d.tier === 'yearly' ? 365 : 30);
 
     html += `
-    <div class="card">
+    <div class="card" style="border: 1px solid #00ff88;">
     <b>User:</b> ${phone}<br>
-    <b>Package:</b> ${d.tier.toUpperCase()}<br>
+    <b>Requested Tier:</b> <span class="badge-tag">${d.tier.toUpperCase()}</span><br>
+    <b>Validity Duration:</b> ${durationDays} Days<br>
     <b>Amount:</b> ${d.amountUSDT} USDT<br>
     <b>Wallet:</b> ${d.wallet}
     <br><br>
-    <button onclick="approvePackage('${phone}','${d.tier}')">Approve Package</button>
-    <button onclick="rejectPackage('${phone}')">Reject</button>
+    <button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve For ${durationDays} Days</button>
+    <button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button>
     </div>`;
   }
 
@@ -1420,10 +1569,32 @@ async function loadPendingPackages() {
   if (el) el.innerHTML = html || "No pending package requests";
 }
 
-window.approvePackage = async (phone, tier) => {
-  await update(ref(db, "users/" + phone), { tier: tier });
+/* Admin Approval Par Expiration Date Set Hoti Hai */
+window.approvePackage = async (phone, tier, usdtAmount) => {
+  const durationMs = getPackageDurationMs(tier);
+  const durationDays = tier === 'yearly' ? 365 : 30;
+  const activatedAt = Date.now();
+  const expiresAt = activatedAt + durationMs;
+
+  await update(ref(db, "users/" + phone), { 
+    tier: tier,
+    packagePriceUSDT: usdtAmount || 0,
+    packageActivatedAt: activatedAt,
+    packageExpiresAt: expiresAt,
+    packageExpired: false
+  });
+
+  await push(ref(db, "packages/history/" + phone), {
+    tier: tier,
+    amountUSDT: usdtAmount || 0,
+    validityDays: durationDays,
+    expiresAt: expiresAt,
+    method: "deposit_approval",
+    time: activatedAt
+  });
+
   await remove(ref(db, "packages/pending/" + phone));
-  alert(`Package ${tier.toUpperCase()} approved!`);
+  alert(`Package ${tier.toUpperCase()} successfully activated for ${durationDays} days!`);
   loadPendingPackages();
 };
 
@@ -1730,6 +1901,26 @@ window.adminLogout = () => {
   localStorage.removeItem("admin");
   location.hash = "#login";
 };
+
+function loadPackageHistory(phone) {
+  onValue(ref(db, "packages/history/" + phone), snap => {
+    let list = [];
+    snap.forEach(s => {
+      list.push(s.val());
+    });
+
+    list = list.reverse().slice(0, 15);
+    let html = "";
+    list.forEach(d => {
+      const date = new Date(d.time).toLocaleDateString();
+      const expDate = d.expiresAt ? new Date(d.expiresAt).toLocaleDateString() : "-";
+      html += `<div class="small">${date} → <b>${d.tier.toUpperCase()}</b> (${d.amountUSDT} USDT | Valid till ${expDate})</div>`;
+    });
+
+    const el = document.getElementById("packageHistory");
+    if (el) el.innerHTML = html || "No packages activated yet";
+  });
+}
 
 function loadInvestHistory(phone) {
   onValue(ref(db, "investments/history/" + phone), snap => {
