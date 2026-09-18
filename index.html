@@ -299,10 +299,17 @@ signInAnonymously(auth)
   console.log("Firebase Secure Login Success");
 })
 .catch((error) => {
-  console.log(error);
+  console.log("Firebase Anonymous Login Error:", error);
 });
 
 const walletRegex=/^0x[a-fA-F0-9]{40}$/
+
+// ID (Mobile Number) ko mask karke sirf aakhri ke 4 digit dikhane ke liye function
+function maskPhone(phone) {
+  if (!phone || typeof phone !== 'string') return "Creator";
+  if (phone.length <= 4) return phone;
+  return "******" + phone.slice(-4);
+}
 
 const routes={
 "#":landing,
@@ -522,7 +529,7 @@ const phone=localStorage.getItem("user")
 if(!phone) return location.hash="#login"
 
 onValue(ref(db,"users/"+phone),snap=>{
-const u=snap.val()
+const u=snap.val() || {}
 
 appDiv().innerHTML=`
 
@@ -655,7 +662,7 @@ loadUpgradeHistory(phone)
 })
 }
 
-/* Talent Feed Screen */
+/* Talent Feed Screen (FIXED: ID ab masked hokar sirf aakhri 4 number dikhegi) */
 async function feedPage(){
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
@@ -702,7 +709,8 @@ async function feedPage(){
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <b style="color:#dfb72c; font-size:18px;">${p.authorName || 'Creator'}</b>
-              <span class="small" style="margin-left:8px;">ID: ${p.authorPhone}</span>
+              <!-- Yaha par maskPhone lagaya gaya hai: Sirf aakhri 4 ank dikhenge -->
+              <span class="small" style="margin-left:8px;">ID: ${maskPhone(p.authorPhone)}</span>
             </div>
             <div>
               <span class="badge-tag">${p.type}</span>
@@ -733,7 +741,7 @@ async function feedPage(){
   });
 }
 
-/* Packages Page with Both Options (Direct Balance & Deposit Request) */
+/* Packages Page */
 async function packagesPage(){
   const phone = localStorage.getItem("user");
   let userBalance = 0;
@@ -814,7 +822,7 @@ window.copyPkgAddress = () => {
   alert("Deposit address copied!");
 };
 
-/* 1. Direct Pay via Temple_DA Balance (Instant) */
+/* 1. Direct Pay via Temple_DA Balance */
 window.activateWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login to activate a package");
@@ -895,11 +903,9 @@ window.publishTalent = async () => {
       return alert("Kripya title ya caption zaroor daalein!");
     }
 
-    // User details fetch
     const userSnap = await get(ref(db, "users/" + phone));
     const u = userSnap.exists() ? userSnap.val() : {};
 
-    // Database me push
     const newPostRef = push(ref(db, "posts"));
     await set(newPostRef, {
       authorPhone: phone,
@@ -914,7 +920,6 @@ window.publishTalent = async () => {
 
     alert("Talent published to feed successfully!");
 
-    // Form fields reset
     if (titleEl) titleEl.value = "";
     if (mediaEl) mediaEl.value = "";
     if (descEl) descEl.value = "";
@@ -925,7 +930,6 @@ window.publishTalent = async () => {
     alert("Publish karne me error aaya: " + error.message);
   }
 };
-
 
 window.likePost = async (postId, authorPhone, type) => {
   const userPhone = localStorage.getItem("user");
@@ -1616,7 +1620,11 @@ document.getElementById("upgradeHistory").innerHTML = html || "No upgrades yet"
 })
 }
 
-function v(id){return document.getElementById(id).value.trim()}
+function v(id){
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
+
 function appDiv(){return document.getElementById("app")}
 
 </script>
