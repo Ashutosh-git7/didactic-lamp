@@ -336,18 +336,16 @@ function maskPhone(phone) {
   return "******" + phone.slice(-4);
 }
 
-// Daily Cap Tracking Date Key
 function getTodayDateKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Package validity calculation helper
 function getPackageDurationMs(tier) {
   if (tier === "yearly") {
-    return 365 * 24 * 60 * 60 * 1000; // 365 Days
+    return 365 * 24 * 60 * 60 * 1000;
   }
-  return 30 * 24 * 60 * 60 * 1000; // 30 Days for starter & monthly (pro)
+  return 30 * 24 * 60 * 60 * 1000;
 }
 
 function checkAndHandlePackageExpiry(phone, u) {
@@ -589,7 +587,6 @@ function userDashboard() {
 
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    // Package expiry calculation
     let expiryNotice = "";
     if (activeTier !== "none" && u.packageExpiresAt) {
       const msLeft = u.packageExpiresAt - Date.now();
@@ -614,12 +611,12 @@ function userDashboard() {
 
       <div class="card">
         <h3>Talent Points</h3>
-        <span class="number">${u.points || 0}</span> Pts
+        <span class="number">${Number(u.points || 0)}</span> Pts
       </div>
 
       <div class="card">
         <h3>My Subscribers</h3>
-        <span class="number">${u.subscribersCount || 0}</span>
+        <span class="number">${Number(u.subscribersCount || 0)}</span>
       </div>
 
       <div class="card">
@@ -638,7 +635,7 @@ function userDashboard() {
       </div>
     </div>
 
-    <!-- SEPARATE PACKAGE TIME AND DURATION CARD -->
+    <!-- PACKAGE STATUS CARD -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
@@ -666,7 +663,7 @@ function userDashboard() {
       </button>
     </div>
 
-    <!-- POST REEL / TALENT SECTION WITH 2-DAILY VIDEO RESTRICTION -->
+    <!-- POST REEL / TALENT SECTION -->
     <div class="card">
       <h3>Post Your Talent / Reel</h3>
       <p class="small">Upload reels and photos. (Note: <strong>Starter Pack</strong> creators can upload max <strong>2 videos daily</strong>).</p>
@@ -702,7 +699,7 @@ function userDashboard() {
       <button id="publishBtn" onclick="publishTalent()">Publish Reel / Post</button>
     </div>
 
-    <!-- MY UPLOADED POSTS / REELS MANAGEMENT -->
+    <!-- MY UPLOADED POSTS -->
     <div class="card">
       <h3>Manage My Uploaded Reels & Posts</h3>
       <p class="small">Yahan aap apni upload ki hui kisi bhi video ya post ko delete kar sakte hain:</p>
@@ -722,7 +719,7 @@ function userDashboard() {
         </p>
     </div>
 
-    <!-- REGULAR INVESTMENT SECTION (SEPARATE FROM PACKAGE) -->
+    <!-- INVESTMENT SECTION -->
     <div class="card">
       <h3>Invest (30-Day Vesting Yield)</h3>
       <p class="small">Send USDT (BEP20) to this address:</p>
@@ -786,7 +783,6 @@ function userDashboard() {
   });
 }
 
-/* My Posts List in User Dashboard */
 function loadMyPosts(phone) {
   onValue(ref(db, "posts"), snap => {
     const container = document.getElementById("myUploadedPosts");
@@ -840,8 +836,7 @@ function loadMyPosts(phone) {
   });
 }
 
-/* Talent Feed Screen */
-async function feedPage() {
+function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
     <div class="card center">
@@ -852,7 +847,7 @@ async function feedPage() {
     <div id="postsList">Loading amazing talent...</div>
   `;
 
-  onValue(ref(db, "posts"), async snap => {
+  onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("postsList");
     if (!listEl) return;
 
@@ -910,7 +905,7 @@ async function feedPage() {
             </div>
             <div>
               ${currentUser ? 
-                `<button onclick="likePost('${p.id}', '${p.authorPhone}', '${p.type}')" style="width:auto; padding:7px 18px; font-size:12px;">❤️ Like & Support</button>` : 
+                `<button onclick="likePost('${p.id}')" style="width:auto; padding:7px 18px; font-size:12px;">❤️ Like & Support</button>` : 
                 `<a href="#login"><button style="width:auto; padding:7px 18px; font-size:12px;">Login to Like</button></a>`}
             </div>
           </div>
@@ -922,7 +917,6 @@ async function feedPage() {
   });
 }
 
-/* Check Daily Video Upload Limit for Starter Pack */
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier !== "starter") return true;
 
@@ -948,7 +942,6 @@ async function checkDailyVideoLimit(phone, userTier) {
   return true;
 }
 
-/* Reel / Talent Publishing With Expiry and Limit Validation */
 window.publishTalent = async () => {
   try {
     const phone = localStorage.getItem("user");
@@ -973,7 +966,6 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Kripya title ya caption zaroor daalein!");
 
-    // Daily Limit Check for Starter Package on Video uploads
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) return;
@@ -1028,7 +1020,7 @@ window.publishTalent = async () => {
     await set(newPostRef, {
       authorPhone: phone,
       authorName: u.name || "Creator",
-      type: type,
+      type: type || "video",
       title: title,
       mediaUrl: mediaUrl || "",
       storagePath: storagePath || "",
@@ -1045,7 +1037,6 @@ window.publishTalent = async () => {
   }
 };
 
-/* Delete Reel / Post Function */
 window.deleteMyPost = async (postId, storagePath) => {
   const phone = localStorage.getItem("user");
   const isAdmin = localStorage.getItem("admin");
@@ -1083,119 +1074,128 @@ window.deleteMyPost = async (postId, storagePath) => {
   }
 };
 
-/* Like Post Function with Dual Rewards and 20 Daily Like Cap for Viewer */
-window.likePost = async (postId, authorPhone, type) => {
-  const userPhone = localStorage.getItem("user");
-  if (!userPhone) return alert("Please login to like");
-  if (userPhone === authorPhone) return alert("You cannot like your own post");
+/* LIKE POST FUNCTION: Post ID se data direct check karta hai taaki parameters break na hon */
+window.likePost = async (postId) => {
+  try {
+    const userPhone = localStorage.getItem("user");
+    if (!userPhone) return alert("Please login to like");
 
-  // Duplicate like check
-  const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
-  if (likeCheck.exists()) return alert("You have already supported this post!");
+    const postSnap = await get(ref(db, `posts/${postId}`));
+    if (!postSnap.exists()) return alert("Post not found");
+    const pData = postSnap.val();
+    const authorPhone = pData.authorPhone;
 
-  await set(ref(db, `likes/${postId}/${userPhone}`), true);
+    if (userPhone === authorPhone) return alert("You cannot like your own post");
 
-  const postSnap = await get(ref(db, `posts/${postId}`));
-  if (postSnap.exists()) {
-    const postData = postSnap.val();
+    const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
+    if (likeCheck.exists()) return alert("You have already supported this post!");
+
+    await set(ref(db, `likes/${postId}/${userPhone}`), true);
+
     await update(ref(db, `posts/${postId}`), {
-      likesCount: (postData.likesCount || 0) + 1
+      likesCount: Number(pData.likesCount || 0) + 1
     });
-  }
 
-  // Integer Reward Distribution
-  let creatorPts = 1;
-  let viewerPts = 0;
+    const actualType = pData.type || "video";
+    let creatorPts = 3;
+    let viewerPts = 2;
 
-  if (type === "video") {
-    creatorPts = 3;
-    viewerPts = 2;
-  } else if (type === "photo") {
-    creatorPts = 1;
-    viewerPts = 1;
-  } else if (type === "text") {
-    creatorPts = 1;
-    viewerPts = 0;
-  }
-
-  // 1. Credit Creator
-  const authorSnap = await get(ref(db, "users/" + authorPhone));
-  if (authorSnap.exists()) {
-    const aData = authorSnap.val();
-    await update(ref(db, "users/" + authorPhone), {
-      points: (aData.points || 0) + creatorPts
-    });
-  }
-
-  // 2. Viewer points capping check (Max 20 rewarded likes / day)
-  const today = getTodayDateKey();
-  const capRef = ref(db, `userLimits/${userPhone}/${today}/likesCount`);
-  const capSnap = await get(capRef);
-  const currentLikesToday = capSnap.val() || 0;
-  const MAX_REWARDED_LIKES_PER_DAY = 20;
-
-  if (viewerPts > 0) {
-    if (currentLikesToday < MAX_REWARDED_LIKES_PER_DAY) {
-      const viewerSnap = await get(ref(db, "users/" + userPhone));
-      if (viewerSnap.exists()) {
-        const vData = viewerSnap.val();
-        await update(ref(db, "users/" + userPhone), {
-          points: (vData.points || 0) + viewerPts
-        });
-      }
-      await set(capRef, currentLikesToday + 1);
-      alert(`❤️ Liked! Creator: +${creatorPts} Pts | You: +${viewerPts} Pts (${currentLikesToday + 1}/${MAX_REWARDED_LIKES_PER_DAY} daily rewards used).`);
-    } else {
-      alert(`❤️ Liked! Creator: +${creatorPts} Pts. (Daily 20 reward likes limit reach ho chuki hai, isliye aapko extra points nahi mile).`);
+    if (actualType === "photo") {
+      creatorPts = 1;
+      viewerPts = 1;
+    } else if (actualType === "text") {
+      creatorPts = 1;
+      viewerPts = 0;
     }
-  } else {
-    alert(`❤️ Liked! Creator: +${creatorPts} Pts awarded.`);
+
+    const authorSnap = await get(ref(db, "users/" + authorPhone));
+    if (authorSnap.exists()) {
+      const aData = authorSnap.val();
+      const currentAuthorPts = Number(aData.points || 0);
+      await update(ref(db, "users/" + authorPhone), {
+        points: currentAuthorPts + creatorPts
+      });
+    }
+
+    const today = getTodayDateKey();
+    const capRef = ref(db, `userLimits/${userPhone}/${today}/likesCount`);
+    const capSnap = await get(capRef);
+    const currentLikesToday = Number(capSnap.val() || 0);
+    const MAX_REWARDED_LIKES_PER_DAY = 20;
+
+    if (viewerPts > 0) {
+      if (currentLikesToday < MAX_REWARDED_LIKES_PER_DAY) {
+        const viewerSnap = await get(ref(db, "users/" + userPhone));
+        if (viewerSnap.exists()) {
+          const vData = viewerSnap.val();
+          const currentViewerPts = Number(vData.points || 0);
+          await update(ref(db, "users/" + userPhone), {
+            points: currentViewerPts + viewerPts
+          });
+        }
+        await set(capRef, currentLikesToday + 1);
+        alert(`❤️ Liked! Creator: +${creatorPts} Pts | You: +${viewerPts} Pts (${currentLikesToday + 1}/${MAX_REWARDED_LIKES_PER_DAY} used today).`);
+      } else {
+        alert(`❤️ Liked! Creator: +${creatorPts} Pts. (Daily 20 reward likes limit poori ho chuki hai).`);
+      }
+    } else {
+      alert(`❤️ Liked! Creator: +${creatorPts} Pts.`);
+    }
+  } catch (err) {
+    console.error("Like error:", err);
+    alert("Like karne me error aaya: " + err.message);
   }
 };
 
-/* Subscribe Function with Dual Rewards and 5 Daily Subscribe Cap for Subscriber */
+/* SUBSCRIBE CREATOR FUNCTION */
 window.subscribeCreator = async (creatorPhone) => {
-  const subscriberPhone = localStorage.getItem("user");
-  if (!subscriberPhone) return alert("Please login to subscribe");
-  if (subscriberPhone === creatorPhone) return alert("You cannot subscribe to yourself");
+  try {
+    const subscriberPhone = localStorage.getItem("user");
+    if (!subscriberPhone) return alert("Please login to subscribe");
+    if (subscriberPhone === creatorPhone) return alert("You cannot subscribe to yourself");
 
-  const subCheck = await get(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`));
-  if (subCheck.exists()) return alert("You are already subscribed to this creator");
+    const subCheck = await get(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`));
+    if (subCheck.exists()) return alert("You are already subscribed to this creator");
 
-  await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
+    await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
 
-  const creatorPts = 35;
-  const subscriberPts = 15;
+    const creatorPts = 35;
+    const subscriberPts = 15;
 
-  // 1. Credit Creator
-  const creatorSnap = await get(ref(db, "users/" + creatorPhone));
-  if (creatorSnap.exists()) {
-    const cData = creatorSnap.val();
-    await update(ref(db, "users/" + creatorPhone), {
-      subscribersCount: (cData.subscribersCount || 0) + 1,
-      points: (cData.points || 0) + creatorPts
-    });
-  }
-
-  // 2. Subscriber daily limit check (Max 5 rewarded subscriptions / day)
-  const today = getTodayDateKey();
-  const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
-  const capSnap = await get(capRef);
-  const currentSubsToday = capSnap.val() || 0;
-  const MAX_REWARDED_SUBS_PER_DAY = 5;
-
-  if (currentSubsToday < MAX_REWARDED_SUBS_PER_DAY) {
-    const subSnap = await get(ref(db, "users/" + subscriberPhone));
-    if (subSnap.exists()) {
-      const sData = subSnap.val();
-      await update(ref(db, "users/" + subscriberPhone), {
-        points: (sData.points || 0) + subscriberPts
+    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
+    if (creatorSnap.exists()) {
+      const cData = creatorSnap.val();
+      const currentCPts = Number(cData.points || 0);
+      const currentSubs = Number(cData.subscribersCount || 0);
+      await update(ref(db, "users/" + creatorPhone), {
+        subscribersCount: currentSubs + 1,
+        points: currentCPts + creatorPts
       });
     }
-    await set(capRef, currentSubsToday + 1);
-    alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
-  } else {
-    alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Aapki aaj ki 5 rewarded subscriptions limit poori ho chuki hai).`);
+
+    const today = getTodayDateKey();
+    const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
+    const capSnap = await get(capRef);
+    const currentSubsToday = Number(capSnap.val() || 0);
+    const MAX_REWARDED_SUBS_PER_DAY = 5;
+
+    if (currentSubsToday < MAX_REWARDED_SUBS_PER_DAY) {
+      const subSnap = await get(ref(db, "users/" + subscriberPhone));
+      if (subSnap.exists()) {
+        const sData = subSnap.val();
+        const currentSPts = Number(sData.points || 0);
+        await update(ref(db, "users/" + subscriberPhone), {
+          points: currentSPts + subscriberPts
+        });
+      }
+      await set(capRef, currentSubsToday + 1);
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
+    } else {
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Aapki aaj ki 5 subscriptions reward limit poori ho chuki hai).`);
+    }
+  } catch (err) {
+    console.error("Subscribe error:", err);
+    alert("Subscribe karne me error aaya: " + err.message);
   }
 };
 
@@ -1206,7 +1206,7 @@ window.convertPointsToToken = async () => {
   const snap = await get(ref(db, "users/" + phone));
   const u = snap.val();
 
-  const currentPoints = u.points || 0;
+  const currentPoints = Number(u.points || 0);
   if (currentPoints < 100) return alert("Minimum 100 points required to convert to Temple_DA tokens.");
 
   const tokensToCredit = Number((currentPoints / 10).toFixed(2));
@@ -1319,7 +1319,6 @@ window.copyPkgAddress = () => {
   alert("Deposit address copied!");
 };
 
-/* Balance Se Package Activate/Renew Karte Waqt Duration Set Hogi */
 window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login to activate or upgrade a package");
@@ -1368,7 +1367,6 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   location.hash = "#user";
 };
 
-/* Package Upgrade Request via USDT Deposit */
 window.requestPackageUpgrade = async (tierName, amount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login to request package upgrade");
@@ -1585,7 +1583,7 @@ function adminDashboard() {
     </table>
     </div>
 
-    <!-- SEPARATE PACKAGE UPGRADE APPROVAL QUEUE WITH TIME SPECIFICATION -->
+    <!-- SEPARATE PACKAGE UPGRADE APPROVAL QUEUE -->
     <div class="card">
     <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
     <div id="pendingPackages"></div>
@@ -1640,7 +1638,6 @@ async function loadPendingPackages() {
   if (el) el.innerHTML = html || "No pending package requests";
 }
 
-/* Admin Approval Par Expiration Date Set Hoti Hai */
 window.approvePackage = async (phone, tier, usdtAmount) => {
   const durationMs = getPackageDurationMs(tier);
   const durationDays = tier === 'yearly' ? 365 : 30;
