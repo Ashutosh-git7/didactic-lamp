@@ -876,35 +876,56 @@ window.requestPackage = async (tierName, amount) => {
 };
 
 /* Talent Logic Functions */
-window.publishTalent = async () => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+wwindow.publishTalent = async () => {
+  try {
+    const phone = localStorage.getItem("user");
+    if (!phone) return alert("Please login first");
 
-  const type = v("talentType");
-  const title = v("talentTitle");
-  const mediaUrl = v("talentMedia");
-  const description = v("talentText");
+    const typeEl = document.getElementById("talentType");
+    const titleEl = document.getElementById("talentTitle");
+    const mediaEl = document.getElementById("talentMedia");
+    const descEl = document.getElementById("talentText");
 
-  if (!title) return alert("Please enter title/caption");
+    const type = typeEl ? typeEl.value : "video";
+    const title = titleEl ? titleEl.value.trim() : "";
+    const mediaUrl = mediaEl ? mediaEl.value.trim() : "";
+    const description = descEl ? descEl.value.trim() : "";
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
+    if (!title) {
+      return alert("Kripya title ya caption zaroor daalein!");
+    }
 
-  const newPostRef = push(ref(db, "posts"));
-  await set(newPostRef, {
-    authorPhone: phone,
-    authorName: u.name || "Creator",
-    type,
-    title,
-    mediaUrl: mediaUrl || "",
-    description: description || "",
-    likesCount: 0,
-    createdAt: Date.now()
-  });
+    // User details fetch
+    const userSnap = await get(ref(db, "users/" + phone));
+    const u = userSnap.exists() ? userSnap.val() : {};
 
-  alert("Talent published to feed!");
-  location.hash = "#feed";
+    // Database me push
+    const newPostRef = push(ref(db, "posts"));
+    await set(newPostRef, {
+      authorPhone: phone,
+      authorName: u.name || "Creator",
+      type: type,
+      title: title,
+      mediaUrl: mediaUrl || "",
+      description: description || "",
+      likesCount: 0,
+      createdAt: Date.now()
+    });
+
+    alert("Talent published to feed successfully!");
+
+    // Form fields reset
+    if (titleEl) titleEl.value = "";
+    if (mediaEl) mediaEl.value = "";
+    if (descEl) descEl.value = "";
+
+    location.hash = "#feed";
+  } catch (error) {
+    console.error("Publish error:", error);
+    alert("Publish karne me error aaya: " + error.message);
+  }
 };
+
 
 window.likePost = async (postId, authorPhone, type) => {
   const userPhone = localStorage.getItem("user");
