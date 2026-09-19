@@ -1331,7 +1331,7 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  // Tier ke anusaar limit set karein
+  // Tier ke anusaار limit set karein
   let maxAllowed = 2; // Starter Pack (5 USDT) ke liye 2 videos daily
   if (userTier === "monthly") {
     maxAllowed = 5; // Pro Creator (15 USDT) ke liye 5 videos daily
@@ -1414,6 +1414,35 @@ window.publishTalent = async () => {
     if (type !== "text" && !mediaUrl) {
       return alert("Select video file or provide direct URL!");
     }
+
+    // ========================================================
+    // 🛡️ DUPLICATE & COPYRIGHT PREVENTION CHECK
+    // ========================================================
+    if (mediaUrl) {
+      const allPostsSnap = await get(ref(db, "posts"));
+      if (allPostsSnap.exists()) {
+        let isDuplicate = false;
+        allPostsSnap.forEach(child => {
+          const existingPost = child.val();
+          if (existingPost.mediaUrl === mediaUrl) {
+            isDuplicate = true;
+          }
+        });
+
+        if (isDuplicate) {
+          if (storagePath) {
+            try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+          }
+          const publishBtn = document.getElementById("publishBtn");
+          if (publishBtn) publishBtn.disabled = false;
+          const progressContainer = document.getElementById("uploadProgressContainer");
+          if (progressContainer) progressContainer.style.display = "none";
+          
+          return alert("⚠️ Duplicate Content Blocked!\nYeh video ya media link pehle se hi platform par uploaded hai. Koi doosra unique content post karein.");
+        }
+      }
+    }
+    // ========================================================
 
     const newPostRef = push(ref(db, "posts"));
     await set(newPostRef, {
