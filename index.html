@@ -240,7 +240,7 @@ td {
 }
 
 /* =========================================================
-   CLEAN CLICK-TO-VIEW HISTORY ACCORDION
+   ACCORDION HISTORIES
 ========================================================= */
 .accordion-wrapper {
   background: rgba(18, 18, 18, 0.8);
@@ -286,31 +286,40 @@ td {
 }
 
 /* =========================================================
-   DEDICATED FULL-SCREEN IMMERSIVE REELS PAGE
+   DEDICATED FULL-SCREEN REELS FEED
 ========================================================= */
-.reels-page-container {
+.reels-page-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 75px);
-  padding: 10px 0;
-  background: #050505;
+  min-height: calc(100vh - 70px);
+  background: #000;
+  padding: 10px;
+}
+
+.reels-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 10px;
 }
 
 .reels-viewport {
   width: 100%;
   max-width: 400px;
-  height: 80vh;
+  height: 78vh;
   max-height: 720px;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
-  border-radius: 18px;
+  border-radius: 16px;
   border: 2px solid rgba(223, 183, 44, 0.4);
   background: #000;
   position: relative;
   scrollbar-width: none;
-  box-shadow: 0 12px 45px rgba(0,0,0,0.9);
+  box-shadow: 0 10px 35px rgba(0,0,0,0.9);
 }
 .reels-viewport::-webkit-scrollbar { display: none; }
 
@@ -336,11 +345,11 @@ td {
 
 .reel-overlay-bottom {
   position: absolute;
-  bottom: 25px;
+  bottom: 20px;
   left: 15px;
   right: 80px;
   z-index: 10;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
   pointer-events: none;
 }
 
@@ -356,28 +365,28 @@ td {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 15px;
 }
 
 .reel-circle-btn {
   background: rgba(20, 20, 20, 0.8);
   border: 1px solid rgba(223, 183, 44, 0.5);
   color: #fff;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.8);
-  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+  transition: transform 0.2s;
   padding: 0;
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
 }
-.reel-circle-btn:hover { transform: scale(1.1); color: #dfb72c; background: rgba(40, 40, 40, 0.95); }
-.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 4px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; color: #fff; text-align: center; }
+.reel-circle-btn:hover { transform: scale(1.1); color: #dfb72c; }
+.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; color: #fff; text-align: center; }
 
 /* Comment / Chat Drawer Modal */
 .chat-drawer {
@@ -435,15 +444,15 @@ td {
 
 <div>
 <a href="#">Home</a>
-<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.15);">⚡ Reels Feed</a>
-<a href="#chat">💬 Community Chat</a>
+<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.15);">⚡ Reels</a>
+<a href="#chat">💬 Chat</a>
 <a href="#packages">Packages</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
 </div>
 </nav>
 
-<div class="container" id="app" style="max-width: 100%; margin: 0; padding: 0;"></div>
+<div class="container" id="app"></div>
 
 <!-- Comments / Reel Chat Drawer -->
 <div id="commentModal" class="chat-drawer">
@@ -538,61 +547,59 @@ function router() {
 
 function landing() {
   appDiv().innerHTML = `
-  <div class="container">
-    <div class="card center">
-      <h2 style="font-size: 24px;">Temple Digital Asset</h2>
-      <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
-      
-      <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
-          <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
-          <div id="timer-display" style="font-size: 24px; font-weight: bold; color: #fff;">
-              <span id="d">00</span>d : <span id="h">00</span>h : <span id="m">00</span>m : <span id="s">00</span>s
-          </div>
-      </div>
-      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <a href="#register"><button style="width: 170px;">Join Now</button></a>
-        <a href="#feed"><button style="width: 170px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
-        <a href="#chat"><button style="width: 170px; background: transparent; border: 2px solid #00ff88; color: #00ff88;">💬 Live Chat</button></a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>About Temple_DA Ecosystem</h3>
-      <p style="color: #ccc; line-height: 1.6;">
-          Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
-          Showcase your reels, videos, art, and writing, interact with members, and earn real 
-          Temple_DA tokens. Holders also earn passive rewards through structured vesting and a 15-level referral system.
-      </p>
-    </div>
-
-    <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style>
-    <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
+  <div class="card center">
+    <h2 style="font-size: 24px;">Temple Digital Asset</h2>
+    <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
     
-    <div class="grid">
-      <div class="card">
-          <h3>Showcase & Earn</h3>
-          <p class="small">Upload reels and videos. Earn points on every like, subscriber & conversation.</p>
-      </div>
-      <div class="card">
-          <h3>15-Level Referral</h3>
-          <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions on community activations.</p>
-      </div>
+    <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
+        <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
+        <div id="timer-display" style="font-size: 24px; font-weight: bold; color: #fff;">
+            <span id="d">00</span>d : <span id="h">00</span>h : <span id="m">00</span>m : <span id="s">00</span>s
+        </div>
     </div>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <a href="#register"><button style="width: 170px;">Join Now</button></a>
+      <a href="#feed"><button style="width: 170px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
+      <a href="#chat"><button style="width: 170px; background: transparent; border: 2px solid #00ff88; color: #00ff88;">💬 Live Chat</button></a>
+    </div>
+  </div>
 
+  <div class="card">
+    <h3>About Temple_DA Ecosystem</h3>
+    <p style="color: #ccc; line-height: 1.6;">
+        Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
+        Showcase your reels, videos, art, and writing, interact with members, and earn real 
+        Temple_DA tokens. Holders also earn passive rewards through structured vesting and a 15-level referral system.
+    </p>
+  </div>
+
+  <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style>
+  <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
+  
+  <div class="grid">
     <div class="card">
-      <h3>Vesting & Lifetime Rewards</h3>
-      <table>
-          <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
-          <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
-          <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
-          <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
-      </table>
+        <h3>Showcase & Earn</h3>
+        <p class="small">Upload reels and videos. Earn points on every like, subscriber & conversation.</p>
     </div>
-    <div class="card center">
-      <h3>Contact Us</h3>
-      <p>For any assistance, please contact us:</p>
-      <a href="mailto:info@templeda.com" style="color: #dfb72c; font-weight: bold; font-size: 17px; text-decoration: none;">info@templeda.com</a>
+    <div class="card">
+        <h3>15-Level Referral</h3>
+        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions on community activations.</p>
     </div>
+  </div>
+
+  <div class="card">
+    <h3>Vesting & Lifetime Rewards</h3>
+    <table>
+        <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
+        <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
+        <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
+        <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
+    </table>
+  </div>
+  <div class="card center">
+    <h3>Contact Us</h3>
+    <p>For any assistance, please contact us:</p>
+    <a href="mailto:info@templeda.com" style="color: #dfb72c; font-weight: bold; font-size: 17px; text-decoration: none;">info@templeda.com</a>
   </div>
   `;
 
@@ -624,22 +631,20 @@ function registerPage() {
   const refPhone = urlParams.get("ref") || "";
 
   appDiv().innerHTML = `
-  <div class="container">
-    <div class="card">
-    <h2>Create Account</h2>
+  <div class="card">
+  <h2>Create Account</h2>
 
-    <div style="background: rgba(223, 183, 44, 0.1); border: 1px solid #dfb72c; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-        <p style="color: #dfb72c; font-weight: bold; font-size: 14px; margin-bottom: 5px;">🎉 Welcome to Temple_DA!</p>
-        <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> welcome reward instantly upon registration.</p>
-    </div>
+  <div style="background: rgba(223, 183, 44, 0.1); border: 1px solid #dfb72c; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+      <p style="color: #dfb72c; font-weight: bold; font-size: 14px; margin-bottom: 5px;">🎉 Welcome to Temple_DA!</p>
+      <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> welcome reward instantly upon registration.</p>
+  </div>
 
-    <input id="name" placeholder="Full name">
-    <input id="phone" placeholder="Phone number">
-    <input id="wallet" placeholder="BEP20 wallet address">
-    <input id="password" type="password" placeholder="Password">
-    <input id="ref" placeholder="Referral phone" value="${refPhone}">
-    <button onclick="registerUser()">Register</button>
-    </div>
+  <input id="name" placeholder="Full name">
+  <input id="phone" placeholder="Phone number">
+  <input id="wallet" placeholder="BEP20 wallet address">
+  <input id="password" type="password" placeholder="Password">
+  <input id="ref" placeholder="Referral phone" value="${refPhone}">
+  <button onclick="registerUser()">Register</button>
   </div>`;
 }
 
@@ -688,13 +693,11 @@ window.registerUser = async () => {
 
 function loginPage() {
   appDiv().innerHTML = `
-  <div class="container">
-    <div class="card">
-    <h2>Login</h2>
-    <input id="phone" placeholder="Phone">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    </div>
+  <div class="card">
+  <h2>Login</h2>
+  <input id="phone" placeholder="Phone">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
   </div>`;
 }
 
@@ -732,34 +735,32 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   COMMUNITY PUBLIC CHATROOM (USER-TO-USER LIVE CHAT)
+   COMMUNITY PUBLIC CHATROOM
 ========================================================================= */
 
 function communityChatPage() {
   const currentUser = localStorage.getItem("user");
   appDiv().innerHTML = `
-    <div class="container">
-      <div class="card" style="max-width:650px; margin: 0 auto; height: 80vh; display: flex; flex-direction: column;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(223,183,44,0.3); padding-bottom:10px;">
-          <h3 style="margin:0;">💬 Community Hub Live Chat</h3>
-          <span class="small" style="color:#00ff88;">● Live Network</span>
-        </div>
-        
-        <div id="communityChatBox" style="flex:1; overflow-y:auto; padding:15px 0;">Loading messages...</div>
-        
-        <div style="border-top: 1px solid rgba(223,183,44,0.2); padding-top:10px;">
-          ${currentUser ? `
-            <div style="display:flex; gap:8px;">
-              <input id="communityInput" placeholder="Share updates or chat with members..." style="margin:0;">
-              <button onclick="sendCommunityMessage()" style="width:110px; margin:0;">Send</button>
-            </div>
-          ` : `
-            <div class="center">
-              <p class="small">Community chat mein message karne ke liye login karein.</p>
-              <a href="#login"><button style="width:200px; margin-top:8px;">Login to Chat</button></a>
-            </div>
-          `}
-        </div>
+    <div class="card" style="max-width:650px; margin: 0 auto; height: 80vh; display: flex; flex-direction: column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(223,183,44,0.3); padding-bottom:10px;">
+        <h3 style="margin:0;">💬 Community Hub Live Chat</h3>
+        <span class="small" style="color:#00ff88;">● Live Network</span>
+      </div>
+      
+      <div id="communityChatBox" style="flex:1; overflow-y:auto; padding:15px 0;">Loading messages...</div>
+      
+      <div style="border-top: 1px solid rgba(223,183,44,0.2); padding-top:10px;">
+        ${currentUser ? `
+          <div style="display:flex; gap:8px;">
+            <input id="communityInput" placeholder="Share updates or chat with members..." style="margin:0;">
+            <button onclick="sendCommunityMessage()" style="width:110px; margin:0;">Send</button>
+          </div>
+        ` : `
+          <div class="center">
+            <p class="small">Community chat mein message karne ke liye login karein.</p>
+            <a href="#login"><button style="width:200px; margin-top:8px;">Login to Chat</button></a>
+          </div>
+        `}
       </div>
     </div>
   `;
@@ -817,19 +818,18 @@ window.sendCommunityMessage = async () => {
 };
 
 /* =========================================================================
-   DEDICATED REELS PAGE (FULL-SCREEN AUTO-PLAY EXPERIENCE)
+   DEDICATED REELS FEED PAGE
 ========================================================================= */
 
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
-    <div class="reels-page-container">
-      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:400px; margin-bottom:8px; padding:0 5px;">
-        <h3 style="margin:0; font-size:16px; color:#dfb72c;">🔥 Temple Reels Feed</h3>
-        <div>
-          ${currentUser ? '<a href="#user"><button style="width:auto; padding:5px 12px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:5px 12px; margin:0; font-size:12px;">Login to Post</button></a>'}
-        </div>
+    <div class="reels-page-wrapper">
+      <div class="reels-top-bar">
+        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;">← Back to Home</button></a>
+        ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">Login</button></a>'}
       </div>
+      
       <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
     </div>
   `;
@@ -860,7 +860,7 @@ function feedPage() {
           let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
           mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
         } else {
-          mediaContent = `<video class="reel-video-element" loop playsinline muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+          mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
         }
       } else {
         mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
@@ -929,11 +929,11 @@ function setupIntersectionAutoplay() {
           vid.play().catch(() => {});
         } else {
           vid.pause();
-          vid.muted = true; // Baahar jaane par wapis mute ho jaye
+          vid.muted = true;
         }
       }
     });
-  }, { threshold: 0.65 });
+  }, { threshold: 0.6 });
 
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
@@ -1006,7 +1006,7 @@ window.submitReelComment = async () => {
 };
 
 /* =========================================================================
-   USER DASHBOARD (ACCORDION HISTORIES & CLEAN VIEW)
+   USER DASHBOARD
 ========================================================================= */
 
 function userDashboard() {
@@ -1033,167 +1033,165 @@ function userDashboard() {
     }
 
     appDiv().innerHTML = `
-    <div class="container">
-      <div class="grid">
-        <div class="card">
-          <h3>Balance</h3>
-          ${Number(u.balance || 0).toFixed(2)} Temple_DA
-        </div>
-
-        <div class="card">
-          <h3>Talent Points</h3>
-          <span class="number">${Number(u.points || 0)}</span> Pts
-        </div>
-
-        <div class="card">
-          <h3>Subscribers</h3>
-          <span class="number">${Number(u.subscribersCount || 0)}</span>
-        </div>
-
-        <div class="card">
-          <h3>USDT Investment</h3>
-          ${u.investment || 0} USDT
-        </div>
-
-        <div class="card">
-          <h3>Locked Yield</h3>
-          ${Number(u.locked || 0).toFixed(2)} TDA
-        </div>
-
-        <div class="card">
-          <h3>Package</h3>
-          <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
-        </div>
-      </div>
-
-      <!-- PACKAGE STATUS CARD -->
-      <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div>
-            <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
-            <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
-          </div>
-          <div>
-            <a href="#packages"><button style="width:auto; padding:10px 18px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a>
-          </div>
-        </div>
-      </div>
-
-      <!-- POST REEL SECTION -->
+    <div class="grid">
       <div class="card">
-        <h3>Post Instagram-Style Reel</h3>
-        <select id="talentType">
-          <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
-          <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
-          <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
-        </select>
-
-        <input id="talentTitle" placeholder="Title / Caption for Reel">
-        
-        <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 8px;">
-          <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:5px;">
-            📁 Select Video/Image File from Device:
-          </label>
-          <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
-          <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 50MB)</p>
-        </div>
-
-        <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL —</p>
-        <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
-        <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
-
-        <div id="uploadProgressContainer" style="display:none; margin: 10px 0;">
-          <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
-          <div style="background:#222; border-radius:4px; height:6px; overflow:hidden; margin-top:4px;">
-            <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
-          </div>
-        </div>
-
-        <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
-      </div>
-
-      <!-- POINTS CONVERSION CARD -->
-      <div class="card">
-        <h3>Points to Token Converter</h3>
-        <p class="small">100 Points = 10 Temple_DA</p>
-        <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
-          Convert Points To Temple_DA
-        </button>
-      </div>
-
-      <!-- INVESTMENT & WITHDRAWAL FORMS -->
-      <div class="card">
-        <h3>Invest & Yield (1 - 250 USDT)</h3>
-        <p class="small">Send USDT (BEP20) to official address:</p>
-        <input id="depositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly>
-        <button onclick="copyAddress()">Copy Address</button>
-        <input id="invest" placeholder="USDT amount (1 - 250 USDT)">
-        <button onclick="invest()">Submit Investment</button>
+        <h3>Balance</h3>
+        ${Number(u.balance || 0).toFixed(2)} Temple_DA
       </div>
 
       <div class="card">
-        <h3>Upgrade Investment Capital</h3>
-        <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)">
-        <button onclick="upgrade()">Upgrade Investment</button>
+        <h3>Talent Points</h3>
+        <span class="number">${Number(u.points || 0)}</span> Pts
       </div>
 
       <div class="card">
-        <h3>Withdraw</h3>
-        <input id="withdraw" placeholder="Temple_DA amount">
-        <button onclick="withdraw()">Request Withdrawal</button>
+        <h3>Subscribers</h3>
+        <span class="number">${Number(u.subscribersCount || 0)}</span>
       </div>
 
       <div class="card">
-        <h3>Referral Link</h3>
-        <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
+        <h3>USDT Investment</h3>
+        ${u.investment || 0} USDT
       </div>
 
-      <!-- CLICK-TO-VIEW ACCORDION HISTORIES -->
-      <h3 style="margin-top:25px;">Account Histories & Posts (Click To View)</h3>
+      <div class="card">
+        <h3>Locked Yield</h3>
+        ${Number(u.locked || 0).toFixed(2)} TDA
+      </div>
 
-      <div class="accordion-wrapper" id="accMyPosts">
-        <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
-          <span>🎬 My Uploaded Reels & Posts</span>
-          <span>▼</span>
+      <div class="card">
+        <h3>Package</h3>
+        <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
+      </div>
+    </div>
+
+    <!-- PACKAGE STATUS CARD -->
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
+          <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
         </div>
-        <div class="accordion-content" id="myUploadedPosts">Loading...</div>
-      </div>
-
-      <div class="accordion-wrapper" id="accPackages">
-        <div class="accordion-header" onclick="toggleAccordion('accPackages')">
-          <span>📦 Package Activation History</span>
-          <span>▼</span>
+        <div>
+          <a href="#packages"><button style="width:auto; padding:10px 18px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a>
         </div>
-        <div class="accordion-content" id="packageHistory">Loading...</div>
+      </div>
+    </div>
+
+    <!-- POST REEL SECTION -->
+    <div class="card">
+      <h3>Post Instagram-Style Reel</h3>
+      <select id="talentType">
+        <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
+        <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
+        <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
+      </select>
+
+      <input id="talentTitle" placeholder="Title / Caption for Reel">
+      
+      <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 8px;">
+        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:5px;">
+          📁 Select Video/Image File from Device:
+        </label>
+        <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
+        <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 50MB)</p>
       </div>
 
-      <div class="accordion-wrapper" id="accInvest">
-        <div class="accordion-header" onclick="toggleAccordion('accInvest')">
-          <span>💰 Investment History</span>
-          <span>▼</span>
+      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL —</p>
+      <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
+      <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
+
+      <div id="uploadProgressContainer" style="display:none; margin: 10px 0;">
+        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
+        <div style="background:#222; border-radius:4px; height:6px; overflow:hidden; margin-top:4px;">
+          <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
         </div>
-        <div class="accordion-content" id="investHistory">Loading...</div>
       </div>
 
-      <div class="accordion-wrapper" id="accUpgrade">
-        <div class="accordion-header" onclick="toggleAccordion('accUpgrade')">
-          <span>⚡ Upgrade History</span>
-          <span>▼</span>
-        </div>
-        <div class="accordion-content" id="upgradeHistory">Loading...</div>
-      </div>
+      <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
+    </div>
 
-      <div class="accordion-wrapper" id="accWithdraw">
-        <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
-          <span>📤 Withdrawal History</span>
-          <span>▼</span>
-        </div>
-        <div class="accordion-content" id="withdrawHistory">Loading...</div>
-      </div>
+    <!-- POINTS CONVERSION CARD -->
+    <div class="card">
+      <h3>Points to Token Converter</h3>
+      <p class="small">100 Points = 10 Temple_DA</p>
+      <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
+        Convert Points To Temple_DA
+      </button>
+    </div>
 
-      <div class="card center" style="margin-top:20px;">
-        <button onclick="logout()">Logout</button>
+    <!-- INVESTMENT & WITHDRAWAL FORMS -->
+    <div class="card">
+      <h3>Invest & Yield (1 - 250 USDT)</h3>
+      <p class="small">Send USDT (BEP20) to official address:</p>
+      <input id="depositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly>
+      <button onclick="copyAddress()">Copy Address</button>
+      <input id="invest" placeholder="USDT amount (1 - 250 USDT)">
+      <button onclick="invest()">Submit Investment</button>
+    </div>
+
+    <div class="card">
+      <h3>Upgrade Investment Capital</h3>
+      <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)">
+      <button onclick="upgrade()">Upgrade Investment</button>
+    </div>
+
+    <div class="card">
+      <h3>Withdraw</h3>
+      <input id="withdraw" placeholder="Temple_DA amount">
+      <button onclick="withdraw()">Request Withdrawal</button>
+    </div>
+
+    <div class="card">
+      <h3>Referral Link</h3>
+      <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
+    </div>
+
+    <!-- CLICK-TO-VIEW ACCORDION HISTORIES -->
+    <h3 style="margin-top:25px;">Account Histories & Posts (Click To View)</h3>
+
+    <div class="accordion-wrapper" id="accMyPosts">
+      <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
+        <span>🎬 My Uploaded Reels & Posts</span>
+        <span>▼</span>
       </div>
+      <div class="accordion-content" id="myUploadedPosts">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accPackages">
+      <div class="accordion-header" onclick="toggleAccordion('accPackages')">
+        <span>📦 Package Activation History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="packageHistory">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accInvest">
+      <div class="accordion-header" onclick="toggleAccordion('accInvest')">
+        <span>💰 Investment History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="investHistory">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accUpgrade">
+      <div class="accordion-header" onclick="toggleAccordion('accUpgrade')">
+        <span>⚡ Upgrade History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="upgradeHistory">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accWithdraw">
+      <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
+        <span>📤 Withdrawal History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="withdrawHistory">Loading...</div>
+    </div>
+
+    <div class="card center" style="margin-top:20px;">
+      <button onclick="logout()">Logout</button>
     </div>
     `;
 
@@ -1543,7 +1541,7 @@ window.convertPointsToToken = async () => {
 };
 
 /* =========================================================================
-   PACKAGES PAGE & DURATION MANAGEMENT
+   PACKAGES PAGE
 ========================================================================= */
 
 async function packagesPage() {
@@ -1570,66 +1568,64 @@ async function packagesPage() {
   const eliteTokens = Number((120 / currentPrice).toFixed(2));
 
   appDiv().innerHTML = `
-    <div class="container">
-      <div class="card center">
-        <h2>Creator Packages & Durations</h2>
-        <p>Har package ka subscription time nishchit hai. <b>Yeh aapke regular 30-days vesting plan se alag track hota hai.</b></p>
-        ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+    <div class="card center">
+      <h2>Creator Packages & Durations</h2>
+      <p>Har package ka subscription time nishchit hai. <b>Yeh aapke regular 30-days vesting plan se alag track hota hai.</b></p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+      
+      <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
+        <p class="small" style="color: #dfb72c; font-weight: bold;">Official Deposit Address (USDT BEP20):</p>
+        <input id="pkgDepositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly style="margin: 8px 0; text-align: center;">
+        <button onclick="copyPkgAddress()" style="padding: 8px; font-size: 12px; width: 150px; margin: 0 auto;">Copy Address</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- STARTER PACK -->
+      <div class="card center" style="${currentTier === 'starter' ? 'border: 2px solid #00ff88;' : ''}">
+        <h3 style="color:#fff;">Starter Pack</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
+        <p class="small">≈ ${starterTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
+        <p class="small">✓ Earn Like & Subscribe Points</p>
         
-        <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
-          <p class="small" style="color: #dfb72c; font-weight: bold;">Official Deposit Address (USDT BEP20):</p>
-          <input id="pkgDepositAddress" value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly style="margin: 8px 0; text-align: center;">
-          <button onclick="copyPkgAddress()" style="padding: 8px; font-size: 12px; width: 150px; margin: 0 auto;">Copy Address</button>
-        </div>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
-      <div class="grid">
-        <!-- STARTER PACK -->
-        <div class="card center" style="${currentTier === 'starter' ? 'border: 2px solid #00ff88;' : ''}">
-          <h3 style="color:#fff;">Starter Pack</h3>
-          <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
-          <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-          <p class="small">≈ ${starterTokens} Temple_DA</p>
-          <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
-          <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos / Reels Daily Limit</p>
-          <p class="small">✓ 30 Din Ki Validity</p>
-          <p class="small">✓ Earn Like & Subscribe Points</p>
-          
-          <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
-          <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
-        </div>
+      <!-- PRO CREATOR PACK -->
+      <div class="card center" style="border: 2px solid #dfb72c; ${currentTier === 'monthly' ? 'border-color:#00ff88;' : ''}">
+        <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
+        <h3 style="color:#dfb72c;">Pro Creator</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
+        <p class="small">≈ ${proTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
+        <p class="small">✓ Verified Creator Badge</p>
+        <p class="small">✓ 2X Leaderboard Pool Priority</p>
+        
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
+      </div>
 
-        <!-- PRO CREATOR PACK -->
-        <div class="card center" style="border: 2px solid #dfb72c; ${currentTier === 'monthly' ? 'border-color:#00ff88;' : ''}">
-          <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
-          <h3 style="color:#dfb72c;">Pro Creator</h3>
-          <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
-          <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-          <p class="small">≈ ${proTokens} Temple_DA</p>
-          <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
-          <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
-          <p class="small">✓ 30 Din Ki Validity</p>
-          <p class="small">✓ Verified Creator Badge</p>
-          <p class="small">✓ 2X Leaderboard Pool Priority</p>
-          
-          <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
-          <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
-        </div>
-
-        <!-- ELITE YEARLY PACK -->
-        <div class="card center" style="${currentTier === 'yearly' ? 'border: 2px solid #00ff88;' : ''}">
-          <h3 style="color:#fff;">Elite Yearly</h3>
-          <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
-          <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days (1 Year)</p>
-          <p class="small">≈ ${eliteTokens} Temple_DA</p>
-          <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
-          <p class="small" style="color:#00ff88; font-weight:bold;">✓ Full 365 Days Uninterrupted Access</p>
-          <p class="small">✓ Unlimited Reels + VIP Pinning</p>
-          <p class="small">✓ Zero Conversion Fees</p>
-          
-          <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
-          <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
-        </div>
+      <!-- ELITE YEARLY PACK -->
+      <div class="card center" style="${currentTier === 'yearly' ? 'border: 2px solid #00ff88;' : ''}">
+        <h3 style="color:#fff;">Elite Yearly</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days (1 Year)</p>
+        <p class="small">≈ ${eliteTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Full 365 Days Uninterrupted Access</p>
+        <p class="small">✓ Unlimited Reels + VIP Pinning</p>
+        <p class="small">✓ Zero Conversion Fees</p>
+        
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
+        <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
     </div>
   `;
@@ -1716,7 +1712,7 @@ window.requestPackageUpgrade = async (tierName, amount) => {
 };
 
 /* =========================================================================
-   CORE INVESTMENT (1-250 USDT), VESTING, REFERRALS & ADMIN
+   CORE INVESTMENT & WITHDRAWAL
 ========================================================================= */
 
 window.copyAddress = () => {
@@ -1880,49 +1876,47 @@ function adminDashboard() {
     });
 
     appDiv().innerHTML = `
-    <div class="container">
-      <div class="card">
-      <h2>Admin Dashboard</h2>
-      <input id="price" placeholder="Update Temple_DA price">
-      <button onclick="updatePrice()">Update Price</button>
-      <button onclick="adminLogout()">Admin Logout</button>
-      </div>
+    <div class="card">
+    <h2>Admin Dashboard</h2>
+    <input id="price" placeholder="Update Temple_DA price">
+    <button onclick="updatePrice()">Update Price</button>
+    <button onclick="adminLogout()">Admin Logout</button>
+    </div>
 
-      <div class="card">
-      <h3>Users Overview</h3>
-      <table>
-      <tr>
-      <th>ID</th>
-      <th>Name</th>
-      <th>Package</th>
-      <th>Balance</th>
-      <th>Invested</th>
-      <th>Locked</th>
-      <th>Action</th>
-      </tr>
-      ${rows}
-      </table>
-      </div>
+    <div class="card">
+    <h3>Users Overview</h3>
+    <table>
+    <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Package</th>
+    <th>Balance</th>
+    <th>Invested</th>
+    <th>Locked</th>
+    <th>Action</th>
+    </tr>
+    ${rows}
+    </table>
+    </div>
 
-      <div class="card">
-      <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
-      <div id="pendingPackages"></div>
-      </div>
+    <div class="card">
+    <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
+    <div id="pendingPackages"></div>
+    </div>
 
-      <div class="card">
-      <h3>Pending Investments (30-Day Vesting)</h3>
-      <div id="pendingInvest"></div>
-      </div>
+    <div class="card">
+    <h3>Pending Investments (30-Day Vesting)</h3>
+    <div id="pendingInvest"></div>
+    </div>
 
-      <div class="card">
-      <h3>Pending Investment Upgrades</h3>
-      <div id="pendingUpgrade"></div>
-      </div>
+    <div class="card">
+    <h3>Pending Investment Upgrades</h3>
+    <div id="pendingUpgrade"></div>
+    </div>
 
-      <div class="card">
-      <h3>Pending Withdrawals</h3>
-      <div id="pendingWithdraw"></div>
-      </div>
+    <div class="card">
+    <h3>Pending Withdrawals</h3>
+    <div id="pendingWithdraw"></div>
     </div>
     `;
 
