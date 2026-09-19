@@ -838,7 +838,7 @@ window.sendCommunityMessage = async () => {
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
-    <div class="reels-page-wrapper">
+    <div class="reels-page-wrapper" onclick="enableAudioOnFirstTouch()">
       <div class="reels-top-bar">
         <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;">← Back to Home</button></a>
         ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">Login</button></a>'}
@@ -925,6 +925,13 @@ function feedPage() {
   });
 }
 
+window.enableAudioOnFirstTouch = () => {
+  const activeVideo = document.querySelector('.reel-item video');
+  if (activeVideo && activeVideo.paused) {
+    activeVideo.play().catch(() => {});
+  }
+};
+
 window.toggleVideoPlayback = (videoEl) => {
   if (videoEl.paused) {
     videoEl.muted = false;
@@ -947,7 +954,7 @@ function setupIntersectionAutoplay() {
         }
       }
     });
-  }, { threshold: 0.6 });
+  }, { threshold: 0.5 });
 
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
