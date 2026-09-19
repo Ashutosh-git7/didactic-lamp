@@ -568,8 +568,7 @@ async function getLivePriceData() {
     }
   } catch (err) {}
 
-  const s = await get(ref(db, "config/temple_DAPrice"));
-  return s.exists() ? s.val() : 0.0002;
+  return 0.0002;
 }
 
 async function getPrice() {
@@ -584,7 +583,7 @@ async function landing() {
     <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
     
     <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; text-align: center;">
-        <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
+        <span class="small" style="display:block; color:#aaa;">LIVE MARKET PRICE (USDT)</span>
         <span class="number" style="font-size:20px;">$${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
@@ -1943,8 +1942,7 @@ async function adminDashboard() {
 
     <div class="card">
     <h2>Admin Dashboard</h2>
-    <input id="price" placeholder="Override Temple_DA USD price">
-    <button onclick="updatePrice()">Update Price Override</button>
+    <p class="small" style="color:#00ff88; margin-bottom: 10px;">⚡ Pricing is fully automated via Live DexScreener API.</p>
     <button onclick="adminLogout()">Admin Logout</button>
     </div>
 
@@ -2308,12 +2306,6 @@ window.releaseLocked = async phone => {
   });
 
   alert("Full cycle completed. User can invest again.");
-};
-
-window.updatePrice = async () => {
-  const p = parseFloat(v("price"));
-  await set(ref(db, "config/temple_DAPrice"), p);
-  alert("Price override updated");
 };
 
 window.editUser = async oldId => {
