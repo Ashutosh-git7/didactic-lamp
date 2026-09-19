@@ -1146,13 +1146,13 @@ async function userDashboard() {
       
       <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 8px;">
         <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:5px;">
-          📁 Select Video/Image File from Device:
+          📁 Select Video/Image File from Device (Optional):
         </label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
         <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 50MB)</p>
       </div>
 
-      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL —</p>
+      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / MP4) —</p>
       <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
       <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
 
@@ -1313,7 +1313,6 @@ function loadMyPosts(phone) {
 }
 
 async function checkDailyVideoLimit(phone, userTier) {
-  // Elite Yearly ke liye completely unlimited
   if (userTier === "yearly") return true;
 
   const now = new Date();
@@ -1331,10 +1330,9 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  // Tier ke anusaار limit set karein
-  let maxAllowed = 2; // Starter Pack (5 USDT) ke liye 2 videos daily
+  let maxAllowed = 2; // Starter Pack (5 USDT)
   if (userTier === "monthly") {
-    maxAllowed = 5; // Pro Creator (15 USDT) ke liye 5 videos daily
+    maxAllowed = 5; // Pro Creator (15 USDT)
   }
 
   if (todayVideoCount >= maxAllowed) {
@@ -1374,6 +1372,7 @@ window.publishTalent = async () => {
 
     let storagePath = "";
 
+    // Robust File Upload with Error Handling & Fallback Notice
     if (file) {
       if (file.size > 50 * 1024 * 1024) return alert("File size 50MB se kam honi chahiye!");
 
@@ -1385,30 +1384,36 @@ window.publishTalent = async () => {
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
 
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-      storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
-      const fileRef = sRef(storage, storagePath);
-      const uploadTask = uploadBytesResumable(fileRef, file);
+      try {
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
+        const fileRef = sRef(storage, storagePath);
+        const uploadTask = uploadBytesResumable(fileRef, file);
 
-      await new Promise((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          snapshot => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            if (progressBar) progressBar.style.width = progress + "%";
-            if (statusText) statusText.innerText = `Uploading Reel: ${Math.round(progress)}%`;
-          },
-          error => {
-            if (publishBtn) publishBtn.disabled = false;
-            if (progressContainer) progressContainer.style.display = "none";
-            reject(error);
-          },
-          async () => {
-            mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve();
-          }
-        );
-      });
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            snapshot => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              if (progressBar) progressBar.style.width = progress + "%";
+              if (statusText) statusText.innerText = `Uploading Reel: ${Math.round(progress)}%`;
+            },
+            error => { reject(error); },
+            async () => {
+              mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve();
+            }
+          );
+        });
+      } catch (uploadErr) {
+        console.warn("Storage upload failed, switching to direct URL check:", uploadErr);
+        if (publishBtn) publishBtn.disabled = false;
+        if (progressContainer) progressContainer.style.display = "none";
+        
+        if (!mediaUrl) {
+          return alert("⚠️ File direct upload nahi ho saki (Storage network error). Kripya YouTube Shorts link ya direct video MP4 URL 'Direct URL' box mein daal kar publish karein!");
+        }
+      }
     }
 
     if (type !== "text" && !mediaUrl) {
