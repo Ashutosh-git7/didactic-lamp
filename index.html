@@ -286,11 +286,11 @@ td {
 }
 
 /* =========================================================
-   INSTAGRAM STYLE REELS ENGINE & MESSAGING
+   INSTAGRAM STYLE FULL-SCREEN REELS ENGINE
 ========================================================= */
 .reels-viewport {
   max-width: 420px;
-  height: calc(100vh - 90px);
+  height: calc(100vh - 120px);
   margin: 0 auto;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
@@ -299,6 +299,7 @@ td {
   background: #000;
   position: relative;
   scrollbar-width: none;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
 }
 .reels-viewport::-webkit-scrollbar { display: none; }
 
@@ -308,7 +309,7 @@ td {
   height: 100%;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  background: #080808;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -319,15 +320,16 @@ td {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: pointer;
 }
 
 .reel-overlay-bottom {
   position: absolute;
-  bottom: 20px;
+  bottom: 25px;
   left: 15px;
-  right: 80px;
+  right: 85px;
   z-index: 10;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
   pointer-events: none;
 }
 
@@ -343,27 +345,28 @@ td {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .reel-circle-btn {
-  background: rgba(15, 15, 15, 0.7);
+  background: rgba(20, 20, 20, 0.75);
   border: 1px solid rgba(223, 183, 44, 0.4);
   color: #fff;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
-  transition: transform 0.2s;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+  transition: transform 0.2s, background 0.2s;
   padding: 0;
   margin: 0;
+  font-size: 18px;
 }
-.reel-circle-btn:hover { transform: scale(1.1); color: #dfb72c; }
-.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; }
+.reel-circle-btn:hover { transform: scale(1.1); color: #dfb72c; background: rgba(40, 40, 40, 0.9); }
+.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 4px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; color: #fff; text-align: center; }
 
 /* Comment / Chat Drawer Modal */
 .chat-drawer {
@@ -836,7 +839,7 @@ function feedPage() {
           let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
           mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
         } else {
-          mediaContent = `<video class="reel-video-element" loop playsinline src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+          mediaContent = `<video class="reel-video-element" loop playsinline muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
         }
       } else {
         mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
@@ -888,8 +891,12 @@ function feedPage() {
 }
 
 window.toggleVideoPlayback = (videoEl) => {
-  if (videoEl.paused) videoEl.play();
-  else videoEl.pause();
+  if (videoEl.paused) {
+    videoEl.muted = false; // Tap karne par sound unmute ho jayegi
+    videoEl.play();
+  } else {
+    videoEl.pause();
+  }
 };
 
 function setupIntersectionAutoplay() {
