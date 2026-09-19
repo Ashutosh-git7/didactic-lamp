@@ -559,12 +559,58 @@ function router() {
   (routes[hash] || landing)();
 }
 
-function landing() {
+async function getLivePriceData() {
+  try {
+    const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
+    const data = await res.json();
+    if (data && data.pair && data.pair.priceUsd) {
+      const priceUsd = parseFloat(data.pair.priceUsd);
+      // Fetch USD to INR rate dynamically or fallback to standard approx rate if offline
+      let inrRate = 83.5; 
+      try {
+        const rateRes = await fetch("https://open.er-api.com/v6/latest/USD");
+        const rateData = await rateRes.json();
+        if (rateData && rateData.rates && rateData.rates.INR) {
+          inrRate = rateData.rates.INR;
+        }
+      } catch (e) {}
+      
+      return {
+        usd: priceUsd,
+        inr: priceUsd * inrRate
+      };
+    }
+  } catch (err) {}
+
+  // Fallback to DB price
+  const s = await get(ref(db, "config/temple_DAPrice"));
+  const pUsd = s.exists() ? s.val() : 0.0002;
+  return { usd: pUsd, inr: pUsd * 83.5 };
+}
+
+async function getPrice() {
+  const p = await getLivePriceData();
+  return p.usd;
+}
+
+async function landing() {
+  const priceObj = await getLivePriceData();
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 24px;">Temple Digital Asset</h2>
     <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
     
+    <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
+            <span class="number" style="font-size:18px;">$${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
+        </div>
+        <div>
+            <span class="small" style="display:block; color:#aaa;">LIVE PRICE (INR)</span>
+            <span class="number" style="font-size:18px; color:#00ff88;">₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
+        </div>
+    </div>
+
     <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
         <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
         <div id="timer-display" style="font-size: 24px; font-weight: bold; color: #fff;">
@@ -1030,9 +1076,11 @@ window.submitReelComment = async () => {
    USER DASHBOARD
 ========================================================================= */
 
-function userDashboard() {
+async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
+
+  const priceObj = await getLivePriceData();
 
   onValue(ref(db, "users/" + phone), snap => {
     const u = snap.val() || {};
@@ -1053,11 +1101,22 @@ function userDashboard() {
       expiryNotice = `<span style="color:#aaa; font-size:13px;">No active package subscription</span>`;
     }
 
+    const balTda = Number(u.balance || 0);
+    const balUsd = (balTda * priceObj.usd).toFixed(2);
+    const balInr = (balTda * priceObj.inr).toFixed(2);
+
     appDiv().innerHTML = `
+    <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rates:</span>
+        <span>USDT: $${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
+        <span style="color:#00ff88;">INR: ₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
+    </div>
+
     <div class="grid">
       <div class="card">
         <h3>Balance</h3>
-        ${Number(u.balance || 0).toFixed(2)} Temple_DA
+        ${balTda.toFixed(2)} TDA<br>
+        <span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span>
       </div>
 
       <div class="card">
@@ -1861,8 +1920,10 @@ window.withdraw = async () => {
   alert("Withdrawal request successfully submitted for approval!");
 };
 
-function adminDashboard() {
+async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
+
+  const priceObj = await getLivePriceData();
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
@@ -1880,12 +1941,16 @@ function adminDashboard() {
         }
       }
 
+      const balTda = Number(u.balance || 0);
+      const balUsd = (balTda * priceObj.usd).toFixed(2);
+      const balInr = (balTda * priceObj.inr).toFixed(2);
+
       rows += `
       <tr>
       <td>${p}</td>
       <td>${u.name}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span></td>
-      <td>${Number(u.balance || 0).toFixed(2)}</td>
+      <td>${balTda.toFixed(2)} TDA<br><span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span></td>
       <td>${u.investment || 0}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
@@ -1897,10 +1962,16 @@ function adminDashboard() {
     });
 
     appDiv().innerHTML = `
+    <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rates:</span>
+        <span>USDT: $${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
+        <span style="color:#00ff88;">INR: ₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
+    </div>
+
     <div class="card">
     <h2>Admin Dashboard</h2>
-    <input id="price" placeholder="Update Temple_DA price">
-    <button onclick="updatePrice()">Update Price</button>
+    <input id="price" placeholder="Override Temple_DA USD price">
+    <button onclick="updatePrice()">Update Price Override</button>
     <button onclick="adminLogout()">Admin Logout</button>
     </div>
 
@@ -2266,15 +2337,10 @@ window.releaseLocked = async phone => {
   alert("Full cycle completed. User can invest again.");
 };
 
-async function getPrice() {
-  const s = await get(ref(db, "config/temple_DAPrice"));
-  return s.exists() ? s.val() : 0.0002;
-}
-
 window.updatePrice = async () => {
   const p = parseFloat(v("price"));
   await set(ref(db, "config/temple_DAPrice"), p);
-  alert("Price updated");
+  alert("Price override updated");
 };
 
 window.editUser = async oldId => {
