@@ -1313,7 +1313,8 @@ function loadMyPosts(phone) {
 }
 
 async function checkDailyVideoLimit(phone, userTier) {
-  if (userTier !== "starter") return true;
+  // Elite Yearly ke liye completely unlimited
+  if (userTier === "yearly") return true;
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -1330,8 +1331,14 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  if (todayVideoCount >= 2) {
-    alert("⚠️ Daily Video Limit Reached!\nAap Starter Pack par hain aur aaj ki 2 video limit complete ho chuki hai. Unlimited video uploads ke liye Pro Creator package activate karein!");
+  // Tier ke anusaar limit set karein
+  let maxAllowed = 2; // Starter Pack (5 USDT) ke liye 2 videos daily
+  if (userTier === "monthly") {
+    maxAllowed = 5; // Pro Creator (15 USDT) ke liye 5 videos daily
+  }
+
+  if (todayVideoCount >= maxAllowed) {
+    alert(`⚠️ Daily Video Limit Reached!\nAapke current (${userTier.toUpperCase()}) package ki aaj ki ${maxAllowed} video limit complete ho chuki hai. Unlimited uploads ke liye Elite Yearly package upgrade karein!`);
     return false;
   }
   return true;
@@ -1659,7 +1666,7 @@ async function packagesPage() {
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <p class="small">≈ ${proTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos / Reels Daily Limit</p>
         <p class="small">✓ 30 Din Ki Validity</p>
         <p class="small">✓ Verified Creator Badge</p>
         <p class="small">✓ 2X Leaderboard Pool Priority</p>
@@ -1675,8 +1682,8 @@ async function packagesPage() {
         <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days (1 Year)</p>
         <p class="small">≈ ${eliteTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Full 365 Days Uninterrupted Access</p>
-        <p class="small">✓ Unlimited Reels + VIP Pinning</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small">✓ Full 365 Days Uninterrupted Access</p>
         <p class="small">✓ Zero Conversion Fees</p>
         
         <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} Temple_DA)</button>
