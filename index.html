@@ -30,20 +30,21 @@ nav {
   justify-content: space-between;
   align-items: center;
   padding: 15px 40px;
-  background: rgba(10, 10, 10, 0.75);
+  background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 2px solid #dfb72c;
   box-shadow: 0 4px 20px rgba(223, 183, 44, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 nav div:first-child {
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
   font-size: 20px;
-  background: linear-gradient(45deg, #dfb72c, #fff, #999);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px rgba(223, 183, 44, 0.3);
+  display: flex;
+  align-items: center;
 }
 
 nav a {
@@ -240,15 +241,6 @@ td button {
   display: inline-block;
 }
 
-.post-media-container {
-  margin: 15px 0;
-  max-width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid rgba(223, 183, 44, 0.2);
-  background: #000;
-}
-
 .badge-tag {
   display: inline-block;
   padding: 3px 8px;
@@ -272,24 +264,146 @@ td button {
   color: #ff4444;
   border: 1px solid #ff4444;
 }
+
+/* =========================================================
+   INSTAGRAM STYLE REELS ENGINE & MESSAGING
+========================================================= */
+.reels-viewport {
+  max-width: 440px;
+  height: calc(100vh - 100px);
+  margin: 0 auto;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  border-radius: 16px;
+  border: 1px solid rgba(223, 183, 44, 0.4);
+  background: #000;
+  position: relative;
+  scrollbar-width: none;
+}
+.reels-viewport::-webkit-scrollbar { display: none; }
+
+.reel-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  background: #080808;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.reel-item video, .reel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reel-overlay-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 15px;
+  right: 80px;
+  z-index: 10;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+.reel-overlay-bottom * {
+  pointer-events: auto;
+}
+
+.reel-actions-bar {
+  position: absolute;
+  bottom: 30px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.reel-circle-btn {
+  background: rgba(15, 15, 15, 0.7);
+  border: 1px solid rgba(223, 183, 44, 0.4);
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+  transition: transform 0.2s;
+  padding: 0;
+  margin: 0;
+}
+.reel-circle-btn:hover { transform: scale(1.12); color: #dfb72c; }
+.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; }
+
+/* Real-Time Message / Comment Modal Drawer */
+.chat-drawer {
+  position: fixed;
+  bottom: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 450px;
+  height: 72vh;
+  background: rgba(14, 14, 14, 0.98);
+  border-top: 2px solid #dfb72c;
+  border-radius: 20px 20px 0 0;
+  z-index: 3000;
+  transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+  padding: 18px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+}
+.chat-drawer.open { bottom: 0; }
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(223, 183, 44, 0.3);
+  padding-bottom: 10px;
+}
+
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  margin-top: 8px;
+}
+
+.chat-msg {
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid #dfb72c;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
 </style>
 </head>
 
 <body>
 
 <nav>
-<div style="text-align: center; padding: 10px; background-color: transparent;">
-    <img src="temple_logo.png.png" 
-         alt="Temple Logo" 
-         style="width: 70px; height: auto; display: inline-block; vertical-align: middle;">
-    <span style="color: #ffd700; font-size: 20px; font-weight: bold; margin-left: 10px; vertical-align: middle;">
+<div style="text-align: center; padding: 5px; background-color: transparent;">
+    <img src="temple_logo.png.png" alt="Temple Logo" style="width: 50px; height: auto; display: inline-block; vertical-align: middle;" onerror="this.style.display='none'">
+    <span style="color: #ffd700; font-size: 20px; font-weight: bold; margin-left: 8px; vertical-align: middle;">
         Temple_DA
     </span>
 </div>
 
 <div>
 <a href="#">Home</a>
-<a href="#feed">Talent Feed</a>
+<a href="#feed">⚡ Reels Feed</a>
 <a href="#packages">Creator Packages</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
@@ -297,6 +411,19 @@ td button {
 </nav>
 
 <div class="container" id="app"></div>
+
+<!-- Comments / Chat Drawer Modal -->
+<div id="commentModal" class="chat-drawer">
+  <div class="chat-header">
+    <h3 style="font-size:16px; margin:0;" id="chatReelTitle">Reel Messages</h3>
+    <button onclick="closeCommentsModal()" style="width:auto; padding:5px 12px; margin:0; background:transparent; border:1px solid #ff4444; color:#ff4444;">✕ Close</button>
+  </div>
+  <div class="chat-box" id="commentsList">Loading comments...</div>
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <input id="chatInput" placeholder="Write a message or comment..." style="margin:0; font-size:14px;">
+    <button onclick="submitReelComment()" style="width:110px; margin:0; padding:12px; font-size:12px;">Send</button>
+  </div>
+</div>
 
 <script type="module">
 
@@ -320,15 +447,10 @@ const db = getDatabase(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-signInAnonymously(auth)
-.then(() => {
-  console.log("Firebase Secure Login Success");
-})
-.catch((error) => {
-  console.log("Firebase Anonymous Login Error:", error);
-});
+signInAnonymously(auth).catch(e => console.log("Auth notice:", e));
 
 const walletRegex = /^0x[a-fA-F0-9]{40}$/;
+let activePostIdForComments = null;
 
 function maskPhone(phone) {
   if (!phone || typeof phone !== 'string') return "Creator";
@@ -342,10 +464,7 @@ function getTodayDateKey() {
 }
 
 function getPackageDurationMs(tier) {
-  if (tier === "yearly") {
-    return 365 * 24 * 60 * 60 * 1000;
-  }
-  return 30 * 24 * 60 * 60 * 1000;
+  return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 }
 
 function checkAndHandlePackageExpiry(phone, u) {
@@ -382,7 +501,7 @@ function landing() {
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 24px;">Temple Digital Asset</h2>
-    <p>The Future of Decentralized Finance, Talent Showcase & Community Growth</p>
+    <p>The Future of Decentralized Finance, Instagram-Style Talent Showcase & Community Growth</p>
     
     <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
         <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
@@ -392,7 +511,7 @@ function landing() {
     </div>
     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
       <a href="#register"><button style="width: 180px;">Join Now</button></a>
-      <a href="#feed"><button style="width: 180px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">Talent Feed</button></a>
+      <a href="#feed"><button style="width: 180px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
     </div>
   </div>
 
@@ -400,7 +519,7 @@ function landing() {
     <h3>About Temple_DA Ecosystem</h3>
     <p style="color: #ccc; line-height: 1.6;">
         Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
-        Showcase your skills (reels, videos, art, writing), get likes & subscriptions from community members, and earn real 
+        Showcase your reels, videos, art, and writing, get likes & messages from community members, and earn real 
         Temple_DA tokens. Holders also earn passive rewards through structured vesting and a 15-level referral system.
     </p>
     
@@ -410,12 +529,13 @@ function landing() {
     </p>
   </div>
 
-  <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style><div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
+  <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style>
+  <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
   
   <div class="grid">
     <div class="card">
         <h3>Showcase & Earn</h3>
-        <p class="small">Upload reels, artwork, and posts. Earn direct reward points on every like and subscriber.</p>
+        <p class="small">Upload reels and creative videos. Earn direct reward points on every like, comment, and subscriber.</p>
     </div>
     <div class="card">
         <h3>15-Level Referral</h3>
@@ -440,18 +560,19 @@ function landing() {
   `;
 
   const target = new Date("April 19, 2026 07:00:00").getTime();
-  
   const timer = setInterval(() => {
     const now = new Date().getTime();
     let diff = target - now;
     const el = document.getElementById("timer-display");
-
     if (!el) { clearInterval(timer); return; }
 
     if (diff <= 0) {
       diff = Math.abs(diff);
-      document.getElementById("timer-label").innerText = "🚀 WE ARE LIVE SINCE:";
-      document.getElementById("timer-label").style.color = "#00ff88";
+      const label = document.getElementById("timer-label");
+      if (label) {
+        label.innerText = "🚀 WE ARE LIVE SINCE:";
+        label.style.color = "#00ff88";
+      }
     }
 
     document.getElementById("d").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
@@ -495,9 +616,7 @@ window.registerUser = async () => {
   let walletExists = false;
 
   usersSnap.forEach(s => {
-    if (s.val().wallet === wallet) {
-      walletExists = true;
-    }
+    if (s.val().wallet === wallet) walletExists = true;
   });
 
   if (walletExists) return alert("This wallet is already registered");
@@ -524,7 +643,7 @@ window.registerUser = async () => {
     subscribersCount: 0
   });
 
-  alert("Registration successful");
+  alert("Registration successful! 6 Temple_DA added.");
   location.hash = "#login";
 };
 
@@ -532,10 +651,8 @@ function loginPage() {
   appDiv().innerHTML = `
   <div class="card">
   <h2>Login</h2>
-
   <input id="phone" placeholder="Phone">
   <input id="password" type="password" placeholder="Password">
-
   <button onclick="login()">Login</button>
   </div>`;
 }
@@ -548,7 +665,6 @@ window.login = async () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, phone, pass);
       const user = userCredential.user;
-
       const adminSnap = await get(ref(db, "admins/" + user.uid));
       
       if (adminSnap.exists()) {
@@ -575,7 +691,192 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   TALENT ECOSYSTEM: DASHBOARD, REELS, PACKAGES & TIME LIMIT ENGINE
+   INSTAGRAM STYLE REELS ENGINE (SNAP SCROLL + VIDEO PLAYER + CHAT/MSG)
+========================================================================= */
+
+function feedPage() {
+  const currentUser = localStorage.getItem("user") || "";
+  appDiv().innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:440px; margin: 0 auto 10px auto;">
+      <h3 style="margin:0; font-size:18px;">🔥 Temple Reels Feed</h3>
+      <div>
+        ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">Login</button></a>'}
+      </div>
+    </div>
+    <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
+  `;
+
+  onValue(ref(db, "posts"), snap => {
+    const listEl = document.getElementById("reelsViewport");
+    if (!listEl) return;
+
+    if (!snap.exists()) {
+      listEl.innerHTML = `<div class="reel-item"><p class="center">No reels yet. Post your talent first!</p></div>`;
+      return;
+    }
+
+    let posts = [];
+    snap.forEach(child => {
+      posts.push({ id: child.key, ...child.val() });
+    });
+
+    posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    let html = "";
+    posts.forEach(p => {
+      const isMyPost = currentUser && currentUser === p.authorPhone;
+      let mediaContent = "";
+
+      if (p.type === "video") {
+        if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
+          let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+          mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+        } else {
+          mediaContent = `<video class="reel-video-element" loop playsinline src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+        }
+      } else {
+        mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
+      }
+
+      html += `
+        <div class="reel-item" data-id="${p.id}">
+          ${mediaContent}
+
+          <!-- Instagram style bottom user info overlay -->
+          <div class="reel-overlay-bottom">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong style="color:#dfb72c; font-size:16px;">@${p.authorName || 'Creator'}</strong>
+              <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
+              ${(!isMyPost && currentUser) ? `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:3px 10px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>` : ''}
+            </div>
+            <p style="font-weight:bold; font-size:14px; margin-top:6px; color:#fff;">${p.title}</p>
+            ${p.description ? `<p class="small" style="color:#e0e0e0; margin-top:2px;">${p.description}</p>` : ''}
+          </div>
+
+          <!-- Right side Instagram action bar -->
+          <div class="reel-actions-bar">
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
+              <div class="reel-circle-label">${p.likesCount || 0}</div>
+            </div>
+
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
+              <div class="reel-circle-label">Msg</div>
+            </div>
+
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
+              <div class="reel-circle-label">Share</div>
+            </div>
+
+            ${isMyPost ? `
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
+              <div class="reel-circle-label" style="color:#ff4444;">Del</div>
+            </div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+    setupIntersectionAutoplay();
+  });
+}
+
+window.toggleVideoPlayback = (videoEl) => {
+  if (videoEl.paused) videoEl.play();
+  else videoEl.pause();
+};
+
+function setupIntersectionAutoplay() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const vid = entry.target.querySelector('video');
+      if (vid) {
+        if (entry.isIntersecting) {
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+        }
+      }
+    });
+  }, { threshold: 0.65 });
+
+  document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
+}
+
+window.shareReel = (id) => {
+  const shareLink = `${location.origin}${location.pathname}#feed`;
+  navigator.clipboard.writeText(shareLink);
+  alert("Reel link successfully copied to clipboard!");
+};
+
+/* Realtime Message/Comment Drawer */
+window.openCommentsModal = (postId, encodedTitle) => {
+  activePostIdForComments = postId;
+  const modal = document.getElementById("commentModal");
+  document.getElementById("chatReelTitle").innerText = decodeURIComponent(encodedTitle);
+  modal.classList.add("open");
+
+  onValue(ref(db, `post_comments/${postId}`), snap => {
+    const list = document.getElementById("commentsList");
+    if (!list) return;
+
+    if (!snap.exists()) {
+      list.innerHTML = `<p class="small center">No messages yet. Send the first message!</p>`;
+      return;
+    }
+
+    let html = "";
+    snap.forEach(c => {
+      const m = c.val();
+      html += `
+        <div class="chat-msg">
+          <div style="display:flex; justify-content:space-between;">
+            <b style="color:#dfb72c; font-size:13px;">${m.senderName || 'Member'} (${maskPhone(m.senderPhone)})</b>
+            <span class="small" style="font-size:10px;">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+          <p style="font-size:14px; margin-top:4px; color:#fff;">${m.message}</p>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+    list.scrollTop = list.scrollHeight;
+  });
+};
+
+window.closeCommentsModal = () => {
+  const modal = document.getElementById("commentModal");
+  modal.classList.remove("open");
+  activePostIdForComments = null;
+};
+
+window.submitReelComment = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login to comment or message");
+  if (!activePostIdForComments) return;
+
+  const input = document.getElementById("chatInput");
+  const message = input.value.trim();
+  if (!message) return;
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.exists() ? userSnap.val() : {};
+
+  await push(ref(db, `post_comments/${activePostIdForComments}`), {
+    senderPhone: phone,
+    senderName: u.name || "Community Member",
+    message: message,
+    time: Date.now()
+  });
+
+  input.value = "";
+};
+
+/* =========================================================================
+   TALENT DASHBOARD, POSTING, PACKAGES & STATS
 ========================================================================= */
 
 function userDashboard() {
@@ -584,7 +885,6 @@ function userDashboard() {
 
   onValue(ref(db, "users/" + phone), snap => {
     const u = snap.val() || {};
-
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
     let expiryNotice = "";
@@ -663,14 +963,14 @@ function userDashboard() {
       </button>
     </div>
 
-    <!-- POST REEL / TALENT SECTION -->
+    <!-- POST REEL SECTION -->
     <div class="card">
-      <h3>Post Your Talent / Reel</h3>
-      <p class="small">Upload reels and photos. (Note: <strong>Starter Pack</strong> creators can upload max <strong>2 videos daily</strong>).</p>
+      <h3>Post Instagram-Style Reel</h3>
+      <p class="small">Upload vertical reels or photos. (Note: <strong>Starter Pack</strong> creators can upload max <strong>2 videos daily</strong>).</p>
       
       <select id="talentType">
-        <option value="video">Short Video / Reel (Creator +3 Pts, Viewer +2 Pts)</option>
-        <option value="photo">Art / Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
+        <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
+        <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
         <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
       </select>
 
@@ -678,17 +978,16 @@ function userDashboard() {
       
       <div style="margin: 10px 0; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 8px;">
         <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:5px;">
-          📁 Select Video/Reel file directly from Device:
+          📁 Select Video File Directly from Device:
         </label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
         <p class="small" style="color:#888; margin-top:5px;">Support: MP4, WebM, QuickTime, Images (Max 50MB)</p>
       </div>
 
-      <p class="small" style="text-align:center; color:#dfb72c;">— YA / OR (Direct Web URL) —</p>
+      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct Web Video URL —</p>
       <input id="talentMedia" placeholder="Direct Video/Reel MP4 URL or YouTube Shorts link">
       <textarea id="talentText" placeholder="Post Description or Story (Optional)" rows="2"></textarea>
 
-      <!-- Progress bar -->
       <div id="uploadProgressContainer" style="display:none; margin: 12px 0;">
         <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
         <div style="background:#222; border-radius:4px; height:8px; overflow:hidden; margin-top:5px;">
@@ -702,16 +1001,14 @@ function userDashboard() {
     <!-- MY UPLOADED POSTS -->
     <div class="card">
       <h3>Manage My Uploaded Reels & Posts</h3>
-      <p class="small">Yahan aap apni upload ki hui kisi bhi video ya post ko delete kar sakte hain:</p>
+      <p class="small">Yahan aap apni upload ki hui reels manage ya delete kar sakte hain:</p>
       <div id="myUploadedPosts" style="margin-top:15px;">Loading your posts...</div>
     </div>
 
-    <!-- REFERRAL STATUS SECTION -->
+    <!-- REFERRAL LEVEL STATUS -->
     <div class="card">
         <h3>Referral Level Status</h3>
-        <p class="small">
-            Current Investment: <span class="number">${u.investment || 0} USDT</span>
-        </p>
+        <p class="small">Current Investment: <span class="number">${u.investment || 0} USDT</span></p>
         <p class="small" style="margin-top: 8px;">
             ${(u.investment || 0) < 20 
                 ? '⚠️ Your current investment is between 1-19 USDT. Only <strong>Level 1</strong> referral income is unlocked. Upgrade to <strong>20 USDT or above</strong> to unlock Levels 2 to 15.' 
@@ -836,87 +1133,6 @@ function loadMyPosts(phone) {
   });
 }
 
-function feedPage() {
-  const currentUser = localStorage.getItem("user") || "";
-  appDiv().innerHTML = `
-    <div class="card center">
-      <h2>Community Talent Feed</h2>
-      <p>Support talented creators. Like their skills and subscribe to boost their Temple_DA rewards.</p>
-      ${currentUser ? '<a href="#user"><button style="width:220px; margin-top:15px;">Go To My Studio</button></a>' : '<a href="#login"><button style="width:220px; margin-top:15px;">Login To Vote & Earn</button></a>'}
-    </div>
-    <div id="postsList">Loading amazing talent...</div>
-  `;
-
-  onValue(ref(db, "posts"), snap => {
-    const listEl = document.getElementById("postsList");
-    if (!listEl) return;
-
-    if (!snap.exists()) {
-      listEl.innerHTML = `<div class="card center"><p>Abhi koi talent post nahi hai. Be the first creator to share!</p></div>`;
-      return;
-    }
-
-    let posts = [];
-    snap.forEach(child => {
-      posts.push({ id: child.key, ...child.val() });
-    });
-
-    posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    let html = "";
-    posts.forEach(p => {
-      let mediaBox = "";
-      if (p.type === "photo" && p.mediaUrl) {
-        mediaBox = `<div class="post-media-container"><img src="${p.mediaUrl}" style="width:100%; display:block;" onerror="this.style.display='none'"></div>`;
-      } else if (p.type === "video" && p.mediaUrl) {
-        if (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be")) {
-          let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
-          mediaBox = `<div class="post-media-container" style="position:relative;padding-bottom:56.25%;height:0;"><iframe src="${embed}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`;
-        } else {
-          mediaBox = `<div class="post-media-container"><video src="${p.mediaUrl}" controls style="width:100%; max-height: 520px; display:block; margin: 0 auto;"></video></div>`;
-        }
-      }
-
-      const isMyPost = currentUser && currentUser === p.authorPhone;
-
-      html += `
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-              <b style="color:#dfb72c; font-size:18px;">${p.authorName || 'Creator'}</b>
-              <span class="small" style="margin-left:8px;">ID: ${maskPhone(p.authorPhone)}</span>
-            </div>
-            <div>
-              <span class="badge-tag">${p.type}</span>
-              ${isMyPost ? 
-                `<button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; margin-left:8px; font-size:11px;">🗑️ Delete</button>` : 
-                (currentUser ? `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:5px 12px; margin-left:10px; font-size:11px;">+ Subscribe</button>` : '')
-              }
-            </div>
-          </div>
-
-          <h3 style="margin-top:12px; margin-bottom:6px; font-size:17px;">${p.title}</h3>
-          ${p.description ? `<p style="color:#ccc; margin-bottom:10px; font-size:14px;">${p.description}</p>` : ''}
-          ${mediaBox}
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; border-top:1px solid rgba(223,183,44,0.15); padding-top:10px;">
-            <div>
-              <span class="number" style="font-size:16px;">${p.likesCount || 0}</span> Likes
-            </div>
-            <div>
-              ${currentUser ? 
-                `<button onclick="likePost('${p.id}')" style="width:auto; padding:7px 18px; font-size:12px;">❤️ Like & Support</button>` : 
-                `<a href="#login"><button style="width:auto; padding:7px 18px; font-size:12px;">Login to Like</button></a>`}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    listEl.innerHTML = html;
-  });
-}
-
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier !== "starter") return true;
 
@@ -936,7 +1152,7 @@ async function checkDailyVideoLimit(phone, userTier) {
   }
 
   if (todayVideoCount >= 2) {
-    alert("⚠️ Daily Video Limit Reached!\n\nAap Starter Pack par hain aur aaj ki 2 video upload limit poori ho chuki hai. Unlimited video uploads ke liye 'Pro Creator' package activate karein!");
+    alert("⚠️ Daily Video Limit Reached!\n\nAap Starter Pack par hain aur aaj ki 2 video upload limit poori ho chuki hai. Unlimited uploads ke liye Pro Creator package activate karein!");
     return false;
   }
   return true;
@@ -949,7 +1165,6 @@ window.publishTalent = async () => {
 
     const userSnap = await get(ref(db, "users/" + phone));
     const u = userSnap.exists() ? userSnap.val() : {};
-
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
     const typeEl = document.getElementById("talentType");
@@ -974,9 +1189,7 @@ window.publishTalent = async () => {
     let storagePath = "";
 
     if (file) {
-      if (file.size > 50 * 1024 * 1024) {
-        return alert("Video/File size 50MB se chhota hona chahiye!");
-      }
+      if (file.size > 50 * 1024 * 1024) return alert("Video/File size 50MB se chhota hona chahiye!");
 
       const publishBtn = document.getElementById("publishBtn");
       const progressContainer = document.getElementById("uploadProgressContainer");
@@ -1066,15 +1279,15 @@ window.deleteMyPost = async (postId, storagePath) => {
 
     await remove(ref(db, "posts/" + postId));
     await remove(ref(db, "likes/" + postId));
+    await remove(ref(db, "post_comments/" + postId));
 
-    alert("Reel / Video successfully deleted!");
+    alert("Reel successfully deleted!");
   } catch (err) {
     console.error("Delete error:", err);
-    alert("Delete karne me dikkat aayi: " + err.message);
+    alert("Delete error: " + err.message);
   }
 };
 
-/* LIKE POST FUNCTION: Post ID se data direct check karta hai taaki parameters break na hon */
 window.likePost = async (postId) => {
   try {
     const userPhone = localStorage.getItem("user");
@@ -1111,9 +1324,8 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       const aData = authorSnap.val();
-      const currentAuthorPts = Number(aData.points || 0);
       await update(ref(db, "users/" + authorPhone), {
-        points: currentAuthorPts + creatorPts
+        points: Number(aData.points || 0) + creatorPts
       });
     }
 
@@ -1128,9 +1340,8 @@ window.likePost = async (postId) => {
         const viewerSnap = await get(ref(db, "users/" + userPhone));
         if (viewerSnap.exists()) {
           const vData = viewerSnap.val();
-          const currentViewerPts = Number(vData.points || 0);
           await update(ref(db, "users/" + userPhone), {
-            points: currentViewerPts + viewerPts
+            points: Number(vData.points || 0) + viewerPts
           });
         }
         await set(capRef, currentLikesToday + 1);
@@ -1143,11 +1354,10 @@ window.likePost = async (postId) => {
     }
   } catch (err) {
     console.error("Like error:", err);
-    alert("Like karne me error aaya: " + err.message);
+    alert("Like error: " + err.message);
   }
 };
 
-/* SUBSCRIBE CREATOR FUNCTION */
 window.subscribeCreator = async (creatorPhone) => {
   try {
     const subscriberPhone = localStorage.getItem("user");
@@ -1165,11 +1375,9 @@ window.subscribeCreator = async (creatorPhone) => {
     const creatorSnap = await get(ref(db, "users/" + creatorPhone));
     if (creatorSnap.exists()) {
       const cData = creatorSnap.val();
-      const currentCPts = Number(cData.points || 0);
-      const currentSubs = Number(cData.subscribersCount || 0);
       await update(ref(db, "users/" + creatorPhone), {
-        subscribersCount: currentSubs + 1,
-        points: currentCPts + creatorPts
+        subscribersCount: Number(cData.subscribersCount || 0) + 1,
+        points: Number(cData.points || 0) + creatorPts
       });
     }
 
@@ -1183,19 +1391,18 @@ window.subscribeCreator = async (creatorPhone) => {
       const subSnap = await get(ref(db, "users/" + subscriberPhone));
       if (subSnap.exists()) {
         const sData = subSnap.val();
-        const currentSPts = Number(sData.points || 0);
         await update(ref(db, "users/" + subscriberPhone), {
-          points: currentSPts + subscriberPts
+          points: Number(sData.points || 0) + subscriberPts
         });
       }
       await set(capRef, currentSubsToday + 1);
       alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
     } else {
-      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Aapki aaj ki 5 subscriptions reward limit poori ho chuki hai).`);
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Daily 5 subs reward limit reached).`);
     }
   } catch (err) {
     console.error("Subscribe error:", err);
-    alert("Subscribe karne me error aaya: " + err.message);
+    alert("Subscribe error: " + err.message);
   }
 };
 
@@ -1251,7 +1458,7 @@ async function packagesPage() {
     <div class="card center">
       <h2>Creator Packages & Durations</h2>
       <p>Har package ka subscription time nishchit hai. <b>Yeh aapke regular 30-days vesting plan se alag track hota hai.</b></p>
-      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? `(Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
       
       <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
         <p class="small" style="color: #dfb72c; font-weight: bold;">Official Deposit Address (USDT BEP20):</p>
@@ -1363,7 +1570,7 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     time: activatedAt
   });
 
-  alert(`Congratulations! ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye successfully activate ho gaya hai!`);
+  alert(`Congratulations! ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye activate ho gaya!`);
   location.hash = "#user";
 };
 
@@ -1372,9 +1579,7 @@ window.requestPackageUpgrade = async (tierName, amount) => {
   if (!phone) return alert("Please login to request package upgrade");
 
   const pendingSnap = await get(ref(db, "packages/pending/" + phone));
-  if (pendingSnap.exists()) {
-    return alert("Aapka ek package request pehle se hi Admin review mein pending hai.");
-  }
+  if (pendingSnap.exists()) return alert("Aapka ek package request pehle se pending hai.");
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
@@ -1389,12 +1594,12 @@ window.requestPackageUpgrade = async (tierName, amount) => {
     timestamp: Date.now()
   });
 
-  alert(`Request for ${tierName.toUpperCase()} (${amount} USDT, Validity: ${durationDays} Days) submitted! Deposit address par USDT bhej dein. Admin verify karke activate karega.`);
+  alert(`Request for ${tierName.toUpperCase()} submitted! USDT bhej dein, Admin verify karke activate karega.`);
   location.hash = "#user";
 };
 
 /* =========================================================================
-   CORE INVESTMENT (1-250 USDT), VESTING, REFERRALS & ADMIN
+   CORE INVESTMENTS, VESTING, REFERRALS & ADMIN SYSTEM
 ========================================================================= */
 
 window.copyAddress = () => {
@@ -1443,7 +1648,6 @@ window.upgrade = async () => {
   const u = userSnap.val();
 
   if ((u.investment || 0) <= 0) return alert("First make your investment, then you can upgrade");
-
   if ((u.investment || 0) + amount > 250) return alert("Maximum total investment is 250 USDT");
 
   const pendingSnap = await get(ref(db, "investments/upgrade/" + phone));
@@ -1465,6 +1669,7 @@ window.upgrade = async () => {
 window.rejectInvest = async phone => {
   await remove(ref(db, "investments/pending/" + phone));
   alert("Investment rejected");
+  loadPendingInvest();
 };
 
 window.withdraw = async () => {
@@ -1491,9 +1696,7 @@ window.withdraw = async () => {
   }
 
   const pending = await get(ref(db, "withdrawals/pending/" + phone));
-  if (pending.exists()) {
-    return alert("Aapka pichla withdrawal request abhi pending hai.");
-  }
+  if (pending.exists()) return alert("Aapka pichla withdrawal request abhi pending hai.");
 
   if (amount > u.balance) return alert("Insufficient balance");
 
@@ -1583,7 +1786,6 @@ function adminDashboard() {
     </table>
     </div>
 
-    <!-- SEPARATE PACKAGE UPGRADE APPROVAL QUEUE -->
     <div class="card">
     <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
     <div id="pendingPackages"></div>
@@ -1662,7 +1864,7 @@ window.approvePackage = async (phone, tier, usdtAmount) => {
   });
 
   await remove(ref(db, "packages/pending/" + phone));
-  alert(`Package ${tier.toUpperCase()} successfully activated for ${durationDays} days!`);
+  alert(`Package ${tier.toUpperCase()} activated for ${durationDays} days!`);
   loadPendingPackages();
 };
 
@@ -1679,7 +1881,6 @@ async function loadPendingInvest() {
   for (const child of Object.entries(snap.val() || {})) {
     const phone = child[0];
     const d = child[1];
-
     const userSnap = await get(ref(db, "users/" + phone));
     const user = userSnap.val();
 
@@ -1721,7 +1922,6 @@ async function loadPendingWithdraw() {
 window.approveInvest = async phone => {
   const snap = await get(ref(db, "investments/pending/" + phone));
   const d = snap.val();
-
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
@@ -1794,12 +1994,12 @@ window.approveUpgrade = async phone => {
 window.rejectUpgrade = async phone => {
   await remove(ref(db, "investments/upgrade/" + phone));
   alert("Upgrade request rejected");
+  loadPendingUpgrade();
 };
 
 window.approveWithdraw = async phone => {
   const snap = await get(ref(db, "withdrawals/pending/" + phone));
   const d = snap.val();
-
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
