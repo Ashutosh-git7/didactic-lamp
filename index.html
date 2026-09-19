@@ -293,9 +293,14 @@ td {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
   background: #000;
   padding: 10px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 2000;
 }
 
 .reels-top-bar {
@@ -304,13 +309,13 @@ td {
   align-items: center;
   width: 100%;
   max-width: 400px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .reels-viewport {
   width: 100%;
   max-width: 400px;
-  height: 78vh;
+  height: 80vh;
   max-height: 720px;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
@@ -436,7 +441,7 @@ td {
 
 <body>
 
-<nav>
+<nav id="mainNavbar">
 <div>
     <img src="temple_logo.png.png" alt="Temple Logo" style="width: 42px; height: auto; margin-right: 8px;" onerror="this.style.display='none'">
     <span style="color: #ffd700; font-size: 18px; font-weight: bold;">Temple_DA</span>
@@ -542,7 +547,16 @@ window.addEventListener("hashchange", router);
 router();
 
 function router() {
-  (routes[location.hash.split("?")[0] || "#"] || landing)();
+  const hash = location.hash.split("?")[0] || "#";
+  const navBar = document.getElementById("mainNavbar");
+  
+  if (hash === "#feed") {
+    if (navBar) navBar.style.display = "none";
+  } else {
+    if (navBar) navBar.style.display = "flex";
+  }
+
+  (routes[hash] || landing)();
 }
 
 function landing() {
@@ -839,7 +853,7 @@ function feedPage() {
     if (!listEl) return;
 
     if (!snap.exists()) {
-      listEl.innerHTML = `<div class="reel-item"><p class="center small">No reels yet. Be a creator and post your first reel!</p></div>`;
+      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
       return;
     }
 
@@ -913,7 +927,7 @@ function feedPage() {
 
 window.toggleVideoPlayback = (videoEl) => {
   if (videoEl.paused) {
-    videoEl.muted = false; // Tap karne par sound unmute ho jayegi
+    videoEl.muted = false;
     videoEl.play();
   } else {
     videoEl.pause();
