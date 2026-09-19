@@ -564,49 +564,28 @@ async function getLivePriceData() {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
     const data = await res.json();
     if (data && data.pair && data.pair.priceUsd) {
-      const priceUsd = parseFloat(data.pair.priceUsd);
-      let inrRate = 83.5; 
-      try {
-        const rateRes = await fetch("https://open.er-api.com/v6/latest/USD");
-        const rateData = await rateRes.json();
-        if (rateData && rateData.rates && rateData.rates.INR) {
-          inrRate = rateData.rates.INR;
-        }
-      } catch (e) {}
-      
-      return {
-        usd: priceUsd,
-        inr: priceUsd * inrRate
-      };
+      return parseFloat(data.pair.priceUsd);
     }
   } catch (err) {}
 
   const s = await get(ref(db, "config/temple_DAPrice"));
-  const pUsd = s.exists() ? s.val() : 0.0002;
-  return { usd: pUsd, inr: pUsd * 83.5 };
+  return s.exists() ? s.val() : 0.0002;
 }
 
 async function getPrice() {
-  const p = await getLivePriceData();
-  return p.usd;
+  return await getLivePriceData();
 }
 
 async function landing() {
-  const priceObj = await getLivePriceData();
+  const priceUsd = await getLivePriceData();
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 24px;">Temple Digital Asset</h2>
     <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
     
-    <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px;">
-        <div>
-            <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
-            <span class="number" style="font-size:18px;">$${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
-        </div>
-        <div>
-            <span class="small" style="display:block; color:#aaa;">LIVE PRICE (INR)</span>
-            <span class="number" style="font-size:18px; color:#00ff88;">₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
-        </div>
+    <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; text-align: center;">
+        <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
+        <span class="number" style="font-size:20px;">$${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
     <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
@@ -1078,7 +1057,7 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
-  const priceObj = await getLivePriceData();
+  const priceUsd = await getLivePriceData();
 
   onValue(ref(db, "users/" + phone), snap => {
     const u = snap.val() || {};
@@ -1100,21 +1079,19 @@ async function userDashboard() {
     }
 
     const balTda = Number(u.balance || 0);
-    const balUsd = (balTda * priceObj.usd).toFixed(2);
-    const balInr = (balTda * priceObj.inr).toFixed(2);
+    const balUsd = (balTda * priceUsd).toFixed(2);
 
     appDiv().innerHTML = `
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
-        <span style="font-weight:bold; color:#dfb72c;">Live Market Rates:</span>
-        <span>USDT: $${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
-        <span style="color:#00ff88;">INR: ₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
+        <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
     <div class="grid">
       <div class="card">
         <h3>Balance</h3>
         ${balTda.toFixed(2)} Temple_DA<br>
-        <span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span>
+        <span class="small" style="color:#dfb72c;">$${balUsd} USDT</span>
       </div>
 
       <div class="card">
@@ -1921,7 +1898,7 @@ window.withdraw = async () => {
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
-  const priceObj = await getLivePriceData();
+  const priceUsd = await getLivePriceData();
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
@@ -1940,15 +1917,14 @@ async function adminDashboard() {
       }
 
       const balTda = Number(u.balance || 0);
-      const balUsd = (balTda * priceObj.usd).toFixed(2);
-      const balInr = (balTda * priceObj.inr).toFixed(2);
+      const balUsd = (balTda * priceUsd).toFixed(2);
 
       rows += `
       <tr>
       <td>${p}</td>
       <td>${u.name}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span></td>
-      <td>${balTda.toFixed(2)} Temple_DA<br><span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span></td>
+      <td>${balTda.toFixed(2)} Temple_DA<br><span class="small" style="color:#dfb72c;">$${balUsd} USDT</span></td>
       <td>${u.investment || 0}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
@@ -1961,9 +1937,8 @@ async function adminDashboard() {
 
     appDiv().innerHTML = `
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
-        <span style="font-weight:bold; color:#dfb72c;">Live Market Rates:</span>
-        <span>USDT: $${priceObj.usd < 0.01 ? priceObj.usd.toFixed(6) : priceObj.usd.toFixed(4)}</span>
-        <span style="color:#00ff88;">INR: ₹${priceObj.inr < 1 ? priceObj.inr.toFixed(4) : priceObj.inr.toFixed(2)}</span>
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
+        <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
     <div class="card">
