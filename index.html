@@ -565,7 +565,6 @@ async function getLivePriceData() {
     const data = await res.json();
     if (data && data.pair && data.pair.priceUsd) {
       const priceUsd = parseFloat(data.pair.priceUsd);
-      // Fetch USD to INR rate dynamically or fallback to standard approx rate if offline
       let inrRate = 83.5; 
       try {
         const rateRes = await fetch("https://open.er-api.com/v6/latest/USD");
@@ -582,7 +581,6 @@ async function getLivePriceData() {
     }
   } catch (err) {}
 
-  // Fallback to DB price
   const s = await get(ref(db, "config/temple_DAPrice"));
   const pUsd = s.exists() ? s.val() : 0.0002;
   return { usd: pUsd, inr: pUsd * 83.5 };
@@ -1115,7 +1113,7 @@ async function userDashboard() {
     <div class="grid">
       <div class="card">
         <h3>Balance</h3>
-        ${balTda.toFixed(2)} TDA<br>
+        ${balTda.toFixed(2)} Temple_DA<br>
         <span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span>
       </div>
 
@@ -1136,7 +1134,7 @@ async function userDashboard() {
 
       <div class="card">
         <h3>Locked Yield</h3>
-        ${Number(u.locked || 0).toFixed(2)} TDA
+        ${Number(u.locked || 0).toFixed(2)} Temple_DA
       </div>
 
       <div class="card">
@@ -1672,7 +1670,7 @@ async function packagesPage() {
         <p class="small">✓ 30 Din Ki Validity</p>
         <p class="small">✓ Earn Like & Subscribe Points</p>
         
-        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} TDA)</button>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
@@ -1689,7 +1687,7 @@ async function packagesPage() {
         <p class="small">✓ Verified Creator Badge</p>
         <p class="small">✓ 2X Leaderboard Pool Priority</p>
         
-        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} TDA)</button>
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
       </div>
 
@@ -1704,7 +1702,7 @@ async function packagesPage() {
         <p class="small">✓ Unlimited Reels + VIP Pinning</p>
         <p class="small">✓ Zero Conversion Fees</p>
         
-        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} TDA)</button>
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
     </div>
@@ -1950,7 +1948,7 @@ async function adminDashboard() {
       <td>${p}</td>
       <td>${u.name}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span></td>
-      <td>${balTda.toFixed(2)} TDA<br><span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span></td>
+      <td>${balTda.toFixed(2)} Temple_DA<br><span class="small" style="color:#dfb72c;">$${balUsd} / ₹${balInr}</span></td>
       <td>${u.investment || 0}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
