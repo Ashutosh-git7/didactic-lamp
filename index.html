@@ -1280,9 +1280,9 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  let maxAllowed = 2; // Starter Pack (5 USDT)
+  let maxAllowed = 2; // Starter Pack (5 USDT) -> 2 Videos/Day
   if (userTier === "monthly") {
-    maxAllowed = 5; // Pro Creator (15 USDT)
+    maxAllowed = 5; // Pro Creator (15 USDT) -> 5 Videos/Day
   }
 
   if (todayVideoCount >= maxAllowed) {
@@ -1529,7 +1529,7 @@ window.convertPointsToToken = async () => {
 };
 
 /* =========================================================================
-   PACKAGES PAGE
+   PACKAGES PAGE (UPDATED WITH EXPLICIT LIMIT TEXT)
 ========================================================================= */
 
 async function packagesPage() {
@@ -1558,7 +1558,7 @@ async function packagesPage() {
   appDiv().innerHTML = `
     <div class="card center">
       <h2>Creator Packages & Durations</h2>
-      <p>Har package ka subscription time nishchit hai.</p>
+      <p>Har package ka subscription time aur video upload limit nishchit hai.</p>
       ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
       
       <div style="max-width: 500px; margin: 15px auto; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px solid #dfb72c; border-radius: 8px;">
@@ -1569,30 +1569,42 @@ async function packagesPage() {
     </div>
 
     <div class="grid">
+      <!-- STARTER PACK -->
       <div class="card center">
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <p class="small">≈ ${starterTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Days Validity</p>
         <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
         <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
+      <!-- PRO CREATOR PACK -->
       <div class="card center" style="border: 2px solid #dfb72c;">
         <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
         <h3 style="color:#dfb72c;">Pro Creator</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <p class="small">≈ ${proTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Days Validity & Verified Badge</p>
         <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
         <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
       </div>
 
+      <!-- ELITE YEARLY PACK -->
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
         <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days</p>
         <p class="small">≈ ${eliteTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small">✓ 365 Days Uninterrupted Access</p>
         <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
         <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
@@ -1730,7 +1742,7 @@ window.withdraw = async () => {
   }
 
   if (amount > dailyLimit) {
-    return alert(`Aapke current investment (${userInvestment} USDT) ke anusar aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
+    return alert(`Aapke current investment (${userInvestment} USDT) ke anusار aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
   }
 
   if (amount > u.balance) return alert("Insufficient balance");
