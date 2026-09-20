@@ -676,7 +676,6 @@ window.connectWalletAndAutoLogin = async () => {
     const walletAddress = accounts[0];
     if (!walletAddress) return alert("Wallet address not found!");
 
-    // Check database for user matching this wallet address
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
 
@@ -720,7 +719,6 @@ function registerPage() {
   <input id="name" placeholder="Full name">
   <input id="phone" placeholder="Phone number">
   
-  <!-- Web3 Auto Connect Wallet Input -->
   <div style="display:flex; gap:8px; align-items:center;">
     <input id="wallet" placeholder="BEP20 wallet address" readonly style="margin:0;">
     <button type="button" onclick="connectWeb3Wallet()" style="width:140px; margin:0; padding:11px 8px; font-size:11px; background:#dfb72c; color:#000;">Connect Wallet</button>
@@ -1191,10 +1189,12 @@ async function userDashboard() {
       <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit via Web3 Wallet</button>
     </div>
 
-    <div class="card">
-      <h3>Upgrade Investment Capital</h3>
-      <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)">
-      <button onclick="upgrade()">Upgrade Investment</button>
+    <!-- DIRECT WEB3 UPGRADE INVESTMENT -->
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
+      <h3 style="color:#00ff88;">Upgrade Investment Capital (Web3 USDT)</h3>
+      <p class="small">Directly pay via Web3 wallet to upgrade your investment capital instantly.</p>
+      <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)" style="margin-top:10px;">
+      <button onclick="makeDirectUSDTUpgrade()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Upgrade via Web3 Wallet</button>
     </div>
 
     <div class="card">
@@ -1265,7 +1265,7 @@ async function userDashboard() {
   });
 }
 
-// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function
+// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function (Deposit)
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
@@ -1312,7 +1312,6 @@ window.makeDirectUSDTDeposit = async () => {
     await tx.wait();
     alert("USDT transfer successful! Investment automatically activate ki ja rahi hai.");
 
-    // Automatically Process Investment in Database after success
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
     const newInvestment = (u.investment || 0) + amount;
@@ -1334,6 +1333,74 @@ window.makeDirectUSDTDeposit = async () => {
   }
 };
 
+// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function (Upgrade Investment)
+window.makeDirectUSDTUpgrade = async () => {
+  const phone = localStorage.getItem("user");
+  const amount = parseFloat(v("upgradeAmount"));
+
+  if (!amount || amount < 10) return alert("Minimum upgrade amount is 10 USDT");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User session not found!");
+  const u = userSnap.val();
+
+  if ((u.investment || 0) + amount > 250) return alert("Maximum total investment limit is 250 USDT");
+
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
+  }
+
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
+    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+
+    const minABI = [
+      {
+        "constant": false,
+        "inputs": [
+          {"name": "_to", "type": "address"},
+          {"name": "_value", "type": "uint256"}
+        ],
+        "name": "transfer",
+        "outputs": [{"name": "", "type": "bool"}],
+        "type": "function"
+      }
+    ];
+
+    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
+    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
+
+    alert("Wallet popup khul raha hai. Kripya upgrade transaction confirm karein!");
+    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
+    alert("Transaction broadcast ho gayi! Hash: " + tx.hash);
+
+    await tx.wait();
+    alert("USDT upgrade transfer successful! Capital automatically update ki ja rahi hai.");
+
+    const currentPrice = await getPrice();
+    const temple_DA = Number((amount / currentPrice).toFixed(2));
+    const newInvestment = (u.investment || 0) + amount;
+    const newLocked = (u.locked || 0) + temple_DA;
+    const newMonthlyBiz = (u.monthlyBusiness || 0) + amount;
+
+    await update(ref(db, "users/" + phone), {
+      investment: newInvestment,
+      locked: newLocked,
+      monthlyBusiness: newMonthlyBiz
+    });
+
+    alert("Investment successfully upgraded!");
+    userDashboard();
+  } catch (error) {
+    console.error("Direct upgrade error:", error);
+    alert("Upgrade failed: " + (error.data?.message || error.message));
+  }
+};
+
 window.joinElite21 = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login first");
@@ -1344,14 +1411,32 @@ window.joinElite21 = async () => {
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
-  await set(ref(db, "elite21/pending/" + phone), {
-    name: u.name || "Member",
-    wallet: u.wallet || "",
-    amountUSDT: 250,
-    timestamp: Date.now()
-  });
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet not found!");
+  }
 
-  alert("Temple Elite 21 join request submitted! Admin verify karke activate karega.");
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
+    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+
+    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
+    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
+    const parsedAmount = ethers.utils.parseUnits("250", 18);
+
+    alert("Elite 21 join karne ke liye 250 USDT ka transfer confirm karein!");
+    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
+    await tx.wait();
+
+    await update(ref(db, "users/" + phone), { elite21: true, monthlyBusiness: (u.monthlyBusiness || 0) + 250 });
+    alert("🎉 Congratulations! You have successfully joined Temple Elite 21 via Web3 Wallet!");
+    userDashboard();
+  } catch (err) {
+    alert("Elite 21 join failed: " + err.message);
+  }
 };
 
 function loadMyPosts(phone) {
@@ -1641,7 +1726,6 @@ window.convertPointsToToken = async () => {
 
 async function packagesPage() {
   const phone = localStorage.getItem("user");
-  let userBalance = 0;
   let currentTier = "none";
   let expiryDateString = "";
 
@@ -1649,7 +1733,6 @@ async function packagesPage() {
     const userSnap = await get(ref(db, "users/" + phone));
     if (userSnap.exists()) {
       const u = userSnap.val();
-      userBalance = u.balance || 0;
       currentTier = checkAndHandlePackageExpiry(phone, u);
       if (currentTier !== "none" && u.packageExpiresAt) {
         expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
@@ -1657,16 +1740,11 @@ async function packagesPage() {
     }
   }
 
-  const currentPrice = await getPrice();
-  const starterTokens = Number((5 / currentPrice).toFixed(2));
-  const proTokens = Number((15 / currentPrice).toFixed(2));
-  const eliteTokens = Number((120 / currentPrice).toFixed(2));
-
   appDiv().innerHTML = `
     <div class="card center">
       <h2>Creator Packages & Durations</h2>
-      <p>Har package ka subscription time aur video upload limit nishchit hai.</p>
-      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+      <p>Direct Web3 Wallet (USDT BEP20) ke zariye instant package activate karein.</p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''}</p>` : ''}
     </div>
 
     <div class="grid">
@@ -1674,10 +1752,9 @@ async function packagesPage() {
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-        <p class="small">≈ ${starterTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
       </div>
 
       <div class="card center" style="border: 2px solid #dfb72c;">
@@ -1685,77 +1762,69 @@ async function packagesPage() {
         <h3 style="color:#dfb72c;">Pro Creator</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-        <p class="small">≈ ${proTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
       </div>
 
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
         <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days</p>
-        <p class="small">≈ ${eliteTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
-        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
       </div>
     </div>
   `;
 }
 
-window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
+// ⚡ Direct Web3 Package Upgrade Function
+window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login first");
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return alert("User not found");
-  const u = userSnap.val();
-
-  const currentPrice = await getPrice();
-  const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
-
-  if ((u.balance || 0) < requiredTokens) {
-    return alert(`Insufficient Balance! Required: ${requiredTokens} Temple_DA.`);
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
   }
 
-  const durationMs = getPackageDurationMs(tierName);
-  const activatedAt = Date.now();
-  const expiresAt = activatedAt + durationMs;
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
 
-  await update(ref(db, "users/" + phone), {
-    balance: Number((u.balance - requiredTokens).toFixed(2)),
-    tier: tierName,
-    packagePriceUSDT: usdtAmount,
-    packageActivatedAt: activatedAt,
-    packageExpiresAt: expiresAt,
-    packageExpired: false
-  });
+    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
+    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
-  alert(`Package ${tierName.toUpperCase()} activated successfully!`);
-  location.hash = "#user";
-};
+    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
+    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
+    const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
-/* =========================================================================
-   CORE INVESTMENT & WITHDRAWAL
-========================================================================= */
+    alert(`Package (${tierName.toUpperCase()}) activation ke liye ${usdtAmount} USDT ka transaction confirm karein!`);
+    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
+    await tx.wait();
 
-window.upgrade = async () => {
-  const phone = localStorage.getItem("user");
-  const amount = parseFloat(v("upgradeAmount"));
-  if (!amount || amount < 10) return alert("Minimum upgrade 10 USDT");
+    const activatedAt = Date.now();
+    const expiresAt = activatedAt + getPackageDurationMs(tierName);
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
-  if ((u.investment || 0) + amount > 250) return alert("Maximum total investment is 250 USDT");
+    const userSnap = await get(ref(db, "users/" + phone));
+    const u = userSnap.exists() ? userSnap.val() : {};
 
-  await set(ref(db, "investments/upgrade/" + phone), {
-    amountUSDT: amount,
-    wallet: u.wallet || "",
-    timestamp: Date.now()
-  });
+    await update(ref(db, "users/" + phone), {
+      tier: tierName,
+      packagePriceUSDT: usdtAmount,
+      packageActivatedAt: activatedAt,
+      packageExpiresAt: expiresAt,
+      packageExpired: false,
+      monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
+    });
 
-  alert("Upgrade submitted for approval");
+    alert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
+    location.hash = "#user";
+  } catch (error) {
+    console.error("Package upgrade error:", error);
+    alert("Package activation failed: " + (error.data?.message || error.message));
+  }
 };
 
 window.withdraw = async () => {
@@ -1850,13 +1919,11 @@ async function adminDashboard() {
 
     <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Temple Elite 21 Requests</h3><div id="pendingElite21"></div></div>
     <div class="card"><h3 style="color:#00ff88;">Pending Creator Package Activations</h3><div id="pendingPackages"></div></div>
-    <div class="card"><h3>Pending Upgrades</h3><div id="pendingUpgrade"></div></div>
     <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
     `;
 
     loadPendingElite21();
     loadPendingPackages();
-    loadPendingUpgrade();
     loadPendingWithdraw();
   });
 }
@@ -1868,12 +1935,10 @@ window.runMonthlyElite21Distribution = async () => {
   const currentPrice = await getPrice();
   let totalNewBusinessUSDT = 0;
   let eliteMembers = [];
-  let allUsersList = [];
 
   usersSnap.forEach(s => {
     const phone = s.key;
     const u = s.val();
-    allUsersList.push({ phone, ...u });
     if (u.monthlyBusiness) totalNewBusinessUSDT += Number(u.monthlyBusiness);
     if (u.elite21 === true) eliteMembers.push(phone);
   });
@@ -1944,41 +2009,6 @@ window.rejectPackage = async (phone) => {
   await remove(ref(db, "packages/pending/" + phone));
   alert("Package rejected");
   loadPendingPackages();
-};
-
-async function loadPendingUpgrade() {
-  const snap = await get(ref(db, "investments/upgrade"));
-  let html = "";
-  snap.forEach(child => {
-    const phone = child.key;
-    const d = child.val();
-    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amountUSDT} USDT<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approveUpgrade('${phone}')">Approve</button><button onclick="rejectUpgrade('${phone}')" class="btn-danger">Reject</button></div>`;
-  });
-  document.getElementById("pendingUpgrade").innerHTML = html || "No pending upgrades";
-}
-
-window.approveUpgrade = async (phone) => {
-  const snap = await get(ref(db, "investments/upgrade/" + phone));
-  const d = snap.val();
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
-  const currentPrice = await getPrice();
-  const temple_DA = Number((d.amountUSDT / currentPrice).toFixed(2));
-
-  await update(ref(db, "users/" + phone), {
-    investment: (u.investment || 0) + d.amountUSDT,
-    locked: (u.locked || 0) + temple_DA,
-    monthlyBusiness: (u.monthlyBusiness || 0) + d.amountUSDT
-  });
-  await remove(ref(db, "investments/upgrade/" + phone));
-  alert("Upgrade approved!");
-  loadPendingUpgrade();
-};
-
-window.rejectUpgrade = async (phone) => {
-  await remove(ref(db, "investments/upgrade/" + phone));
-  alert("Upgrade rejected");
-  loadPendingUpgrade();
 };
 
 async function loadPendingWithdraw() {
