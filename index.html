@@ -560,12 +560,27 @@ async function getLivePriceData() {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
     const data = await res.json();
     if (data && data.pair && data.pair.priceUsd) {
-      return parseFloat(data.pair.priceUsd);
+      const livePrice = parseFloat(data.pair.priceUsd);
+      if (livePrice > 0) return livePrice;
+    }
+  } catch (err) {
+    console.log("Dexscreener API fetch warning, trying fallback...", err);
+  }
+
+  try {
+    const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
+    const fallbackData = await fallbackRes.json();
+    if (fallbackData && fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"]?.usd) {
+      return parseFloat(fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"].usd);
     }
   } catch (err) {}
 
-  const s = await get(ref(db, "config/temple_DAPrice"));
-  return s.exists() ? s.val() : 0.0002;
+  try {
+    const s = await get(ref(db, "config/temple_DAPrice"));
+    if (s.exists()) return parseFloat(s.val());
+  } catch (e) {}
+
+  return 0.0002;
 }
 
 async function getPrice() {
@@ -1292,7 +1307,7 @@ window.withdraw = async () => {
   }
 
   if (todayWithdrawnAmount >= maxDailyAllowed) {
-    return alert(`⚠️ Daily Withdrawal Limit Reached!\nAapke current investment ($${investment} USDT) ke anusaار aapki aaj ki ${maxDailyAllowed} Temple_DA ki daily limit poori ho chuki hai.`);
+    return alert(`⚠️ Daily Withdrawal Limit Reached!\nAapke current investment ($${investment} USDT) ke anusaar aapki aaj ki ${maxDailyAllowed} Temple_DA ki daily limit poori ho chuki hai.`);
   }
 
   if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
