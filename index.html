@@ -1192,7 +1192,7 @@ async function userDashboard() {
     <div class="card">
       <h3>Withdraw Temple_DA</h3>
       <input id="withdraw" placeholder="Temple_DA amount">
-      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Instant Web3 Withdrawal (Temple_DA)</button>
+      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (Temple_DA)</button>
     </div>
 
     <div class="card">
@@ -1248,7 +1248,7 @@ async function userDashboard() {
   });
 }
 
-// ⚡ Instant Web3 Withdrawal Function (Temple_DA Only)
+// ⚡ Withdrawal Request Function (Sends to Admin Pending List)
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
@@ -1274,38 +1274,29 @@ window.withdraw = async () => {
     return alert("Aapke account ke sath valid BEP20 wallet link nahi hai!");
   }
 
-  if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet detect nahi hua! Kripya MetaMask ya Trust Wallet open karein.");
-  }
+  const newBalance = Number((u.balance - amount).toFixed(2));
 
-  try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
+  await update(ref(db, "users/" + phone), {
+    balance: newBalance
+  });
 
-    alert("Temple_DA withdrawal ke liye Web3 Wallet signature confirm karein!");
+  await push(ref(db, "withdrawals/pending"), {
+    phone: phone,
+    amount: amount,
+    wallet: userWallet,
+    timestamp: Date.now()
+  });
 
-    const newBalance = Number((u.balance - amount).toFixed(2));
+  await push(ref(db, "withdrawals/history/" + phone), {
+    amount: amount,
+    asset: "Temple_DA",
+    wallet: userWallet,
+    timestamp: Date.now(),
+    status: "Pending Admin Approval"
+  });
 
-    await update(ref(db, "users/" + phone), {
-      balance: newBalance
-    });
-
-    await push(ref(db, "withdrawals/history/" + phone), {
-      amount: amount,
-      asset: "Temple_DA",
-      wallet: userWallet,
-      timestamp: Date.now(),
-      status: "Processed"
-    });
-
-    alert(`🎉 Success! ${amount} Temple_DA withdrawal successfully process ho gaya aapke wallet (${userWallet.slice(0, 6)}...) par.`);
-    userDashboard();
-
-  } catch (error) {
-    console.error("Withdrawal error:", error);
-    alert("Withdrawal failed: " + (error.data?.message || error.message));
-  }
+  alert(`🎉 Success! ${amount} Temple_DA withdrawal request admin ko bhej di gayi hai. Approved hone par aapke official wallet se automatically transfer ho jayegi.`);
+  userDashboard();
 };
 
 // ⚡ Combined Direct Web3 USDT (BEP20) Deposit & Upgrade Function (Max 500 USDT)
@@ -1871,6 +1862,7 @@ async function adminDashboard() {
     });
   }
   const currentPool5Percent = totalCurrentPoolUSDT * 0.05;
+  const savedTokenAddr = localStorage.getItem("templeDAContractAddress") || "";
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
@@ -1912,8 +1904,15 @@ async function adminDashboard() {
     <h2>Admin Dashboard</h2>
     <input id="price" placeholder="Override Temple_DA USD price">
     <button onclick="updatePrice()">Update Price Override</button>
+
+    <div style="margin-top:15px; border-top:1px solid rgba(223,183,44,0.3); padding-top:12px;">
+      <label class="small" style="color:#dfb72c; font-weight:bold;">Temple_DA Token Contract Address (For Web3 Withdrawals):</label>
+      <input id="adminTokenAddress" placeholder="0x..." value="${savedTokenAddr}">
+      <button onclick="saveAdminTokenAddress()" style="background:#dfb72c; color:#000;">Save Token Address</button>
+    </div>
+
     <button onclick="runMonthlyElite21Distribution()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; margin-top:10px;">⚡ Run Monthly Elite 21 Pool Distribution</button>
-    <button onclick="adminLogout()">Admin Logout</button>
+    <button onclick="adminLogout()" style="margin-top:10px;">Admin Logout</button>
     </div>
 
     <div class="card">
@@ -1926,7 +1925,7 @@ async function adminDashboard() {
 
     <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Temple Elite 21 Requests</h3><div id="pendingElite21"></div></div>
     <div class="card"><h3 style="color:#00ff88;">Pending Creator Package Activations</h3><div id="pendingPackages"></div></div>
-    <div class="card"><h3>Pending Withdrawals History</h3><div id="pendingWithdraw"></div></div>
+    <div class="card"><h3>Pending Withdrawals (Web3 Official Wallet Transfer)</h3><div id="pendingWithdraw"></div></div>
     `;
 
     loadPendingElite21();
@@ -1934,6 +1933,13 @@ async function adminDashboard() {
     loadPendingWithdraw();
   });
 }
+
+window.saveAdminTokenAddress = () => {
+  const addr = v("adminTokenAddress");
+  if (!addr || !walletRegex.test(addr)) return alert("Kripya valid BEP20 contract address daalein!");
+  localStorage.setItem("templeDAContractAddress", addr);
+  alert("Temple_DA Contract Address successfully save ho gaya!");
+};
 
 window.runMonthlyElite21Distribution = async () => {
   const usersSnap = await get(ref(db, "users"));
@@ -2022,12 +2028,88 @@ async function loadPendingWithdraw() {
   const snap = await get(ref(db, "withdrawals/pending"));
   let html = "";
   snap.forEach(child => {
-    const phone = child.key;
+    const key = child.key;
     const d = child.val();
-    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span></div>`;
+    html += `
+      <div class="card" style="border: 1px solid #00ff88;">
+        <b>User Phone:</b> ${d.phone} | <b>Amount:</b> <span class="number">${d.amount} Temple_DA</span><br>
+        <b>User Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br>
+        <button onclick="approveAndSendWithdrawal('${key}', '${d.phone}', '${d.wallet}', ${d.amount})" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Approve & Send via Official Wallet</button>
+        <button onclick="rejectWithdrawal('${key}', '${d.phone}')" class="btn-danger" style="margin-top:6px;">Reject</button>
+      </div>`;
   });
-  document.getElementById("pendingWithdraw").innerHTML = html || "No pending records";
+  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawal records";
 }
+
+// ⚡ Admin Web3 Withdrawal Approval & Official Wallet Transfer
+window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
+  const tokenContractAddress = localStorage.getItem("templeDAContractAddress");
+  if (!tokenContractAddress || !walletRegex.test(tokenContractAddress)) {
+    return alert("⚠️ Pehle Admin Dashboard mein apna Temple_DA Token Contract Address save karein!");
+  }
+
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Admin Web3 Wallet (MetaMask) detect nahi hua!");
+  }
+
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    const minABI = [
+      {
+        "constant": false,
+        "inputs": [
+          {"name": "_to", "type": "address"},
+          {"name": "_value", "type": "uint256"}
+        ],
+        "name": "transfer",
+        "outputs": [{"name": "", "type": "bool"}],
+        "type": "function"
+      }
+    ];
+
+    const contract = new ethers.Contract(tokenContractAddress, minABI, signer);
+    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
+
+    alert(`Official wallet se ${amount} Temple_DA user (${userWallet.slice(0,6)}...) ko bheja ja raha hai. Kripya MetaMask confirm karein!`);
+    
+    const tx = await contract.transfer(userWallet, parsedAmount);
+    alert("Transaction broadcast ho gayi! Hash: " + tx.hash);
+    await tx.wait();
+
+    await remove(ref(db, "withdrawals/pending/" + reqKey));
+    await push(ref(db, "withdrawals/history/" + phone), {
+      amount: amount,
+      asset: "Temple_DA",
+      wallet: userWallet,
+      timestamp: Date.now(),
+      status: "Processed via Web3"
+    });
+
+    alert("✅ Withdrawal successfully approved and tokens sent to user wallet!");
+    loadPendingWithdraw();
+  } catch (error) {
+    console.error("Withdrawal payout error:", error);
+    alert("Payout failed: " + (error.data?.message || error.message));
+  }
+};
+
+window.rejectWithdrawal = async (reqKey, phone) => {
+  const snap = await get(ref(db, "withdrawals/pending/" + reqKey));
+  if (snap.exists()) {
+    const d = snap.val();
+    const userSnap = await get(ref(db, "users/" + phone));
+    if (userSnap.exists()) {
+      const u = userSnap.val();
+      await update(ref(db, "users/" + phone), { balance: Number(((u.balance || 0) + d.amount).toFixed(2)) });
+    }
+  }
+  await remove(ref(db, "withdrawals/pending/" + reqKey));
+  alert("Withdrawal rejected and balance refunded to user.");
+  loadPendingWithdraw();
+};
 
 function autoRelease(phone, u) {
   if (!u.lockDate || !u.locked || u.locked <= 0) return;
