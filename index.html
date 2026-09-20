@@ -506,11 +506,6 @@ function maskPhone(phone) {
   return "******" + phone.slice(-4);
 }
 
-function getTodayDateKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function getPackageDurationMs(tier) {
   return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 }
@@ -583,6 +578,14 @@ async function landing() {
     <h2 style="font-size: 24px;">Temple Digital Asset</h2>
     <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
     
+    <!-- DIRECT WALLET CONNECT & AUTO LOGIN BUTTON -->
+    <div style="margin: 20px 0;">
+        <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 15px; padding: 14px 20px;">
+            🔗 Connect Wallet & Auto Login
+        </button>
+        <p class="small" style="color: #aaa; margin-top: 6px;">MetaMask / Trust Wallet DApp Browser Auto-Login</p>
+    </div>
+
     <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; text-align: center;">
         <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
         <span class="number" style="font-size:20px;">$${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
@@ -662,6 +665,45 @@ async function landing() {
   }, 1000);
 }
 
+// 🚀 Auto-Login Function via Wallet DApp Browser
+window.connectWalletAndAutoLogin = async () => {
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet not detected! Kripya MetaMask, Trust Wallet, ya Binance App ke built-in DApp browser se site open karein.");
+  }
+
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const walletAddress = accounts[0];
+    if (!walletAddress) return alert("Wallet address not found!");
+
+    // Check database for user matching this wallet address
+    const usersSnap = await get(ref(db, "users"));
+    let foundPhone = null;
+
+    usersSnap.forEach(child => {
+      const uData = child.val();
+      if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) {
+        foundPhone = child.key;
+      }
+    });
+
+    if (foundPhone) {
+      localStorage.setItem("user", foundPhone);
+      alert("✅ Wallet verified! Auto login successful.");
+      location.hash = "#user";
+    } else {
+      alert("⚠️ Is wallet address se koi account registered nahi hai. Kripya pehle Register karein!");
+      location.hash = "#register";
+      setTimeout(() => {
+        const wInput = document.getElementById("wallet");
+        if (wInput) wInput.value = walletAddress;
+      }, 500);
+    }
+  } catch (error) {
+    alert("Wallet login failed: " + error.message);
+  }
+};
+
 function registerPage() {
   const urlParams = new URLSearchParams(location.hash.split("?")[1]);
   const refPhone = urlParams.get("ref") || "";
@@ -703,7 +745,7 @@ window.connectWeb3Wallet = async () => {
       alert("Wallet connection cancelled or failed.");
     }
   } else {
-    alert("Web3 Wallet not detected! Kripya MetaMask, Trust Wallet, ya Binance App ke built-in DApp browser se site open karein.");
+    alert("Web3 Wallet not detected!");
   }
 };
 
@@ -719,7 +761,7 @@ window.registerUser = async () => {
   let walletExists = false;
 
   usersSnap.forEach(s => {
-    if (s.val().wallet === wallet) walletExists = true;
+    if (s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
   });
 
   if (walletExists) return alert("This wallet is already registered");
@@ -756,6 +798,10 @@ function loginPage() {
   appDiv().innerHTML = `
   <div class="card">
   <h2>Login</h2>
+  <div style="margin-bottom:15px;">
+    <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">🔗 Wallet Auto-Login</button>
+  </div>
+  <p class="small center" style="margin-bottom:10px;">— Or Manual Login —</p>
   <input id="phone" placeholder="Phone">
   <input id="password" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
@@ -1140,7 +1186,7 @@ async function userDashboard() {
     <!-- DIRECT WEB3 DEPOSIT / INVESTMENT -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Invest & Yield (Direct Web3 USDT Deposit)</h3>
-      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and submit your investment.</p>
+      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and submit your investment instantly.</p>
       <input id="invest" placeholder="USDT amount (1 - 250 USDT)" style="margin-top:10px;">
       <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit via Web3 Wallet</button>
     </div>
@@ -1219,7 +1265,7 @@ async function userDashboard() {
   });
 }
 
-// Direct Web3 USDT (BEP20) Transfer Function
+// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
@@ -1227,8 +1273,8 @@ window.makeDirectUSDTDeposit = async () => {
   if (!amount || amount < 1 || amount > 250) return alert("Investment must be between 1 - 250 USDT");
 
   const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User session not found!");
   const u = userSnap.val();
-  if (u.locked > 0) return alert("You already have an active investment.");
 
   if (typeof window.ethereum === 'undefined') {
     return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
