@@ -1649,6 +1649,13 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   if (!userSnap.exists()) return alert("User not found");
   const u = userSnap.val();
 
+  // --- Check if package is already active ---
+  const activeTier = checkAndHandlePackageExpiry(phone, u);
+  if (activeTier !== "none" && u.packageExpiresAt && Date.now() < u.packageExpiresAt) {
+    const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
+    return alert(`⚠️ Aapka current package (${activeTier.toUpperCase()}) pehle se active hai. Yeh ${expDate} ko expire hone ke baad hi naya package active ho sakega.`);
+  }
+
   const currentPrice = await getPrice();
   const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
 
@@ -1679,6 +1686,13 @@ window.requestPackageUpgrade = async (tierName, amount) => {
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
+
+  // --- Check if package is already active ---
+  const activeTier = checkAndHandlePackageExpiry(phone, u);
+  if (activeTier !== "none" && u.packageExpiresAt && Date.now() < u.packageExpiresAt) {
+    const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
+    return alert(`⚠️ Aapka current package (${activeTier.toUpperCase()}) active hai (${expDate} tak). Expiry ke baad hi naya request bhej sakte hain.`);
+  }
 
   await set(ref(db, "packages/pending/" + phone), {
     tier: tierName,
