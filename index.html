@@ -1649,7 +1649,6 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   if (!userSnap.exists()) return alert("User not found");
   const u = userSnap.val();
 
-  // --- Check if package is already active ---
   const activeTier = checkAndHandlePackageExpiry(phone, u);
   if (activeTier !== "none" && u.packageExpiresAt && Date.now() < u.packageExpiresAt) {
     const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
@@ -1687,7 +1686,6 @@ window.requestPackageUpgrade = async (tierName, amount) => {
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
-  // --- Check if package is already active ---
   const activeTier = checkAndHandlePackageExpiry(phone, u);
   if (activeTier !== "none" && u.packageExpiresAt && Date.now() < u.packageExpiresAt) {
     const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
@@ -1815,6 +1813,19 @@ async function adminDashboard() {
 
   const priceUsd = await getLivePriceData();
 
+  // Calculate current pool total from active monthly business
+  const usersSnap = await get(ref(db, "users"));
+  let totalCurrentPoolUSDT = 0;
+  if (usersSnap.exists()) {
+    usersSnap.forEach(s => {
+      const u = s.val();
+      if (u.monthlyBusiness && u.monthlyBusiness > 0) {
+        totalCurrentPoolUSDT += Number(u.monthlyBusiness);
+      }
+    });
+  }
+  const currentPool5Percent = totalCurrentPoolUSDT * 0.05;
+
   onValue(ref(db, "users"), snap => {
     let rows = "";
 
@@ -1852,6 +1863,13 @@ async function adminDashboard() {
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
         <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
         <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <!-- POOL BALANCE DISPLAY CARD -->
+    <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05);">
+      <h3 style="color:#00ff88; margin-bottom:6px;">📊 Current Cycle Pool Summary (Elite 21)</h3>
+      <p class="small">Total New Business (This Cycle): <strong style="color:#fff;">$${totalCurrentPoolUSDT.toFixed(2)} USDT</strong></p>
+      <p class="small" style="margin-top:4px;">Available 5% Distribution Pool: <strong style="color:#dfb72c; font-size:18px;">$${currentPool5Percent.toFixed(2)} USDT</strong></p>
     </div>
 
     <div class="card">
@@ -1907,14 +1925,23 @@ async function adminDashboard() {
 }
 
 window.runMonthlyElite21Distribution = async () => {
-  const confirmRun = confirm("Kya aap 5% pool nikal kar Elite 21 aur Top 5 Performers mein monthly distribution run karna chahte hain?");
+  const lastDistSnap = await get(ref(db, "config/lastElite21DistributionTime"));
+  const lastDistTime = lastDistSnap.exists() ? lastDistSnap.val() : 0;
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+  if (lastDistTime && (Date.now() - lastDistTime < thirtyDaysMs)) {
+    const daysLeft = Math.ceil((thirtyDaysMs - (Date.now() - lastDistTime)) / (1000 * 60 * 60 * 24));
+    return alert(`⏳ Distribution Rejected!\nPichli distribution ke baad abhi 30 din poore nahi hue hain. Agli distribution ke liye lagbhag ${daysLeft} din ka intezaar karna hoga.`);
+  }
+
+  const confirmRun = confirm("Kya aap is cycle ke naye business/investment par 5% pool distribution run karna chahte hain?");
   if (!confirmRun) return;
 
   const usersSnap = await get(ref(db, "users"));
   if (!usersSnap.exists()) return alert("No users found");
 
   const currentPrice = await getPrice();
-  let totalPoolUSDT = 0;
+  let totalNewBusinessUSDT = 0;
   let eliteMembers = [];
   let allUsersList = [];
 
@@ -1922,19 +1949,25 @@ window.runMonthlyElite21Distribution = async () => {
     const phone = s.key;
     const u = s.val();
     allUsersList.push({ phone, ...u });
-    if (u.investment) {
-      totalPoolUSDT += Number(u.investment);
+    
+    if (u.monthlyBusiness && u.monthlyBusiness > 0) {
+      totalNewBusinessUSDT += Number(u.monthlyBusiness);
     }
+    
     if (u.elite21 === true) {
       eliteMembers.push(phone);
     }
   });
 
+  if (totalNewBusinessUSDT <= 0) {
+    return alert("⚠️ Distribution Cancelled! Is cycle mein koi bhi naya investment ya business nahi aaya hai, isliye pool balance $0 hai.");
+  }
+
   if (eliteMembers.length === 0) {
     return alert("No active Elite 21 members found for distribution!");
   }
 
-  const pool5Percent = totalPoolUSDT * 0.05;
+  const pool5Percent = totalNewBusinessUSDT * 0.05;
   const share70 = pool5Percent * 0.70;
   const share30 = pool5Percent * 0.30;
 
@@ -1951,7 +1984,7 @@ window.runMonthlyElite21Distribution = async () => {
     }
   }
 
-  allUsersList.sort((a, b) => (b.monthlyBusiness || b.investment || 0) - (a.monthlyBusiness || a.investment || 0));
+  allUsersList.sort((a, b) => (b.monthlyBusiness || 0) - (a.monthlyBusiness || 0));
   const topPerformers = allUsersList.slice(0, 5);
 
   if (topPerformers.length > 0) {
@@ -1969,7 +2002,15 @@ window.runMonthlyElite21Distribution = async () => {
     }
   }
 
-  alert(`✅ Monthly Distribution Successful!\nTotal Pool 5%: $${pool5Percent.toFixed(2)}\nElite 21 Equal Share (70%): ${perEliteTokens} Temple_DA per member\nTop Performers Share (30%): Distributed to Top ${topPerformers.length} performers at Live Price $${currentPrice}!`);
+  // Save distribution timestamp and reset monthlyBusiness to restart pool tracking for next 30 days
+  await set(ref(db, "config/lastElite21DistributionTime"), Date.now());
+  
+  usersSnap.forEach(s => {
+    update(ref(db, "users/" + s.key), { monthlyBusiness: 0 });
+  });
+
+  alert(`✅ Monthly Distribution Successful!\nTotal Business Processed: $${totalNewBusinessUSDT.toFixed(2)}\n5% Pool Distributed: $${pool5Percent.toFixed(2)}\nElite 21 Equal Share (70%): ${perEliteTokens} Temple_DA per member\n(Pool balance has now been reset to $0 for the next 30-day cycle).`);
+  adminDashboard();
 };
 
 async function loadPendingElite21() {
@@ -2230,6 +2271,7 @@ window.deleteUser = async id => {
 };
 
 window.logout = () => {
+  localStorage.getItem("user");
   localStorage.removeItem("user");
   location.hash = "#login";
 };
