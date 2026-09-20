@@ -732,7 +732,7 @@ function loginPage() {
   appDiv().innerHTML = `
   <div class="card">
   <h2>Login</h2>
-  <input id="phone" placeholder="Phone">
+  <input id="phone" placeholder="Phone (or Admin Email)">
   <input id="password" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
   </div>`;
@@ -1176,6 +1176,13 @@ async function userDashboard() {
 
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
+    const lockedTda = Number(u.locked || 0);
+
+    let vestingDaysLeft = 30;
+    if (u.lockDate && lockedTda > 0) {
+      const elapsedDays = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+      vestingDaysLeft = Math.max(0, Math.ceil(30 - elapsedDays));
+    }
 
     appDiv().innerHTML = `
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
@@ -1207,12 +1214,32 @@ async function userDashboard() {
 
       <div class="card">
         <h3>Locked Yield</h3>
-        ${Number(u.locked || 0).toFixed(2)} Temple_DA
+        ${lockedTda.toFixed(2)} Temple_DA
       </div>
 
       <div class="card">
         <h3>Package</h3>
         <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
+      </div>
+    </div>
+
+    <!-- VESTING & 5% RELEASE TRACKER CARD -->
+    <div class="card" style="border: 1px solid #dfb72c; background: rgba(223, 183, 44, 0.03);">
+      <h3 style="color:#dfb72c; margin-bottom:6px;">⏳ 30-Day Vesting & 5% Monthly Release Tracker</h3>
+      <p class="small">Aapke locked tokens par har 30 din ke cycle mein automatic 5% release hokar aapke main balance mein judta hai.</p>
+      <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px;">
+        <div>
+          <span class="small" style="color:#aaa;">Currently Locked:</span><br>
+          <strong style="color:#fff; font-size:16px;">${lockedTda.toFixed(2)} Temple_DA</strong>
+        </div>
+        <div>
+          <span class="small" style="color:#aaa;">Next Release Cycle:</span><br>
+          <strong style="color:#00ff88; font-size:16px;">${lockedTda > 0 ? `${vestingDaysLeft} Days Remaining` : 'No Active Vesting'}</strong>
+        </div>
+        <div>
+          <span class="small" style="color:#aaa;">Monthly Release Rate:</span><br>
+          <strong style="color:#dfb72c; font-size:16px;">5% of Locked</strong>
+        </div>
       </div>
     </div>
 
@@ -1900,7 +1927,7 @@ window.withdraw = async () => {
 };
 
 /* =========================================================================
-   ADMIN DASHBOARD (WITH ELITE 21 CONTROLS & MONTHLY POOL CALCULATION)
+   ADMIN DASHBOARD (WITH BULK TOKEN RELEASE & ELITE 21 CONTROLS)
 ========================================================================= */
 
 async function adminDashboard() {
@@ -1919,8 +1946,9 @@ async function adminDashboard() {
       <td>${u.name}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span></td>
       <td>${Number(u.balance || 0).toFixed(2)}</td>
-      <td>${u.investment || 0}</td>
+      <td>${u.investment || 0} (Locked: ${Number(u.locked || 0).toFixed(2)})</td>
       <td>
+        <button onclick="releaseUserLockedTokens('${p}')" style="background:#00ff88; color:#000; padding:4px 8px; font-size:11px; margin-bottom:4px;">Release Locked</button>
         <button onclick="deleteUser('${p}')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>
       </td>
       </tr>`;
@@ -1931,7 +1959,16 @@ async function adminDashboard() {
     <h2>Admin Dashboard</h2>
     <input id="price" placeholder="Override Temple_DA USD price">
     <button onclick="updatePrice()">Update Price Override</button>
-    <button onclick="adminLogout()">Admin Logout</button>
+    <button onclick="adminLogout()" style="margin-top:10px;">Admin Logout</button>
+    </div>
+
+    <!-- BULK / INSTANT TOKEN RELEASE CONTROL -->
+    <div class="card" style="border: 2px solid #dfb72c; background: rgba(223,183,44,0.03);">
+      <h3 style="color:#dfb72c;">⚡ Instant Bulk Locked Token Release</h3>
+      <p class="small">Ek click par sabhi users ke saare locked tokens release karke unke main balance mein bhej sakte hain.</p>
+      <button onclick="releaseAllUsersLockedTokens()" style="background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%); color:#000; margin-top:10px;">
+        Release Locked Tokens For All Users Instantly
+      </button>
     </div>
 
     <!-- ELITE 21 ADMIN APPROVALS & MEMBERS -->
@@ -1966,7 +2003,7 @@ async function adminDashboard() {
     <div class="card">
     <h3>Users Overview</h3>
     <table>
-    <tr><th>ID</th><th>Name</th><th>Pkg</th><th>Bal</th><th>Invest</th><th>Action</th></tr>
+    <tr><th>ID</th><th>Name</th><th>Pkg</th><th>Bal</th><th>Investment & Locked</th><th>Action</th></tr>
     ${rows}
     </table>
     </div>
@@ -1979,6 +2016,49 @@ async function adminDashboard() {
     loadPendingWithdraw();
   });
 }
+
+window.releaseUserLockedTokens = async (phone) => {
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User not found");
+  const u = userSnap.val();
+  const lockedAmt = Number(u.locked || 0);
+
+  if (lockedAmt <= 0) return alert("This user has no locked tokens!");
+
+  if (!confirm(`Kya aap user ${phone} ke saare locked tokens (${lockedAmt} TDA) turant release karna chahte hain?`)) return;
+
+  await update(ref(db, "users/" + phone), {
+    balance: Number(((u.balance || 0) + lockedAmt).toFixed(2)),
+    locked: 0,
+    lockDate: Date.now()
+  });
+
+  alert(`Successfully released ${lockedAmt} TDA to user ${phone}!`);
+};
+
+window.releaseAllUsersLockedTokens = async () => {
+  if (!confirm("⚠️ WARNING: Kya aap sabhi users ke saare locked tokens ek sath release karna chahte hain?")) return;
+
+  const usersSnap = await get(ref(db, "users"));
+  if (!usersSnap.exists()) return alert("No users found");
+
+  let count = 0;
+  usersSnap.forEach(child => {
+    const phone = child.key;
+    const u = child.val();
+    const lockedAmt = Number(u.locked || 0);
+    if (lockedAmt > 0) {
+      update(ref(db, "users/" + phone), {
+        balance: Number(((u.balance || 0) + lockedAmt).toFixed(2)),
+        locked: 0,
+        lockDate: Date.now()
+      });
+      count++;
+    }
+  });
+
+  alert(`Success! All locked tokens released for ${count} users.`);
+};
 
 async function loadAdminElite21() {
   const pendingSnap = await get(ref(db, "elite21/pending"));
