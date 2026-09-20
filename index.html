@@ -1249,7 +1249,7 @@ async function userDashboard() {
   });
 }
 
-// ⚡ Withdrawal Request Function (Sends to Admin Pending List)
+// ⚡ Withdrawal Request Function with Daily Investment-Based Limits
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
@@ -1262,8 +1262,42 @@ window.withdraw = async () => {
   if (!snap.exists()) return alert("User session nahi mila!");
   const u = snap.val();
 
-  if ((u.investment || 0) <= 0) {
+  const investment = u.investment || 0;
+
+  if (investment <= 0) {
     return alert("Withdrawal ke liye minimum investment hona anivarya hai!");
+  }
+
+  // --- Daily Limit & Last Withdrawal Check Logic ---
+  const now = new Date();
+  const todayDateString = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  
+  let lastWithdrawDate = u.lastWithdrawDate || "";
+  let todayWithdrawnAmount = u.todayWithdrawnAmount || 0;
+
+  if (lastWithdrawDate !== todayDateString) {
+    todayWithdrawnAmount = 0;
+  }
+
+  // --- Investment Tier Daily Max Limit Logic ---
+  let maxDailyAllowed = 0;
+  if (investment >= 1 && investment <= 19) {
+    maxDailyAllowed = 60;
+  } else if (investment >= 20 && investment <= 250) {
+    maxDailyAllowed = 1000;
+  } else if (investment >= 251 && investment <= 500) {
+    maxDailyAllowed = 2500;
+  } else if (investment > 500) {
+    maxDailyAllowed = 2500;
+  }
+
+  if (todayWithdrawnAmount >= maxDailyAllowed) {
+    return alert(`⚠️ Daily Withdrawal Limit Reached!\nAapke current investment ($${investment} USDT) ke anusaار aapki aaj ki ${maxDailyAllowed} Temple_DA ki daily limit poori ho chuki hai.`);
+  }
+
+  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
+    const remainingLimit = maxDailyAllowed - todayWithdrawnAmount;
+    return alert(`⚠️ Limit Exceeded!\nAap aaj sirf maximum ${remainingLimit} Temple_DA aur withdraw kar sakte hain (Aapki daily max limit: ${maxDailyAllowed} Temple_DA).`);
   }
   
   if (amount > (u.balance || 0)) {
@@ -1276,9 +1310,12 @@ window.withdraw = async () => {
   }
 
   const newBalance = Number((u.balance - amount).toFixed(2));
+  const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
 
   await update(ref(db, "users/" + phone), {
-    balance: newBalance
+    balance: newBalance,
+    lastWithdrawDate: todayDateString,
+    todayWithdrawnAmount: newTodayWithdrawn
   });
 
   await push(ref(db, "withdrawals/pending"), {
