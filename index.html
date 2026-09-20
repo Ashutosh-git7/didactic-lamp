@@ -1725,7 +1725,7 @@ window.withdraw = async () => {
 
   await set(ref(db, "withdrawals/pending/" + phone), {
     amount,
-    wallet: u.wallet,
+    wallet: u.wallet || "",
     timestamp: Date.now()
   });
 
@@ -1855,12 +1855,10 @@ window.runMonthlyElite21Distribution = async () => {
     return alert("No active Elite 21 members found for distribution!");
   }
 
-  // 5% of total investment pool
   const pool5Percent = totalPoolUSDT * 0.05;
-  const share70 = pool5Percent * 0.70; // Shared equally among all Elite 21 members
-  const share30 = pool5Percent * 0.30; // Shared among Top 1-5 performers
+  const share70 = pool5Percent * 0.70;
+  const share30 = pool5Percent * 0.30;
 
-  // 1. Distribute 70% equally among Elite 21 members
   const perEliteShareUSDT = share70 / eliteMembers.length;
   const perEliteTokens = Number((perEliteShareUSDT / currentPrice).toFixed(2));
 
@@ -1874,7 +1872,6 @@ window.runMonthlyElite21Distribution = async () => {
     }
   }
 
-  // 2. Sort users by monthlyBusiness (or investment) for Top 5 performers
   allUsersList.sort((a, b) => (b.monthlyBusiness || b.investment || 0) - (a.monthlyBusiness || a.investment || 0));
   const topPerformers = allUsersList.slice(0, 5);
 
@@ -2040,7 +2037,8 @@ async function loadPendingWithdraw() {
     html += `
     <div class="card">
     <b>User:</b> ${p}<br>
-    <b>Amount:</b> ${d.amount} Temple_DA
+    <b>Amount:</b> ${d.amount} Temple_DA<br>
+    <b>Wallet:</b> ${d.wallet || 'N/A'}
     <br><br>
     <button onclick="approveWithdraw('${p}')">Approve</button>
     </div>`;
@@ -2093,7 +2091,7 @@ function autoRelease(phone, u) {
       lockDate: Date.now()
     };
 
-    if (newLocked <= 0) {
+    if (updates.locked <= 0) {
       updates.investment = 0;
       updates.lockDate = 0;
     }
