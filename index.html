@@ -1813,7 +1813,6 @@ async function adminDashboard() {
 
   const priceUsd = await getLivePriceData();
 
-  // Calculate current pool total from active monthly business
   const usersSnap = await get(ref(db, "users"));
   let totalCurrentPoolUSDT = 0;
   if (usersSnap.exists()) {
@@ -1912,6 +1911,11 @@ async function adminDashboard() {
     </div>
 
     <div class="card">
+    <h3 style="color:#dfb72c;">Pending Upgrades</h3>
+    <div id="pendingUpgrade"></div>
+    </div>
+
+    <div class="card">
     <h3>Pending Withdrawals</h3>
     <div id="pendingWithdraw"></div>
     </div>
@@ -1920,6 +1924,7 @@ async function adminDashboard() {
     loadPendingElite21();
     loadPendingPackages();
     loadPendingInvest();
+    loadPendingUpgrade();
     loadPendingWithdraw();
   });
 }
@@ -2002,7 +2007,6 @@ window.runMonthlyElite21Distribution = async () => {
     }
   }
 
-  // Save distribution timestamp and reset monthlyBusiness to restart pool tracking for next 30 days
   await set(ref(db, "config/lastElite21DistributionTime"), Date.now());
   
   usersSnap.forEach(s => {
@@ -2132,6 +2136,27 @@ async function loadPendingInvest() {
   if (el) el.innerHTML = html || "No pending investments";
 }
 
+async function loadPendingUpgrade() {
+  const snap = await get(ref(db, "investments/upgrade"));
+  let html = "";
+
+  for (const child of Object.entries(snap.val() || {})) {
+    const phone = child[0];
+    const d = child[1];
+
+    html += `
+    <div class="card">
+    <b>User:</b> ${phone}<br>
+    <b>Upgrade Amount:</b> ${d.amountUSDT} USDT
+    <br><br>
+    <button onclick="approveUpgrade('${phone}')">Approve Upgrade</button>
+    </div>`;
+  }
+
+  const el = document.getElementById("pendingUpgrade");
+  if (el) el.innerHTML = html || "No pending upgrades";
+}
+
 window.approveInvest = async phone => {
   const snap = await get(ref(db, "investments/pending/" + phone));
   const d = snap.val();
@@ -2154,6 +2179,30 @@ window.approveInvest = async phone => {
 
   await remove(ref(db, "investments/pending/" + phone));
   alert("Investment approved and added to monthly business!");
+};
+
+window.approveUpgrade = async phone => {
+  const snap = await get(ref(db, "investments/upgrade/" + phone));
+  const d = snap.val();
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const newTemple_DAAmount = Number((d.amountUSDT / currentPrice).toFixed(2));
+
+  const newInvestment = (u.investment || 0) + d.amountUSDT;
+  const newLocked = (u.locked || 0) + newTemple_DAAmount;
+  const newMonthlyBiz = (u.monthlyBusiness || 0) + d.amountUSDT;
+
+  await update(ref(db, "users/" + phone), {
+    investment: newInvestment,
+    locked: newLocked,
+    monthlyBusiness: newMonthlyBiz
+  });
+
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade approved successfully!");
+  loadPendingUpgrade();
 };
 
 async function loadPendingWithdraw() {
@@ -2271,7 +2320,6 @@ window.deleteUser = async id => {
 };
 
 window.logout = () => {
-  localStorage.getItem("user");
   localStorage.removeItem("user");
   location.hash = "#login";
 };
