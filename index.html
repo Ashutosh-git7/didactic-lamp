@@ -50,13 +50,13 @@ nav div:first-child {
 nav a {
   color: #fff;
   text-decoration: none;
-  margin-left: 8px;
+  margin-left: 12px;
   font-weight: 700;
   text-transform: uppercase;
   transition: all 0.3s ease;
   padding: 6px 10px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 nav a:hover {
@@ -444,13 +444,12 @@ td {
 <nav id="mainNavbar">
 <div>
     <img src="temple_logo.png.png" alt="Temple Logo" style="width: 42px; height: auto; margin-right: 8px;" onerror="this.style.display='none'">
-    <span style="color: #ffd700; font-size: 17px; font-weight: bold;">Temple_DA</span>
+    <span style="color: #ffd700; font-size: 18px; font-weight: bold;">Temple_DA</span>
 </div>
 
 <div>
 <a href="#">Home</a>
-<a href="#feed" style="color: #dfb72c;">⚡ Reels</a>
-<a href="#elite21" style="color: #00ff88;">⚡ Elite 21</a>
+<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.15);">⚡ Reels</a>
 <a href="#packages">Packages</a>
 <a href="#login">Login</a>
 <a href="#register">Register</a>
@@ -539,8 +538,7 @@ const routes = {
   "#user": userDashboard,
   "#admin": adminDashboard,
   "#feed": feedPage,
-  "#packages": packagesPage,
-  "#elite21": elite21Page
+  "#packages": packagesPage
 };
 
 window.addEventListener("hashchange", router);
@@ -595,9 +593,8 @@ async function landing() {
         </div>
     </div>
     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <a href="#register"><button style="width: 170px;">Join Now</button></a>
-      <a href="#feed"><button style="width: 170px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
-      <a href="#elite21"><button style="width: 170px; background: transparent; border: 2px solid #00ff88; color: #00ff88;">⚡ Elite 21</button></a>
+      <a href="#register"><button style="width: 200px;">Join Now</button></a>
+      <a href="#feed"><button style="width: 200px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
     </div>
   </div>
 
@@ -732,7 +729,7 @@ function loginPage() {
   appDiv().innerHTML = `
   <div class="card">
   <h2>Login</h2>
-  <input id="phone" placeholder="Phone (or Admin Email)">
+  <input id="phone" placeholder="Phone">
   <input id="password" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
   </div>`;
@@ -769,185 +766,6 @@ window.login = async () => {
 
   localStorage.setItem("user", phone);
   location.hash = "#user";
-};
-
-/* =========================================================================
-   TEMPLE ELITE 21 PAGE & 3-YEAR LOCK LOGIC
-========================================================================= */
-
-async function elite21Page() {
-  const phone = localStorage.getItem("user");
-  const membersSnap = await get(ref(db, "elite21/members"));
-  const pendingSnap = await get(ref(db, "elite21/pending"));
-  
-  let membersList = [];
-  let memberCount = 0;
-  if (membersSnap.exists()) {
-    membersSnap.forEach(child => {
-      membersList.push({ phone: child.key, ...child.val() });
-      memberCount++;
-    });
-  }
-
-  let isAlreadyMember = false;
-  let isPending = false;
-  let myMemberData = null;
-  if (phone) {
-    membersList.forEach(m => {
-      if (m.phone === phone) {
-        isAlreadyMember = true;
-        myMemberData = m;
-      }
-    });
-    if (pendingSnap.exists() && pendingSnap.hasChild(phone)) {
-      isPending = true;
-    }
-  }
-
-  const seatsLeft = 21 - memberCount;
-  const THREE_YEARS_MS = 3 * 365 * 24 * 60 * 60 * 1000;
-
-  let lockStatusHtml = "";
-  if (isAlreadyMember && myMemberData) {
-    const elapsed = Date.now() - (myMemberData.joinedAt || Date.now());
-    const timeLeft = THREE_YEARS_MS - elapsed;
-    if (timeLeft > 0) {
-      const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-      lockStatusHtml = `<p class="small" style="color:#dfb72c; margin-top:6px;">🔒 Security Money Lock: <b>${daysLeft} days remaining</b> (3-Year lock-in period active).</p>`;
-    } else {
-      lockStatusHtml = `
-        <p class="small" style="color:#00ff88; margin-top:6px;">🔓 3-Year Lock Period Completed! Aap apna security fund wapas nikal sakte hain.</p>
-        <button onclick="requestEliteExit()" class="btn-danger" style="margin-top:8px; width:auto; padding:8px 16px;">Claim Exit & Get Temple_DA Refund</button>
-      `;
-    }
-  }
-
-  appDiv().innerHTML = `
-    <div class="card center">
-      <h2 style="color: #00ff88;">⚡ Temple Elite 21 Exclusive Pool</h2>
-      <p>An elite circle of 21 leaders. Monthly pool distribution in Temple_DA tokens based on live market price.</p>
-      
-      <div class="grid" style="margin-top: 15px;">
-        <div class="card">
-          <h3>Filled Seats</h3>
-          <span class="number" style="font-size:24px;">${memberCount} / 21</span>
-        </div>
-        <div class="card">
-          <h3>Available Seats</h3>
-          <span class="number" style="font-size:24px; color:${seatsLeft > 0 ? '#00ff88' : '#ff4444'};">${seatsLeft} Seats</span>
-        </div>
-        <div class="card">
-          <h3>Security Deposit</h3>
-          <span class="number" style="font-size:24px;">150 USDT</span>
-        </div>
-      </div>
-
-      <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 136, 0.05); border: 1px solid #00ff88; border-radius: 10px; text-align: left;">
-        <h3 style="color: #00ff88; font-size: 15px; margin-bottom: 8px;">📊 Elite 21 Rules & 3-Year Lock Policy:</h3>
-        <p class="small">1. Maximum only 21 seats available. Form locks automatically when full.</p>
-        <p class="small">2. Security deposit (150 USDT) is locked for a mandatory <b>3-year period</b>.</p>
-        <p class="small">3. After 3 years, if exiting, members receive their refund converted in <b>Temple_DA tokens at the live market price</b>.</p>
-        <p class="small">4. Monthly 5% pool collection split: <b>70% Equal Share</b> + <b>30% Performance Share</b> to Top 1-5 Leaders.</p>
-        <div style="margin-top: 10px; padding: 8px; background: rgba(223,183,44,0.1); border-radius: 6px; border: 1px solid #dfb72c;">
-          <p class="small" style="color:#dfb72c; font-weight:bold;">Official Deposit Address (USDT BEP20):</p>
-          <input value="0x2760f05248a8377d3fdD86b80A3D48B010d5De95" readonly style="margin: 4px 0; text-align:center; font-size:13px;">
-        </div>
-      </div>
-
-      ${phone ? `
-        ${isAlreadyMember ? `
-          <div style="padding: 12px; background: rgba(0,255,136,0.1); border:1px solid #00ff88; border-radius:8px;">
-            <p style="color:#00ff88; font-weight:bold;">✓ You are officially an active member of Temple Elite 21!</p>
-            ${lockStatusHtml}
-          </div>
-        ` : isPending ? `
-          <div style="padding: 12px; background: rgba(223,183,44,0.1); border:1px solid #dfb72c; border-radius:8px;">
-            <p style="color:#dfb72c; font-weight:bold;">⏳ Aapka Elite 21 join request pending hai. Admin approval ka wait karein.</p>
-          </div>
-        ` : `
-          ${seatsLeft > 0 ? `
-            <button onclick="requestElite21()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; font-size:15px; padding:14px;">
-              Request to Join Elite 21 (150 USDT Deposit)
-            </button>
-          ` : `
-            <div style="padding: 12px; background: rgba(255,68,68,0.1); border:1px solid #ff4444; border-radius:8px;">
-              <p style="color:#ff4444; font-weight:bold;">⚠️ All 21 Seats Are Currently Full! Registration is locked until a seat opens up.</p>
-            </div>
-          `}
-        `}
-      ` : `
-        <p class="small">Please login to participate in Elite 21.</p>
-        <a href="#login"><button style="width:200px; margin-top:10px;">Login to Join</button></a>
-      `}
-    </div>
-
-    <div class="card">
-      <h3>Active Elite 21 Members</h3>
-      <table>
-        <tr>
-          <th>Slot</th>
-          <th>Member Phone</th>
-          <th>Joined Date</th>
-        </tr>
-        ${membersList.length > 0 ? membersList.map((m, idx) => `
-          <tr>
-            <td><span class="badge-tag">Slot #${idx + 1}</span></td>
-            <td><b>${maskPhone(m.phone)}</b></td>
-            <td>${new Date(m.joinedAt || Date.now()).toLocaleDateString()}</td>
-          </tr>
-        `).join('') : '<tr><td colspan="3" class="center small">No members joined yet. Be the first!</td></tr>'}
-      </table>
-    </div>
-  `;
-}
-
-window.requestElite21 = async () => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
-
-  const membersSnap = await get(ref(db, "elite21/members"));
-  let count = 0;
-  if (membersSnap.exists()) {
-    membersSnap.forEach(() => count++);
-  }
-
-  if (count >= 21) return alert("All 21 seats are currently full!");
-
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.exists() ? userSnap.val() : {};
-
-  const confirmJoin = confirm("Elite 21 mein shamil hone ke liye 150 USDT deposit karke request submit karein? (3-year lock policy applies)");
-  if (!confirmJoin) return;
-
-  await set(ref(db, `elite21/pending/${phone}`), {
-    timestamp: Date.now(),
-    wallet: u.wallet || ""
-  });
-
-  alert("Elite 21 request successfully submitted! Admin verification ke baad seat confirm hogi.");
-  location.reload();
-};
-
-window.requestEliteExit = async () => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return;
-
-  const currentPrice = await getPrice();
-  const refundTokens = Number((150 / currentPrice).toFixed(2));
-
-  const confirmExit = confirm(`Kya aap Elite 21 se exit karke apna 150 USDT ka refund Temple_DA tokens (${refundTokens} TDA) mein lena chahte hain?`);
-  if (!confirmExit) return;
-
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.exists() ? userSnap.val() : {};
-
-  await update(ref(db, "users/" + phone), {
-    balance: Number(((u.balance || 0) + refundTokens).toFixed(2))
-  });
-
-  await remove(ref(db, `elite21/members/${phone}`));
-  alert(`Exit successful! ${refundTokens} Temple_DA added to your balance.`);
-  location.reload();
 };
 
 /* =========================================================================
@@ -1176,13 +994,6 @@ async function userDashboard() {
 
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
-    const lockedTda = Number(u.locked || 0);
-
-    let vestingDaysLeft = 30;
-    if (u.lockDate && lockedTda > 0) {
-      const elapsedDays = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
-      vestingDaysLeft = Math.max(0, Math.ceil(30 - elapsedDays));
-    }
 
     appDiv().innerHTML = `
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
@@ -1214,32 +1025,12 @@ async function userDashboard() {
 
       <div class="card">
         <h3>Locked Yield</h3>
-        ${lockedTda.toFixed(2)} Temple_DA
+        ${Number(u.locked || 0).toFixed(2)} Temple_DA
       </div>
 
       <div class="card">
         <h3>Package</h3>
         <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
-      </div>
-    </div>
-
-    <!-- VESTING & 5% RELEASE TRACKER CARD -->
-    <div class="card" style="border: 1px solid #dfb72c; background: rgba(223, 183, 44, 0.03);">
-      <h3 style="color:#dfb72c; margin-bottom:6px;">⏳ 30-Day Vesting & 5% Monthly Release Tracker</h3>
-      <p class="small">Aapke locked tokens par har 30 din ke cycle mein automatic 5% release hokar aapke main balance mein judta hai.</p>
-      <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px;">
-        <div>
-          <span class="small" style="color:#aaa;">Currently Locked:</span><br>
-          <strong style="color:#fff; font-size:16px;">${lockedTda.toFixed(2)} Temple_DA</strong>
-        </div>
-        <div>
-          <span class="small" style="color:#aaa;">Next Release Cycle:</span><br>
-          <strong style="color:#00ff88; font-size:16px;">${lockedTda > 0 ? `${vestingDaysLeft} Days Remaining` : 'No Active Vesting'}</strong>
-        </div>
-        <div>
-          <span class="small" style="color:#aaa;">Monthly Release Rate:</span><br>
-          <strong style="color:#dfb72c; font-size:16px;">5% of Locked</strong>
-        </div>
       </div>
     </div>
 
@@ -1453,13 +1244,13 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  let maxAllowed = 2;
+  let maxAllowed = 2; // Starter Pack (5 USDT)
   if (userTier === "monthly") {
-    maxAllowed = 5;
+    maxAllowed = 5; // Pro Creator (15 USDT)
   }
 
   if (todayVideoCount >= maxAllowed) {
-    alert(`⚠️ Daily Video Limit Reached!\nAapke current (${userTier.toUpperCase()}) package ki aaj ki ${maxAllowed} video limit complete ho chuki hai.`);
+    alert(`⚠️ Daily Video Limit Reached!\nAapke current (${userTier.toUpperCase()}) package ki aaj ki ${maxAllowed} video limit complete ho chuki hai. Unlimited uploads ke liye Elite Yearly package upgrade karein!`);
     return false;
   }
   return true;
@@ -1528,18 +1319,43 @@ window.publishTalent = async () => {
           );
         });
       } catch (uploadErr) {
-        console.warn("Storage upload failed:", uploadErr);
+        console.warn("Storage upload failed, switching to direct URL check:", uploadErr);
         if (publishBtn) publishBtn.disabled = false;
         if (progressContainer) progressContainer.style.display = "none";
         
         if (!mediaUrl) {
-          return alert("⚠️ File direct upload nahi ho saki. Kripya YouTube Shorts link ya direct video MP4 URL daal kar publish karein!");
+          return alert("⚠️ File direct upload nahi ho saki (Storage network error). Kripya YouTube Shorts link ya direct video MP4 URL 'Direct URL' box mein daal kar publish karein!");
         }
       }
     }
 
     if (type !== "text" && !mediaUrl) {
       return alert("Select video file or provide direct URL!");
+    }
+
+    if (mediaUrl) {
+      const allPostsSnap = await get(ref(db, "posts"));
+      if (allPostsSnap.exists()) {
+        let isDuplicate = false;
+        allPostsSnap.forEach(child => {
+          const existingPost = child.val();
+          if (existingPost.mediaUrl === mediaUrl) {
+            isDuplicate = true;
+          }
+        });
+
+        if (isDuplicate) {
+          if (storagePath) {
+            try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+          }
+          const publishBtn = document.getElementById("publishBtn");
+          if (publishBtn) publishBtn.disabled = false;
+          const progressContainer = document.getElementById("uploadProgressContainer");
+          if (progressContainer) progressContainer.style.display = "none";
+          
+          return alert("⚠️ Duplicate Content Blocked!\nYeh video ya media link pehle se hi platform par uploaded hai. Koi doosra unique content post karein.");
+        }
+      }
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -1558,6 +1374,7 @@ window.publishTalent = async () => {
     alert("Reel published successfully!");
     location.hash = "#feed";
   } catch (error) {
+    console.error("Publish error:", error);
     alert("Publish error: " + error.message);
   }
 };
@@ -1584,7 +1401,9 @@ window.deleteMyPost = async (postId, storagePath) => {
       try {
         const fileRef = sRef(storage, storagePath);
         await deleteObject(fileRef);
-      } catch (err) {}
+      } catch (err) {
+        console.warn("Storage notice:", err);
+      }
     }
 
     await remove(ref(db, "posts/" + postId));
@@ -1634,18 +1453,25 @@ window.likePost = async (postId) => {
     const capRef = ref(db, `userLimits/${userPhone}/${today}/likesCount`);
     const capSnap = await get(capRef);
     const currentLikesToday = Number(capSnap.val() || 0);
+    const MAX_REWARDED_LIKES_PER_DAY = 20;
 
-    if (viewerPts > 0 && currentLikesToday < 20) {
-      const viewerSnap = await get(ref(db, "users/" + userPhone));
-      if (viewerSnap.exists()) {
-        const vData = viewerSnap.val();
-        await update(ref(db, "users/" + userPhone), {
-          points: Number(vData.points || 0) + viewerPts
-        });
+    if (viewerPts > 0) {
+      if (currentLikesToday < MAX_REWARDED_LIKES_PER_DAY) {
+        const viewerSnap = await get(ref(db, "users/" + userPhone));
+        if (viewerSnap.exists()) {
+          const vData = viewerSnap.val();
+          await update(ref(db, "users/" + userPhone), {
+            points: Number(vData.points || 0) + viewerPts
+          });
+        }
+        await set(capRef, currentLikesToday + 1);
+        alert(`❤️ Liked! Creator: +${creatorPts} Pts | You: +${viewerPts} Pts (${currentLikesToday + 1}/${MAX_REWARDED_LIKES_PER_DAY} used today).`);
+      } else {
+        alert(`❤️ Liked! Creator: +${creatorPts} Pts. (Daily 20 reward likes limit reached).`);
       }
-      await set(capRef, currentLikesToday + 1);
+    } else {
+      alert(`❤️ Liked! Creator: +${creatorPts} Pts.`);
     }
-    alert(`❤️ Liked successfully!`);
   } catch (err) {
     alert("Like error: " + err.message);
   }
@@ -1662,15 +1488,37 @@ window.subscribeCreator = async (creatorPhone) => {
 
     await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
 
+    const creatorPts = 35;
+    const subscriberPts = 15;
+
     const creatorSnap = await get(ref(db, "users/" + creatorPhone));
     if (creatorSnap.exists()) {
       const cData = creatorSnap.val();
       await update(ref(db, "users/" + creatorPhone), {
         subscribersCount: Number(cData.subscribersCount || 0) + 1,
-        points: Number(cData.points || 0) + 35
+        points: Number(cData.points || 0) + creatorPts
       });
     }
-    alert(`🎉 Subscribed successfully!`);
+
+    const today = getTodayDateKey();
+    const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
+    const capSnap = await get(capRef);
+    const currentSubsToday = Number(capSnap.val() || 0);
+    const MAX_REWARDED_SUBS_PER_DAY = 5;
+
+    if (currentSubsToday < MAX_REWARDED_SUBS_PER_DAY) {
+      const subSnap = await get(ref(db, "users/" + subscriberPhone));
+      if (subSnap.exists()) {
+        const sData = subSnap.val();
+        await update(ref(db, "users/" + subscriberPhone), {
+          points: Number(sData.points || 0) + subscriberPts
+        });
+      }
+      await set(capRef, currentSubsToday + 1);
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
+    } else {
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Daily 5 subs reward limit reached).`);
+    }
   } catch (err) {
     alert("Subscribe error: " + err.message);
   }
@@ -1746,8 +1594,10 @@ async function packagesPage() {
         <p class="small">≈ ${starterTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
+        <p class="small">✓ Earn Like & Subscribe Points</p>
         
-        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${starterTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('starter', 5)" class="btn-secondary">Submit Deposit (5 USDT)</button>
       </div>
 
@@ -1760,8 +1610,11 @@ async function packagesPage() {
         <p class="small">≈ ${proTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos / Reels Daily Limit</p>
+        <p class="small">✓ 30 Din Ki Validity</p>
+        <p class="small">✓ Verified Creator Badge</p>
+        <p class="small">✓ 2X Leaderboard Pool Priority</p>
         
-        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${proTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('monthly', 15)" class="btn-secondary">Submit Deposit (15 USDT)</button>
       </div>
 
@@ -1773,8 +1626,10 @@ async function packagesPage() {
         <p class="small">≈ ${eliteTokens} Temple_DA</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels & Videos</p>
+        <p class="small">✓ Full 365 Days Uninterrupted Access</p>
+        <p class="small">✓ Zero Conversion Fees</p>
         
-        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance (${eliteTokens} Temple_DA)</button>
         <button onclick="requestPackageUpgrade('yearly', 120)" class="btn-secondary">Submit Deposit (120 USDT)</button>
       </div>
     </div>
@@ -1782,13 +1637,16 @@ async function packagesPage() {
 }
 
 window.copyPkgAddress = () => {
-  navigator.clipboard.writeText("0x2760f05248a8377d3fdD86b80A3D48B010d5De95");
+  const copyText = document.getElementById("pkgDepositAddress");
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(copyText.value);
   alert("Deposit address copied!");
 };
 
 window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+  if (!phone) return alert("Please login to activate or upgrade a package");
 
   const userSnap = await get(ref(db, "users/" + phone));
   if (!userSnap.exists()) return alert("User not found");
@@ -1798,19 +1656,21 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
 
   if ((u.balance || 0) < requiredTokens) {
-    return alert(`Insufficient Balance! Is package ke liye ${requiredTokens} Temple_DA ki zaroorat hai.`);
+    return alert(`Insufficient Balance! Is package ke liye ${requiredTokens} Temple_DA ki zaroorat hai. Aapka balance: ${Number(u.balance || 0).toFixed(2)} Temple_DA hai.`);
   }
 
   const durationMs = getPackageDurationMs(tierName);
   const durationDays = tierName === 'yearly' ? 365 : 30;
 
-  if (!confirm(`Confirm activation of ${tierName.toUpperCase()} package?`)) return;
+  const confirmAction = confirm(`Aapke balance se ${requiredTokens} Temple_DA deduct honge aur ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye active hoga. Aage badhein?`);
+  if (!confirmAction) return;
 
+  const newBalance = Number((u.balance - requiredTokens).toFixed(2));
   const activatedAt = Date.now();
   const expiresAt = activatedAt + durationMs;
 
   await update(ref(db, "users/" + phone), {
-    balance: Number((u.balance - requiredTokens).toFixed(2)),
+    balance: newBalance,
     tier: tierName,
     packagePriceUSDT: usdtAmount,
     packageActivatedAt: activatedAt,
@@ -1821,18 +1681,23 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   await push(ref(db, "packages/history/" + phone), {
     tier: tierName,
     amountUSDT: usdtAmount,
+    temple_DAAmount: requiredTokens,
     validityDays: durationDays,
     expiresAt: expiresAt,
+    method: "balance",
     time: activatedAt
   });
 
-  alert(`Package successfully activated!`);
+  alert(`Congratulations! ${tierName.toUpperCase()} package agle ${durationDays} dino ke liye successfully activate ho gaya!`);
   location.hash = "#user";
 };
 
 window.requestPackageUpgrade = async (tierName, amount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+  if (!phone) return alert("Please login to request package upgrade");
+
+  const pendingSnap = await get(ref(db, "packages/pending/" + phone));
+  if (pendingSnap.exists()) return alert("Aapka ek package request pehle se pending hai.");
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
@@ -1843,18 +1708,23 @@ window.requestPackageUpgrade = async (tierName, amount) => {
     amountUSDT: amount,
     durationDays: durationDays,
     wallet: u.wallet || "",
+    currentTier: u.tier || "none",
     timestamp: Date.now()
   });
 
-  alert(`Package deposit request submitted for admin approval!`);
+  alert(`Request for ${tierName.toUpperCase()} submitted! USDT bhej dein, Admin verify karke activate karega.`);
+  location.hash = "#user";
 };
 
 /* =========================================================================
-   INVESTMENTS & WITHDRAWALS
+   CORE INVESTMENT & WITHDRAWAL
 ========================================================================= */
 
 window.copyAddress = () => {
-  navigator.clipboard.writeText("0x2760f05248a8377d3fdD86b80A3D48B010d5De95");
+  const copyText = document.getElementById("depositAddress");
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(copyText.value);
   alert("Deposit address copied");
 };
 
@@ -1862,11 +1732,16 @@ window.invest = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
 
-  if (!amount || amount < 1 || amount > 250) return alert("Investment must be between 1 - 250 USDT");
+  if (!amount) return alert("Enter amount");
+  if (amount < 1 || amount > 250) return alert("Investment must be between 1 - 250 USDT");
+
+  const pendingSnap = await get(ref(db, "investments/pending/" + phone));
+  if (pendingSnap.exists()) return alert("Your previous investment is still pending approval");
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
-  if (u.locked > 0) return alert("You already have an active investment vesting.");
+
+  if (u.locked > 0) return alert("You already have an active investment. Please wait until tokens are released.");
 
   const price = await getPrice();
   const temple_DA = Number((amount / price).toFixed(2));
@@ -1884,13 +1759,17 @@ window.upgrade = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("upgradeAmount"));
 
-  if (!amount || amount < 10) return alert("Minimum upgrade 10 USDT");
+  if (!amount) return alert("Enter amount");
+  if (amount < 10) return alert("Minimum upgrade 10 USDT");
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
-  if ((u.investment || 0) <= 0) return alert("First make your investment");
+  if ((u.investment || 0) <= 0) return alert("First make your investment, then you can upgrade");
   if ((u.investment || 0) + amount > 250) return alert("Maximum total investment is 250 USDT");
+
+  const pendingSnap = await get(ref(db, "investments/upgrade/" + phone));
+  if (pendingSnap.exists()) return alert("Previous upgrade still pending approval");
 
   const price = await getPrice();
   const temple_DA = Number((amount / price).toFixed(2));
@@ -1905,6 +1784,12 @@ window.upgrade = async () => {
   alert("Upgrade submitted for approval");
 };
 
+window.rejectInvest = async phone => {
+  await remove(ref(db, "investments/pending/" + phone));
+  alert("Investment rejected");
+  loadPendingInvest();
+};
+
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
@@ -1912,10 +1797,44 @@ window.withdraw = async () => {
   if (!amount || amount <= 0) return alert("Invalid amount");
 
   const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
   const u = snap.val();
 
   if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment");
+
+  let dailyLimit = 1000;
+  const userInvestment = u.investment || 0;
+
+  if (userInvestment >= 1 && userInvestment < 20) {
+    dailyLimit = 60;
+  }
+
+  if (amount > dailyLimit) {
+    return alert(`Aapke current investment (${userInvestment} USDT) ke anusar aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
+  }
+
+  const pending = await get(ref(db, "withdrawals/pending/" + phone));
+  if (pending.exists()) return alert("Aapka pichla withdrawal request abhi pending hai.");
+
   if (amount > u.balance) return alert("Insufficient balance");
+
+  const historySnap = await get(ref(db, "withdrawals/history/" + phone));
+  let totalWithdrawnIn24Hours = 0;
+  const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+
+  if (historySnap.exists()) {
+    historySnap.forEach(child => {
+      const record = child.val();
+      if (record.time && record.time > twentyFourHoursAgo) {
+        totalWithdrawnIn24Hours += parseFloat(record.amount || 0);
+      }
+    });
+  }
+
+  if (totalWithdrawnIn24Hours + amount > dailyLimit) {
+    const bachaHuaLimit = dailyLimit - totalWithdrawnIn24Hours;
+    return alert(`Daily Limit Exceeded! Aaj aap maximum ${bachaHuaLimit.toFixed(2)} Temple_DA aur withdraw kar sakte hain.`);
+  }
 
   await set(ref(db, "withdrawals/pending/" + phone), {
     amount,
@@ -1923,12 +1842,8 @@ window.withdraw = async () => {
     timestamp: Date.now()
   });
 
-  alert("Withdrawal request submitted for approval!");
+  alert("Withdrawal request successfully submitted for approval!");
 };
-
-/* =========================================================================
-   ADMIN DASHBOARD (WITH BULK TOKEN RELEASE & ELITE 21 CONTROLS)
-========================================================================= */
 
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
@@ -1937,61 +1852,80 @@ async function adminDashboard() {
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
+
     snap.forEach(s => {
       const p = s.key;
       const u = s.val();
+
+      checkAndHandlePackageExpiry(p, u);
+
+      if (u.lockDate && u.locked && u.locked > 0) {
+        const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+        if (days >= 30) {
+          autoRelease(p, u);
+        }
+      }
+
+      const balTda = Number(u.balance || 0);
+      const balUsd = (balTda * priceUsd).toFixed(2);
+
       rows += `
       <tr>
       <td>${p}</td>
       <td>${u.name}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span></td>
-      <td>${Number(u.balance || 0).toFixed(2)}</td>
-      <td>${u.investment || 0} (Locked: ${Number(u.locked || 0).toFixed(2)})</td>
+      <td>${balTda.toFixed(2)} Temple_DA<br><span class="small" style="color:#dfb72c;">$${balUsd} USDT</span></td>
+      <td>${u.investment || 0}</td>
+      <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
-        <button onclick="releaseUserLockedTokens('${p}')" style="background:#00ff88; color:#000; padding:4px 8px; font-size:11px; margin-bottom:4px;">Release Locked</button>
-        <button onclick="deleteUser('${p}')" class="btn-danger" style="padding:4px 8px; font-size:11px;">Delete</button>
+        <button onclick="editUser('${p}')">Edit</button>
+        <button onclick="deleteUser('${p}')">Delete</button>
+        <button onclick="releaseLocked('${p}')">Release</button>
       </td>
       </tr>`;
     });
 
     appDiv().innerHTML = `
+    <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
+        <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
     <div class="card">
     <h2>Admin Dashboard</h2>
     <input id="price" placeholder="Override Temple_DA USD price">
     <button onclick="updatePrice()">Update Price Override</button>
-    <button onclick="adminLogout()" style="margin-top:10px;">Admin Logout</button>
-    </div>
-
-    <!-- BULK / INSTANT TOKEN RELEASE CONTROL -->
-    <div class="card" style="border: 2px solid #dfb72c; background: rgba(223,183,44,0.03);">
-      <h3 style="color:#dfb72c;">⚡ Instant Bulk Locked Token Release</h3>
-      <p class="small">Ek click par sabhi users ke saare locked tokens release karke unke main balance mein bhej sakte hain.</p>
-      <button onclick="releaseAllUsersLockedTokens()" style="background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%); color:#000; margin-top:10px;">
-        Release Locked Tokens For All Users Instantly
-      </button>
-    </div>
-
-    <!-- ELITE 21 ADMIN APPROVALS & MEMBERS -->
-    <div class="card" style="border: 2px solid #00ff88;">
-      <h3 style="color:#00ff88;">⚡ Elite 21 Pending Requests & Members</h3>
-      <div id="adminElite21Section">Loading Elite 21...</div>
-      <div style="margin-top:15px; border-top:1px solid rgba(0,255,136,0.2); padding-top:12px;">
-        <button onclick="runEliteMonthlyDistribution()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Run Elite 21 Monthly Distribution (5% Pool Split)</button>
-      </div>
+    <button onclick="adminLogout()">Admin Logout</button>
     </div>
 
     <div class="card">
-    <h3>Pending Packages</h3>
+    <h3>Users Overview</h3>
+    <table>
+    <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Package</th>
+    <th>Balance</th>
+    <th>Invested</th>
+    <th>Locked</th>
+    <th>Action</th>
+    </tr>
+    ${rows}
+    </table>
+    </div>
+
+    <div class="card">
+    <h3 style="color:#00ff88;">Pending Creator Package Activations</h3>
     <div id="pendingPackages"></div>
     </div>
 
     <div class="card">
-    <h3>Pending Investments</h3>
+    <h3>Pending Investments (30-Day Vesting)</h3>
     <div id="pendingInvest"></div>
     </div>
 
     <div class="card">
-    <h3>Pending Upgrades</h3>
+    <h3>Pending Investment Upgrades</h3>
     <div id="pendingUpgrade"></div>
     </div>
 
@@ -1999,290 +1933,350 @@ async function adminDashboard() {
     <h3>Pending Withdrawals</h3>
     <div id="pendingWithdraw"></div>
     </div>
-
-    <div class="card">
-    <h3>Users Overview</h3>
-    <table>
-    <tr><th>ID</th><th>Name</th><th>Pkg</th><th>Bal</th><th>Investment & Locked</th><th>Action</th></tr>
-    ${rows}
-    </table>
-    </div>
     `;
 
-    loadAdminElite21();
     loadPendingPackages();
     loadPendingInvest();
-    loadPendingUpgrade();
     loadPendingWithdraw();
+    loadPendingUpgrade();
   });
 }
 
-window.releaseUserLockedTokens = async (phone) => {
-  const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return alert("User not found");
-  const u = userSnap.val();
-  const lockedAmt = Number(u.locked || 0);
-
-  if (lockedAmt <= 0) return alert("This user has no locked tokens!");
-
-  if (!confirm(`Kya aap user ${phone} ke saare locked tokens (${lockedAmt} TDA) turant release karna chahte hain?`)) return;
-
-  await update(ref(db, "users/" + phone), {
-    balance: Number(((u.balance || 0) + lockedAmt).toFixed(2)),
-    locked: 0,
-    lockDate: Date.now()
-  });
-
-  alert(`Successfully released ${lockedAmt} TDA to user ${phone}!`);
-};
-
-window.releaseAllUsersLockedTokens = async () => {
-  if (!confirm("⚠️ WARNING: Kya aap sabhi users ke saare locked tokens ek sath release karna chahte hain?")) return;
-
-  const usersSnap = await get(ref(db, "users"));
-  if (!usersSnap.exists()) return alert("No users found");
-
-  let count = 0;
-  usersSnap.forEach(child => {
-    const phone = child.key;
-    const u = child.val();
-    const lockedAmt = Number(u.locked || 0);
-    if (lockedAmt > 0) {
-      update(ref(db, "users/" + phone), {
-        balance: Number(((u.balance || 0) + lockedAmt).toFixed(2)),
-        locked: 0,
-        lockDate: Date.now()
-      });
-      count++;
-    }
-  });
-
-  alert(`Success! All locked tokens released for ${count} users.`);
-};
-
-async function loadAdminElite21() {
-  const pendingSnap = await get(ref(db, "elite21/pending"));
-  const membersSnap = await get(ref(db, "elite21/members"));
-
-  let pendingHtml = "<p class='small'>No pending Elite 21 requests.</p>";
-  if (pendingSnap.exists()) {
-    pendingHtml = "";
-    pendingSnap.forEach(child => {
-      const phone = child.key;
-      const d = child.val();
-      pendingHtml += `
-        <div style="padding:8px; background:rgba(0,255,136,0.05); border:1px solid #00ff88; border-radius:6px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-          <div><b>User:</b> ${phone} | <b>Wallet:</b> ${d.wallet || 'N/A'}</div>
-          <div style="display:flex; gap:6px;">
-            <button onclick="approveEliteMember('${phone}')" style="width:auto; padding:6px 12px; background:#00ff88; color:#000;">Approve</button>
-            <button onclick="rejectEliteMember('${phone}')" class="btn-danger" style="width:auto; padding:6px 12px;">Reject</button>
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  let membersHtml = "<p class='small'>No active Elite 21 members yet.</p>";
-  if (membersSnap.exists()) {
-    membersHtml = "<table><tr><th>Slot</th><th>Phone</th><th>Action</th></tr>";
-    let idx = 1;
-    membersSnap.forEach(child => {
-      const phone = child.key;
-      membersHtml += `
-        <tr>
-          <td>Slot #${idx}</td>
-          <td><b>${phone}</b></td>
-          <td><button onclick="removeEliteMember('${phone}')" class="btn-danger" style="width:auto; padding:4px 10px; font-size:11px;">Remove Member</button></td>
-        </tr>
-      `;
-      idx++;
-    });
-    membersHtml += "</table>";
-  }
-
-  const el = document.getElementById("adminElite21Section");
-  if (el) {
-    el.innerHTML = `
-      <h4 style="color:#dfb72c; margin-bottom:6px;">Pending Join Requests (150 USDT)</h4>
-      ${pendingHtml}
-      <h4 style="color:#dfb72c; margin:15px 0 6px 0;">Current Active Members (Max 21)</h4>
-      ${membersHtml}
-    `;
-  }
-}
-
-window.approveEliteMember = async (phone) => {
-  const membersSnap = await get(ref(db, "elite21/members"));
-  let count = 0;
-  membersSnap.forEach(() => count++);
-  if (count >= 21) return alert("Elite 21 is already full (21 members)!");
-
-  await set(ref(db, `elite21/members/${phone}`), {
-    joinedAt: Date.now()
-  });
-  await remove(ref(db, `elite21/pending/${phone}`));
-  alert(`User ${phone} successfully approved into Elite 21!`);
-  loadAdminElite21();
-};
-
-window.rejectEliteMember = async (phone) => {
-  await remove(ref(db, `elite21/pending/${phone}`));
-  alert("Elite 21 request rejected.");
-  loadAdminElite21();
-};
-
-window.removeEliteMember = async (phone) => {
-  if (!confirm(`Kya aap sach me user ${phone} ko Elite 21 se remove karna chahte hain?`)) return;
-  await remove(ref(db, `elite21/members/${phone}`));
-  alert(`User ${phone} has been removed from Elite 21. A seat is now vacant.`);
-  loadAdminElite21();
-};
-
-window.runEliteMonthlyDistribution = async () => {
-  const usersSnap = await get(ref(db, "users"));
-  let totalInvestmentUSDT = 0;
-  if (usersSnap.exists()) {
-    usersSnap.forEach(child => {
-      const u = child.val();
-      totalInvestmentUSDT += Number(u.investment || 0);
-    });
-  }
-
-  const monthlyPoolUSDT = totalInvestmentUSDT * 0.05;
-  if (monthlyPoolUSDT <= 0) return alert("Pool collection is 0 USDT, cannot distribute.");
-
-  const membersSnap = await get(ref(db, "elite21/members"));
-  let members = [];
-  if (membersSnap.exists()) {
-    membersSnap.forEach(child => {
-      members.push(child.key);
-    });
-  }
-
-  if (members.length === 0) return alert("No active members in Elite 21!");
-
-  const equalShareUSDT = (monthlyPoolUSDT * 0.70) / members.length;
-  const currentPrice = await getPrice();
-  const tokenPerMember = Number((equalShareUSDT / currentPrice).toFixed(2));
-
-  for (const phone of members) {
-    const userSnap = await get(ref(db, "users/" + phone));
-    if (userSnap.exists()) {
-      const u = userSnap.val();
-      await update(ref(db, "users/" + phone), {
-        balance: Number(((u.balance || 0) + tokenPerMember).toFixed(2))
-      });
-    }
-  }
-
-  alert(`Elite 21 Monthly Distribution Complete! Total Pool: ${monthlyPoolUSDT} USDT. Each of the ${members.length} members received ${tokenPerMember} Temple_DA.`);
-};
-
-/* Loaders for regular admin tasks */
 async function loadPendingPackages() {
   const snap = await get(ref(db, "packages/pending"));
   let html = "";
-  snap.forEach(s => {
-    const p = s.key;
-    const d = s.val();
-    html += `<div class="card"><b>User:</b> ${p} | <b>Tier:</b> ${d.tier.toUpperCase()} (${d.amountUSDT} USDT)<br><button onclick="approvePackage('${p}','${d.tier}',${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve</button></div>`;
-  });
-  document.getElementById("pendingPackages").innerHTML = html || "No pending packages";
+
+  for (const child of Object.entries(snap.val() || {})) {
+    const phone = child[0];
+    const d = child[1];
+    const durationDays = d.durationDays || (d.tier === 'yearly' ? 365 : 30);
+
+    html += `
+    <div class="card" style="border: 1px solid #00ff88;">
+    <b>User:</b> ${phone}<br>
+    <b>Requested Tier:</b> <span class="badge-tag">${d.tier.toUpperCase()}</span><br>
+    <b>Validity Duration:</b> ${durationDays} Days<br>
+    <b>Amount:</b> ${d.amountUSDT} USDT<br>
+    <b>Wallet:</b> ${d.wallet}
+    <br><br>
+    <button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve For ${durationDays} Days</button>
+    <button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button>
+    </div>`;
+  }
+
+  const el = document.getElementById("pendingPackages");
+  if (el) el.innerHTML = html || "No pending package requests";
 }
 
-window.approvePackage = async (phone, tier, amount) => {
+window.approvePackage = async (phone, tier, usdtAmount) => {
   const durationMs = getPackageDurationMs(tier);
+  const durationDays = tier === 'yearly' ? 365 : 30;
   const activatedAt = Date.now();
-  await update(ref(db, "users/" + phone), { tier, packageExpiresAt: activatedAt + durationMs });
+  const expiresAt = activatedAt + durationMs;
+
+  await update(ref(db, "users/" + phone), { 
+    tier: tier,
+    packagePriceUSDT: usdtAmount || 0,
+    packageActivatedAt: activatedAt,
+    packageExpiresAt: expiresAt,
+    packageExpired: false
+  });
+
+  await push(ref(db, "packages/history/" + phone), {
+    tier: tier,
+    amountUSDT: usdtAmount || 0,
+    validityDays: durationDays,
+    expiresAt: expiresAt,
+    method: "deposit_approval",
+    time: activatedAt
+  });
+
   await remove(ref(db, "packages/pending/" + phone));
-  alert("Package approved!");
+  alert(`Package ${tier.toUpperCase()} activated for ${durationDays} days!`);
+  loadPendingPackages();
+};
+
+window.rejectPackage = async phone => {
+  await remove(ref(db, "packages/pending/" + phone));
+  alert("Package request rejected");
   loadPendingPackages();
 };
 
 async function loadPendingInvest() {
   const snap = await get(ref(db, "investments/pending"));
   let html = "";
+
+  for (const child of Object.entries(snap.val() || {})) {
+    const phone = child[0];
+    const d = child[1];
+    const userSnap = await get(ref(db, "users/" + phone));
+    const user = userSnap.val();
+
+    html += `
+    <div class="card">
+    <b>User:</b> ${phone}<br>
+    <b>Wallet:</b> ${user ? user.wallet : ''}<br>
+    <b>Amount:</b> ${d.amountUSDT} USDT
+    <br><br>
+    <button onclick="approveInvest('${phone}')">Approve</button>
+    <button onclick="rejectInvest('${phone}')">Reject</button>
+    </div>`;
+  }
+
+  document.getElementById("pendingInvest").innerHTML = html || "No pending investments";
+}
+
+async function loadPendingWithdraw() {
+  const snap = await get(ref(db, "withdrawals/pending"));
+  let html = "";
+
   snap.forEach(s => {
     const p = s.key;
     const d = s.val();
-    html += `<div class="card"><b>User:</b> ${p} | <b>Amount:</b> ${d.amountUSDT} USDT<br><button onclick="approveInvest('${p}')">Approve</button></div>`;
+
+    html += `
+    <div class="card">
+    <b>User:</b> ${p}<br>
+    <b>Amount:</b> ${d.amount} Temple_DA<br>
+    <b>Wallet:</b> ${d.wallet}
+    <br><br>
+    <button onclick="approveWithdraw('${p}')">Approve</button>
+    </div>`;
   });
-  document.getElementById("pendingInvest").innerHTML = html || "No pending investments";
+
+  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawals";
 }
 
 window.approveInvest = async phone => {
   const snap = await get(ref(db, "investments/pending/" + phone));
   const d = snap.val();
-  const uSnap = await get(ref(db, "users/" + phone));
-  const u = uSnap.val();
-  const price = await getPrice();
-  const tmpl = Number((d.amountUSDT / price).toFixed(2));
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const newTemple_DAAmount = Number((d.amountUSDT / currentPrice).toFixed(2));
+
+  const newInvestment = (u.investment || 0) + d.amountUSDT;
+  const newLocked = (u.locked || 0) + newTemple_DAAmount;
+
+  await update(ref(db, "users/" + phone), {
+    investment: newInvestment,
+    locked: newLocked,
+    lockDate: u.lockDate || Date.now()
+  });
+
+  await push(ref(db, "investments/history/" + phone), {
+    amountUSDT: d.amountUSDT,
+    temple_DAAmount: newTemple_DAAmount,
+    type: "invest",
+    time: Date.now()
+  });
+
+  await distributeReferral(phone, d.amountUSDT);
+
+  const poolSnap = await get(ref(db, "liquidityPool"));
+  const pool = (poolSnap.val() || 0) + d.amountUSDT;
+  await set(ref(db, "liquidityPool"), pool);
+
+  await remove(ref(db, "investments/pending/" + phone));
+  alert("Investment approved!");
+};
+
+window.approveUpgrade = async phone => {
+  const snap = await get(ref(db, "investments/upgrade/" + phone));
+  if (!snap.exists()) return alert("Upgrade not found");
+
+  const d = snap.val();
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const newTemple_DAAmount = Number((d.amountUSDT / currentPrice).toFixed(2));
+
+  if ((u.investment || 0) + d.amountUSDT > 250) {
+    alert("Upgrade exceeds maximum limit");
+    await remove(ref(db, "investments/upgrade/" + phone));
+    return;
+  }
+
+  const newLocked = (u.locked || 0) + newTemple_DAAmount;
 
   await update(ref(db, "users/" + phone), {
     investment: (u.investment || 0) + d.amountUSDT,
-    locked: (u.locked || 0) + tmpl,
-    lockDate: u.lockDate || Date.now()
+    locked: newLocked,
+    lockDate: Date.now()
   });
-  await remove(ref(db, "investments/pending/" + phone));
-  alert("Investment approved!");
-  loadPendingInvest();
+
+  await push(ref(db, "investments/history/" + phone), {
+    amountUSDT: d.amountUSDT,
+    temple_DAAmount: newTemple_DAAmount,
+    type: "upgrade",
+    time: Date.now()
+  });
+
+  await distributeReferral(phone, d.amountUSDT);
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade approved!");
+};
+
+window.rejectUpgrade = async phone => {
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade request rejected");
+  loadPendingUpgrade();
+};
+
+window.approveWithdraw = async phone => {
+  const snap = await get(ref(db, "withdrawals/pending/" + phone));
+  const d = snap.val();
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  if (u.balance < d.amount) return alert("Insufficient balance");
+
+  await update(ref(db, "users/" + phone), {
+    balance: u.balance - d.amount
+  });
+  await push(ref(db, "withdrawals/history/" + phone), {
+    amount: d.amount,
+    wallet: d.wallet,
+    time: Date.now()
+  });
+
+  await remove(ref(db, "withdrawals/pending/" + phone));
+  alert("Withdrawal approved");
 };
 
 async function loadPendingUpgrade() {
   const snap = await get(ref(db, "investments/upgrade"));
   let html = "";
-  snap.forEach(s => {
-    const p = s.key;
-    const d = s.val();
-    html += `<div class="card"><b>User:</b> ${p} | <b>Upgrade:</b> ${d.amountUSDT} USDT<br><button onclick="approveUpgrade('${p}')">Approve</button></div>`;
-  });
+
+  for (const child of Object.entries(snap.val() || {})) {
+    const phone = child[0];
+    const d = child[1];
+
+    html += `
+    <div class="card">
+    <b>User:</b> ${phone}<br>
+    <b>Wallet:</b> ${d.wallet}<br>
+    <b>Upgrade:</b> ${d.amountUSDT} USDT
+    <br><br>
+    <button onclick="approveUpgrade('${phone}')">Approve</button>
+    <button onclick="rejectUpgrade('${phone}')">Reject</button>
+    </div>`;
+  }
+
   document.getElementById("pendingUpgrade").innerHTML = html || "No pending upgrades";
 }
 
-window.approveUpgrade = async phone => {
-  const snap = await get(ref(db, "investments/upgrade/" + phone));
-  const d = snap.val();
-  const uSnap = await get(ref(db, "users/" + phone));
-  const u = uSnap.val();
+async function distributeReferral(phone, amount) {
+  const levels = [10, 5, 2.5, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  let current = phone;
   const price = await getPrice();
-  const tmpl = Number((d.amountUSDT / price).toFixed(2));
+  const tmpl = amount / price;
 
-  await update(ref(db, "users/" + phone), {
-    investment: (u.investment || 0) + d.amountUSDT,
-    locked: (u.locked || 0) + tmpl,
-    lockDate: Date.now()
-  });
-  await remove(ref(db, "investments/upgrade/" + phone));
-  alert("Upgrade approved!");
-  loadPendingUpgrade();
-};
+  for (let i = 0; i < 15; i++) {
+    const s = await get(ref(db, "users/" + current));
+    if (!s.exists()) break;
 
-async function loadPendingWithdraw() {
-  const snap = await get(ref(db, "withdrawals/pending"));
-  let html = "";
-  snap.forEach(s => {
-    const p = s.key;
-    const d = s.val();
-    html += `<div class="card"><b>User:</b> ${p} | <b>Amount:</b> ${d.amount} Temple_DA<br><button onclick="approveWithdraw('${p}')">Approve</button></div>`;
-  });
-  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawals";
+    const userData = s.val();
+    const referrer = userData.referrer;
+    if (!referrer) break;
+
+    const rSnap = await get(ref(db, "users/" + referrer));
+    if (!rSnap.exists()) break;
+    const r = rSnap.val();
+
+    if (i >= 1 && (r.investment || 0) < 20) {
+      current = referrer;
+      continue;
+    }
+
+    const bonus = tmpl * (levels[i] / 100);
+
+    await update(ref(db, "users/" + referrer), {
+      balance: Number((r.balance + bonus).toFixed(2))
+    });
+
+    current = referrer;
+  }
 }
 
-window.approveWithdraw = async phone => {
-  const snap = await get(ref(db, "withdrawals/pending/" + phone));
-  const d = snap.val();
-  const uSnap = await get(ref(db, "users/" + phone));
-  const u = uSnap.val();
+function autoRelease(phone, u) {
+  if (!u.lockDate || !u.locked || u.locked <= 0) return;
 
-  await update(ref(db, "users/" + phone), { balance: u.balance - d.amount });
-  await remove(ref(db, "withdrawals/pending/" + phone));
-  alert("Withdrawal approved!");
-  loadPendingWithdraw();
+  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+
+  if (days >= 30) {
+    const cycles = Math.floor(days / 30);
+    if (cycles < 1) return;
+
+    let totalRelease = 0;
+    let currentLocked = u.locked;
+
+    for (let i = 0; i < cycles; i++) {
+      const release = currentLocked * 0.05;
+      totalRelease += release;
+      currentLocked -= release;
+      if (currentLocked < 0) {
+        currentLocked = 0;
+        break;
+      }
+    }
+
+    const newBalance = Number(((u.balance || 0) + totalRelease).toFixed(2));
+    const newLocked = Number(currentLocked.toFixed(2));
+
+    const updates = {
+      balance: newBalance,
+      locked: newLocked,
+      lockDate: Date.now()
+    };
+
+    if (newLocked <= 0) {
+      updates.investment = 0;
+      updates.lockDate = 0;
+    }
+
+    update(ref(db, "users/" + phone), updates).catch(err => console.error(err));
+  }
+}
+
+window.releaseLocked = async phone => {
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+
+  const u = snap.val();
+  if (!u.locked || u.locked <= 0) return alert("No locked tokens to release");
+
+  const releasedAmount = u.locked;
+
+  await update(ref(db, "users/" + phone), {
+    balance: (u.balance || 0) + releasedAmount,
+    locked: 0,
+    lockDate: 0,
+    investment: 0
+  });
+
+  alert("Full cycle completed. User can invest again.");
 };
 
 window.updatePrice = async () => {
-  await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price")));
-  alert("Price updated");
+  const p = parseFloat(v("price"));
+  await set(ref(db, "config/temple_DAPrice"), p);
+  alert("Price override updated");
+};
+
+window.editUser = async oldId => {
+  const newId = prompt("Enter new user ID");
+  if (!newId) return;
+
+  const snap = await get(ref(db, "users/" + oldId));
+  if (!snap.exists()) return alert("User not found");
+
+  const data = snap.val();
+  await set(ref(db, "users/" + newId), data);
+  await remove(ref(db, "users/" + oldId));
+  alert("User ID updated");
 };
 
 window.deleteUser = async id => {
@@ -2299,64 +2293,78 @@ window.adminLogout = () => {
   location.hash = "#login";
 };
 
-function autoRelease(phone, u) {
-  if (!u.lockDate || !u.locked || u.locked <= 0) return;
-  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
-  if (days >= 30) {
-    const release = u.locked * 0.05;
-    update(ref(db, "users/" + phone), {
-      balance: Number(((u.balance || 0) + release).toFixed(2)),
-      locked: Number((u.locked - release).toFixed(2)),
-      lockDate: Date.now()
-    });
-  }
-}
-
 function loadPackageHistory(phone) {
   onValue(ref(db, "packages/history/" + phone), snap => {
+    let list = [];
+    snap.forEach(s => list.push(s.val()));
+
+    list = list.reverse().slice(0, 15);
     let html = "";
-    snap.forEach(s => {
-      const d = s.val();
-      html += `<div class="small">${new Date(d.time).toLocaleDateString()} → ${d.tier.toUpperCase()} (${d.amountUSDT} USDT)</div>`;
+    list.forEach(d => {
+      const date = new Date(d.time).toLocaleDateString();
+      const expDate = d.expiresAt ? new Date(d.expiresAt).toLocaleDateString() : "-";
+      html += `<div class="small" style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${date} → <b>${d.tier.toUpperCase()}</b> (${d.amountUSDT} USDT | Valid till ${expDate})</div>`;
     });
+
     const el = document.getElementById("packageHistory");
-    if (el) el.innerHTML = html || "No history";
+    if (el) el.innerHTML = html || "No packages activated yet";
   });
 }
 
 function loadInvestHistory(phone) {
   onValue(ref(db, "investments/history/" + phone), snap => {
-    let html = "";
+    let list = [];
     snap.forEach(s => {
       const d = s.val();
-      html += `<div class="small">${new Date(d.time).toLocaleDateString()} → ${d.amountUSDT} USDT</div>`;
+      if (!d.type || d.type === "invest") list.push(d);
     });
+
+    list = list.reverse().slice(0, 25);
+    let html = "";
+    list.forEach(d => {
+      const date = new Date(d.time).toLocaleDateString();
+      html += `<div class="small" style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${date} → ${d.amountUSDT} USDT</div>`;
+    });
+
     const el = document.getElementById("investHistory");
-    if (el) el.innerHTML = html || "No history";
+    if (el) el.innerHTML = html || "No investment yet";
   });
 }
 
 function loadWithdrawHistory(phone) {
   onValue(ref(db, "withdrawals/history/" + phone), snap => {
+    let list = [];
+    snap.forEach(s => list.push(s.val()));
+
+    list = list.reverse().slice(0, 25);
     let html = "";
-    snap.forEach(s => {
-      const d = s.val();
-      html += `<div class="small">${new Date(d.time).toLocaleDateString()} → ${d.amount} Temple_DA</div>`;
+    list.forEach(d => {
+      const date = new Date(d.time).toLocaleDateString();
+      html += `<div class="small" style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${date} → ${d.amount} Temple_DA</div>`;
     });
+
     const el = document.getElementById("withdrawHistory");
-    if (el) el.innerHTML = html || "No history";
+    if (el) el.innerHTML = html || "No withdrawals yet";
   });
 }
 
 function loadUpgradeHistory(phone) {
   onValue(ref(db, "investments/history/" + phone), snap => {
-    let html = "";
+    let list = [];
     snap.forEach(s => {
       const d = s.val();
-      if(d.type === "upgrade") html += `<div class="small">${new Date(d.time).toLocaleDateString()} → ${d.amountUSDT} USDT</div>`;
+      if (d.type === "upgrade") list.push(d);
     });
+
+    list = list.reverse().slice(0, 25);
+    let html = "";
+    list.forEach(d => {
+      const date = new Date(d.time).toLocaleDateString();
+      html += `<div class="small" style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${date} → Upgrade ${d.amountUSDT} USDT</div>`;
+    });
+
     const el = document.getElementById("upgradeHistory");
-    if (el) el.innerHTML = html || "No history";
+    if (el) el.innerHTML = html || "No upgrades yet";
   });
 }
 
