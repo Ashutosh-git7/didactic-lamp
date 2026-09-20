@@ -1285,7 +1285,6 @@ window.makeDirectUSDTDeposit = async () => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
 
-    // Binance-Peg USDT (BEP20) Contract Address on BSC Mainnet
     const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
     const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
@@ -1728,52 +1727,65 @@ async function packagesPage() {
   const phone = localStorage.getItem("user");
   let currentTier = "none";
   let expiryDateString = "";
+  let userBalance = 0;
 
   if (phone) {
     const userSnap = await get(ref(db, "users/" + phone));
     if (userSnap.exists()) {
       const u = userSnap.val();
       currentTier = checkAndHandlePackageExpiry(phone, u);
+      userBalance = u.balance || 0;
       if (currentTier !== "none" && u.packageExpiresAt) {
         expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
       }
     }
   }
 
+  const currentPrice = await getPrice();
+  const starterTokens = Number((5 / currentPrice).toFixed(2));
+  const proTokens = Number((15 / currentPrice).toFixed(2));
+  const eliteTokens = Number((120 / currentPrice).toFixed(2));
+
   appDiv().innerHTML = `
     <div class="card center">
       <h2>Creator Packages & Durations</h2>
-      <p>Direct Web3 Wallet (USDT BEP20) ke zariye instant package activate karein.</p>
-      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''}</p>` : ''}
+      <p>Direct Web3 Wallet (USDT BEP20) ya apne Temple_DA Balance se instant package activate karein.</p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${userBalance.toFixed(2)} Temple_DA</p>` : ''}
     </div>
 
     <div class="grid">
       <div class="card center">
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${starterTokens} Temple_DA</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${starterTokens} TDA)</button>
       </div>
 
       <div class="card center" style="border: 2px solid #dfb72c;">
         <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
         <h3 style="color:#dfb72c;">Pro Creator</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${proTokens} Temple_DA</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${proTokens} TDA)</button>
       </div>
 
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${eliteTokens} Temple_DA</p>
         <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
-        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${eliteTokens} TDA)</button>
       </div>
     </div>
   `;
@@ -1825,6 +1837,42 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     console.error("Package upgrade error:", error);
     alert("Package activation failed: " + (error.data?.message || error.message));
   }
+};
+
+// 💎 Direct Balance Deduction Function (Temple_DA)
+window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login first");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User not found");
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
+
+  if ((u.balance || 0) < requiredTokens) {
+    return alert(`Insufficient Balance! Aapke paas ${Number(u.balance || 0).toFixed(2)} Temple_DA hai, lekin is package ke liye ${requiredTokens} Temple_DA chahiye.`);
+  }
+
+  if (!confirm(`Aapke balance se ${requiredTokens} Temple_DA deduct karke package (${tierName.toUpperCase()}) activate kiya jayega. Kya aap confirm karte hain?`)) return;
+
+  const activatedAt = Date.now();
+  const expiresAt = activatedAt + getPackageDurationMs(tierName);
+  const newBalance = Number((u.balance - requiredTokens).toFixed(2));
+
+  await update(ref(db, "users/" + phone), {
+    balance: newBalance,
+    tier: tierName,
+    packagePriceUSDT: usdtAmount,
+    packageActivatedAt: activatedAt,
+    packageExpiresAt: expiresAt,
+    packageExpired: false,
+    monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
+  });
+
+  alert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
+  location.hash = "#user";
 };
 
 window.withdraw = async () => {
