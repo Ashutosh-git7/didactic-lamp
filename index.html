@@ -1280,9 +1280,9 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  let maxAllowed = 2; // Starter Pack (5 USDT) -> 2 Videos/Day
+  let maxAllowed = 2; // Starter Pack -> 2 Videos/Day
   if (userTier === "monthly") {
-    maxAllowed = 5; // Pro Creator (15 USDT) -> 5 Videos/Day
+    maxAllowed = 5; // Pro Creator -> 5 Videos/Day
   }
 
   if (todayVideoCount >= maxAllowed) {
@@ -1493,15 +1493,39 @@ window.subscribeCreator = async (creatorPhone) => {
 
     await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
 
+    const creatorPts = 35;
+    const subscriberPts = 15;
+
+    // Credit Creator Points & Subscriber Count
     const creatorSnap = await get(ref(db, "users/" + creatorPhone));
     if (creatorSnap.exists()) {
       const cData = creatorSnap.val();
       await update(ref(db, "users/" + creatorPhone), {
         subscribersCount: Number(cData.subscribersCount || 0) + 1,
-        points: Number(cData.points || 0) + 35
+        points: Number(cData.points || 0) + creatorPts
       });
     }
-    alert("Successfully followed creator!");
+
+    // Credit Follower (Subscriber) Points with daily cap check
+    const today = getTodayDateKey();
+    const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
+    const capSnap = await get(capRef);
+    const currentSubsToday = Number(capSnap.val() || 0);
+    const MAX_REWARDED_SUBS_PER_DAY = 5;
+
+    if (currentSubsToday < MAX_REWARDED_SUBS_PER_DAY) {
+      const subSnap = await get(ref(db, "users/" + subscriberPhone));
+      if (subSnap.exists()) {
+        const sData = subSnap.val();
+        await update(ref(db, "users/" + subscriberPhone), {
+          points: Number(sData.points || 0) + subscriberPts
+        });
+      }
+      await set(capRef, currentSubsToday + 1);
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts | You: +${subscriberPts} Pts (${currentSubsToday + 1}/${MAX_REWARDED_SUBS_PER_DAY} used today).`);
+    } else {
+      alert(`🎉 Subscribed! Creator: +${creatorPts} Pts. (Daily 5 subs reward limit reached).`);
+    }
   } catch (err) {
     alert("Subscribe error: " + err.message);
   }
@@ -1529,7 +1553,7 @@ window.convertPointsToToken = async () => {
 };
 
 /* =========================================================================
-   PACKAGES PAGE (UPDATED WITH EXPLICIT LIMIT TEXT)
+   PACKAGES PAGE
 ========================================================================= */
 
 async function packagesPage() {
@@ -1742,7 +1766,7 @@ window.withdraw = async () => {
   }
 
   if (amount > dailyLimit) {
-    return alert(`Aapke current investment (${userInvestment} USDT) ke anusار aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
+    return alert(`Aapke current investment (${userInvestment} USDT) ke anusar aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
   }
 
   if (amount > u.balance) return alert("Insufficient balance");
