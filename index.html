@@ -1280,9 +1280,9 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  let maxAllowed = 2;
+  let maxAllowed = 2; // Starter Pack (5 USDT)
   if (userTier === "monthly") {
-    maxAllowed = 5;
+    maxAllowed = 5; // Pro Creator (15 USDT)
   }
 
   if (todayVideoCount >= maxAllowed) {
@@ -1721,7 +1721,37 @@ window.withdraw = async () => {
   if (!snap.exists()) return alert("User not found");
   const u = snap.val();
 
+  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment");
+
+  let dailyLimit = 1000;
+  const userInvestment = u.investment || 0;
+  if (userInvestment >= 1 && userInvestment < 20) {
+    dailyLimit = 60;
+  }
+
+  if (amount > dailyLimit) {
+    return alert(`Aapke current investment (${userInvestment} USDT) ke anusar aap ek baar mein maximum ${dailyLimit} Temple_DA hi withdraw kar sakte hain.`);
+  }
+
   if (amount > u.balance) return alert("Insufficient balance");
+
+  const historySnap = await get(ref(db, "withdrawals/history/" + phone));
+  let totalWithdrawnIn24Hours = 0;
+  const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+
+  if (historySnap.exists()) {
+    historySnap.forEach(child => {
+      const record = child.val();
+      if (record.time && record.time > twentyFourHoursAgo) {
+        totalWithdrawnIn24Hours += parseFloat(record.amount || 0);
+      }
+    });
+  }
+
+  if (totalWithdrawnIn24Hours + amount > dailyLimit) {
+    const bachaHuaLimit = dailyLimit - totalWithdrawnIn24Hours;
+    return alert(`Daily Limit Exceeded! Aaj aap maximum ${bachaHuaLimit.toFixed(2)} Temple_DA aur withdraw kar sakte hain.`);
+  }
 
   await set(ref(db, "withdrawals/pending/" + phone), {
     amount,
