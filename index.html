@@ -6,10 +6,16 @@
 <title>Temple_DA Ultimate Ecosystem</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<!-- Ethers.js Library for Direct Web3 Wallet & Contract Interactions -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   background: radial-gradient(circle at top, #141204 0%, #080808 100%);
   color: #f0f0f0;
@@ -19,82 +25,442 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
+
+/* Header & Sticky Tech Navigation */
 nav {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 30px; background: rgba(10, 10, 10, 0.95);
-  backdrop-filter: blur(12px); border-bottom: 2px solid #dfb72c;
-  position: sticky; top: 0; z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 30px;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid #dfb72c;
+  box-shadow: 0 4px 20px rgba(223, 183, 44, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
-nav div:first-child { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 19px; display: flex; align-items: center; }
-nav a { color: #fff; text-decoration: none; margin-left: 12px; font-weight: 700; text-transform: uppercase; font-size: 13px; padding: 6px 10px; border-radius: 6px; transition: all 0.3s; }
-nav a:hover { color: #dfb72c; background: rgba(223, 183, 44, 0.12); }
-.container { max-width: 1050px; margin: 25px auto; padding: 15px; }
-.card { background: rgba(20, 20, 20, 0.65); border: 1px solid rgba(223, 183, 44, 0.25); padding: 24px; border-radius: 14px; margin-bottom: 20px; backdrop-filter: blur(8px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-.card:hover { border-color: rgba(223, 183, 44, 0.5); }
-h2, h3 { font-family: 'Orbitron', sans-serif; color: #dfb72c; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
-h2 { font-size: 22px; border-bottom: 1px solid rgba(223, 183, 44, 0.2); padding-bottom: 8px; }
-h3 { font-size: 17px; }
-input, select, textarea { background: #0d0d0d; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 15px; border: 1px solid rgba(223, 183, 44, 0.4); border-radius: 8px; padding: 11px 14px; width: 100%; margin: 8px 0; }
-input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 12px rgba(223, 183, 44, 0.4); border-color: #dfb72c; background: #141414; }
-button { background: linear-gradient(135deg, #b8860b 0%, #e6ca65 50%, #996515 100%); color: #000; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; text-transform: uppercase; padding: 12px; border-radius: 8px; border: none; cursor: pointer; width: 100%; margin: 8px 0; box-shadow: 0 4px 15px rgba(184, 134, 11, 0.25); }
-button:hover { transform: scale(1.01); background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%); }
-.btn-secondary { background: transparent; border: 1px solid #dfb72c; color: #dfb72c; box-shadow: none; }
-.btn-secondary:hover { background: rgba(223, 183, 44, 0.15); color: #fff; }
-.btn-danger { background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%); color: #fff; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0 20px 0; }
-.grid .card { text-align: center; padding: 16px; font-size: 20px; font-weight: 700; margin-bottom: 0; }
-.grid .card h3 { font-size: 13px; color: #aaa; margin-bottom: 6px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.07); font-size: 13px; }
-th { background: rgba(223, 183, 44, 0.1); color: #dfb72c; font-family: 'Orbitron', sans-serif; font-size: 11px; }
+
+nav div:first-child {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+nav a:hover {
+  color: #dfb72c;
+  background: rgba(223, 183, 44, 0.12);
+}
+
+.container {
+  max-width: 1050px;
+  margin: 25px auto;
+  padding: 15px;
+}
+
+/* Glassmorphism Cards */
+.card {
+  background: rgba(20, 20, 20, 0.65);
+  border: 1px solid rgba(223, 183, 44, 0.25);
+  padding: 24px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(223, 183, 44, 0.5);
+}
+
+h2, h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: #dfb72c;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+h2 {
+  font-size: 22px;
+  border-bottom: 1px solid rgba(223, 183, 44, 0.2);
+  padding-bottom: 8px;
+}
+
+h3 {
+  font-size: 17px;
+}
+
+/* Inputs & Form Controls */
+input, select, textarea {
+  background: #0d0d0d;
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  border: 1px solid rgba(223, 183, 44, 0.4);
+  border-radius: 8px;
+  padding: 11px 14px;
+  width: 100%;
+  margin: 8px 0;
+  transition: all 0.3s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 12px rgba(223, 183, 44, 0.4);
+  border-color: #dfb72c;
+  background: #141414;
+}
+
+button {
+  background: linear-gradient(135deg, #b8860b 0%, #e6ca65 50%, #996515 100%);
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(184, 134, 11, 0.25);
+  margin: 8px 0;
+  width: 100%;
+}
+
+button:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 20px rgba(223, 183, 44, 0.5);
+  background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #dfb72c;
+  color: #dfb72c;
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: rgba(223, 183, 44, 0.15);
+  color: #fff;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%);
+  color: #fff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 15px 0 20px 0;
+}
+
+.grid .card {
+  text-align: center;
+  padding: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.grid .card h3 {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+th {
+  background: rgba(223, 183, 44, 0.1);
+  color: #dfb72c;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+}
+
+td {
+  font-size: 13px;
+}
+
 .center { text-align: center; }
 .small { font-size: 13px; color: #b5b5b5; margin-top: 3px; }
 .number { color: #dfb72c; font-weight: bold; font-family: 'Orbitron', sans-serif; }
-.badge-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-family: 'Orbitron', sans-serif; background: rgba(223, 183, 44, 0.2); color: #dfb72c; border: 1px solid #dfb72c; }
 
-/* Accordion Histories */
-.accordion-wrapper { background: rgba(18, 18, 18, 0.8); border: 1px solid rgba(223, 183, 44, 0.25); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-.accordion-header { padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(25, 25, 25, 0.6); font-weight: 700; font-family: 'Orbitron', sans-serif; font-size: 14px; color: #dfb72c; }
-.accordion-header:hover { background: rgba(223, 183, 44, 0.1); }
-.accordion-content { display: none; padding: 15px; background: rgba(10, 10, 10, 0.7); border-top: 1px solid rgba(223, 183, 44, 0.15); max-height: 380px; overflow-y: auto; }
-.accordion-wrapper.active .accordion-content { display: block; }
+.badge-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-family: 'Orbitron', sans-serif;
+  background: rgba(223, 183, 44, 0.2);
+  color: #dfb72c;
+  border: 1px solid #dfb72c;
+}
 
-/* Reels Feed CSS */
-.reels-page-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #000; padding: 10px; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; }
-.reels-top-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 400px; margin-bottom: 8px; }
-.reels-viewport { width: 100%; max-width: 400px; height: 80vh; max-height: 720px; overflow-y: scroll; scroll-snap-type: y mandatory; border-radius: 16px; border: 2px solid rgba(223, 183, 44, 0.4); background: #000; position: relative; scrollbar-width: none; }
+.badge-expired {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-family: 'Orbitron', sans-serif;
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
+
+/* =========================================================
+   ACCORDION HISTORIES
+========================================================= */
+.accordion-wrapper {
+  background: rgba(18, 18, 18, 0.8);
+  border: 1px solid rgba(223, 183, 44, 0.25);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(25, 25, 25, 0.6);
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  color: #dfb72c;
+  user-select: none;
+}
+
+.accordion-header:hover {
+  background: rgba(223, 183, 44, 0.1);
+}
+
+.accordion-content {
+  display: none;
+  padding: 15px;
+  background: rgba(10, 10, 10, 0.7);
+  border-top: 1px solid rgba(223, 183, 44, 0.15);
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.accordion-wrapper.active .accordion-content {
+  display: block;
+}
+
+.accordion-wrapper.active .accordion-header span:last-child {
+  transform: rotate(180deg);
+}
+
+/* =========================================================
+   DEDICATED FULL-SCREEN REELS FEED
+========================================================= */
+.reels-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #000;
+  padding: 10px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 2000;
+}
+
+.reels-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 8px;
+}
+
+.reels-viewport {
+  width: 100%;
+  max-width: 400px;
+  height: 80vh;
+  max-height: 720px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  border-radius: 16px;
+  border: 2px solid rgba(223, 183, 44, 0.4);
+  background: #000;
+  position: relative;
+  scrollbar-width: none;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.9);
+}
 .reels-viewport::-webkit-scrollbar { display: none; }
-.reel-item { position: relative; width: 100%; height: 100%; scroll-snap-align: start; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.reel-item video, .reel-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
-.reel-overlay-bottom { position: absolute; bottom: 20px; left: 15px; right: 80px; z-index: 10; text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
-.reel-actions-bar { position: absolute; bottom: 30px; right: 12px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-.reel-circle-btn { background: rgba(20, 20, 20, 0.8); border: 1px solid rgba(223, 183, 44, 0.5); color: #fff; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; }
-.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; color: #fff; text-align: center; }
 
-/* Comment Drawer */
-.chat-drawer { position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); width: 100%; max-width: 440px; height: 70vh; background: rgba(14, 14, 14, 0.98); border-top: 2px solid #dfb72c; border-radius: 20px 20px 0 0; z-index: 3000; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1); padding: 16px; display: flex; flex-direction: column; }
+.reel-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.reel-item video, .reel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.reel-overlay-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 15px;
+  right: 80px;
+  z-index: 10;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+.reel-overlay-bottom * {
+  pointer-events: auto;
+}
+
+.reel-actions-bar {
+  position: absolute;
+  bottom: 30px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.reel-circle-btn {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(223, 183, 44, 0.5);
+  color: #fff;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+  transition: transform 0.2s;
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+}
+.reel-circle-btn:hover { transform: scale(1.1); color: #dfb72c; }
+.reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 3px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; color: #fff; text-align: center; }
+
+/* Comment / Chat Drawer Modal */
+.chat-drawer {
+  position: fixed;
+  bottom: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
+  height: 70vh;
+  background: rgba(14, 14, 14, 0.98);
+  border-top: 2px solid #dfb72c;
+  border-radius: 20px 20px 0 0;
+  z-index: 3000;
+  transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+  padding: 16px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+}
 .chat-drawer.open { bottom: 0; }
-.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(223, 183, 44, 0.3); padding-bottom: 10px; }
-.chat-box { flex: 1; overflow-y: auto; padding: 10px 0; margin-top: 8px; }
-.chat-msg { background: rgba(255, 255, 255, 0.05); border-left: 3px solid #dfb72c; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; }
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(223, 183, 44, 0.3);
+  padding-bottom: 10px;
+}
+
+.chat-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  margin-top: 8px;
+}
+
+.chat-msg {
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid #dfb72c;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
 </style>
 </head>
 
 <body>
 
 <nav id="mainNavbar">
-<div><span style="color: #ffd700; font-size: 18px; font-weight: bold;">Temple_DA</span></div>
+<div>
+    <img src="temple_logo.png.png" alt="Temple Logo" style="width: 42px; height: auto; margin-right: 8px;" onerror="this.style.display='none'">
+    <span style="color: #ffd700; font-size: 18px; font-weight: bold;">Temple_DA</span>
+</div>
+
 <div>
 <a href="#">Home</a>
-<a href="#feed" style="color: #dfb72c;">⚡ Reels</a>
+<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.15);">⚡ Reels</a>
 <a href="#packages">Packages</a>
 <a href="#login">Login</a>
+<a href="#register">Register</a>
 </div>
 </nav>
 
 <div class="container" id="app"></div>
 
-<!-- Comments Drawer -->
+<!-- Comments / Reel Chat Drawer -->
 <div id="commentModal" class="chat-drawer">
   <div class="chat-header">
     <h3 style="font-size:15px; margin:0;" id="chatReelTitle">Reel Discussion</h3>
@@ -102,7 +468,7 @@ th { background: rgba(223, 183, 44, 0.1); color: #dfb72c; font-family: 'Orbitron
   </div>
   <div class="chat-box" id="commentsList">Loading...</div>
   <div style="display:flex; gap:8px; margin-top:8px;">
-    <input id="chatInput" placeholder="Type message..." style="margin:0; font-size:14px;">
+    <input id="chatInput" placeholder="Type your message..." style="margin:0; font-size:14px;">
     <button onclick="submitReelComment()" style="width:90px; margin:0; padding:10px; font-size:12px;">Send</button>
   </div>
 </div>
@@ -128,26 +494,49 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
+
 signInAnonymously(auth).catch(e => console.log(e));
 
+const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 let activePostIdForComments = null;
 
-function maskPhone(p) { return p && p.length > 4 ? "******" + p.slice(-4) : "Creator"; }
-function getPackageDurationMs(tier) { return tier === "yearly" ? 365*24*60*60*1000 : 30*24*60*60*1000; }
+function maskPhone(phone) {
+  if (!phone || typeof phone !== 'string') return "Creator";
+  if (phone.length <= 4) return phone;
+  return "******" + phone.slice(-4);
+}
+
+function getTodayDateKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getPackageDurationMs(tier) {
+  return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
+}
+
 function checkAndHandlePackageExpiry(phone, u) {
   if (!u.tier || u.tier === "none" || !u.packageExpiresAt) return u.tier || "none";
   if (Date.now() > u.packageExpiresAt) {
-    update(ref(db, "users/" + phone), { tier: "none", packagePriceUSDT: 0, packageExpired: true });
+    update(ref(db, "users/" + phone), {
+      tier: "none",
+      packagePriceUSDT: 0,
+      packageExpired: true
+    });
     return "none";
   }
   return u.tier;
 }
 
-window.toggleAccordion = (id) => { document.getElementById(id)?.classList.toggle("active"); };
+window.toggleAccordion = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("active");
+};
 
 const routes = {
   "#": landing,
   "#login": loginPage,
+  "#register": registerPage,
   "#user": userDashboard,
   "#admin": adminDashboard,
   "#feed": feedPage,
@@ -160,7 +549,13 @@ router();
 function router() {
   const hash = location.hash.split("?")[0] || "#";
   const navBar = document.getElementById("mainNavbar");
-  if (navBar) navBar.style.display = (hash === "#feed") ? "none" : "flex";
+  
+  if (hash === "#feed") {
+    if (navBar) navBar.style.display = "none";
+  } else {
+    if (navBar) navBar.style.display = "flex";
+  }
+
   (routes[hash] || landing)();
 }
 
@@ -168,354 +563,1486 @@ async function getLivePriceData() {
   try {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
     const data = await res.json();
-    if (data && data.pair && data.pair.priceUsd) return parseFloat(data.pair.priceUsd);
+    if (data && data.pair && data.pair.priceUsd) {
+      return parseFloat(data.pair.priceUsd);
+    }
   } catch (err) {}
+
   const s = await get(ref(db, "config/temple_DAPrice"));
   return s.exists() ? s.val() : 0.0002;
 }
-async function getPrice() { return await getLivePriceData(); }
 
-async function landing() {
-  const price = await getLivePriceData();
-  appDiv().innerHTML = `
-    <div class="card center">
-      <h2>Temple Digital Asset Ecosystem</h2>
-      <p>Live Price: <span class="number">$${price.toFixed(4)}</span></p>
-      <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
-        <a href="#login"><button style="width:180px; background:#dfb72c; color:#000;">⚡ Connect & Auto-Login</button></a>
-        <a href="#feed"><button style="width:160px; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">⚡ Watch Reels</button></a>
-      </div>
-    </div>`;
+async function getPrice() {
+  return await getLivePriceData();
 }
 
-function loginPage() {
+async function landing() {
+  const priceUsd = await getLivePriceData();
   appDiv().innerHTML = `
   <div class="card center">
-    <h2>Web3 Instant Access</h2>
-    <p class="small" style="margin-bottom:15px;">Automatically connect your wallet to login or register instantly with 6 Temple_DA bonus.</p>
-    <button onclick="loginWithWallet()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; padding:15px; font-size:15px;">⚡ Connect Wallet & Auto-Login</button>
-    <div style="margin-top:15px;"><a href="#login" onclick="adminLoginPrompt()" style="color:#dfb72c; font-size:12px;">Admin Login Access</a></div>
+    <h2 style="font-size: 24px;">Temple Digital Asset</h2>
+    <p>The Future of Decentralized Finance, Reels Showcase & Community Growth</p>
+    
+    <div style="margin: 15px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; text-align: center;">
+        <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
+        <span class="number" style="font-size:20px;">$${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <div id="launch-timer" style="margin: 20px 0; padding: 15px; background: rgba(223, 183, 44, 0.05); border-radius: 10px; border: 1px solid #dfb72c;">
+        <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
+        <div id="timer-display" style="font-size: 24px; font-weight: bold; color: #fff;">
+            <span id="d">00</span>d : <span id="h">00</span>h : <span id="m">00</span>m : <span id="s">00</span>s
+        </div>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <a href="#register"><button style="width: 200px;">Join Now</button></a>
+      <a href="#feed"><button style="width: 200px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>About Temple_DA Ecosystem</h3>
+    <p style="color: #ccc; line-height: 1.6;">
+        Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
+        Showcase your reels, videos, art, and writing, interact with members, and earn real 
+        Temple_DA tokens. Holders also earn passive rewards through structured vesting and a 15-level referral system.
+    </p>
+  </div>
+
+  <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style>
+  <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
+  
+  <div class="grid">
+    <div class="card">
+        <h3>Showcase & Earn</h3>
+        <p class="small">Upload reels and videos. Earn points on every like, subscriber & conversation.</p>
+    </div>
+    <div class="card">
+        <h3>15-Level Referral</h3>
+        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions on community activations.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Vesting & Lifetime Rewards</h3>
+    <table>
+        <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
+        <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
+        <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
+        <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
+    </table>
+  </div>
+  <div class="card center">
+    <h3>Contact Us</h3>
+    <p>For any assistance, please contact us:</p>
+    <a href="mailto:info@templeda.com" style="color: #dfb72c; font-weight: bold; font-size: 17px; text-decoration: none;">info@templeda.com</a>
+  </div>
+  `;
+
+  const target = new Date("April 19, 2026 07:00:00").getTime();
+  const timer = setInterval(() => {
+    const now = new Date().getTime();
+    let diff = target - now;
+    const el = document.getElementById("timer-display");
+    if (!el) { clearInterval(timer); return; }
+
+    if (diff <= 0) {
+      diff = Math.abs(diff);
+      const label = document.getElementById("timer-label");
+      if (label) {
+        label.innerText = "🚀 WE ARE LIVE SINCE:";
+        label.style.color = "#00ff88";
+      }
+    }
+
+    document.getElementById("d").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+    document.getElementById("h").innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+    document.getElementById("m").innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    document.getElementById("s").innerText = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+  }, 1000);
+}
+
+function registerPage() {
+  const urlParams = new URLSearchParams(location.hash.split("?")[1]);
+  const refPhone = urlParams.get("ref") || "";
+
+  appDiv().innerHTML = `
+  <div class="card">
+  <h2>Create Account</h2>
+
+  <div style="background: rgba(223, 183, 44, 0.1); border: 1px solid #dfb72c; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+      <p style="color: #dfb72c; font-weight: bold; font-size: 14px; margin-bottom: 5px;">🎉 Welcome to Temple_DA!</p>
+      <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> welcome reward instantly upon registration.</p>
+  </div>
+
+  <input id="name" placeholder="Full name">
+  <input id="phone" placeholder="Phone number">
+  
+  <!-- Web3 Auto Connect Wallet Input -->
+  <div style="display:flex; gap:8px; align-items:center;">
+    <input id="wallet" placeholder="BEP20 wallet address" readonly style="margin:0;">
+    <button type="button" onclick="connectWeb3Wallet()" style="width:140px; margin:0; padding:11px 8px; font-size:11px; background:#dfb72c; color:#000;">Connect Wallet</button>
+  </div>
+
+  <input id="password" type="password" placeholder="Password" style="margin-top:12px;">
+  <input id="ref" placeholder="Referral phone" value="${refPhone}">
+  <button onclick="registerUser()">Register</button>
   </div>`;
 }
 
-window.loginWithWallet = async () => {
-  if (typeof window.ethereum === 'undefined') return alert("MetaMask or Trust Wallet not detected!");
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const userWallet = accounts[0].toLowerCase();
-    const indexSnap = await get(ref(db, "wallet_index/" + userWallet));
-    let phone = "";
-
-    if (indexSnap.exists()) {
-      phone = indexSnap.val();
-    } else {
-      phone = "u_" + userWallet.slice(-6);
-      await set(ref(db, "users/" + phone), {
-        name: "Web3 Holder", phone: phone, wallet: accounts[0], balance: 6, investment: 0, locked: 0, tier: "none", points: 0, elite21: false, monthlyBusiness: 0
-      });
-      await set(ref(db, "wallet_index/" + userWallet), phone);
-      alert("Account automatically created with 6 Temple_DA welcome bonus!");
+window.connectWeb3Wallet = async () => {
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const walletAddress = accounts[0];
+      if (walletAddress) {
+        document.getElementById("wallet").value = walletAddress;
+        alert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
+      }
+    } catch (error) {
+      alert("Wallet connection cancelled or failed.");
     }
-    localStorage.setItem("user", phone);
-    alert("Login Successful!");
-    location.hash = "#user";
-  } catch (err) { alert("Login failed: " + err.message); }
+  } else {
+    alert("Web3 Wallet not detected! Kripya MetaMask, Trust Wallet, ya Binance App ke built-in DApp browser se site open karein.");
+  }
 };
 
-window.adminLoginPrompt = async () => {
-  const email = prompt("Enter Admin Email:");
-  const pass = prompt("Enter Admin Password:");
-  if (!email || !pass) return;
-  try {
-    const uc = await signInWithEmailAndPassword(auth, email, pass);
-    if ((await get(ref(db, "admins/" + uc.user.uid))).exists()) {
-      localStorage.setItem("admin", "1"); location.hash = "#admin"; alert("Admin Login Successful!");
-    } else { alert("Not authorized as admin."); }
-  } catch (err) { alert("Admin login error: " + err.message); }
+window.registerUser = async () => {
+  const name = v("name");
+  const phone = v("phone");
+  const wallet = v("wallet");
+  const password = v("password");
+  const referrer = v("ref");
+
+  if (!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
+  const usersSnap = await get(ref(db, "users"));
+  let walletExists = false;
+
+  usersSnap.forEach(s => {
+    if (s.val().wallet === wallet) walletExists = true;
+  });
+
+  if (walletExists) return alert("This wallet is already registered");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (userSnap.exists()) return alert("User exists");
+
+  await set(ref(db, "users/" + phone), {
+    name,
+    wallet,
+    password: btoa(password),
+    balance: 6,
+    investment: 0,
+    locked: 0,
+    lockDate: 0,
+    referrer: referrer || "",
+    createdAt: Date.now(),
+    tier: "none",
+    packagePriceUSDT: 0,
+    packageActivatedAt: 0,
+    packageExpiresAt: 0,
+    packageExpired: false,
+    points: 0,
+    subscribersCount: 0,
+    elite21: false,
+    monthlyBusiness: 0
+  });
+
+  alert("Registration successful! 6 Temple_DA added.");
+  location.hash = "#login";
+};
+
+function loginPage() {
+  appDiv().innerHTML = `
+  <div class="card">
+  <h2>Login</h2>
+  <input id="phone" placeholder="Phone">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  </div>`;
+}
+
+window.login = async () => {
+  const phone = v("phone");
+  const pass = v("password");
+
+  if (phone.includes("@")) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, phone, pass);
+      const user = userCredential.user;
+      const adminSnap = await get(ref(db, "admins/" + user.uid));
+      
+      if (adminSnap.exists()) {
+        localStorage.setItem("admin", "1");
+        location.hash = "#admin";
+        alert("Admin Login Successful!");
+      } else {
+        alert("Aap authenticated hain par Admin list mein nahi hain.");
+      }
+    } catch (error) {
+      alert("Admin Login Failed: " + error.message);
+    }
+    return;
+  }
+
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+
+  const user = snap.val();
+  if (atob(user.password) !== pass) return alert("Wrong password");
+
+  localStorage.setItem("user", phone);
+  location.hash = "#user";
 };
 
 /* =========================================================================
-   REELS FEED
+   DEDICATED REELS FEED PAGE
 ========================================================================= */
+
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
-    <div class="reels-page-wrapper">
+    <div class="reels-page-wrapper" onclick="enableAudioOnFirstTouch()">
       <div class="reels-top-bar">
-        <a href="#user"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;">← Dashboard</button></a>
+        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;">← Back to Home</button></a>
+        ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 14px; margin:0; font-size:12px;">Login</button></a>'}
       </div>
+      
       <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
-    </div>`;
+    </div>
+  `;
 
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
     if (!listEl) return;
-    if (!snap.exists()) { listEl.innerHTML = `<p class="center" style="color:#fff; padding:20px;">No reels yet.</p>`; return; }
+
+    if (!snap.exists()) {
+      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
+      return;
+    }
+
     let posts = [];
-    snap.forEach(child => posts.push({ id: child.key, ...child.val() }));
-    posts.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    snap.forEach(child => {
+      posts.push({ id: child.key, ...child.val() });
+    });
+
+    posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     let html = "";
     posts.forEach(p => {
-      const isMy = currentUser && currentUser === p.authorPhone;
-      let media = p.type === "video" ? `<video loop playsinline autoplay muted src="${p.mediaUrl}"></video>` : `<img src="${p.mediaUrl}">`;
+      const isMyPost = currentUser && currentUser === p.authorPhone;
+      let mediaContent = "";
+
+      if (p.type === "video") {
+        if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
+          let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+          mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+        } else {
+          mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+        }
+      } else {
+        mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
+      }
+
       html += `
-        <div class="reel-item">
-          ${media}
+        <div class="reel-item" data-id="${p.id}">
+          ${mediaContent}
+
           <div class="reel-overlay-bottom">
-            <strong style="color:#dfb72c;">@${p.authorName || 'Creator'}</strong>
-            <p style="font-weight:bold; font-size:13px; margin-top:3px; color:#fff;">${p.title}</p>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong style="color:#dfb72c; font-size:15px;">@${p.authorName || 'Creator'}</strong>
+              <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
+              ${(!isMyPost && currentUser) ? `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:3px 10px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>` : ''}
+            </div>
+            <p style="font-weight:bold; font-size:13px; margin-top:5px; color:#fff;">${p.title}</p>
+            ${p.description ? `<p class="small" style="color:#ddd; margin-top:2px;">${p.description}</p>` : ''}
           </div>
+
           <div class="reel-actions-bar">
-            <div style="text-align:center;"><button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button><div class="reel-circle-label">${p.likesCount || 0}</div></div>
-            <div style="text-align:center;"><button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button><div class="reel-circle-label">Msg</div></div>
-            ${isMy ? `<div style="text-align:center;"><button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath||''}')">🗑️</button><div class="reel-circle-label" style="color:#ff4444;">Del</div></div>` : ''}
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
+              <div class="reel-circle-label">${p.likesCount || 0}</div>
+            </div>
+
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
+              <div class="reel-circle-label">Msg</div>
+            </div>
+
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
+              <div class="reel-circle-label">Share</div>
+            </div>
+
+            ${isMyPost ? `
+            <div style="text-align:center;">
+              <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
+              <div class="reel-circle-label" style="color:#ff4444;">Del</div>
+            </div>` : ''}
           </div>
-        </div>`;
+        </div>
+      `;
     });
+
     listEl.innerHTML = html;
+    setupIntersectionAutoplay();
   });
 }
 
-window.likePost = async (postId) => {
-  const user = localStorage.getItem("user");
-  if (!user) return alert("Please login");
-  const postSnap = await get(ref(db, `posts/${postId}`));
-  if (!postSnap.exists()) return;
-  const p = postSnap.val();
-  if (p.authorPhone === user) return alert("Cannot like your own post");
-  
-  const chk = await get(ref(db, `likes/${postId}/${user}`));
-  if (chk.exists()) return alert("Already liked!");
-  
-  await set(ref(db, `likes/${postId}/${user}`), true);
-  await update(ref(db, `posts/${postId}`), { likesCount: Number(p.likesCount || 0) + 1 });
-  alert("Liked successfully!");
+window.enableAudioOnFirstTouch = () => {
+  const activeVideo = document.querySelector('.reel-item video');
+  if (activeVideo && activeVideo.paused) {
+    activeVideo.play().catch(() => {});
+  }
 };
 
-window.openCommentsModal = (postId, title) => {
+window.toggleVideoPlayback = (videoEl) => {
+  if (videoEl.paused) {
+    videoEl.muted = false;
+    videoEl.play();
+  } else {
+    videoEl.pause();
+  }
+};
+
+function setupIntersectionAutoplay() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const vid = entry.target.querySelector('video');
+      if (vid) {
+        if (entry.isIntersecting) {
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+          vid.muted = true;
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
+}
+
+window.shareReel = (id) => {
+  const shareLink = `${location.origin}${location.pathname}#feed`;
+  navigator.clipboard.writeText(shareLink);
+  alert("Reel link successfully copied to clipboard!");
+};
+
+window.openCommentsModal = (postId, encodedTitle) => {
   activePostIdForComments = postId;
-  document.getElementById("chatReelTitle").innerText = decodeURIComponent(title);
-  document.getElementById("commentModal").classList.add("open");
+  const modal = document.getElementById("commentModal");
+  document.getElementById("chatReelTitle").innerText = decodeURIComponent(encodedTitle);
+  modal.classList.add("open");
+
   onValue(ref(db, `post_comments/${postId}`), snap => {
+    const list = document.getElementById("commentsList");
+    if (!list) return;
+
+    if (!snap.exists()) {
+      list.innerHTML = `<p class="small center">No messages yet. Send a message to creator!</p>`;
+      return;
+    }
+
     let html = "";
-    if (!snap.exists()) { document.getElementById("commentsList").innerHTML = `<p class="small center">No messages.</p>`; return; }
-    snap.forEach(c => { const m = c.val(); html += `<div class="chat-msg"><b>${m.senderName}</b>: ${m.message}</div>`; });
-    document.getElementById("commentsList").innerHTML = html;
+    snap.forEach(c => {
+      const m = c.val();
+      html += `
+        <div class="chat-msg">
+          <div style="display:flex; justify-content:space-between;">
+            <b style="color:#dfb72c; font-size:12px;">${m.senderName || 'Member'} (${maskPhone(m.senderPhone)})</b>
+            <span class="small" style="font-size:10px;">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+          <p style="font-size:13px; margin-top:3px; color:#fff;">${m.message}</p>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+    list.scrollTop = list.scrollHeight;
   });
 };
-window.closeCommentsModal = () => { document.getElementById("commentModal").classList.remove("open"); activePostIdForComments = null; };
-window.submitReelComment = async () => {
-  const user = localStorage.getItem("user");
-  if (!user || !activePostIdForComments) return;
-  const input = document.getElementById("chatInput");
-  if (!input.value.trim()) return;
-  await push(ref(db, `post_comments/${activePostIdForComments}`), { senderPhone: user, senderName: "Holder", message: input.value.trim(), time: Date.now() });
-  input.value = "";
+
+window.closeCommentsModal = () => {
+  const modal = document.getElementById("commentModal");
+  modal.classList.remove("open");
+  activePostIdForComments = null;
 };
 
-window.deleteMyPost = async (postId, path) => {
-  if (!confirm("Delete post?")) return;
-  if (path) { try { await deleteObject(sRef(storage, path)); } catch(e){} }
-  await remove(ref(db, `posts/${postId}`));
-  alert("Deleted!");
+window.submitReelComment = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login to message");
+  if (!activePostIdForComments) return;
+
+  const input = document.getElementById("chatInput");
+  const message = input.value.trim();
+  if (!message) return;
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.exists() ? userSnap.val() : {};
+
+  await push(ref(db, `post_comments/${activePostIdForComments}`), {
+    senderPhone: phone,
+    senderName: u.name || "Community Member",
+    message: message,
+    time: Date.now()
+  });
+
+  input.value = "";
 };
 
 /* =========================================================================
    USER DASHBOARD
 ========================================================================= */
+
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
+  const priceUsd = await getLivePriceData();
+
   onValue(ref(db, "users/" + phone), snap => {
     const u = snap.val() || {};
-    const tier = checkAndHandlePackageExpiry(phone, u);
+    const activeTier = checkAndHandlePackageExpiry(phone, u);
+
+    let expiryNotice = "";
+    if (activeTier !== "none" && u.packageExpiresAt) {
+      const msLeft = u.packageExpiresAt - Date.now();
+      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
+
+      if (daysLeft > 0) {
+        expiryNotice = `<span style="color:#00ff88; font-size:13px; font-weight:bold;">Active: ${daysLeft} days left (Valid till ${expDate})</span>`;
+      } else {
+        expiryNotice = `<span class="badge-expired">EXPIRED</span>`;
+      }
+    } else {
+      expiryNotice = `<span style="color:#aaa; font-size:13px;">No active package subscription</span>`;
+    }
+
+    const balTda = Number(u.balance || 0);
+    const balUsd = (balTda * priceUsd).toFixed(2);
+    const userWallet = u.wallet || "Not Linked";
+
     appDiv().innerHTML = `
+    <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
+        <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <!-- WALLET DISPLAY CARD -->
+    <div class="card" style="border: 1px solid #dfb72c; background: rgba(223, 183, 44, 0.04); margin-bottom: 15px;">
+      <h3 style="color:#dfb72c; font-size:14px; margin-bottom:4px;">BEP20 Wallet Address</h3>
+      <p style="font-size:13px; word-break:break-all; color:#fff; font-family:monospace;">${userWallet}</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Balance</h3>
+        ${balTda.toFixed(2)} Temple_DA<br>
+        <span class="small" style="color:#dfb72c;">$${balUsd} USDT</span>
+      </div>
+
+      <div class="card">
+        <h3>Talent Points</h3>
+        <span class="number">${Number(u.points || 0)}</span> Pts
+      </div>
+
+      <div class="card">
+        <h3>Subscribers</h3>
+        <span class="number">${Number(u.subscribersCount || 0)}</span>
+      </div>
+
+      <div class="card">
+        <h3>USDT Investment</h3>
+        ${u.investment || 0} USDT
+      </div>
+
+      <div class="card">
+        <h3>Locked Yield</h3>
+        ${Number(u.locked || 0).toFixed(2)} Temple_DA
+      </div>
+
+      <div class="card">
+        <h3>Package</h3>
+        <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
+      </div>
+    </div>
+
+    <!-- TEMPLE ELITE 21 CLUB CARD -->
+    <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.05);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="color:#dfb72c; margin-bottom:4px;">⭐ Temple Elite 21 Club</h3>
+          <p class="small">Join core leadership (Max 21 Members) with <strong>250 USDT</strong> to share monthly 5% pool distribution (70% shared equally among Elite 21 + 30% for Top 5 performers).</p>
+          <p class="small" style="margin-top:6px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
+        </div>
+        <div>
+          ${u.elite21 ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' : '<button onclick="joinElite21()" style="width:auto; padding:10px 18px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite 21 (250 USDT)</button>'}
+        </div>
+      </div>
+    </div>
+
+    <!-- PACKAGE STATUS CARD -->
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
+          <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
+        </div>
+        <div>
+          <a href="#packages"><button style="width:auto; padding:10px 18px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST REEL SECTION -->
     <div class="card">
-      <h3>Balance: <span class="number">${Number(u.balance || 0).toFixed(2)} Temple_DA</span></h3>
-      <h3>Investment: <span class="number">${u.investment || 0} USDT</span></h3>
-      <h3>Locked: <span class="number">${Number(u.locked||0).toFixed(2)} TDA</span> | Points: ${u.points||0} Pts</h3>
-      <p class="small" style="color:#dfb72c; margin-top:5px;">Wallet: ${u.wallet || 'Linked'} | Package: <span class="badge-tag">${tier.toUpperCase()}</span></p>
-      <div style="margin-top:10px;"><a href="#feed"><button style="background:transparent; border:1px solid #dfb72c; color:#dfb72c;">⚡ Open Reels Feed</button></a></div>
+      <h3>Post Instagram-Style Reel</h3>
+      <select id="talentType">
+        <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
+        <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
+        <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
+      </select>
+
+      <input id="talentTitle" placeholder="Title / Caption for Reel">
+      
+      <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 8px;">
+        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:5px;">
+          📁 Select Video/Image File from Device (Optional):
+        </label>
+        <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
+        <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 50MB)</p>
+      </div>
+
+      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / MP4) —</p>
+      <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
+      <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
+
+      <div id="uploadProgressContainer" style="display:none; margin: 10px 0;">
+        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
+        <div style="background:#222; border-radius:4px; height:6px; overflow:hidden; margin-top:4px;">
+          <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
+        </div>
+      </div>
+
+      <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
     </div>
 
-    <!-- ELITE 21 CLUB -->
-    <div class="card" style="border:2px solid #dfb72c; background:rgba(223,183,44,0.04);">
-      <h3 style="color:#dfb72c;">⭐ Temple Elite 21 Club</h3>
-      <p class="small">Join core leadership with 250 USDT to share monthly 5% pool distribution.</p>
-      <p class="small">Status: <span class="badge-tag">${u.elite21 ? 'ACTIVE' : 'NOT JOINED'}</span></p>
-      ${!u.elite21 ? '<button onclick="joinElite21()" style="margin-top:10px; background:#dfb72c; color:#000;">Join Elite 21 (250 USDT)</button>' : ''}
-    </div>
-
-    <!-- POST REEL -->
+    <!-- POINTS CONVERSION CARD -->
     <div class="card">
-      <h3>Post Reel / Video</h3>
-      <input id="talentTitle" placeholder="Caption / Title">
-      <input type="file" id="talentFile" accept="video/*,image/*">
-      <input id="talentMedia" placeholder="Or Direct Video/YouTube URL">
-      <button onclick="publishTalent()">Publish Reel</button>
+      <h3>Points to Token Converter</h3>
+      <p class="small">100 Points = 10 Temple_DA</p>
+      <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
+        Convert Points To Temple_DA
+      </button>
     </div>
 
-    <!-- POINTS CONVERTER -->
+    <!-- DIRECT WEB3 DEPOSIT / INVESTMENT -->
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
+      <h3 style="color:#00ff88;">Invest & Yield (Direct Web3 USDT Deposit)</h3>
+      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and submit your investment.</p>
+      <input id="invest" placeholder="USDT amount (1 - 250 USDT)" style="margin-top:10px;">
+      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit via Web3 Wallet</button>
+    </div>
+
     <div class="card">
-      <h3>Convert Points (100 Pts = 10 TDA)</h3>
-      <button onclick="convertPts()" style="background:#00ff88; color:#000;">Convert Points</button>
+      <h3>Upgrade Investment Capital</h3>
+      <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)">
+      <button onclick="upgrade()">Upgrade Investment</button>
     </div>
 
-    <!-- DEPOSIT -->
-    <div class="card" style="border:1px solid #00ff88; background:rgba(0,255,136,0.03);">
-      <h3 style="color:#00ff88;">Invest via Web3 USDT</h3>
-      <input id="invest" placeholder="USDT amount (1-250)">
-      <button onclick="makeDirectUSDTDeposit()" style="background:#00ff88; color:#000;">⚡ Deposit via Web3 Wallet</button>
-    </div>
-
-    <!-- WITHDRAW -->
     <div class="card">
-      <h3>Withdraw Temple_DA</h3>
-      <input id="withdraw" placeholder="Amount">
+      <h3>Withdraw</h3>
+      <input id="withdraw" placeholder="Temple_DA amount">
       <button onclick="withdraw()">Request Withdrawal</button>
     </div>
 
-    <!-- ACCORDION HISTORIES -->
-    <h3>Account Histories</h3>
+    <div class="card">
+      <h3>Referral Link</h3>
+      <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
+    </div>
+
+    <!-- CLICK-TO-VIEW ACCORDION HISTORIES -->
+    <h3 style="margin-top:25px;">Account Histories & Posts (Click To View)</h3>
+
     <div class="accordion-wrapper" id="accMyPosts">
-      <div class="accordion-header" onclick="toggleAccordion('accMyPosts')"><span>🎬 My Uploaded Reels</span><span>▼</span></div>
+      <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
+        <span>🎬 My Uploaded Reels & Posts</span>
+        <span>▼</span>
+      </div>
       <div class="accordion-content" id="myUploadedPosts">Loading...</div>
     </div>
 
-    <div class="card center" style="margin-top:20px;"><button onclick="logout()">Logout</button></div>`;
+    <div class="accordion-wrapper" id="accPackages">
+      <div class="accordion-header" onclick="toggleAccordion('accPackages')">
+        <span>📦 Package Activation History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="packageHistory">Loading...</div>
+    </div>
 
+    <div class="accordion-wrapper" id="accInvest">
+      <div class="accordion-header" onclick="toggleAccordion('accInvest')">
+        <span>💰 Investment History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="investHistory">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accUpgrade">
+      <div class="accordion-header" onclick="toggleAccordion('accUpgrade')">
+        <span>⚡ Upgrade History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="upgradeHistory">Loading...</div>
+    </div>
+
+    <div class="accordion-wrapper" id="accWithdraw">
+      <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
+        <span>📤 Withdrawal History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="withdrawHistory">Loading...</div>
+    </div>
+
+    <div class="card center" style="margin-top:20px;">
+      <button onclick="logout()">Logout</button>
+    </div>
+    `;
+
+    autoRelease(phone, u);
+    loadInvestHistory(phone);
+    loadWithdrawHistory(phone);
+    loadUpgradeHistory(phone);
+    loadPackageHistory(phone);
     loadMyPosts(phone);
   });
 }
 
-window.joinElite21 = async () => {
-  const phone = localStorage.getItem("user");
-  const u = (await get(ref(db, "users/" + phone))).val();
-  await set(ref(db, "elite21/pending/" + phone), { name: u.name || "Member", wallet: u.wallet, amountUSDT: 250, timestamp: Date.now() });
-  alert("Elite 21 join request submitted!");
-};
-
-window.publishTalent = async () => {
-  const phone = localStorage.getItem("user");
-  const title = v("talentTitle");
-  const file = document.getElementById("talentFile").files[0];
-  let mediaUrl = v("talentMedia");
-  if (!title) return alert("Enter title");
-
-  let path = "";
-  if (file) {
-    path = `posts/${phone}_${Date.now()}_${file.name}`;
-    const task = uploadBytesResumable(sRef(storage, path), file);
-    await new Promise((res, rej) => task.on("state_changed", null, rej, async () => { mediaUrl = await getDownloadURL(task.snapshot.ref); res(); }));
-  }
-  if (!mediaUrl) return alert("Provide video file or URL");
-
-  await push(ref(db, "posts"), { authorPhone: phone, authorName: "Holder", type: "video", title, mediaUrl, storagePath: path, likesCount: 0, createdAt: Date.now() });
-  alert("Published successfully!");
-  location.hash = "#feed";
-};
-
-window.convertPts = async () => {
-  const phone = localStorage.getItem("user");
-  const u = (await get(ref(db, "users/" + phone))).val();
-  const pts = Number(u.points || 0);
-  if (pts < 100) return alert("Min 100 points required");
-  const tda = pts / 10;
-  await update(ref(db, "users/" + phone), { points: 0, balance: Number((u.balance + tda).toFixed(2)) });
-  alert(`Converted ${pts} points to ${tda} Temple_DA!`);
-};
-
+// Direct Web3 USDT (BEP20) Transfer Function
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
-  if (!amount || amount < 1 || amount > 250) return alert("Enter 1-250 USDT");
-  const u = (await get(ref(db, "users/" + phone))).val();
 
-  if (typeof window.ethereum === 'undefined') return alert("MetaMask not found!");
+  if (!amount || amount < 1 || amount > 250) return alert("Investment must be between 1 - 250 USDT");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+  if (u.locked > 0) return alert("You already have an active investment.");
+
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
+  }
+
   try {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
-    const contract = new ethers.Contract("0x55d398326f99059fF775485246999027B3197955", ["function transfer(address to, uint256 value) public returns (bool)"], signer);
-    
-    const tx = await contract.transfer("0x2760f05248a8377d3fdD86b80A3D48B010d5De95", ethers.utils.parseUnits(amount.toString(), 18));
-    await tx.wait();
 
-    const price = await getPrice();
-    const tda = Number((amount / price).toFixed(2));
+    // Binance-Peg USDT (BEP20) Contract Address on BSC Mainnet
+    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
+    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+
+    const minABI = [
+      {
+        "constant": false,
+        "inputs": [
+          {"name": "_to", "type": "address"},
+          {"name": "_value", "type": "uint256"}
+        ],
+        "name": "transfer",
+        "outputs": [{"name": "", "type": "bool"}],
+        "type": "function"
+      }
+    ];
+
+    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
+    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
+
+    alert("Wallet popup khul raha hai. Kripya transaction confirm karein!");
+    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
+    alert("Transaction broadcast ho gayi! Hash: " + tx.hash);
+
+    await tx.wait();
+    alert("USDT transfer successful! Investment automatically activate ki ja rahi hai.");
+
+    // Automatically Process Investment in Database after success
+    const currentPrice = await getPrice();
+    const temple_DA = Number((amount / currentPrice).toFixed(2));
+    const newInvestment = (u.investment || 0) + amount;
+    const newLocked = (u.locked || 0) + temple_DA;
+    const newMonthlyBiz = (u.monthlyBusiness || 0) + amount;
+
     await update(ref(db, "users/" + phone), {
-      investment: (u.investment || 0) + amount, locked: (u.locked || 0) + tda, monthlyBusiness: (u.monthlyBusiness || 0) + amount, lockDate: u.lockDate || Date.now()
+      investment: newInvestment,
+      locked: newLocked,
+      monthlyBusiness: newMonthlyBiz,
+      lockDate: u.lockDate || Date.now()
     });
-    alert("Deposit Successful & Investment Active!");
-  } catch (err) { alert("Deposit failed: " + err.message); }
+
+    alert("Investment successfully updated to your account!");
+    userDashboard();
+  } catch (error) {
+    console.error("Direct deposit error:", error);
+    alert("Deposit failed: " + (error.data?.message || error.message));
+  }
+};
+
+window.joinElite21 = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login first");
+
+  const pendingSnap = await get(ref(db, "elite21/pending/" + phone));
+  if (pendingSnap.exists()) return alert("Aapka Temple Elite 21 join request pehle se pending hai.");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  await set(ref(db, "elite21/pending/" + phone), {
+    name: u.name || "Member",
+    wallet: u.wallet || "",
+    amountUSDT: 250,
+    timestamp: Date.now()
+  });
+
+  alert("Temple Elite 21 join request submitted! Admin verify karke activate karega.");
+};
+
+function loadMyPosts(phone) {
+  onValue(ref(db, "posts"), snap => {
+    const container = document.getElementById("myUploadedPosts");
+    if (!container) return;
+
+    if (!snap.exists()) {
+      container.innerHTML = `<p class="small">Aapne abhi tak koi post ya reel upload nahi ki hai.</p>`;
+      return;
+    }
+
+    let myPosts = [];
+    snap.forEach(child => {
+      const p = child.val();
+      if (p.authorPhone === phone) {
+        myPosts.push({ id: child.key, ...p });
+      }
+    });
+
+    if (myPosts.length === 0) {
+      container.innerHTML = `<p class="small">Aapne abhi tak koi reel upload nahi ki hai.</p>`;
+      return;
+    }
+
+    myPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    let html = `<table>
+      <tr>
+        <th>Type</th>
+        <th>Title</th>
+        <th>Likes</th>
+        <th>Action</th>
+      </tr>`;
+
+    myPosts.forEach(p => {
+      html += `
+        <tr>
+          <td><span class="badge-tag">${p.type}</span></td>
+          <td><b>${p.title}</b></td>
+          <td><span class="number">${p.likesCount || 0}</span></td>
+          <td>
+            <button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:4px 10px; font-size:11px;">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `</table>`;
+    container.innerHTML = html;
+  });
+}
+
+async function checkDailyVideoLimit(phone, userTier) {
+  if (userTier === "yearly") return true;
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  const postsSnap = await get(ref(db, "posts"));
+  let todayVideoCount = 0;
+
+  if (postsSnap.exists()) {
+    postsSnap.forEach(s => {
+      const p = s.val();
+      if (p.authorPhone === phone && p.type === "video" && (p.createdAt || 0) >= startOfDay) {
+        todayVideoCount++;
+      }
+    });
+  }
+
+  let maxAllowed = 2;
+  if (userTier === "monthly") {
+    maxAllowed = 5;
+  }
+
+  if (todayVideoCount >= maxAllowed) {
+    alert(`⚠️ Daily Video Limit Reached!\nAapke current (${userTier.toUpperCase()}) package ki aaj ki ${maxAllowed} video limit complete ho chuki hai. Unlimited uploads ke liye Elite Yearly package upgrade karein!`);
+    return false;
+  }
+  return true;
+}
+
+window.publishTalent = async () => {
+  try {
+    const phone = localStorage.getItem("user");
+    if (!phone) return alert("Please login first");
+
+    const userSnap = await get(ref(db, "users/" + phone));
+    const u = userSnap.exists() ? userSnap.val() : {};
+    const activeTier = checkAndHandlePackageExpiry(phone, u);
+
+    const typeEl = document.getElementById("talentType");
+    const titleEl = document.getElementById("talentTitle");
+    const mediaEl = document.getElementById("talentMedia");
+    const descEl = document.getElementById("talentText");
+    const fileInput = document.getElementById("talentFile");
+
+    const type = typeEl ? typeEl.value : "video";
+    const title = titleEl ? titleEl.value.trim() : "";
+    let mediaUrl = mediaEl ? mediaEl.value.trim() : "";
+    const description = descEl ? descEl.value.trim() : "";
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+    if (!title) return alert("Please enter title/caption!");
+
+    if (type === "video") {
+      const isAllowed = await checkDailyVideoLimit(phone, activeTier);
+      if (!isAllowed) return;
+    }
+
+    let storagePath = "";
+
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) return alert("File size 50MB se kam honi chahiye!");
+
+      const publishBtn = document.getElementById("publishBtn");
+      const progressContainer = document.getElementById("uploadProgressContainer");
+      const progressBar = document.getElementById("uploadProgressBar");
+      const statusText = document.getElementById("uploadStatusText");
+
+      if (publishBtn) publishBtn.disabled = true;
+      if (progressContainer) progressContainer.style.display = "block";
+
+      try {
+        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
+        const fileRef = sRef(storage, storagePath);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            snapshot => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              if (progressBar) progressBar.style.width = progress + "%";
+              if (statusText) statusText.innerText = `Uploading Reel: ${Math.round(progress)}%`;
+            },
+            error => { reject(error); },
+            async () => {
+              mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve();
+            }
+          );
+        });
+      } catch (uploadErr) {
+        if (publishBtn) publishBtn.disabled = false;
+        if (progressContainer) progressContainer.style.display = "none";
+        if (!mediaUrl) return alert("⚠️ File direct upload nahi ho saki. YouTube Shorts ya MP4 URL daalein!");
+      }
+    }
+
+    if (type !== "text" && !mediaUrl) {
+      return alert("Select video file or provide direct URL!");
+    }
+
+    const newPostRef = push(ref(db, "posts"));
+    await set(newPostRef, {
+      authorPhone: phone,
+      authorName: u.name || "Creator",
+      type: type || "video",
+      title: title,
+      mediaUrl: mediaUrl || "",
+      storagePath: storagePath || "",
+      description: description || "",
+      likesCount: 0,
+      createdAt: Date.now()
+    });
+
+    alert("Reel published successfully!");
+    location.hash = "#feed";
+  } catch (error) {
+    alert("Publish error: " + error.message);
+  }
+};
+
+window.deleteMyPost = async (postId, storagePath) => {
+  const phone = localStorage.getItem("user");
+  const isAdmin = localStorage.getItem("admin");
+
+  if (!phone && !isAdmin) return alert("Please login first");
+  if (!confirm("Kya aap sach me is reel ko delete karna chahte hain?")) return;
+
+  try {
+    const postSnap = await get(ref(db, "posts/" + postId));
+    if (postSnap.exists() && storagePath) {
+      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+    }
+    await remove(ref(db, "posts/" + postId));
+    await remove(ref(db, "likes/" + postId));
+    await remove(ref(db, "post_comments/" + postId));
+    alert("Reel successfully deleted!");
+  } catch (err) {
+    alert("Delete error: " + err.message);
+  }
+};
+
+window.likePost = async (postId) => {
+  try {
+    const userPhone = localStorage.getItem("user");
+    if (!userPhone) return alert("Please login to like");
+
+    const postSnap = await get(ref(db, `posts/${postId}`));
+    if (!postSnap.exists()) return alert("Post not found");
+    const pData = postSnap.val();
+    const authorPhone = pData.authorPhone;
+
+    if (userPhone === authorPhone) return alert("You cannot like your own post");
+
+    const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
+    if (likeCheck.exists()) return alert("You have already supported this post!");
+
+    await set(ref(db, `likes/${postId}/${userPhone}`), true);
+    await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
+
+    const actualType = pData.type || "video";
+    let creatorPts = actualType === "video" ? 3 : 1;
+    let viewerPts = actualType === "video" ? 2 : (actualType === "photo" ? 1 : 0);
+
+    const authorSnap = await get(ref(db, "users/" + authorPhone));
+    if (authorSnap.exists()) {
+      await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
+    }
+
+    if (viewerPts > 0) {
+      const viewerSnap = await get(ref(db, "users/" + userPhone));
+      if (viewerSnap.exists()) {
+        await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
+      }
+    }
+    alert("Liked successfully!");
+  } catch (err) {
+    alert("Like error: " + err.message);
+  }
+};
+
+window.subscribeCreator = async (creatorPhone) => {
+  try {
+    const subscriberPhone = localStorage.getItem("user");
+    if (!subscriberPhone) return alert("Please login to follow");
+    if (subscriberPhone === creatorPhone) return alert("You cannot follow yourself");
+
+    await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
+
+    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
+    if (creatorSnap.exists()) {
+      await update(ref(db, "users/" + creatorPhone), {
+        subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
+        points: Number(creatorSnap.val().points || 0) + 35
+      });
+    }
+
+    const subSnap = await get(ref(db, "users/" + subscriberPhone));
+    if (subSnap.exists()) {
+      await update(ref(db, "users/" + subscriberPhone), {
+        points: Number(subSnap.val().points || 0) + 15
+      });
+    }
+    alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
+  } catch (err) {
+    alert("Subscribe error: " + err.message);
+  }
+};
+
+window.convertPointsToToken = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login");
+
+  const snap = await get(ref(db, "users/" + phone));
+  const u = snap.val();
+
+  const currentPoints = Number(u.points || 0);
+  if (currentPoints < 100) return alert("Minimum 100 points required to convert.");
+
+  const tokensToCredit = Number((currentPoints / 10).toFixed(2));
+  const newBalance = Number(((u.balance || 0) + tokensToCredit).toFixed(2));
+
+  await update(ref(db, "users/" + phone), { points: 0, balance: newBalance });
+  alert(`Congratulations! ${currentPoints} Points converted to ${tokensToCredit} Temple_DA!`);
+};
+
+/* =========================================================================
+   PACKAGES PAGE
+========================================================================= */
+
+async function packagesPage() {
+  const phone = localStorage.getItem("user");
+  let userBalance = 0;
+  let currentTier = "none";
+  let expiryDateString = "";
+
+  if (phone) {
+    const userSnap = await get(ref(db, "users/" + phone));
+    if (userSnap.exists()) {
+      const u = userSnap.val();
+      userBalance = u.balance || 0;
+      currentTier = checkAndHandlePackageExpiry(phone, u);
+      if (currentTier !== "none" && u.packageExpiresAt) {
+        expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
+      }
+    }
+  }
+
+  const currentPrice = await getPrice();
+  const starterTokens = Number((5 / currentPrice).toFixed(2));
+  const proTokens = Number((15 / currentPrice).toFixed(2));
+  const eliteTokens = Number((120 / currentPrice).toFixed(2));
+
+  appDiv().innerHTML = `
+    <div class="card center">
+      <h2>Creator Packages & Durations</h2>
+      <p>Har package ka subscription time aur video upload limit nishchit hai.</p>
+      ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${Number(userBalance).toFixed(2)} Temple_DA</p>` : ''}
+    </div>
+
+    <div class="grid">
+      <div class="card center">
+        <h3 style="color:#fff;">Starter Pack</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">5 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
+        <p class="small">≈ ${starterTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos Daily Limit</p>
+        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+      </div>
+
+      <div class="card center" style="border: 2px solid #dfb72c;">
+        <div class="badge-tag" style="margin-bottom:6px;">Most Popular</div>
+        <h3 style="color:#dfb72c;">Pro Creator</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">15 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
+        <p class="small">≈ ${proTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
+        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+      </div>
+
+      <div class="card center">
+        <h3 style="color:#fff;">Elite Yearly</h3>
+        <p class="number" style="font-size:26px; margin: 5px 0;">120 USDT</p>
+        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days</p>
+        <p class="small">≈ ${eliteTokens} Temple_DA</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.2); margin:12px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
+        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:15px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Balance</button>
+      </div>
+    </div>
+  `;
+}
+
+window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return alert("Please login first");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return alert("User not found");
+  const u = userSnap.val();
+
+  const currentPrice = await getPrice();
+  const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
+
+  if ((u.balance || 0) < requiredTokens) {
+    return alert(`Insufficient Balance! Required: ${requiredTokens} Temple_DA.`);
+  }
+
+  const durationMs = getPackageDurationMs(tierName);
+  const activatedAt = Date.now();
+  const expiresAt = activatedAt + durationMs;
+
+  await update(ref(db, "users/" + phone), {
+    balance: Number((u.balance - requiredTokens).toFixed(2)),
+    tier: tierName,
+    packagePriceUSDT: usdtAmount,
+    packageActivatedAt: activatedAt,
+    packageExpiresAt: expiresAt,
+    packageExpired: false
+  });
+
+  alert(`Package ${tierName.toUpperCase()} activated successfully!`);
+  location.hash = "#user";
+};
+
+/* =========================================================================
+   CORE INVESTMENT & WITHDRAWAL
+========================================================================= */
+
+window.upgrade = async () => {
+  const phone = localStorage.getItem("user");
+  const amount = parseFloat(v("upgradeAmount"));
+  if (!amount || amount < 10) return alert("Minimum upgrade 10 USDT");
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+  if ((u.investment || 0) + amount > 250) return alert("Maximum total investment is 250 USDT");
+
+  await set(ref(db, "investments/upgrade/" + phone), {
+    amountUSDT: amount,
+    wallet: u.wallet || "",
+    timestamp: Date.now()
+  });
+
+  alert("Upgrade submitted for approval");
 };
 
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
   if (!amount || amount <= 0) return alert("Invalid amount");
-  const u = (await get(ref(db, "users/" + phone))).val();
-  if ((u.investment || 0) <= 0) return alert("Investment required");
+
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+  const u = snap.val();
+
+  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment");
   if (amount > u.balance) return alert("Insufficient balance");
 
-  await update(ref(db, "users/" + phone), { balance: Number((u.balance - amount).toFixed(2)) });
-  await set(ref(db, "withdrawals/pending/" + phone), { amount, wallet: u.wallet || "N/A", timestamp: Date.now() });
-  alert("Withdrawal request submitted!");
+  await set(ref(db, "withdrawals/pending/" + phone), {
+    amount,
+    wallet: u.wallet || "",
+    timestamp: Date.now()
+  });
+
+  alert("Withdrawal request submitted successfully!");
 };
 
-function loadMyPosts(phone) {
-  onValue(ref(db, "posts"), snap => {
-    let html = "";
-    snap.forEach(c => { const p = c.val(); if (p.authorPhone === phone) html += `<div class="small"><b>${p.title}</b> (Likes: ${p.likesCount||0})</div>`; });
-    const el = document.getElementById("myUploadedPosts");
-    if (el) el.innerHTML = html || "No posts yet.";
+async function adminDashboard() {
+  if (!localStorage.getItem("admin")) return location.hash = "#login";
+
+  const priceUsd = await getLivePriceData();
+  const usersSnap = await get(ref(db, "users"));
+  let totalCurrentPoolUSDT = 0;
+
+  if (usersSnap.exists()) {
+    usersSnap.forEach(s => {
+      const u = s.val();
+      if (u.monthlyBusiness && u.monthlyBusiness > 0) {
+        totalCurrentPoolUSDT += Number(u.monthlyBusiness);
+      }
+    });
+  }
+  const currentPool5Percent = totalCurrentPoolUSDT * 0.05;
+
+  onValue(ref(db, "users"), snap => {
+    let rows = "";
+    snap.forEach(s => {
+      const p = s.key;
+      const u = s.val();
+      const balTda = Number(u.balance || 0);
+
+      rows += `
+      <tr>
+      <td>${p}</td>
+      <td>${u.name}</td>
+      <td><span class="badge-tag">${u.tier || 'none'}</span> ${u.elite21 ? '| ⭐ Elite' : ''}</td>
+      <td>${balTda.toFixed(2)} Temple_DA</td>
+      <td>${u.investment || 0}</td>
+      <td>${Number(u.locked || 0).toFixed(2)}</td>
+      <td>
+        <button onclick="editUser('${p}')">Edit</button>
+        <button onclick="deleteUser('${p}')">Delete</button>
+        <button onclick="releaseLocked('${p}')" style="background:#00ff88; color:#000;">Release</button>
+      </td>
+      </tr>`;
+    });
+
+    appDiv().innerHTML = `
+    <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center;">
+        <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
+        <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05);">
+      <h3 style="color:#00ff88; margin-bottom:6px;">📊 Current Cycle Pool Summary (Elite 21)</h3>
+      <p class="small">Total New Business: <strong>$${totalCurrentPoolUSDT.toFixed(2)} USDT</strong></p>
+      <p class="small" style="margin-top:4px;">Available 5% Distribution Pool: <strong style="color:#dfb72c; font-size:18px;">$${currentPool5Percent.toFixed(2)} USDT</strong></p>
+    </div>
+
+    <div class="card">
+    <h2>Admin Dashboard</h2>
+    <input id="price" placeholder="Override Temple_DA USD price">
+    <button onclick="updatePrice()">Update Price Override</button>
+    <button onclick="runMonthlyElite21Distribution()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; margin-top:10px;">⚡ Run Monthly Elite 21 Pool Distribution</button>
+    <button onclick="adminLogout()">Admin Logout</button>
+    </div>
+
+    <div class="card">
+    <h3>Users & Business Overview</h3>
+    <table>
+    <tr><th>ID</th><th>Name</th><th>Package</th><th>Balance</th><th>Invested</th><th>Locked</th><th>Action</th></tr>
+    ${rows}
+    </table>
+    </div>
+
+    <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Temple Elite 21 Requests</h3><div id="pendingElite21"></div></div>
+    <div class="card"><h3 style="color:#00ff88;">Pending Creator Package Activations</h3><div id="pendingPackages"></div></div>
+    <div class="card"><h3>Pending Upgrades</h3><div id="pendingUpgrade"></div></div>
+    <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
+    `;
+
+    loadPendingElite21();
+    loadPendingPackages();
+    loadPendingUpgrade();
+    loadPendingWithdraw();
   });
 }
 
-/* =========================================================================
-   ADMIN DASHBOARD
-========================================================================= */
-async function adminDashboard() {
-  if (!localStorage.getItem("admin")) return location.hash = "#login";
-  appDiv().innerHTML = `
-    <div class="card"><h2>Admin Dashboard</h2><button onclick="adminLogout()">Logout</button></div>
-    <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Elite 21 Requests</h3><div id="pendingElite21"></div></div>
-    <div class="card"><h3 style="color:#00ff88;">Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>`;
-  loadAdminPending();
+window.runMonthlyElite21Distribution = async () => {
+  const usersSnap = await get(ref(db, "users"));
+  if (!usersSnap.exists()) return alert("No users found");
+
+  const currentPrice = await getPrice();
+  let totalNewBusinessUSDT = 0;
+  let eliteMembers = [];
+  let allUsersList = [];
+
+  usersSnap.forEach(s => {
+    const phone = s.key;
+    const u = s.val();
+    allUsersList.push({ phone, ...u });
+    if (u.monthlyBusiness) totalNewBusinessUSDT += Number(u.monthlyBusiness);
+    if (u.elite21 === true) eliteMembers.push(phone);
+  });
+
+  if (totalNewBusinessUSDT <= 0 || eliteMembers.length === 0) {
+    return alert("⚠️ Distribution Cancelled! No business or active Elite 21 members found.");
+  }
+
+  const pool5Percent = totalNewBusinessUSDT * 0.05;
+  const perEliteTokens = Number(((pool5Percent * 0.70) / eliteMembers.length / currentPrice).toFixed(2));
+
+  for (const phone of eliteMembers) {
+    const snap = await get(ref(db, "users/" + phone));
+    if (snap.exists()) {
+      await update(ref(db, "users/" + phone), { balance: Number(((snap.val().balance || 0) + perEliteTokens).toFixed(2)) });
+    }
+  }
+
+  alert(`✅ Monthly Distribution Successful! Distributed ${perEliteTokens} Temple_DA to each Elite member.`);
+  adminDashboard();
+};
+
+async function loadPendingElite21() {
+  const snap = await get(ref(db, "elite21/pending"));
+  let html = "";
+  snap.forEach(child => {
+    const phone = child.key;
+    const d = child.val();
+    html += `<div class="card" style="border: 1px solid #dfb72c;"><b>User:</b> ${phone} | <b>Name:</b> ${d.name}<br><br><button onclick="approveElite21('${phone}')" style="background:#dfb72c; color:#000;">Approve</button><button onclick="rejectElite21('${phone}')" class="btn-danger">Reject</button></div>`;
+  });
+  document.getElementById("pendingElite21").innerHTML = html || "No pending requests";
 }
 
-async function loadAdminPending() {
-  const elE = document.getElementById("pendingElite21");
-  const snapE = await get(ref(db, "elite21/pending"));
-  let htmlE = "";
-  snapE.forEach(s => { const p=s.key; const d=s.val(); htmlE += `<div class="card"><b>${p}</b> (${d.name})<br><button onclick="approveElite('${p}')">Approve Elite</button></div>`; });
-  if (elE) elE.innerHTML = htmlE || "No pending";
-
-  const elW = document.getElementById("pendingWithdraw");
-  const snapW = await get(ref(db, "withdrawals/pending"));
-  let htmlW = "";
-  snapW.forEach(s => { const p=s.key; const d=s.val(); htmlW += `<div class="card"><b>${p}</b> | Amt: ${d.amount} TDA<br>Wallet: ${d.wallet}<br><button onclick="approveW('${p}')">Approve</button><button onclick="rejectW('${p}', ${d.amount})" class="btn-danger">Reject & Refund</button></div>`; });
-  if (elW) elW.innerHTML = htmlW || "No pending";
-}
-
-window.approveElite = async (phone) => {
+window.approveElite21 = async (phone) => {
   await update(ref(db, "users/" + phone), { elite21: true });
   await remove(ref(db, "elite21/pending/" + phone));
-  alert("Approved Elite!"); adminDashboard();
-};
-window.approveW = async (phone) => { await remove(ref(db, "withdrawals/pending/" + phone)); alert("Approved!"); adminDashboard(); };
-window.rejectW = async (phone, amt) => {
-  const u = (await get(ref(db, "users/" + phone))).val();
-  await update(ref(db, "users/" + phone), { balance: Number(((u.balance||0)+amt).toFixed(2)) });
-  await remove(ref(db, "withdrawals/pending/" + phone));
-  alert("Rejected & Refunded!"); adminDashboard();
+  alert("Elite member approved!");
+  loadPendingElite21();
 };
 
+window.rejectElite21 = async (phone) => {
+  await remove(ref(db, "elite21/pending/" + phone));
+  alert("Elite request rejected");
+  loadPendingElite21();
+};
+
+async function loadPendingPackages() {
+  const snap = await get(ref(db, "packages/pending"));
+  let html = "";
+  snap.forEach(child => {
+    const phone = child.key;
+    const d = child.val();
+    html += `<div class="card" style="border: 1px solid #00ff88;"><b>User:</b> ${phone} | <b>Tier:</b> ${d.tier.toUpperCase()}<br><br><button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve</button><button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button></div>`;
+  });
+  document.getElementById("pendingPackages").innerHTML = html || "No pending packages";
+}
+
+window.approvePackage = async (phone, tier, usdtAmount) => {
+  const activatedAt = Date.now();
+  const expiresAt = activatedAt + getPackageDurationMs(tier);
+  await update(ref(db, "users/" + phone), { tier, packagePriceUSDT: usdtAmount, packageActivatedAt: activatedAt, packageExpiresAt: expiresAt, packageExpired: false });
+  await remove(ref(db, "packages/pending/" + phone));
+  alert("Package approved!");
+  loadPendingPackages();
+};
+
+window.rejectPackage = async (phone) => {
+  await remove(ref(db, "packages/pending/" + phone));
+  alert("Package rejected");
+  loadPendingPackages();
+};
+
+async function loadPendingUpgrade() {
+  const snap = await get(ref(db, "investments/upgrade"));
+  let html = "";
+  snap.forEach(child => {
+    const phone = child.key;
+    const d = child.val();
+    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amountUSDT} USDT<br><br><button onclick="approveUpgrade('${phone}')">Approve</button><button onclick="rejectUpgrade('${phone}')" class="btn-danger">Reject</button></div>`;
+  });
+  document.getElementById("pendingUpgrade").innerHTML = html || "No pending upgrades";
+}
+
+window.approveUpgrade = async (phone) => {
+  const snap = await get(ref(db, "investments/upgrade/" + phone));
+  const d = snap.val();
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+  const currentPrice = await getPrice();
+  const temple_DA = Number((d.amountUSDT / currentPrice).toFixed(2));
+
+  await update(ref(db, "users/" + phone), {
+    investment: (u.investment || 0) + d.amountUSDT,
+    locked: (u.locked || 0) + temple_DA,
+    monthlyBusiness: (u.monthlyBusiness || 0) + d.amountUSDT
+  });
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade approved!");
+  loadPendingUpgrade();
+};
+
+window.rejectUpgrade = async (phone) => {
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade rejected");
+  loadPendingUpgrade();
+};
+
+async function loadPendingWithdraw() {
+  const snap = await get(ref(db, "withdrawals/pending"));
+  let html = "";
+  snap.forEach(child => {
+    const phone = child.key;
+    const d = child.val();
+    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><br><button onclick="approveWithdraw('${phone}')">Approve</button><button onclick="rejectWithdraw('${phone}')" class="btn-danger">Reject</button></div>`;
+  });
+  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawals";
+}
+
+window.approveWithdraw = async (phone) => {
+  const snap = await get(ref(db, "withdrawals/pending/" + phone));
+  const d = snap.val();
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.val();
+
+  if (u.balance < d.amount) return alert("Insufficient balance");
+  await update(ref(db, "users/" + phone), { balance: u.balance - d.amount });
+  await remove(ref(db, "withdrawals/pending/" + phone));
+  alert("Withdrawal approved!");
+  loadPendingWithdraw();
+};
+
+window.rejectWithdraw = async (phone) => {
+  await remove(ref(db, "withdrawals/pending/" + phone));
+  alert("Withdrawal rejected");
+  loadPendingWithdraw();
+};
+
+function autoRelease(phone, u) {
+  if (!u.lockDate || !u.locked || u.locked <= 0) return;
+  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
+  if (days >= 30) {
+    const release = u.locked * 0.05;
+    update(ref(db, "users/" + phone), {
+      balance: Number(((u.balance || 0) + release).toFixed(2)),
+      locked: Number((u.locked - release).toFixed(2)),
+      lockDate: Date.now()
+    }).catch(e => {});
+  }
+}
+
+window.releaseLocked = async phone => {
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+  const u = snap.val();
+  if (!u.locked || u.locked <= 0) return alert("No locked tokens");
+
+  await update(ref(db, "users/" + phone), { balance: (u.balance || 0) + u.locked, locked: 0, lockDate: 0, investment: 0 });
+  alert("Tokens released!");
+};
+
+window.updatePrice = async () => {
+  await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price")));
+  alert("Price updated");
+};
+
+window.editUser = async oldId => {
+  const newId = prompt("Enter new user ID");
+  if (!newId) return;
+  const snap = await get(ref(db, "users/" + oldId));
+  if (!snap.exists()) return alert("User not found");
+  await set(ref(db, "users/" + newId), snap.val());
+  await remove(ref(db, "users/" + oldId));
+  alert("User ID updated");
+};
+
+window.deleteUser = async id => { await remove(ref(db, "users/" + id)); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
-function v(id) { return document.getElementById(id)?.value.trim() || ""; }
+
+function loadPackageHistory(phone) {
+  onValue(ref(db, "packages/history/" + phone), snap => {
+    let html = "";
+    snap.forEach(s => { const d = s.val(); html += `<div class="small">${d.tier.toUpperCase()} - ${d.amountUSDT} USDT</div>`; });
+    const el = document.getElementById("packageHistory");
+    if (el) el.innerHTML = html || "No history";
+  });
+}
+
+function loadInvestHistory(phone) {
+  onValue(ref(db, "investments/history/" + phone), snap => {
+    let html = "";
+    snap.forEach(s => { html += `<div class="small">Invested: ${s.val().amountUSDT} USDT</div>`; });
+    const el = document.getElementById("investHistory");
+    if (el) el.innerHTML = html || "No investment";
+  });
+}
+
+function loadWithdrawHistory(phone) {
+  onValue(ref(db, "withdrawals/history/" + phone), snap => {
+    let html = "";
+    snap.forEach(s => { html += `<div class="small">Withdrawn: ${s.val().amount} Temple_DA</div>`; });
+    const el = document.getElementById("withdrawHistory");
+    if (el) el.innerHTML = html || "No withdrawals";
+  });
+}
+
+function loadUpgradeHistory(phone) {
+  onValue(ref(db, "investments/history/" + phone), snap => {
+    let html = "";
+    snap.forEach(s => { if(s.val().type === "upgrade") html += `<div class="small">Upgrade: ${s.val().amountUSDT} USDT</div>`; });
+    const el = document.getElementById("upgradeHistory");
+    if (el) el.innerHTML = html || "No upgrades";
+  });
+}
+
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
 function appDiv() { return document.getElementById("app"); }
 
 </script>
