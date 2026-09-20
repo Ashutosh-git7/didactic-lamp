@@ -1117,7 +1117,7 @@ async function userDashboard() {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="color:#dfb72c; margin-bottom:4px;">⭐ Temple Elite 21 Club</h3>
-          <p class="small">Join core leadership (Max 21 Members) with <strong>250 USDT</strong> to share monthly 5% pool distribution (70% shared equally among Elite 21 + 30% for Top 5 performers).</p>
+          <p class="small">Join core leadership (Max 21 Members) with dedicated <strong>250 USDT</strong> Web3 payment to share monthly 5% pool distribution (70% shared equally among Elite 21 + 30% for Top 5 performers).</p>
           <p class="small" style="margin-top:6px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
         </div>
         <div>
@@ -1181,20 +1181,12 @@ async function userDashboard() {
       </button>
     </div>
 
-    <!-- DIRECT WEB3 DEPOSIT / INVESTMENT -->
+    <!-- COMBINED DIRECT WEB3 DEPOSIT & UPGRADE INVESTMENT (MAX 500 USDT) -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
-      <h3 style="color:#00ff88;">Invest & Yield (Direct Web3 USDT Deposit)</h3>
-      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and submit your investment instantly.</p>
-      <input id="invest" placeholder="USDT amount (1 - 250 USDT)" style="margin-top:10px;">
-      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit via Web3 Wallet</button>
-    </div>
-
-    <!-- DIRECT WEB3 UPGRADE INVESTMENT -->
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
-      <h3 style="color:#00ff88;">Upgrade Investment Capital (Web3 USDT)</h3>
-      <p class="small">Directly pay via Web3 wallet to upgrade your investment capital instantly.</p>
-      <input id="upgradeAmount" placeholder="Enter upgrade USDT amount (Min 10 USDT)" style="margin-top:10px;">
-      <button onclick="makeDirectUSDTUpgrade()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Upgrade via Web3 Wallet</button>
+      <h3 style="color:#00ff88;">Investment & Upgrade (Direct Web3 USDT Deposit)</h3>
+      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and update your investment capital instantly (Max Total Investment: 500 USDT).</p>
+      <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" style="margin-top:10px;">
+      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit / Upgrade via Web3 Wallet</button>
     </div>
 
     <div class="card">
@@ -1235,14 +1227,6 @@ async function userDashboard() {
       <div class="accordion-content" id="investHistory">Loading...</div>
     </div>
 
-    <div class="accordion-wrapper" id="accUpgrade">
-      <div class="accordion-header" onclick="toggleAccordion('accUpgrade')">
-        <span>⚡ Upgrade History</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="upgradeHistory">Loading...</div>
-    </div>
-
     <div class="accordion-wrapper" id="accWithdraw">
       <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
         <span>📤 Withdrawal History</span>
@@ -1259,22 +1243,26 @@ async function userDashboard() {
     autoRelease(phone, u);
     loadInvestHistory(phone);
     loadWithdrawHistory(phone);
-    loadUpgradeHistory(phone);
     loadPackageHistory(phone);
     loadMyPosts(phone);
   });
 }
 
-// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function (Deposit)
+// ⚡ Combined Direct Web3 USDT (BEP20) Deposit & Upgrade Function (Max 500 USDT)
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
 
-  if (!amount || amount < 1 || amount > 250) return alert("Investment must be between 1 - 250 USDT");
+  if (!amount || amount < 1) return alert("Investment amount must be at least 1 USDT");
 
   const userSnap = await get(ref(db, "users/" + phone));
   if (!userSnap.exists()) return alert("User session not found!");
   const u = userSnap.val();
+
+  const currentInvestment = u.investment || 0;
+  if (currentInvestment + amount > 500) {
+    return alert(`Maximum total investment limit is 500 USDT! Aapka current investment ${currentInvestment} USDT hai, aap sirf ${500 - currentInvestment} USDT tak aur invest/upgrade kar sakte hain.`);
+  }
 
   if (typeof window.ethereum === 'undefined') {
     return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
@@ -1309,11 +1297,11 @@ window.makeDirectUSDTDeposit = async () => {
     alert("Transaction broadcast ho gayi! Hash: " + tx.hash);
 
     await tx.wait();
-    alert("USDT transfer successful! Investment automatically activate ki ja rahi hai.");
+    alert("USDT transfer successful! Investment automatically update ki ja rahi hai.");
 
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
-    const newInvestment = (u.investment || 0) + amount;
+    const newInvestment = currentInvestment + amount;
     const newLocked = (u.locked || 0) + temple_DA;
     const newMonthlyBiz = (u.monthlyBusiness || 0) + amount;
 
@@ -1329,74 +1317,6 @@ window.makeDirectUSDTDeposit = async () => {
   } catch (error) {
     console.error("Direct deposit error:", error);
     alert("Deposit failed: " + (error.data?.message || error.message));
-  }
-};
-
-// ⚡ Direct Web3 USDT (BEP20) Transfer & Instant Credit Function (Upgrade Investment)
-window.makeDirectUSDTUpgrade = async () => {
-  const phone = localStorage.getItem("user");
-  const amount = parseFloat(v("upgradeAmount"));
-
-  if (!amount || amount < 10) return alert("Minimum upgrade amount is 10 USDT");
-
-  const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return alert("User session not found!");
-  const u = userSnap.val();
-
-  if ((u.investment || 0) + amount > 250) return alert("Maximum total investment limit is 250 USDT");
-
-  if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found! Kripya MetaMask ya Trust Wallet open karein.");
-  }
-
-  try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
-    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-
-    const minABI = [
-      {
-        "constant": false,
-        "inputs": [
-          {"name": "_to", "type": "address"},
-          {"name": "_value", "type": "uint256"}
-        ],
-        "name": "transfer",
-        "outputs": [{"name": "", "type": "bool"}],
-        "type": "function"
-      }
-    ];
-
-    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
-
-    alert("Wallet popup khul raha hai. Kripya upgrade transaction confirm karein!");
-    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
-    alert("Transaction broadcast ho gayi! Hash: " + tx.hash);
-
-    await tx.wait();
-    alert("USDT upgrade transfer successful! Capital automatically update ki ja rahi hai.");
-
-    const currentPrice = await getPrice();
-    const temple_DA = Number((amount / currentPrice).toFixed(2));
-    const newInvestment = (u.investment || 0) + amount;
-    const newLocked = (u.locked || 0) + temple_DA;
-    const newMonthlyBiz = (u.monthlyBusiness || 0) + amount;
-
-    await update(ref(db, "users/" + phone), {
-      investment: newInvestment,
-      locked: newLocked,
-      monthlyBusiness: newMonthlyBiz
-    });
-
-    alert("Investment successfully upgraded!");
-    userDashboard();
-  } catch (error) {
-    console.error("Direct upgrade error:", error);
-    alert("Upgrade failed: " + (error.data?.message || error.message));
   }
 };
 
@@ -1426,12 +1346,12 @@ window.joinElite21 = async () => {
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits("250", 18);
 
-    alert("Elite 21 join karne ke liye 250 USDT ka transfer confirm karein!");
+    alert("Elite 21 join karne ke liye 250 USDT ka dedicated transfer confirm karein!");
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
     await tx.wait();
 
     await update(ref(db, "users/" + phone), { elite21: true, monthlyBusiness: (u.monthlyBusiness || 0) + 250 });
-    alert("🎉 Congratulations! You have successfully joined Temple Elite 21 via Web3 Wallet!");
+    alert("🎉 Congratulations! You have successfully joined Temple Elite 21 via dedicated Web3 Wallet payment!");
     userDashboard();
   } catch (err) {
     alert("Elite 21 join failed: " + err.message);
@@ -2155,15 +2075,6 @@ function loadWithdrawHistory(phone) {
     snap.forEach(s => { html += `<div class="small">Withdrawn: ${s.val().amount} Temple_DA</div>`; });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawals";
-  });
-}
-
-function loadUpgradeHistory(phone) {
-  onValue(ref(db, "investments/history/" + phone), snap => {
-    let html = "";
-    snap.forEach(s => { if(s.val().type === "upgrade") html += `<div class="small">Upgrade: ${s.val().amountUSDT} USDT</div>`; });
-    const el = document.getElementById("upgradeHistory");
-    if (el) el.innerHTML = html || "No upgrades";
   });
 }
 
