@@ -1041,7 +1041,7 @@ async function userDashboard() {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="color:#dfb72c; margin-bottom:4px;">⭐ Temple Elite 21 Club</h3>
-          <p class="small">Join core leadership with <strong>250 USDT</strong> to share monthly 5% pool distribution (70% shared equally among Elite 21 + 30% for Top 5 performers).</p>
+          <p class="small">Join core leadership (Max 21 Members) with <strong>250 USDT</strong> to share monthly 5% pool distribution (70% shared equally among Elite 21 + 30% for Top 5 performers).</p>
           <p class="small" style="margin-top:6px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
         </div>
         <div>
@@ -1761,10 +1761,11 @@ async function adminDashboard() {
       <td><span class="badge-tag">${u.tier || 'none'}</span> ${u.elite21 ? '| ⭐ Elite' : ''}</td>
       <td>${balTda.toFixed(2)} Temple_DA<br><span class="small" style="color:#dfb72c;">$${balUsd} USDT</span></td>
       <td>${u.investment || 0}</td>
-      <td>${u.monthlyBusiness || 0} USDT</td>
+      <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
         <button onclick="editUser('${p}')">Edit</button>
         <button onclick="deleteUser('${p}')">Delete</button>
+        <button onclick="releaseLocked('${p}')" style="background:#00ff88; color:#000;">Release</button>
       </td>
       </tr>`;
     });
@@ -1784,7 +1785,7 @@ async function adminDashboard() {
     </div>
 
     <div class="card">
-    <h3>Users & Monthly Business Overview</h3>
+    <h3>Users & Business Overview</h3>
     <table>
     <tr>
     <th>ID</th>
@@ -1792,7 +1793,7 @@ async function adminDashboard() {
     <th>Package</th>
     <th>Balance</th>
     <th>Invested</th>
-    <th>M. Business</th>
+    <th>Locked</th>
     <th>Action</th>
     </tr>
     ${rows}
@@ -1828,7 +1829,7 @@ async function adminDashboard() {
 }
 
 window.runMonthlyElite21Distribution = async () => {
-  const confirmRun = confirm("Kya aap 5% pool nikal kar Elite 21 aur Top 5 Performers mein monthly distribution run karna chahte hain? Yeh live Temple_DA price par tokens credit karega.");
+  const confirmRun = confirm("Kya aap 5% pool nikal kar Elite 21 aur Top 5 Performers mein monthly distribution run karna chahte hain?");
   if (!confirmRun) return;
 
   const usersSnap = await get(ref(db, "users"));
@@ -1918,6 +1919,16 @@ async function loadPendingElite21() {
 }
 
 window.approveElite21 = async (phone) => {
+  const usersSnap = await get(ref(db, "users"));
+  let activeEliteCount = 0;
+  usersSnap.forEach(s => {
+    if (s.val().elite21 === true) activeEliteCount++;
+  });
+
+  if (activeEliteCount >= 21) {
+    return alert("⚠️ Limit Reached! Temple Elite 21 group mein maximum 21 members hi ho sakte hain. Abhi 21 members active hain.");
+  }
+
   await update(ref(db, "users/" + phone), {
     elite21: true
   });
@@ -2099,6 +2110,25 @@ function autoRelease(phone, u) {
     update(ref(db, "users/" + phone), updates).catch(e => {});
   }
 }
+
+window.releaseLocked = async phone => {
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User not found");
+
+  const u = snap.val();
+  if (!u.locked || u.locked <= 0) return alert("No locked tokens to release");
+
+  const releasedAmount = u.locked;
+
+  await update(ref(db, "users/" + phone), {
+    balance: (u.balance || 0) + releasedAmount,
+    locked: 0,
+    lockDate: 0,
+    investment: 0
+  });
+
+  alert("Full cycle completed. User tokens released.");
+};
 
 window.updatePrice = async () => {
   const p = parseFloat(v("price"));
