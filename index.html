@@ -996,11 +996,18 @@ async function userDashboard() {
 
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
+    const userWallet = u.wallet || "Not Linked";
 
     appDiv().innerHTML = `
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
         <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
         <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <!-- WALLET DISPLAY CARD -->
+    <div class="card" style="border: 1px solid #dfb72c; background: rgba(223, 183, 44, 0.04); margin-bottom: 15px;">
+      <h3 style="color:#dfb72c; font-size:14px; margin-bottom:4px;">BEP20 Wallet Address</h3>
+      <p style="font-size:13px; word-break:break-all; color:#fff; font-family:monospace;">${userWallet}</p>
     </div>
 
     <div class="grid">
@@ -1730,6 +1737,7 @@ window.invest = async () => {
   await set(ref(db, "investments/pending/" + phone), {
     amountUSDT: amount,
     temple_DAAmount: temple_DA,
+    wallet: u.wallet || "",
     timestamp: Date.now()
   });
 
@@ -1751,7 +1759,7 @@ window.upgrade = async () => {
   await set(ref(db, "investments/upgrade/" + phone), {
     amountUSDT: amount,
     temple_DAAmount: temple_DA,
-    wallet: u.wallet,
+    wallet: u.wallet || "",
     timestamp: Date.now()
   });
 
@@ -2147,6 +2155,7 @@ async function loadPendingUpgrade() {
     html += `
     <div class="card">
     <b>User:</b> ${phone}<br>
+    <b>Wallet:</b> <span style="color:#dfb72c; font-family:monospace;">${d.wallet || 'Not Provided'}</span><br>
     <b>Upgrade Amount:</b> ${d.amountUSDT} USDT
     <br><br>
     <button onclick="approveUpgrade('${phone}')">Approve Upgrade</button>
