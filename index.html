@@ -2081,7 +2081,6 @@ async function loadPendingPackages() {
   for (const child of Object.entries(snap.val() || {})) {
     const phone = child[0];
     const d = child[1];
-    const durationDays = d.tier === 'yearly' ? 365 : 30;
 
     html += `
     <div class="card" style="border: 1px solid #00ff88;">
@@ -2137,12 +2136,19 @@ async function loadPendingInvest() {
     <b>Amount:</b> ${d.amountUSDT} USDT
     <br><br>
     <button onclick="approveInvest('${phone}')">Approve</button>
+    <button onclick="rejectInvest('${phone}')" class="btn-danger">Reject</button>
     </div>`;
   }
 
   const el = document.getElementById("pendingInvest");
   if (el) el.innerHTML = html || "No pending investments";
 }
+
+window.rejectInvest = async phone => {
+  await remove(ref(db, "investments/pending/" + phone));
+  alert("Investment request rejected");
+  loadPendingInvest();
+};
 
 async function loadPendingUpgrade() {
   const snap = await get(ref(db, "investments/upgrade"));
@@ -2159,12 +2165,19 @@ async function loadPendingUpgrade() {
     <b>Upgrade Amount:</b> ${d.amountUSDT} USDT
     <br><br>
     <button onclick="approveUpgrade('${phone}')">Approve Upgrade</button>
+    <button onclick="rejectUpgrade('${phone}')" class="btn-danger">Reject</button>
     </div>`;
   }
 
   const el = document.getElementById("pendingUpgrade");
   if (el) el.innerHTML = html || "No pending upgrades";
 }
+
+window.rejectUpgrade = async phone => {
+  await remove(ref(db, "investments/upgrade/" + phone));
+  alert("Upgrade request rejected");
+  loadPendingUpgrade();
+};
 
 window.approveInvest = async phone => {
   const snap = await get(ref(db, "investments/pending/" + phone));
@@ -2188,6 +2201,7 @@ window.approveInvest = async phone => {
 
   await remove(ref(db, "investments/pending/" + phone));
   alert("Investment approved and added to monthly business!");
+  loadPendingInvest();
 };
 
 window.approveUpgrade = async phone => {
@@ -2229,6 +2243,7 @@ async function loadPendingWithdraw() {
     <b>Wallet:</b> ${d.wallet || 'N/A'}
     <br><br>
     <button onclick="approveWithdraw('${p}')">Approve</button>
+    <button onclick="rejectWithdraw('${p}')" class="btn-danger">Reject</button>
     </div>`;
   });
 
@@ -2250,6 +2265,13 @@ window.approveWithdraw = async phone => {
 
   await remove(ref(db, "withdrawals/pending/" + phone));
   alert("Withdrawal approved");
+  loadPendingWithdraw();
+};
+
+window.rejectWithdraw = async phone => {
+  await remove(ref(db, "withdrawals/pending/" + phone));
+  alert("Withdrawal request rejected");
+  loadPendingWithdraw();
 };
 
 function autoRelease(phone, u) {
