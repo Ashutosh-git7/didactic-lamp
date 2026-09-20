@@ -1024,15 +1024,15 @@ async function userDashboard() {
     const userWallet = u.wallet || "Not Linked";
 
     appDiv().innerHTML = `
+    <!-- PROMINENT WALLET DISPLAY CARD -->
+    <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 15px; text-align: center;">
+      <h3 style="color:#dfb72c; font-size:14px; margin-bottom:4px;">🔗 Linked BEP20 Wallet Address</h3>
+      <p style="font-size:15px; word-break:break-all; color:#00ff88; font-weight:bold; font-family:monospace;">${userWallet}</p>
+    </div>
+
     <div style="margin-bottom: 15px; padding: 10px 15px; background: rgba(223, 183, 44, 0.08); border-radius: 8px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
         <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
         <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
-    </div>
-
-    <!-- WALLET DISPLAY CARD -->
-    <div class="card" style="border: 1px solid #dfb72c; background: rgba(223, 183, 44, 0.04); margin-bottom: 15px;">
-      <h3 style="color:#dfb72c; font-size:14px; margin-bottom:4px;">BEP20 Wallet Address</h3>
-      <p style="font-size:13px; word-break:break-all; color:#fff; font-family:monospace;">${userWallet}</p>
     </div>
 
     <div class="grid">
@@ -1761,6 +1761,7 @@ async function adminDashboard() {
       <tr>
       <td>${p}</td>
       <td>${u.name}</td>
+      <td style="font-family:monospace; font-size:11px; color:#00ff88;">${u.wallet || 'N/A'}</td>
       <td><span class="badge-tag">${u.tier || 'none'}</span> ${u.elite21 ? '| ⭐ Elite' : ''}</td>
       <td>${balTda.toFixed(2)} Temple_DA</td>
       <td>${u.investment || 0}</td>
@@ -1796,7 +1797,7 @@ async function adminDashboard() {
     <div class="card">
     <h3>Users & Business Overview</h3>
     <table>
-    <tr><th>ID</th><th>Name</th><th>Package</th><th>Balance</th><th>Invested</th><th>Locked</th><th>Action</th></tr>
+    <tr><th>ID</th><th>Name</th><th>Wallet Address</th><th>Package</th><th>Balance</th><th>Invested</th><th>Locked</th><th>Action</th></tr>
     ${rows}
     </table>
     </div>
@@ -1855,7 +1856,7 @@ async function loadPendingElite21() {
   snap.forEach(child => {
     const phone = child.key;
     const d = child.val();
-    html += `<div class="card" style="border: 1px solid #dfb72c;"><b>User:</b> ${phone} | <b>Name:</b> ${d.name}<br><br><button onclick="approveElite21('${phone}')" style="background:#dfb72c; color:#000;">Approve</button><button onclick="rejectElite21('${phone}')" class="btn-danger">Reject</button></div>`;
+    html += `<div class="card" style="border: 1px solid #dfb72c;"><b>User:</b> ${phone} | <b>Name:</b> ${d.name}<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approveElite21('${phone}')" style="background:#dfb72c; color:#000;">Approve</button><button onclick="rejectElite21('${phone}')" class="btn-danger">Reject</button></div>`;
   });
   document.getElementById("pendingElite21").innerHTML = html || "No pending requests";
 }
@@ -1879,7 +1880,7 @@ async function loadPendingPackages() {
   snap.forEach(child => {
     const phone = child.key;
     const d = child.val();
-    html += `<div class="card" style="border: 1px solid #00ff88;"><b>User:</b> ${phone} | <b>Tier:</b> ${d.tier.toUpperCase()}<br><br><button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve</button><button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button></div>`;
+    html += `<div class="card" style="border: 1px solid #00ff88;"><b>User:</b> ${phone} | <b>Tier:</b> ${d.tier.toUpperCase()}<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve</button><button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button></div>`;
   });
   document.getElementById("pendingPackages").innerHTML = html || "No pending packages";
 }
@@ -1905,7 +1906,7 @@ async function loadPendingUpgrade() {
   snap.forEach(child => {
     const phone = child.key;
     const d = child.val();
-    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amountUSDT} USDT<br><br><button onclick="approveUpgrade('${phone}')">Approve</button><button onclick="rejectUpgrade('${phone}')" class="btn-danger">Reject</button></div>`;
+    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amountUSDT} USDT<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approveUpgrade('${phone}')">Approve</button><button onclick="rejectUpgrade('${phone}')" class="btn-danger">Reject</button></div>`;
   });
   document.getElementById("pendingUpgrade").innerHTML = html || "No pending upgrades";
 }
@@ -1940,7 +1941,7 @@ async function loadPendingWithdraw() {
   snap.forEach(child => {
     const phone = child.key;
     const d = child.val();
-    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><br><button onclick="approveWithdraw('${phone}')">Approve</button><button onclick="rejectWithdraw('${phone}')" class="btn-danger">Reject</button></div>`;
+    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approveWithdraw('${phone}')">Approve</button><button onclick="rejectWithdraw('${phone}')" class="btn-danger">Reject</button></div>`;
   });
   document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawals";
 }
