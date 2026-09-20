@@ -1280,9 +1280,9 @@ async function checkDailyVideoLimit(phone, userTier) {
     });
   }
 
-  let maxAllowed = 2; // Starter Pack -> 2 Videos/Day
+  let maxAllowed = 2;
   if (userTier === "monthly") {
-    maxAllowed = 5; // Pro Creator -> 5 Videos/Day
+    maxAllowed = 5;
   }
 
   if (todayVideoCount >= maxAllowed) {
@@ -1496,7 +1496,6 @@ window.subscribeCreator = async (creatorPhone) => {
     const creatorPts = 35;
     const subscriberPts = 15;
 
-    // Credit Creator Points & Subscriber Count
     const creatorSnap = await get(ref(db, "users/" + creatorPhone));
     if (creatorSnap.exists()) {
       const cData = creatorSnap.val();
@@ -1506,7 +1505,6 @@ window.subscribeCreator = async (creatorPhone) => {
       });
     }
 
-    // Credit Follower (Subscriber) Points with daily cap check
     const today = getTodayDateKey();
     const capRef = ref(db, `userLimits/${subscriberPhone}/${today}/subsCount`);
     const capSnap = await get(capRef);
