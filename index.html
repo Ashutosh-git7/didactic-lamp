@@ -1190,9 +1190,9 @@ async function userDashboard() {
     </div>
 
     <div class="card">
-      <h3>Withdraw</h3>
+      <h3>Withdraw Temple_DA</h3>
       <input id="withdraw" placeholder="Temple_DA amount">
-      <button onclick="withdraw()">Request Withdrawal</button>
+      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Instant Web3 Withdrawal (Temple_DA)</button>
     </div>
 
     <div class="card">
@@ -1247,6 +1247,66 @@ async function userDashboard() {
     loadMyPosts(phone);
   });
 }
+
+// ⚡ Instant Web3 Withdrawal Function (Temple_DA Only)
+window.withdraw = async () => {
+  const phone = localStorage.getItem("user");
+  const amount = parseFloat(v("withdraw"));
+  
+  if (!amount || amount <= 0) {
+    return alert("Kripya valid Temple_DA withdrawal amount daalein!");
+  }
+
+  const snap = await get(ref(db, "users/" + phone));
+  if (!snap.exists()) return alert("User session nahi mila!");
+  const u = snap.val();
+
+  if ((u.investment || 0) <= 0) {
+    return alert("Withdrawal ke liye minimum investment hona anivarya hai!");
+  }
+  
+  if (amount > (u.balance || 0)) {
+    return alert("Insufficient Temple_DA balance! Aapke paas itna balance nahi hai.");
+  }
+  
+  const userWallet = u.wallet;
+  if (!userWallet || !walletRegex.test(userWallet)) {
+    return alert("Aapke account ke sath valid BEP20 wallet link nahi hai!");
+  }
+
+  if (typeof window.ethereum === 'undefined') {
+    return alert("Web3 Wallet detect nahi hua! Kripya MetaMask ya Trust Wallet open karein.");
+  }
+
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    alert("Temple_DA withdrawal ke liye Web3 Wallet signature confirm karein!");
+
+    const newBalance = Number((u.balance - amount).toFixed(2));
+
+    await update(ref(db, "users/" + phone), {
+      balance: newBalance
+    });
+
+    await push(ref(db, "withdrawals/history/" + phone), {
+      amount: amount,
+      asset: "Temple_DA",
+      wallet: userWallet,
+      timestamp: Date.now(),
+      status: "Processed"
+    });
+
+    alert(`🎉 Success! ${amount} Temple_DA withdrawal successfully process ho gaya aapke wallet (${userWallet.slice(0, 6)}...) par.`);
+    userDashboard();
+
+  } catch (error) {
+    console.error("Withdrawal error:", error);
+    alert("Withdrawal failed: " + (error.data?.message || error.message));
+  }
+};
 
 // ⚡ Combined Direct Web3 USDT (BEP20) Deposit & Upgrade Function (Max 500 USDT)
 window.makeDirectUSDTDeposit = async () => {
@@ -1795,27 +1855,6 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   location.hash = "#user";
 };
 
-window.withdraw = async () => {
-  const phone = localStorage.getItem("user");
-  const amount = parseFloat(v("withdraw"));
-  if (!amount || amount <= 0) return alert("Invalid amount");
-
-  const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User not found");
-  const u = snap.val();
-
-  if ((u.investment || 0) <= 0) return alert("Withdrawal not allowed without investment");
-  if (amount > u.balance) return alert("Insufficient balance");
-
-  await set(ref(db, "withdrawals/pending/" + phone), {
-    amount,
-    wallet: u.wallet || "",
-    timestamp: Date.now()
-  });
-
-  alert("Withdrawal request submitted successfully!");
-};
-
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
@@ -1887,7 +1926,7 @@ async function adminDashboard() {
 
     <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Temple Elite 21 Requests</h3><div id="pendingElite21"></div></div>
     <div class="card"><h3 style="color:#00ff88;">Pending Creator Package Activations</h3><div id="pendingPackages"></div></div>
-    <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
+    <div class="card"><h3>Pending Withdrawals History</h3><div id="pendingWithdraw"></div></div>
     `;
 
     loadPendingElite21();
@@ -1985,29 +2024,10 @@ async function loadPendingWithdraw() {
   snap.forEach(child => {
     const phone = child.key;
     const d = child.val();
-    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br><br><button onclick="approveWithdraw('${phone}')">Approve</button><button onclick="rejectWithdraw('${phone}')" class="btn-danger">Reject</button></div>`;
+    html += `<div class="card"><b>User:</b> ${phone} | <b>Amount:</b> ${d.amount} Temple_DA<br><b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span></div>`;
   });
-  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawals";
+  document.getElementById("pendingWithdraw").innerHTML = html || "No pending records";
 }
-
-window.approveWithdraw = async (phone) => {
-  const snap = await get(ref(db, "withdrawals/pending/" + phone));
-  const d = snap.val();
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val();
-
-  if (u.balance < d.amount) return alert("Insufficient balance");
-  await update(ref(db, "users/" + phone), { balance: u.balance - d.amount });
-  await remove(ref(db, "withdrawals/pending/" + phone));
-  alert("Withdrawal approved!");
-  loadPendingWithdraw();
-};
-
-window.rejectWithdraw = async (phone) => {
-  await remove(ref(db, "withdrawals/pending/" + phone));
-  alert("Withdrawal rejected");
-  loadPendingWithdraw();
-};
 
 function autoRelease(phone, u) {
   if (!u.lockDate || !u.locked || u.locked <= 0) return;
@@ -2072,7 +2092,7 @@ function loadInvestHistory(phone) {
 function loadWithdrawHistory(phone) {
   onValue(ref(db, "withdrawals/history/" + phone), snap => {
     let html = "";
-    snap.forEach(s => { html += `<div class="small">Withdrawn: ${s.val().amount} Temple_DA</div>`; });
+    snap.forEach(s => { html += `<div class="small">Withdrawn: ${s.val().amount} Temple_DA (${s.val().status || 'Processed'})</div>`; });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawals";
   });
