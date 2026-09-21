@@ -501,6 +501,44 @@ const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
+// =========================================================================
+// 15-LEVEL REFERRAL DISTRIBUTION SYSTEM (RESTORED)
+// =========================================================================
+async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT) {
+  // 15 levels breakdown percentages (Customizable as per project rules)
+  const levelPercentages = [
+    10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2
+  ];
+
+  let currentRefPhone = startReferrerPhone;
+  const currentPrice = await getPrice();
+
+  for (let i = 0; i < levelPercentages.length; i++) {
+    if (!currentRefPhone) break;
+
+    const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
+    if (!refUserSnap.exists()) break;
+
+    const refUserData = refUserSnap.val();
+    const percentage = levelPercentages[i];
+    const commissionUSDT = (totalAmountUSDT * percentage) / 100;
+    const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
+
+    const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
+    await update(ref(db, "users/" + currentRefPhone), { balance: newBalance });
+
+    await push(ref(db, `referral_history/${currentRefPhone}`), {
+      fromUser: startReferrerPhone,
+      level: i + 1,
+      amountUSDT: commissionUSDT,
+      amountTokens: commissionTokens,
+      timestamp: Date.now()
+    });
+
+    currentRefPhone = refUserData.referrer || "";
+  }
+}
+
 function maskPhone(phone) {
   if (!phone || typeof phone !== 'string') return "Creator";
   if (phone.length <= 4) return phone;
@@ -1292,7 +1330,6 @@ window.withdraw = async () => {
     return alert("Withdrawal ke liye minimum investment hona anivarya hai!");
   }
 
-  // --- Daily Limit & Last Withdrawal Check Logic ---
   const now = new Date();
   const todayDateString = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
   
@@ -1303,7 +1340,6 @@ window.withdraw = async () => {
     todayWithdrawnAmount = 0;
   }
 
-  // --- Investment Tier Daily Max Limit Logic ---
   let maxDailyAllowed = 0;
   if (investment >= 1 && investment <= 19) {
     maxDailyAllowed = 60;
@@ -1316,7 +1352,7 @@ window.withdraw = async () => {
   }
 
   if (todayWithdrawnAmount >= maxDailyAllowed) {
-    return alert(`⚠️ Daily Withdrawal Limit Reached!\nAapke current investment ($${investment} USDT) ke anusaar aapki aaj ki ${maxDailyAllowed} Temple_DA ki daily limit poori ho chuki hai.`);
+    return alert(`⚠️ Daily Withdrawal Limit Reached!\nAapke current investment ($${investment} USDT) ke anusaار aapki aaj ki ${maxDailyAllowed} Temple_DA ki daily limit poori ho chuki hai.`);
   }
 
   if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
@@ -1361,7 +1397,7 @@ window.withdraw = async () => {
   userDashboard();
 };
 
-// ⚡ Combined Direct Web3 USDT (BEP20) Deposit & Upgrade Function (Max 500 USDT)
+// ⚡ Combined Direct Web3 USDT (BEP20) Deposit & Upgrade Function with 15-Level Distribution
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
@@ -1425,6 +1461,17 @@ window.makeDirectUSDTDeposit = async () => {
       lockDate: u.lockDate || Date.now()
     });
 
+    // Record investment history
+    await push(ref(db, "investments/history/" + phone), {
+      amountUSDT: amount,
+      timestamp: Date.now()
+    });
+
+    // Trigger 15-level referral distribution
+    if (u.referrer) {
+      await distribute15LevelCommission(u.referrer, amount);
+    }
+
     alert("Investment successfully updated to your account!");
     userDashboard();
   } catch (error) {
@@ -1464,6 +1511,11 @@ window.joinElite21 = async () => {
     await tx.wait();
 
     await update(ref(db, "users/" + phone), { elite21: true, monthlyBusiness: (u.monthlyBusiness || 0) + 250 });
+    
+    if (u.referrer) {
+      await distribute15LevelCommission(u.referrer, 250);
+    }
+
     alert("🎉 Congratulations! You have successfully joined Temple Elite 21 via dedicated Web3 Wallet payment!");
     userDashboard();
   } catch (err) {
@@ -1825,7 +1877,7 @@ async function packagesPage() {
   `;
 }
 
-// ⚡ Direct Web3 Package Upgrade Function
+// ⚡ Direct Web3 Package Upgrade Function with 15-Level Distribution
 window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login first");
@@ -1864,6 +1916,17 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
       packageExpired: false,
       monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
     });
+
+    // Record package history
+    await push(ref(db, "packages/history/" + phone), {
+      tier: tierName,
+      amountUSDT: usdtAmount,
+      timestamp: Date.now()
+    });
+
+    if (u.referrer) {
+      await distribute15LevelCommission(u.referrer, usdtAmount);
+    }
 
     alert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
     location.hash = "#user";
@@ -1904,6 +1967,16 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     packageExpired: false,
     monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
   });
+
+  await push(ref(db, "packages/history/" + phone), {
+    tier: tierName,
+    amountUSDT: usdtAmount,
+    timestamp: Date.now()
+  });
+
+  if (u.referrer) {
+    await distribute15LevelCommission(u.referrer, usdtAmount);
+  }
 
   alert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
   location.hash = "#user";
