@@ -881,71 +881,80 @@ function feedPage() {
       return;
     }
 
-    let posts = [];
-    snap.forEach(child => {
-      posts.push({ id: child.key, ...child.val() });
-    });
+    get(ref(db, "subscriptions")).then(subSnap => {
+      const allSubs = subSnap.exists() ? subSnap.val() : {};
 
-    posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      let posts = [];
+      snap.forEach(child => {
+        posts.push({ id: child.key, ...child.val() });
+      });
 
-    let html = "";
-    posts.forEach(p => {
-      const isMyPost = currentUser && currentUser === p.authorPhone;
-      let mediaContent = "";
+      posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-      if (p.type === "video") {
-        if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
-          let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
-          mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+      let html = "";
+      posts.forEach(p => {
+        const isMyPost = currentUser && currentUser === p.authorPhone;
+        const isSubscribed = currentUser && allSubs[p.authorPhone] && allSubs[p.authorPhone][currentUser];
+        let mediaContent = "";
+
+        if (p.type === "video") {
+          if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
+            let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+            mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+          } else {
+            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+          }
         } else {
-          mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+          mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
         }
-      } else {
-        mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
-      }
 
-      html += `
-        <div class="reel-item" data-id="${p.id}">
-          ${mediaContent}
+        html += `
+          <div class="reel-item" data-id="${p.id}">
+            ${mediaContent}
 
-          <div class="reel-overlay-bottom">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <strong style="color:#dfb72c; font-size:15px;">@${p.authorName || 'Creator'}</strong>
-              <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
-              ${(!isMyPost && currentUser) ? `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:3px 10px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>` : ''}
+            <div class="reel-overlay-bottom">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong style="color:#dfb72c; font-size:15px;">@${p.authorName || 'Creator'}</strong>
+                <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
+                ${(!isMyPost && currentUser) ? (
+                  isSubscribed 
+                    ? `<span class="badge-tag" style="background:rgba(0,255,136,0.2); color:#00ff88; border-color:#00ff88; font-size:10px; padding:3px 8px;">Following ✓</span>` 
+                    : `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:3px 10px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>`
+                ) : ''}
+              </div>
+              <p style="font-weight:bold; font-size:13px; margin-top:5px; color:#fff;">${p.title}</p>
+              ${p.description ? `<p class="small" style="color:#ddd; margin-top:2px;">${p.description}</p>` : ''}
             </div>
-            <p style="font-weight:bold; font-size:13px; margin-top:5px; color:#fff;">${p.title}</p>
-            ${p.description ? `<p class="small" style="color:#ddd; margin-top:2px;">${p.description}</p>` : ''}
+
+            <div class="reel-actions-bar">
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
+                <div class="reel-circle-label">${p.likesCount || 0}</div>
+              </div>
+
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
+                <div class="reel-circle-label">Msg</div>
+              </div>
+
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
+                <div class="reel-circle-label">Share</div>
+              </div>
+
+              ${isMyPost ? `
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
+                <div class="reel-circle-label" style="color:#ff4444;">Del</div>
+              </div>` : ''}
+            </div>
           </div>
+        `;
+      });
 
-          <div class="reel-actions-bar">
-            <div style="text-align:center;">
-              <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
-              <div class="reel-circle-label">${p.likesCount || 0}</div>
-            </div>
-
-            <div style="text-align:center;">
-              <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
-              <div class="reel-circle-label">Msg</div>
-            </div>
-
-            <div style="text-align:center;">
-              <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
-              <div class="reel-circle-label">Share</div>
-            </div>
-
-            ${isMyPost ? `
-            <div style="text-align:center;">
-              <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
-              <div class="reel-circle-label" style="color:#ff4444;">Del</div>
-            </div>` : ''}
-          </div>
-        </div>
-      `;
+      listEl.innerHTML = html;
+      setupIntersectionAutoplay();
     });
-
-    listEl.innerHTML = html;
-    setupIntersectionAutoplay();
   });
 }
 
@@ -1721,6 +1730,7 @@ window.subscribeCreator = async (creatorPhone) => {
       });
     }
     alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
+    feedPage();
   } catch (err) {
     alert("Subscribe error: " + err.message);
   }
