@@ -1099,9 +1099,18 @@ async function userDashboard() {
 
   const priceUsd = await getPrice();
 
-  onValue(ref(db, "users/" + phone), snap => {
+  onValue(ref(db, "users/" + phone), async snap => {
     const u = snap.val() || {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
+
+    // Fetch Total Elite 21 Members Count
+    const allUsersSnap = await get(ref(db, "users"));
+    let eliteCount = 0;
+    if (allUsersSnap.exists()) {
+      allUsersSnap.forEach(childSnap => {
+        if (childSnap.val().elite21 === true) eliteCount++;
+      });
+    }
 
     let expiryNotice = "";
     if (activeTier !== "none" && u.packageExpiresAt) {
@@ -1172,11 +1181,15 @@ async function userDashboard() {
           <h3 style="color:#dfb72c; margin-bottom:6px;">⭐ Temple Elite 21 Club</h3>
           <p class="small">Join core leadership (Max 21 Members) with dedicated <strong>250 USDT</strong> Web3 payment to share monthly 5% pool distribution.</p>
           <p class="small" style="margin-top:8px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
+          <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold; letter-spacing:1px;">Current Elite Members: <span style="font-size:16px;">${eliteCount} / 21</span></p>
         </div>
         <div style="text-align:right;">
-          ${u.elite21 ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' : `
-            <button onclick="joinElite21()" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite 21 (Web3)</button>
-          `}
+          ${u.elite21 
+            ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' 
+            : (eliteCount >= 21 
+                ? '<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All 21 Slots Full</span>' 
+                : '<button onclick="joinElite21()" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite 21 (Web3)</button>')
+          }
         </div>
       </div>
     </div>
@@ -1477,6 +1490,18 @@ window.joinElite21 = async () => {
 
   const pendingSnap = await get(ref(db, "elite21/pending/" + phone));
   if (pendingSnap.exists()) return alert("Your Temple Elite 21 request is already pending.");
+
+  // Strict 21 Members Check Lock
+  const allUsersSnap = await get(ref(db, "users"));
+  let eliteCount = 0;
+  if (allUsersSnap.exists()) {
+    allUsersSnap.forEach(childSnap => {
+      if (childSnap.val().elite21 === true) eliteCount++;
+    });
+  }
+  if (eliteCount >= 21) {
+    return alert("🔴 Sorry, all 21 slots for Temple Elite 21 are already full!");
+  }
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
@@ -2052,14 +2077,8 @@ async function adminDashboard() {
     </div>
 
     <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
-    
-    <!-- Old Data Clearing Section (Just in case) -->
-    <div class="card"><h3 style="color:#dfb72c; font-size:14px;">Old Manual Elite Requests (To Clear)</h3><div id="pendingElite21"></div></div>
-    <div class="card"><h3 style="color:#00ff88; font-size:14px;">Old Manual Package Requests (To Clear)</h3><div id="pendingPackages"></div></div>
     `;
 
-    loadPendingElite21();
-    loadPendingPackages();
     loadPendingWithdraw();
   });
 }
@@ -2084,7 +2103,7 @@ window.runMonthlyElite21Distribution = async () => {
       allUsers.push({ phone: phone, balance: Number(u.balance || 0) });
 
       if (u.elite21 === true) {
-        eliteMembers.push({ phone: phone, business: biz, balance: Number(u.balance || 0) });
+        eliteMembers.push({ phone: phone, business: biz, balance: Number(u.balance || 0), name: u.name || "User" });
       }
     });
 
@@ -2094,17 +2113,21 @@ window.runMonthlyElite21Distribution = async () => {
 
     // 2. Calculations (5% Pool)
     const pool5Percent = totalNewBusinessUSDT * 0.05;
-    const pool70 = pool5Percent * 0.70;
-    const pool30 = pool5Percent * 0.30;
+    const pool70 = pool5Percent * 0.70; // 70% Base Pool
+    const pool30 = pool5Percent * 0.30; // 30% Top Performer Pool
 
+    // Base Reward: 70% सभी Elite 21 को बराबर मिलेगा
     const perEliteTokens = Number((pool70 / eliteMembers.length / currentPrice).toFixed(2));
 
+    // बिज़नेस के आधार पर सबसे ज़्यादा से सबसे कम (Descending Order) में सॉर्ट करें
     eliteMembers.sort((a, b) => b.business - a.business);
-    const top5Count = Math.min(5, eliteMembers.length);
-    const perTop5Tokens = Number((pool30 / top5Count / currentPrice).toFixed(2));
 
-    // 3. ATOMIC FIREBASE UPDATE (सब कुछ एक साथ होगा)
+    // Top 5 के लिए डिस्ट्रीब्यूशन प्रतिशत (30%, 25%, 20%, 15%, 10%)
+    const top5Percentages = [0.30, 0.25, 0.20, 0.15, 0.10];
+
+    // 3. ATOMIC FIREBASE UPDATE
     let updates = {};
+    let top5Message = "";
 
     // (A) सबसे पहले सबके अकाउंट का बिज़नेस 0 सेट करें
     allUsers.forEach(u => {
@@ -2114,11 +2137,18 @@ window.runMonthlyElite21Distribution = async () => {
     // (B) अब Elite 21 मेंबर्स का बैलेंस कैलकुलेट करें
     for (let i = 0; i < eliteMembers.length; i++) {
       const member = eliteMembers[i];
-      const isTop5 = i < 5;
 
-      let totalRewardTokens = perEliteTokens;
-      if (isTop5) {
-        totalRewardTokens += perTop5Tokens;
+      let totalRewardTokens = perEliteTokens; // Base 70% रिवॉर्ड सबको मिलेगा
+      let top5BonusTokens = 0;
+
+      // अगर मेंबर टॉप 5 में है (i = 0, 1, 2, 3, 4)
+      if (i < 5) {
+        const rankShare = top5Percentages[i]; 
+        const bonusUSDT = pool30 * rankShare; 
+        top5BonusTokens = Number((bonusUSDT / currentPrice).toFixed(2)); 
+        
+        totalRewardTokens += top5BonusTokens; 
+        top5Message += `\nRank ${i + 1} (${member.name}): +${top5BonusTokens} TDA (${rankShare * 100}%)`;
       }
 
       // उनके मौजूदा बैलेंस में नया रिवॉर्ड जोड़ें
@@ -2130,105 +2160,14 @@ window.runMonthlyElite21Distribution = async () => {
     await update(ref(db), updates);
 
     // 4. Success Message & UI Refresh
-    alert(`✅ Monthly Distribution Successful!\n\nTotal 5% Pool: $${pool5Percent.toFixed(2)} USDT\nBase Reward (All Elite): ${perEliteTokens} TDA\nTop 5 Bonus Reward: +${perTop5Tokens} TDA`);
+    alert(`✅ Monthly Distribution Successful!\n\nTotal 5% Pool: $${pool5Percent.toFixed(2)} USDT\nBase Reward (All Elite): ${perEliteTokens} TDA\n\n🏆 Top 5 Performers Bonus:${top5Message || " None"}`);
     
-    // एडमिन पैनल को रिफ्रेश कर देगा जिससे बिज़नेस तुरंत $0.00 दिखने लगेगा
     adminDashboard(); 
 
   } catch (err) {
     console.error("Distribution Error: ", err);
     alert("❌ Error: " + err.message);
   }
-};
-
-async function loadPendingElite21() {
-  const snap = await get(ref(db, "elite21/pending"));
-  let html = "";
-  snap.forEach(child => {
-    const phone = child.key;
-    const d = child.val();
-    const date = new Date(d.timestamp).toLocaleString();
-    html += `<div class="card" style="border: 1px solid #dfb72c; padding:10px;">
-      <b>User:</b> ${phone} | <b>Name:</b> ${d.name}<br>
-      <b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
-      <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
-      <button onclick="approveElite21('${phone}')" style="background:#dfb72c; color:#000;">Approve</button>
-      <button onclick="rejectElite21('${phone}')" class="btn-danger">Reject</button>
-    </div>`;
-  });
-  document.getElementById("pendingElite21").innerHTML = html || "No pending requests found.";
-}
-
-window.approveElite21 = async (phone) => {
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val() || {};
-  await update(ref(db, "users/" + phone), { 
-    elite21: true, 
-    monthlyBusiness: Number(u.monthlyBusiness || 0) + 250 
-  });
-  await remove(ref(db, "elite21/pending/" + phone));
-  if (u.referrer) {
-    await distribute15LevelCommission(u.referrer, 250);
-  }
-  alert("Elite member approved & commissions distributed!");
-  loadPendingElite21();
-};
-
-window.rejectElite21 = async (phone) => {
-  await remove(ref(db, "elite21/pending/" + phone));
-  alert("Elite request rejected");
-  loadPendingElite21();
-};
-
-async function loadPendingPackages() {
-  const snap = await get(ref(db, "packages/pending"));
-  let html = "";
-  snap.forEach(child => {
-    const phone = child.key;
-    const d = child.val();
-    const date = new Date(d.timestamp).toLocaleString();
-    html += `<div class="card" style="border: 1px solid #00ff88; padding:10px;">
-      <b>User:</b> ${phone} | <b>Tier:</b> ${d.tier.toUpperCase()} | <b>Amount:</b> ${d.amountUSDT} USDT<br>
-      <b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
-      <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
-      <button onclick="approvePackage('${phone}','${d.tier}', ${d.amountUSDT})" style="background:#00ff88; color:#000;">Approve</button>
-      <button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button>
-    </div>`;
-  });
-  document.getElementById("pendingPackages").innerHTML = html || "No pending packages found.";
-}
-
-window.approvePackage = async (phone, tier, usdtAmount) => {
-  const activatedAt = Date.now();
-  const expiresAt = activatedAt + getPackageDurationMs(tier);
-  const userSnap = await get(ref(db, "users/" + phone));
-  const u = userSnap.val() || {};
-
-  await update(ref(db, "users/" + phone), { 
-    tier, 
-    packagePriceUSDT: usdtAmount, 
-    packageActivatedAt: activatedAt, 
-    packageExpiresAt: expiresAt, 
-    packageExpired: false,
-    monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
-  });
-  
-  await push(ref(db, "packages/history/" + phone), {
-    tier: tier, amountUSDT: usdtAmount, timestamp: Date.now()
-  });
-
-  await remove(ref(db, "packages/pending/" + phone));
-  if (u.referrer) {
-    await distribute15LevelCommission(u.referrer, usdtAmount);
-  }
-  alert("Package approved & commissions distributed!");
-  loadPendingPackages();
-};
-
-window.rejectPackage = async (phone) => {
-  await remove(ref(db, "packages/pending/" + phone));
-  alert("Package rejected");
-  loadPendingPackages();
 };
 
 async function loadPendingWithdraw() {
