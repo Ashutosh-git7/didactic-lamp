@@ -611,7 +611,6 @@ async function getLivePriceData() {
   return 0.0002;
 }
 
-// 100% Fixed: Check Admin override price FIRST.
 async function getPrice() {
   try {
     const s = await get(ref(db, "config/temple_DAPrice"));
@@ -1177,7 +1176,6 @@ async function userDashboard() {
         <div style="text-align:right;">
           ${u.elite21 ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' : `
             <button onclick="joinElite21()" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite 21 (Web3)</button>
-            <button onclick="requestElite21Manual()" style="width:auto; padding:12px 20px; font-size:12px; margin-top:8px; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">Manual Request</button>
           `}
         </div>
       </div>
@@ -1255,7 +1253,7 @@ async function userDashboard() {
 
     <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
 
-    <!-- 100% FIXED: New Referral History Tab -->
+    <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
       <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
         <span>👥 Referral Team Income</span>
@@ -1310,7 +1308,6 @@ async function userDashboard() {
   });
 }
 
-// 100% FIXED: Properly handling withdrawal status and pending logic
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
@@ -1514,20 +1511,6 @@ window.joinElite21 = async () => {
   } catch (err) {
     alert("Elite 21 join failed: " + err.message);
   }
-};
-
-// 100% FIXED: Added Manual Request function for users without Web3 injected browsers
-window.requestElite21Manual = async () => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
-  const snap = await get(ref(db, "users/" + phone));
-  const u = snap.val();
-  await set(ref(db, "elite21/pending/" + phone), {
-    name: u.name,
-    wallet: u.wallet,
-    timestamp: Date.now()
-  });
-  alert("Manual request submitted to admin! Please ensure you have transferred 250 USDT to the official wallet manually.");
 };
 
 function loadMyPosts(phone) {
@@ -1854,7 +1837,6 @@ async function packagesPage() {
         <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos Daily Limit</p>
         <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
         <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${starterTokens} TDA)</button>
-        <button onclick="requestPackageManual('starter', 5)" style="margin-top:8px; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">📝 Manual Request</button>
       </div>
 
       <div class="card center" style="border: 2px solid #dfb72c;">
@@ -1867,7 +1849,6 @@ async function packagesPage() {
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
         <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
         <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${proTokens} TDA)</button>
-        <button onclick="requestPackageManual('monthly', 15)" style="margin-top:8px; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">📝 Manual Request</button>
       </div>
 
       <div class="card center">
@@ -1879,26 +1860,10 @@ async function packagesPage() {
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
         <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
         <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${eliteTokens} TDA)</button>
-        <button onclick="requestPackageManual('yearly', 120)" style="margin-top:8px; background:transparent; border:1px solid #00ff88; color:#00ff88;">📝 Manual Request</button>
       </div>
     </div>
   `;
 }
-
-// 100% FIXED: Added manual request for packages
-window.requestPackageManual = async (tierName, usdtAmount) => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
-  const snap = await get(ref(db, "users/" + phone));
-  const u = snap.val();
-  await set(ref(db, "packages/pending/" + phone), {
-    tier: tierName,
-    amountUSDT: usdtAmount,
-    wallet: u.wallet,
-    timestamp: Date.now()
-  });
-  alert(`Manual activation request for ${tierName.toUpperCase()} submitted! Please ensure you have transferred ${usdtAmount} USDT manually to admin.`);
-};
 
 window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
@@ -2081,9 +2046,11 @@ async function adminDashboard() {
     </table>
     </div>
 
-    <div class="card"><h3 style="color:#dfb72c;">⭐ Pending Temple Elite 21 Requests</h3><div id="pendingElite21"></div></div>
-    <div class="card"><h3 style="color:#00ff88;">Pending Creator Package Activations</h3><div id="pendingPackages"></div></div>
     <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
+    
+    <!-- Old Data Clearing Section (Just in case) -->
+    <div class="card"><h3 style="color:#dfb72c; font-size:14px;">Old Manual Elite Requests (To Clear)</h3><div id="pendingElite21"></div></div>
+    <div class="card"><h3 style="color:#00ff88; font-size:14px;">Old Manual Package Requests (To Clear)</h3><div id="pendingPackages"></div></div>
     `;
 
     loadPendingElite21();
@@ -2132,7 +2099,7 @@ async function loadPendingElite21() {
     const phone = child.key;
     const d = child.val();
     const date = new Date(d.timestamp).toLocaleString();
-    html += `<div class="card" style="border: 1px solid #dfb72c;">
+    html += `<div class="card" style="border: 1px solid #dfb72c; padding:10px;">
       <b>User:</b> ${phone} | <b>Name:</b> ${d.name}<br>
       <b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
       <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
@@ -2140,10 +2107,9 @@ async function loadPendingElite21() {
       <button onclick="rejectElite21('${phone}')" class="btn-danger">Reject</button>
     </div>`;
   });
-  document.getElementById("pendingElite21").innerHTML = html || "No pending requests";
+  document.getElementById("pendingElite21").innerHTML = html || "No pending requests found.";
 }
 
-// 100% FIXED: Elite 21 Manual Approval ab Referrals aur Monthly Business sahi se count karega.
 window.approveElite21 = async (phone) => {
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val() || {};
@@ -2169,7 +2135,7 @@ async function loadPendingPackages() {
     const phone = child.key;
     const d = child.val();
     const date = new Date(d.timestamp).toLocaleString();
-    html += `<div class="card" style="border: 1px solid #00ff88;">
+    html += `<div class="card" style="border: 1px solid #00ff88; padding:10px;">
       <b>User:</b> ${phone} | <b>Tier:</b> ${d.tier.toUpperCase()} | <b>Amount:</b> ${d.amountUSDT} USDT<br>
       <b>Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
       <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
@@ -2177,10 +2143,9 @@ async function loadPendingPackages() {
       <button onclick="rejectPackage('${phone}')" class="btn-danger">Reject</button>
     </div>`;
   });
-  document.getElementById("pendingPackages").innerHTML = html || "No pending packages";
+  document.getElementById("pendingPackages").innerHTML = html || "No pending packages found.";
 }
 
-// 100% FIXED: Package Manual Approval Referral aur History properly manage karega.
 window.approvePackage = async (phone, tier, usdtAmount) => {
   const activatedAt = Date.now();
   const expiresAt = activatedAt + getPackageDurationMs(tier);
@@ -2233,7 +2198,6 @@ async function loadPendingWithdraw() {
   document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawal records";
 }
 
-// 100% FIXED: Update History Status instead of pushing duplicate records
 window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
   if (typeof window.ethereum === 'undefined') {
     return alert("Admin Web3 Wallet (MetaMask) not detected!");
@@ -2268,7 +2232,6 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
 
     await remove(ref(db, "withdrawals/pending/" + reqKey));
     
-    // Update existing history instead of creating new duplicate entry
     await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
       status: "Processed via Web3",
       processedAt: Date.now()
@@ -2294,7 +2257,6 @@ window.rejectWithdrawal = async (reqKey, phone) => {
   }
   await remove(ref(db, "withdrawals/pending/" + reqKey));
   
-  // Update History
   await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
     status: "Rejected & Refunded",
     processedAt: Date.now()
@@ -2345,8 +2307,6 @@ window.editUser = async oldId => {
 window.deleteUser = async id => { await remove(ref(db, "users/" + id)); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
-
-// 100% FIXED: History with Proper Dates and UI Alignment
 
 function loadReferralHistory(phone) {
   onValue(ref(db, "referral_history/" + phone), snap => {
