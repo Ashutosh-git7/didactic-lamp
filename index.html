@@ -1400,7 +1400,7 @@ window.makeDirectUSDTDeposit = async () => {
   if (!userSnap.exists()) return alert("User session not found!");
   const u = userSnap.val();
 
-  const currentInvestment = u.investment || 0;
+  const currentInvestment = Number(u.investment || 0);
   if (currentInvestment + amount > 500) {
     return alert(`Maximum total investment limit is 500 USDT! Your current investment is ${currentInvestment} USDT, you can invest up to ${500 - currentInvestment} USDT more.`);
   }
@@ -1442,9 +1442,10 @@ window.makeDirectUSDTDeposit = async () => {
 
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
+    
     const newInvestment = currentInvestment + amount;
-    const newLocked = (u.locked || 0) + temple_DA;
-    const newMonthlyBiz = (u.monthlyBusiness || 0) + amount;
+    const newLocked = Number(u.locked || 0) + temple_DA;
+    const newMonthlyBiz = Number(u.monthlyBusiness || 0) + amount;
 
     await update(ref(db, "users/" + phone), {
       investment: newInvestment,
@@ -1500,7 +1501,10 @@ window.joinElite21 = async () => {
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
     await tx.wait();
 
-    await update(ref(db, "users/" + phone), { elite21: true, monthlyBusiness: (u.monthlyBusiness || 0) + 250 });
+    await update(ref(db, "users/" + phone), { 
+      elite21: true, 
+      monthlyBusiness: Number(u.monthlyBusiness || 0) + 250 
+    });
     
     if (u.referrer) {
       await distribute15LevelCommission(u.referrer, 250);
@@ -1901,7 +1905,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
       packageActivatedAt: activatedAt,
       packageExpiresAt: expiresAt,
       packageExpired: false,
-      monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
+      monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
     });
 
     await push(ref(db, "packages/history/" + phone), {
@@ -1932,16 +1936,17 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
 
   const currentPrice = await getPrice();
   const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
+  const currentBalance = Number(u.balance || 0);
 
-  if ((u.balance || 0) < requiredTokens) {
-    return alert(`Insufficient Balance! You have ${Number(u.balance || 0).toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
+  if (currentBalance < requiredTokens) {
+    return alert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
   }
 
   if (!confirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} package?`)) return;
 
   const activatedAt = Date.now();
   const expiresAt = activatedAt + getPackageDurationMs(tierName);
-  const newBalance = Number((u.balance - requiredTokens).toFixed(2));
+  const newBalance = Number((currentBalance - requiredTokens).toFixed(2));
 
   await update(ref(db, "users/" + phone), {
     balance: newBalance,
@@ -1950,7 +1955,7 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     packageActivatedAt: activatedAt,
     packageExpiresAt: expiresAt,
     packageExpired: false,
-    monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
+    monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
   });
 
   await push(ref(db, "packages/history/" + phone), {
@@ -2060,36 +2065,80 @@ async function adminDashboard() {
 }
 
 window.runMonthlyElite21Distribution = async () => {
-  const usersSnap = await get(ref(db, "users"));
-  if (!usersSnap.exists()) return alert("No users found");
+  try {
+    const usersSnap = await get(ref(db, "users"));
+    if (!usersSnap.exists()) return alert("No users found");
 
-  const currentPrice = await getPrice();
-  let totalNewBusinessUSDT = 0;
-  let eliteMembers = [];
+    const currentPrice = await getPrice();
+    let totalNewBusinessUSDT = 0;
+    let eliteMembers = [];
+    let allUsers = [];
 
-  usersSnap.forEach(s => {
-    const phone = s.key;
-    const u = s.val();
-    if (u.monthlyBusiness) totalNewBusinessUSDT += Number(u.monthlyBusiness);
-    if (u.elite21 === true) eliteMembers.push(phone);
-  });
+    // 1. Data Collection
+    usersSnap.forEach(s => {
+      const phone = s.key;
+      const u = s.val();
+      const biz = Number(u.monthlyBusiness || 0);
 
-  if (totalNewBusinessUSDT <= 0 || eliteMembers.length === 0) {
-    return alert("⚠️ Distribution Cancelled! No business or active Elite 21 members found.");
-  }
+      totalNewBusinessUSDT += biz;
+      allUsers.push({ phone: phone, balance: Number(u.balance || 0) });
 
-  const pool5Percent = totalNewBusinessUSDT * 0.05;
-  const perEliteTokens = Number(((pool5Percent * 0.70) / eliteMembers.length / currentPrice).toFixed(2));
+      if (u.elite21 === true) {
+        eliteMembers.push({ phone: phone, business: biz, balance: Number(u.balance || 0) });
+      }
+    });
 
-  for (const phone of eliteMembers) {
-    const snap = await get(ref(db, "users/" + phone));
-    if (snap.exists()) {
-      await update(ref(db, "users/" + phone), { balance: Number(((snap.val().balance || 0) + perEliteTokens).toFixed(2)) });
+    if (totalNewBusinessUSDT <= 0 || eliteMembers.length === 0) {
+      return alert("⚠️ Distribution Cancelled! No new business or active Elite 21 members found this month.");
     }
-  }
 
-  alert(`✅ Monthly Distribution Successful! Distributed ${perEliteTokens} Temple_DA to each Elite member.`);
-  adminDashboard();
+    // 2. Calculations (5% Pool)
+    const pool5Percent = totalNewBusinessUSDT * 0.05;
+    const pool70 = pool5Percent * 0.70;
+    const pool30 = pool5Percent * 0.30;
+
+    const perEliteTokens = Number((pool70 / eliteMembers.length / currentPrice).toFixed(2));
+
+    eliteMembers.sort((a, b) => b.business - a.business);
+    const top5Count = Math.min(5, eliteMembers.length);
+    const perTop5Tokens = Number((pool30 / top5Count / currentPrice).toFixed(2));
+
+    // 3. ATOMIC FIREBASE UPDATE (सब कुछ एक साथ होगा)
+    let updates = {};
+
+    // (A) सबसे पहले सबके अकाउंट का बिज़नेस 0 सेट करें
+    allUsers.forEach(u => {
+      updates[`users/${u.phone}/monthlyBusiness`] = 0;
+    });
+
+    // (B) अब Elite 21 मेंबर्स का बैलेंस कैलकुलेट करें
+    for (let i = 0; i < eliteMembers.length; i++) {
+      const member = eliteMembers[i];
+      const isTop5 = i < 5;
+
+      let totalRewardTokens = perEliteTokens;
+      if (isTop5) {
+        totalRewardTokens += perTop5Tokens;
+      }
+
+      // उनके मौजूदा बैलेंस में नया रिवॉर्ड जोड़ें
+      const newBalance = Number((member.balance + totalRewardTokens).toFixed(2));
+      updates[`users/${member.phone}/balance`] = newBalance;
+    }
+
+    // (C) सिंगल कमांड से सब कुछ एक साथ Firebase में अपडेट करें
+    await update(ref(db), updates);
+
+    // 4. Success Message & UI Refresh
+    alert(`✅ Monthly Distribution Successful!\n\nTotal 5% Pool: $${pool5Percent.toFixed(2)} USDT\nBase Reward (All Elite): ${perEliteTokens} TDA\nTop 5 Bonus Reward: +${perTop5Tokens} TDA`);
+    
+    // एडमिन पैनल को रिफ्रेश कर देगा जिससे बिज़नेस तुरंत $0.00 दिखने लगेगा
+    adminDashboard(); 
+
+  } catch (err) {
+    console.error("Distribution Error: ", err);
+    alert("❌ Error: " + err.message);
+  }
 };
 
 async function loadPendingElite21() {
@@ -2113,7 +2162,10 @@ async function loadPendingElite21() {
 window.approveElite21 = async (phone) => {
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val() || {};
-  await update(ref(db, "users/" + phone), { elite21: true, monthlyBusiness: (u.monthlyBusiness || 0) + 250 });
+  await update(ref(db, "users/" + phone), { 
+    elite21: true, 
+    monthlyBusiness: Number(u.monthlyBusiness || 0) + 250 
+  });
   await remove(ref(db, "elite21/pending/" + phone));
   if (u.referrer) {
     await distribute15LevelCommission(u.referrer, 250);
@@ -2158,7 +2210,7 @@ window.approvePackage = async (phone, tier, usdtAmount) => {
     packageActivatedAt: activatedAt, 
     packageExpiresAt: expiresAt, 
     packageExpired: false,
-    monthlyBusiness: (u.monthlyBusiness || 0) + usdtAmount
+    monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
   });
   
   await push(ref(db, "packages/history/" + phone), {
