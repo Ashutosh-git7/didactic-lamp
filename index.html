@@ -596,9 +596,7 @@ async function getLivePriceData() {
       const livePrice = parseFloat(data.pair.priceUsd);
       if (livePrice > 0) return livePrice;
     }
-  } catch (err) {
-    console.log("Dexscreener API fetch warning, trying fallback...", err);
-  }
+  } catch (err) {}
 
   try {
     const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
@@ -886,7 +884,7 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   DEDICATED REELS FEED PAGE
+   DEDICATED REELS FEED PAGE WITH GIFTING FEATURE
 ========================================================================= */
 
 function feedPage() {
@@ -962,6 +960,12 @@ function feedPage() {
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
               </div>
 
+              <!-- Gift / Tipping Button Added Here -->
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" onclick="openGiftModal('${p.authorPhone}', '${p.authorName || 'Creator'}')">🎁</button>
+                <div class="reel-circle-label">Gift</div>
+              </div>
+
               <div style="text-align:center;">
                 <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
                 <div class="reel-circle-label">Msg</div>
@@ -1021,6 +1025,39 @@ function setupIntersectionAutoplay() {
 
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
+
+// Gift / Tipping Logic Function
+window.openGiftModal = async (creatorPhone, creatorName) => {
+  const senderPhone = localStorage.getItem("user");
+  if (!senderPhone) return alert("Please login to send gifts!");
+  if (senderPhone === creatorPhone) return alert("You cannot send a gift to yourself!");
+
+  const giftAmountStr = prompt(`Send Temple_DA gift to @${creatorName}:\nEnter amount of Temple_DA to transfer from your wallet:`);
+  if (!giftAmountStr) return;
+  const giftAmount = parseFloat(giftAmountStr);
+
+  if (isNaN(giftAmount) || giftAmount <= 0) return alert("Invalid gift amount!");
+
+  const senderSnap = await get(ref(db, "users/" + senderPhone));
+  if (!senderSnap.exists()) return alert("Sender account not found!");
+  const senderData = senderSnap.val();
+
+  if ((senderData.balance || 0) < giftAmount) {
+    return alert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
+  }
+
+  const creatorSnap = await get(ref(db, "users/" + creatorPhone));
+  if (!creatorSnap.exists()) return alert("Creator account not found!");
+  const creatorData = creatorSnap.val();
+
+  const newSenderBal = Number(((senderData.balance || 0) - giftAmount).toFixed(2));
+  const newCreatorBal = Number(((creatorData.balance || 0) + giftAmount).toFixed(2));
+
+  await update(ref(db, "users/" + senderPhone), { balance: newSenderBal });
+  await update(ref(db, "users/" + creatorPhone), { balance: newCreatorBal });
+
+  alert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
+};
 
 window.shareReel = (id) => {
   const shareLink = `${location.origin}${location.pathname}#feed`;
@@ -1103,7 +1140,6 @@ async function userDashboard() {
     const u = snap.val() || {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    // Fetch Total Elite 21 Members Count
     const allUsersSnap = await get(ref(db, "users"));
     let eliteCount = 0;
     if (allUsersSnap.exists()) {
@@ -1491,7 +1527,6 @@ window.joinElite21 = async () => {
   const pendingSnap = await get(ref(db, "elite21/pending/" + phone));
   if (pendingSnap.exists()) return alert("Your Temple Elite 21 request is already pending.");
 
-  // Strict 21 Members Check Lock
   const allUsersSnap = await get(ref(db, "users"));
   let eliteCount = 0;
   if (allUsersSnap.exists()) {
@@ -2093,7 +2128,6 @@ window.runMonthlyElite21Distribution = async () => {
     let eliteMembers = [];
     let allUsers = [];
 
-    // 1. Data Collection
     usersSnap.forEach(s => {
       const phone = s.key;
       const u = s.val();
@@ -2111,57 +2145,41 @@ window.runMonthlyElite21Distribution = async () => {
       return alert("⚠️ Distribution Cancelled! No new business or active Elite 21 members found this month.");
     }
 
-    // 2. Calculations (5% Pool)
     const pool5Percent = totalNewBusinessUSDT * 0.05;
-    const pool70 = pool5Percent * 0.70; // 70% Base Pool
-    const pool30 = pool5Percent * 0.30; // 30% Top Performer Pool
+    const pool70 = pool5Percent * 0.70;
+    const pool30 = pool5Percent * 0.30;
 
-    // Base Reward: 70% सभी Elite 21 को बराबर मिलेगा
     const perEliteTokens = Number((pool70 / eliteMembers.length / currentPrice).toFixed(2));
-
-    // बिज़नेस के आधार पर सबसे ज़्यादा से सबसे कम (Descending Order) में सॉर्ट करें
     eliteMembers.sort((a, b) => b.business - a.business);
-
-    // Top 5 के लिए डिस्ट्रीब्यूशन प्रतिशत (30%, 25%, 20%, 15%, 10%)
     const top5Percentages = [0.30, 0.25, 0.20, 0.15, 0.10];
 
-    // 3. ATOMIC FIREBASE UPDATE
     let updates = {};
     let top5Message = "";
 
-    // (A) सबसे पहले सबके अकाउंट का बिज़नेस 0 सेट करें
     allUsers.forEach(u => {
       updates[`users/${u.phone}/monthlyBusiness`] = 0;
     });
 
-    // (B) अब Elite 21 मेंबर्स का बैलेंस कैलकुलेट करें
     for (let i = 0; i < eliteMembers.length; i++) {
       const member = eliteMembers[i];
-
-      let totalRewardTokens = perEliteTokens; // Base 70% रिवॉर्ड सबको मिलेगा
+      let totalRewardTokens = perEliteTokens;
       let top5BonusTokens = 0;
 
-      // अगर मेंबर टॉप 5 में है (i = 0, 1, 2, 3, 4)
       if (i < 5) {
         const rankShare = top5Percentages[i]; 
         const bonusUSDT = pool30 * rankShare; 
         top5BonusTokens = Number((bonusUSDT / currentPrice).toFixed(2)); 
-        
         totalRewardTokens += top5BonusTokens; 
         top5Message += `\nRank ${i + 1} (${member.name}): +${top5BonusTokens} TDA (${rankShare * 100}%)`;
       }
 
-      // उनके मौजूदा बैलेंस में नया रिवॉर्ड जोड़ें
       const newBalance = Number((member.balance + totalRewardTokens).toFixed(2));
       updates[`users/${member.phone}/balance`] = newBalance;
     }
 
-    // (C) सिंगल कमांड से सब कुछ एक साथ Firebase में अपडेट करें
     await update(ref(db), updates);
 
-    // 4. Success Message & UI Refresh
     alert(`✅ Monthly Distribution Successful!\n\nTotal 5% Pool: $${pool5Percent.toFixed(2)} USDT\nBase Reward (All Elite): ${perEliteTokens} TDA\n\n🏆 Top 5 Performers Bonus:${top5Message || " None"}`);
-    
     adminDashboard(); 
 
   } catch (err) {
