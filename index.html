@@ -6,457 +6,129 @@
 <title>Temple_DA Ultimate Ecosystem</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
-<!-- Ethers.js Library for Direct Web3 Wallet & Contract Interactions -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: radial-gradient(circle at top, #1c1906 0%, #080808 100%); color: #f0f0f0; font-family: 'Rajdhani', sans-serif; font-size: 16px; letter-spacing: 0.5px; min-height: 100vh; overflow-x: hidden; }
 
-body {
-  background: radial-gradient(circle at top, #1c1906 0%, #080808 100%);
-  color: #f0f0f0;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 16px;
-  letter-spacing: 0.5px;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+/* Navigation */
+nav { display: flex; justify-content: space-between; align-items: center; padding: 14px 30px; background: rgba(12, 12, 12, 0.95); backdrop-filter: blur(16px); border-bottom: 2px solid #dfb72c; box-shadow: 0 4px 25px rgba(223, 183, 44, 0.2); position: sticky; top: 0; z-index: 1000; }
+nav div:first-child { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 20px; display: flex; align-items: center; }
+nav a { color: #fff; text-decoration: none; margin-left: 14px; font-weight: 700; text-transform: uppercase; transition: all 0.3s ease; padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+nav a:hover { color: #dfb72c; background: rgba(223, 183, 44, 0.15); }
 
-/* Header & Sticky Tech Navigation */
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 30px;
-  background: rgba(12, 12, 12, 0.95);
-  backdrop-filter: blur(16px);
-  border-bottom: 2px solid #dfb72c;
-  box-shadow: 0 4px 25px rgba(223, 183, 44, 0.2);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
+.container { max-width: 1050px; margin: 30px auto; padding: 15px; }
 
-nav div:first-child {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-}
+/* Cards */
+.card { background: rgba(22, 22, 22, 0.7); border: 1px solid rgba(223, 183, 44, 0.3); padding: 26px; border-radius: 16px; margin-bottom: 22px; backdrop-filter: blur(10px); box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6); transition: border-color 0.3s ease; }
+.card:hover { border-color: rgba(223, 183, 44, 0.6); }
+h2, h3 { font-family: 'Orbitron', sans-serif; color: #dfb72c; font-weight: 700; text-transform: uppercase; margin-bottom: 14px; }
+h2 { font-size: 24px; border-bottom: 1px solid rgba(223, 183, 44, 0.25); padding-bottom: 10px; }
+h3 { font-size: 18px; }
 
-nav a {
-  color: #fff;
-  text-decoration: none;
-  margin-left: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  transition: all 0.3s ease;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-}
+/* Forms & Buttons */
+input, select, textarea { background: #0d0d0d; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 500; border: 1px solid rgba(223, 183, 44, 0.4); border-radius: 10px; padding: 12px 16px; width: 100%; margin: 10px 0; transition: all 0.3s; }
+input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 15px rgba(223, 183, 44, 0.5); border-color: #dfb72c; background: #141414; }
+button { background: linear-gradient(135deg, #b8860b 0%, #f3d470 50%, #996515 100%); color: #000; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; padding: 14px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 20px rgba(184, 134, 11, 0.3); margin: 10px 0; width: 100%; }
+button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(223, 183, 44, 0.6); background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%); }
+.btn-secondary { background: transparent; border: 1px solid #dfb72c; color: #dfb72c; box-shadow: none; }
+.btn-secondary:hover { background: rgba(223, 183, 44, 0.2); color: #fff; }
+.btn-danger { background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%); color: #fff; }
 
-nav a:hover {
-  color: #dfb72c;
-  background: rgba(223, 183, 44, 0.15);
-}
-
-.container {
-  max-width: 1050px;
-  margin: 30px auto;
-  padding: 15px;
-}
-
-/* Glassmorphism Cards */
-.card {
-  background: rgba(22, 22, 22, 0.7);
-  border: 1px solid rgba(223, 183, 44, 0.3);
-  padding: 26px;
-  border-radius: 16px;
-  margin-bottom: 22px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
-  transition: border-color 0.3s ease, transform 0.2s ease;
-}
-
-.card:hover {
-  border-color: rgba(223, 183, 44, 0.6);
-}
-
-h2, h3 {
-  font-family: 'Orbitron', sans-serif;
-  color: #dfb72c;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-
-h2 {
-  font-size: 24px;
-  border-bottom: 1px solid rgba(223, 183, 44, 0.25);
-  padding-bottom: 10px;
-}
-
-h3 {
-  font-size: 18px;
-}
-
-/* Inputs & Form Controls */
-input, select, textarea {
-  background: #0d0d0d;
-  color: #fff;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  border: 1px solid rgba(223, 183, 44, 0.4);
-  border-radius: 10px;
-  padding: 12px 16px;
-  width: 100%;
-  margin: 10px 0;
-  transition: all 0.3s;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  box-shadow: 0 0 15px rgba(223, 183, 44, 0.5);
-  border-color: #dfb72c;
-  background: #141414;
-}
-
-button {
-  background: linear-gradient(135deg, #b8860b 0%, #f3d470 50%, #996515 100%);
-  color: #000;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 14px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 20px rgba(184, 134, 11, 0.3);
-  margin: 10px 0;
-  width: 100%;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(223, 183, 44, 0.6);
-  background: linear-gradient(135deg, #dfb72c 0%, #fff 50%, #dfb72c 100%);
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid #dfb72c;
-  color: #dfb72c;
-  box-shadow: none;
-}
-
-.btn-secondary:hover {
-  background: rgba(223, 183, 44, 0.2);
-  color: #fff;
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%);
-  color: #fff;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin: 18px 0;
-}
-
-.grid .card {
-  text-align: center;
-  padding: 20px;
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 0;
-}
-
-.grid .card h3 {
-  font-size: 13px;
-  color: #aaa;
-  margin-bottom: 8px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-
-th, td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-th {
-  background: rgba(223, 183, 44, 0.12);
-  color: #dfb72c;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-}
-
-td {
-  font-size: 14px;
-}
-
+/* Grid, Tables, Badges */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin: 18px 0; }
+.grid .card { text-align: center; padding: 20px; font-size: 20px; font-weight: 700; margin-bottom: 0; }
+.grid .card h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+th { background: rgba(223, 183, 44, 0.12); color: #dfb72c; font-family: 'Orbitron', sans-serif; font-size: 12px; }
 .center { text-align: center; }
 .small { font-size: 13px; color: #b5b5b5; margin-top: 4px; }
 .number { color: #dfb72c; font-weight: bold; font-family: 'Orbitron', sans-serif; }
+.badge-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; text-transform: uppercase; font-family: 'Orbitron', sans-serif; background: rgba(223, 183, 44, 0.2); color: #dfb72c; border: 1px solid #dfb72c; }
+.badge-expired { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; text-transform: uppercase; background: rgba(255, 68, 68, 0.2); color: #ff4444; border: 1px solid #ff4444; }
 
-.badge-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  text-transform: uppercase;
-  font-family: 'Orbitron', sans-serif;
-  background: rgba(223, 183, 44, 0.2);
-  color: #dfb72c;
-  border: 1px solid #dfb72c;
-}
+/* Accordions */
+.accordion-wrapper { background: rgba(18, 18, 18, 0.85); border: 1px solid rgba(223, 183, 44, 0.3); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+.accordion-header { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(25, 25, 25, 0.7); font-weight: 700; font-family: 'Orbitron', sans-serif; font-size: 14px; color: #dfb72c; }
+.accordion-header:hover { background: rgba(223, 183, 44, 0.12); }
+.accordion-content { display: none; padding: 18px; background: rgba(10, 10, 10, 0.8); border-top: 1px solid rgba(223, 183, 44, 0.2); max-height: 400px; overflow-y: auto; }
+.accordion-wrapper.active .accordion-content { display: block; }
+.accordion-wrapper.active .accordion-header span:last-child { transform: rotate(180deg); }
 
-.badge-expired {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  text-transform: uppercase;
-  font-family: 'Orbitron', sans-serif;
-  background: rgba(255, 68, 68, 0.2);
-  color: #ff4444;
-  border: 1px solid #ff4444;
-}
-
-/* Accordion Histories */
-.accordion-wrapper {
-  background: rgba(18, 18, 18, 0.85);
-  border: 1px solid rgba(223, 183, 44, 0.3);
-  border-radius: 12px;
-  margin-bottom: 15px;
-  overflow: hidden;
-}
-
-.accordion-header {
-  padding: 16px 20px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(25, 25, 25, 0.7);
-  font-weight: 700;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
-  color: #dfb72c;
-  user-select: none;
-}
-
-.accordion-header:hover {
-  background: rgba(223, 183, 44, 0.12);
-}
-
-.accordion-content {
-  display: none;
-  padding: 18px;
-  background: rgba(10, 10, 10, 0.8);
-  border-top: 1px solid rgba(223, 183, 44, 0.2);
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.accordion-wrapper.active .accordion-content {
-  display: block;
-}
-
-.accordion-wrapper.active .accordion-header span:last-child {
-  transform: rotate(180deg);
-}
-
-/* Dedicated Full-Screen Reels Feed */
-.reels-page-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #000;
-  padding: 10px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 2000;
-}
-
-.reels-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  max-width: 420px;
-  margin-bottom: 10px;
-}
-
-.reels-viewport {
-  width: 100%;
-  max-width: 420px;
-  height: 82vh;
-  max-height: 750px;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  border-radius: 18px;
-  border: 2px solid rgba(223, 183, 44, 0.5);
-  background: #000;
-  position: relative;
-  scrollbar-width: none;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.95);
-}
+/* Reels UI */
+.reels-page-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; height: 100vh; background: #000; position: fixed; top: 0; left: 0; width: 100%; z-index: 2000; }
+.reels-top-bar { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 420px; padding: 10px; background: rgba(0,0,0,0.8); z-index: 2100; }
+.reels-viewport { width: 100%; max-width: 420px; flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; background: #000; position: relative; scrollbar-width: none; }
 .reels-viewport::-webkit-scrollbar { display: none; }
-
-.reel-item {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.reel-item video, .reel-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  cursor: pointer;
-}
-
-.reel-overlay-bottom {
-  position: absolute;
-  bottom: 25px;
-  left: 18px;
-  right: 85px;
-  z-index: 10;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.95);
-  pointer-events: none;
-}
-
-.reel-overlay-bottom * {
-  pointer-events: auto;
-}
-
-.reel-actions-bar {
-  position: absolute;
-  bottom: 35px;
-  right: 14px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-}
-
-.reel-circle-btn {
-  background: rgba(20, 20, 20, 0.85);
-  border: 1px solid rgba(223, 183, 44, 0.6);
-  color: #fff;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-  transition: transform 0.2s;
-  padding: 0;
-  margin: 0;
-  font-size: 18px;
-}
+.reel-item { position: relative; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.reel-item video, .reel-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+.reel-overlay-bottom { position: absolute; bottom: 25px; left: 18px; right: 85px; z-index: 10; text-shadow: 0 2px 8px rgba(0,0,0,0.95); pointer-events: none; }
+.reel-overlay-bottom * { pointer-events: auto; }
+.reel-actions-bar { position: absolute; bottom: 35px; right: 14px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.reel-circle-btn { background: rgba(20, 20, 20, 0.85); border: 1px solid rgba(223, 183, 44, 0.6); color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.8); transition: transform 0.2s; font-size: 18px; }
 .reel-circle-btn:hover { transform: scale(1.12); color: #dfb72c; }
 .reel-circle-label { font-size: 11px; font-weight: bold; margin-top: 4px; font-family: 'Orbitron', sans-serif; text-shadow: 0 2px 4px #000; color: #fff; text-align: center; }
 
-/* Comment / Chat Drawer Modal */
-.chat-drawer {
-  position: fixed;
-  bottom: -100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 440px;
-  height: 72vh;
-  background: rgba(14, 14, 14, 0.98);
-  border-top: 2px solid #dfb72c;
-  border-radius: 24px 24px 0 0;
-  z-index: 3000;
-  transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
-  padding: 18px;
-  box-shadow: 0 -15px 45px rgba(0,0,0,0.95);
-  display: flex;
-  flex-direction: column;
-}
+/* Stories UI */
+.stories-container { display: flex; overflow-x: auto; gap: 12px; padding: 10px; background: rgba(10, 10, 10, 0.95); border-bottom: 1px solid rgba(223, 183, 44, 0.3); width: 100%; max-width: 420px; scrollbar-width: none; z-index: 2100; }
+.stories-container::-webkit-scrollbar { display: none; }
+.story-item { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; cursor: pointer; }
+.story-circle { width: 62px; height: 62px; border-radius: 50%; border: 3px solid #dfb72c; object-fit: cover; padding: 2px; background: #000; }
+.story-add-circle { display: flex; align-items: center; justify-content: center; width: 62px; height: 62px; border-radius: 50%; border: 2px dashed #00ff88; color: #00ff88; font-size: 28px; background: rgba(0, 255, 136, 0.1); }
+.story-name { font-size: 10px; color: #fff; margin-top: 4px; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Drawers & Modals */
+.chat-drawer { position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); width: 100%; max-width: 440px; height: 72vh; background: rgba(14, 14, 14, 0.98); border-top: 2px solid #dfb72c; border-radius: 24px 24px 0 0; z-index: 3000; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1); padding: 18px; box-shadow: 0 -15px 45px rgba(0,0,0,0.95); display: flex; flex-direction: column; }
 .chat-drawer.open { bottom: 0; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(223, 183, 44, 0.3); padding-bottom: 12px; }
+.chat-box { flex: 1; overflow-y: auto; padding: 12px 0; margin-top: 10px; }
+.chat-msg { background: rgba(255, 255, 255, 0.06); border-left: 3px solid #dfb72c; padding: 10px 14px; border-radius: 8px; margin-bottom: 10px; }
+.modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal-content { background: #111; border: 1px solid #dfb72c; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; }
 
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(223, 183, 44, 0.3);
-  padding-bottom: 12px;
-}
-
-.chat-box {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 0;
-  margin-top: 10px;
-}
-
-.chat-msg {
-  background: rgba(255, 255, 255, 0.06);
-  border-left: 3px solid #dfb72c;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
+/* Toast & Badges */
+#toast { visibility: hidden; min-width: 250px; background-color: rgba(223, 183, 44, 0.95); color: #000; text-align: center; border-radius: 12px; padding: 14px; position: fixed; z-index: 4000; left: 50%; bottom: 40px; transform: translateX(-50%) scale(0.9); font-weight: bold; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); opacity: 0; transition: opacity 0.3s, transform 0.3s, visibility 0.3s; }
+#toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) scale(1); }
+.fab-upload { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #000; box-shadow: 0 8px 20px rgba(0, 255, 136, 0.4); cursor: pointer; z-index: 2500; transition: transform 0.2s; border: 2px solid #fff; }
+.fab-upload:hover { transform: scale(1.1); }
+.notif-badge { position: absolute; top: -6px; right: -8px; background: red; color: #fff; font-size: 10px; font-family: sans-serif; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none; }
+.profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 15px; }
+.profile-grid-item { width: 100%; aspect-ratio: 9/16; background: #222; object-fit: cover; border-radius: 4px; }
 </style>
 </head>
 
 <body>
 
 <nav id="mainNavbar">
-<div>
-    <img src="temple_logo.png.png" alt="Temple Logo" style="width: 42px; height: auto; margin-right: 10px;" onerror="this.style.display='none'">
-    <span style="color: #ffd700; font-size: 19px; font-weight: bold;">Temple_DA</span>
-</div>
-
-<div>
-<a href="#">Home</a>
-<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.18);">⚡ Reels</a>
-<a href="#packages">Packages</a>
-<a href="#login">Login</a>
-<a href="#register">Register</a>
-</div>
+  <div>
+      <img src="temple_logo.png.png" alt="Logo" style="width: 42px; height: auto; margin-right: 10px;" onerror="this.style.display='none'">
+      <span style="color: #ffd700; font-size: 19px; font-weight: bold;">Temple_DA</span>
+  </div>
+  
+  <div id="navLinksDefault">
+    <a href="#">Home</a>
+    <a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.18);">⚡ Reels</a>
+    <a href="#packages">Packages</a>
+    <a href="#login">Login</a>
+    <a href="#register">Register</a>
+  </div>
+  
+  <div id="navLinksUser" style="display:none; align-items:center;">
+    <a href="#feed" style="color: #dfb72c;">⚡ Reels</a>
+    <a href="#" onclick="openInbox()" style="font-size:18px; margin-left:15px; position:relative; background:transparent; padding:0;" title="Inbox">✉️<span id="dmBadge" class="notif-badge">0</span></a>
+    <a href="#" onclick="openNotifications()" style="font-size:18px; margin-left:15px; position:relative; background:transparent; padding:0;" title="Notifications">🔔<span id="notifBadge" class="notif-badge">0</span></a>
+    <a href="#user" style="margin-left:15px; background:rgba(0,255,136,0.15); color:#00ff88;">Dashboard</a>
+  </div>
 </nav>
 
 <div class="container" id="app"></div>
 
-<!-- Comments / Reel Chat Drawer -->
+<div id="toast"></div>
+
+<!-- Comments Drawer -->
 <div id="commentModal" class="chat-drawer">
   <div class="chat-header">
     <h3 style="font-size:16px; margin:0;" id="chatReelTitle">Reel Discussion</h3>
@@ -469,21 +141,119 @@ td {
   </div>
 </div>
 
-<script type="module">
+<!-- Mobile Quick Upload -->
+<div id="quickUploadModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3 style="color:#00ff88; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">Post Reel or Story</h3>
+    <select id="quickUploadType" style="margin-bottom:10px;">
+      <option value="video">Vertical Reel / Video</option>
+      <option value="story">24-Hour Story</option>
+    </select>
+    <input id="quickUploadTitle" placeholder="Title / Caption" style="margin-bottom:10px;">
+    <label style="display:block; margin-bottom:10px; padding:10px; background:#222; border:1px dashed #00ff88; text-align:center; cursor:pointer; border-radius:8px;">
+      <span style="color:#00ff88;">📸 Select from Camera / Gallery</span>
+      <input type="file" id="quickUploadFile" accept="video/*,image/*" style="display:none;" onchange="document.getElementById('fileSelectedText').innerText = 'File Selected ✓'">
+    </label>
+    <p id="fileSelectedText" class="small center" style="color:#dfb72c; margin-bottom:10px;"></p>
+    <div id="quickProgressContainer" style="display:none; margin: 10px 0;">
+      <p id="quickStatusText" class="small" style="color:#00ff88; font-weight:bold;">Uploading: 0%</p>
+      <div style="background:#333; border-radius:6px; height:8px; overflow:hidden; margin-top:6px;">
+        <div id="quickProgressBar" style="background:#00ff88; width:0%; height:100%;"></div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="submitQuickUpload()" id="quickSubmitBtn" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">Post Now</button>
+      <button onclick="closeQuickUpload()" class="btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
 
+<!-- Tipping Modal -->
+<div id="tipModal" class="modal-overlay">
+  <div class="modal-content center">
+    <h3 style="color:#dfb72c; font-size:22px;">Send a Gift 🎁</h3>
+    <p class="small" style="margin-bottom:15px; color:#fff;">Support <strong id="tipTargetName" style="color:#00ff88;">Creator</strong> directly from your wallet!</p>
+    <div style="display:flex; gap:10px; justify-content:center; margin:15px 0;">
+      <button onclick="sendTip(1)" style="flex:1;">1 TDA</button>
+      <button onclick="sendTip(5)" style="flex:1;">5 TDA</button>
+      <button onclick="sendTip(10)" style="flex:1;">10 TDA</button>
+    </div>
+    <button onclick="closeTipModal()" class="btn-secondary" style="margin-top:10px;">Cancel</button>
+  </div>
+</div>
+
+<!-- Profile Drawer -->
+<div id="profileDrawer" class="chat-drawer" style="height:88vh; padding:0;">
+  <div class="chat-header" style="padding:15px 20px;">
+    <h3 style="font-size:18px; margin:0;" id="profileHandle">@Creator</h3>
+    <button onclick="closeProfile()" style="width:auto; padding:6px 12px; margin:0; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">✕ Close</button>
+  </div>
+  <div style="padding:20px; overflow-y:auto; height:calc(100% - 60px);">
+    <div style="display:flex; align-items:center; gap:20px;">
+      <div style="width:80px; height:80px; border-radius:50%; background:#222; border:2px solid #dfb72c; display:flex; align-items:center; justify-content:center; font-size:30px;">👤</div>
+      <div style="flex:1;">
+        <h2 id="profileName" style="margin-bottom:4px; font-size:20px; color:#fff;">Name</h2>
+        <div style="display:flex; gap:15px; text-align:center;">
+          <div><b id="profileFollowers" style="color:#00ff88; font-size:18px;">0</b><br><span style="font-size:10px; color:#aaa;">Followers</span></div>
+          <div><b id="profilePoints" style="color:#dfb72c; font-size:18px;">0</b><br><span style="font-size:10px; color:#aaa;">Points</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button id="profileFollowBtn" style="background:#00ff88; color:#000;">Follow</button>
+      <button id="profileMessageBtn" class="btn-secondary" style="background:transparent;">Message</button>
+    </div>
+    <h4 style="margin-top:25px; border-bottom:1px solid #333; padding-bottom:10px; color:#dfb72c;">Uploaded Reels</h4>
+    <div class="profile-grid" id="profileGrid"></div>
+  </div>
+</div>
+
+<!-- Notifications Drawer -->
+<div id="notifDrawer" class="chat-drawer" style="height:75vh;">
+  <div class="chat-header">
+    <h3 style="font-size:18px; margin:0; color:#00ff88;">🔔 Notifications</h3>
+    <button onclick="closeNotifications()" style="width:auto; padding:6px 12px; margin:0; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">✕ Close</button>
+  </div>
+  <div class="chat-box" id="notifList">Loading...</div>
+</div>
+
+<!-- Inbox Drawer -->
+<div id="inboxDrawer" class="chat-drawer" style="height:80vh;">
+  <div class="chat-header">
+    <h3 style="font-size:18px; margin:0; color:#00ff88;">✉️ Messages</h3>
+    <button onclick="closeInbox()" style="width:auto; padding:6px 12px; margin:0; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">✕ Close</button>
+  </div>
+  <div class="chat-box" id="inboxList">Loading...</div>
+</div>
+
+<!-- DM Chat Modal -->
+<div id="dmModal" class="modal-overlay" style="z-index: 5500; background:#080808;">
+  <div style="width:100%; max-width:440px; height:100%; display:flex; flex-direction:column; background:#111;">
+    <div class="chat-header" style="padding:15px; background:#1c1c1c; border-bottom:2px solid #dfb72c;">
+      <h3 style="font-size:16px; margin:0;" id="dmChatName">Chat</h3>
+      <button onclick="closeDM()" style="width:auto; padding:6px 12px; margin:0; background:transparent; border:1px solid #ff4444; color:#ff4444;">Back</button>
+    </div>
+    <div class="chat-box" id="dmMsgList" style="flex:1; padding:15px; overflow-y:auto;">Loading...</div>
+    <div style="display:flex; gap:10px; padding:15px; background:#1c1c1c;">
+      <input id="dmInput" placeholder="Type a message..." style="margin:0; font-size:14px;">
+      <button onclick="sendDM()" style="width:80px; margin:0; padding:12px; font-size:12px; background:#dfb72c;">Send</button>
+    </div>
+  </div>
+</div>
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, update, remove, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
-authDomain: "tmpl-cd770.firebaseapp.com",
-databaseURL: "https://tmpl-cd770-default-rtdb.firebaseio.com/",
-projectId: "tmpl-cd770",
-storageBucket: "tmpl-cd770.firebasestorage.app",
-messagingSenderId: "383728687521",
-appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
+  apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
+  authDomain: "tmpl-cd770.firebaseapp.com",
+  databaseURL: "https://tmpl-cd770-default-rtdb.firebaseio.com/",
+  projectId: "tmpl-cd770",
+  storageBucket: "tmpl-cd770.firebasestorage.app",
+  messagingSenderId: "383728687521",
+  appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -497,71 +267,303 @@ const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
-// =========================================================================
-// 15-LEVEL REFERRAL DISTRIBUTION SYSTEM
-// =========================================================================
-async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT) {
-  const levelPercentages = [
-    10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2
-  ];
+// ==========================================
+// TOAST & UTILS
+// ==========================================
+window.showToast = (msg) => {
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+};
 
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+function appDiv() { return document.getElementById("app"); }
+function maskPhone(phone) { return (!phone || typeof phone !== 'string') ? "Creator" : (phone.length <= 4 ? phone : "******" + phone.slice(-4)); }
+window.toggleAccordion = (id) => { const el = document.getElementById(id); if (el) el.classList.toggle("active"); };
+
+// ==========================================
+// GLOBAL LISTENERS (NOTIFICATIONS & INBOX)
+// ==========================================
+function initGlobalListeners() {
+  const phone = localStorage.getItem("user");
+  if (!phone) {
+    document.getElementById("navLinksDefault").style.display = "flex";
+    document.getElementById("navLinksUser").style.display = "none";
+    return;
+  }
+  document.getElementById("navLinksDefault").style.display = "none";
+  document.getElementById("navLinksUser").style.display = "flex";
+
+  // Notifications Badge
+  onValue(ref(db, `notifications/${phone}`), snap => {
+    let unread = 0;
+    snap.forEach(c => { if(!c.val().isRead) unread++; });
+    const badge = document.getElementById("notifBadge");
+    if(badge) {
+      badge.innerText = unread;
+      badge.style.display = unread > 0 ? "inline-block" : "none";
+    }
+  });
+
+  // DM Inbox Badge
+  onValue(ref(db, `user_chats/${phone}`), snap => {
+    let unread = 0;
+    snap.forEach(c => { if(c.val().unread) unread++; });
+    const badge = document.getElementById("dmBadge");
+    if(badge) {
+      badge.innerText = unread;
+      badge.style.display = unread > 0 ? "inline-block" : "none";
+    }
+  });
+}
+
+window.sendNotification = async (toPhone, type, message) => {
+  await push(ref(db, `notifications/${toPhone}`), { type, message, timestamp: Date.now(), isRead: false });
+};
+
+window.openNotifications = () => {
+  const phone = localStorage.getItem("user");
+  if(!phone) return;
+  document.getElementById("notifDrawer").classList.add("open");
+  
+  onValue(ref(db, `notifications/${phone}`), snap => {
+    let html = "";
+    let updates = {};
+    let notifs = [];
+    snap.forEach(c => { notifs.push({id: c.key, ...c.val()}); });
+    notifs.sort((a,b) => b.timestamp - a.timestamp);
+    
+    if(notifs.length === 0) html = `<p class="small center">No notifications yet.</p>`;
+    
+    notifs.forEach(n => {
+      let icon = "🔔";
+      if(n.type === "like") icon = "❤️";
+      if(n.type === "follow") icon = "👤";
+      if(n.type === "tip") icon = "🎁";
+      if(n.type === "elite_bonus") icon = "🏆";
+      
+      html += `
+        <div class="chat-msg" style="${!n.isRead ? 'border-left: 3px solid #00ff88; background:rgba(0,255,136,0.1);' : ''}">
+          <div style="display:flex; justify-content:space-between;">
+            <b style="color:#dfb72c; font-size:13px;">${icon} Alert</b>
+            <span class="small" style="font-size:10px;">${new Date(n.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+          <p style="font-size:14px; margin-top:4px; color:#fff;">${n.message}</p>
+        </div>`;
+      if(!n.isRead) updates[`notifications/${phone}/${n.id}/isRead`] = true;
+    });
+    
+    document.getElementById("notifList").innerHTML = html;
+    if(Object.keys(updates).length > 0) update(ref(db), updates); // Mark as read
+  }, { onlyOnce: true });
+};
+window.closeNotifications = () => { document.getElementById("notifDrawer").classList.remove("open"); };
+
+// ==========================================
+// TIPPING SYSTEM (🎁)
+// ==========================================
+window.openTipModal = (targetPhone, targetName) => {
+  if(!localStorage.getItem("user")) return showToast("⚠️ Login to send gifts!");
+  if(localStorage.getItem("user") === targetPhone) return showToast("⚠️ Can't tip yourself!");
+  window.currentTipTarget = targetPhone;
+  document.getElementById("tipTargetName").innerText = `@${targetName || 'Creator'}`;
+  document.getElementById("tipModal").classList.add("open");
+};
+
+window.closeTipModal = () => { document.getElementById("tipModal").classList.remove("open"); };
+
+window.sendTip = async (amount) => {
+  const sender = localStorage.getItem("user");
+  const receiver = window.currentTipTarget;
+  if(!sender || !receiver) return;
+
+  const sSnap = await get(ref(db, `users/${sender}`));
+  const rSnap = await get(ref(db, `users/${receiver}`));
+  
+  if(Number(sSnap.val().balance || 0) < amount) return showToast("⚠️ Insufficient TDA Balance!");
+
+  await update(ref(db, `users/${sender}`), { balance: Number((Number(sSnap.val().balance || 0) - amount).toFixed(2)) });
+  await update(ref(db, `users/${receiver}`), { balance: Number((Number(rSnap.val().balance || 0) + amount).toFixed(2)) });
+  
+  sendNotification(receiver, 'tip', `🎁 You received ${amount} TDA gift from ${maskPhone(sender)}!`);
+  showToast(`✅ Successfully tipped ${amount} TDA!`);
+  closeTipModal();
+};
+
+// ==========================================
+// DIRECT MESSAGING (DM)
+// ==========================================
+const getChatId = (p1, p2) => [p1, p2].sort().join('_');
+
+window.openInbox = () => {
+  const phone = localStorage.getItem("user");
+  if(!phone) return;
+  document.getElementById("inboxDrawer").classList.add("open");
+  
+  onValue(ref(db, `user_chats/${phone}`), async snap => {
+    const listEl = document.getElementById("inboxList");
+    if(!snap.exists()) { listEl.innerHTML = `<p class="small center">No messages yet.</p>`; return; }
+    
+    let chats = [];
+    snap.forEach(c => chats.push({ id: c.key, ...c.val() }));
+    chats.sort((a,b) => b.timestamp - a.timestamp);
+    
+    let html = "";
+    for(let c of chats) {
+      const targetName = (await get(ref(db, `users/${c.id}`))).val()?.name || maskPhone(c.id);
+      html += `
+        <div class="chat-msg" style="cursor:pointer; ${c.unread ? 'border-left:3px solid #00ff88;' : ''}" onclick="openDM('${c.id}', '${targetName}')">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b style="color:#dfb72c; font-size:15px;">👤 ${targetName}</b>
+            <span class="small" style="font-size:10px;">${new Date(c.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+          <p style="font-size:13px; margin-top:4px; color:#ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.lastMsg}</p>
+        </div>`;
+    }
+    listEl.innerHTML = html;
+  });
+};
+window.closeInbox = () => { document.getElementById("inboxDrawer").classList.remove("open"); };
+
+window.openDM = (targetPhone, targetName) => {
+  const sender = localStorage.getItem("user");
+  if(!sender) return showToast("⚠️ Login required");
+  window.currentDMTarget = targetPhone;
+  document.getElementById("dmChatName").innerText = `Chat with ${targetName}`;
+  document.getElementById("dmModal").classList.add("open");
+  
+  update(ref(db, `user_chats/${sender}/${targetPhone}`), { unread: false });
+
+  const chatId = getChatId(sender, targetPhone);
+  onValue(ref(db, `direct_messages/${chatId}`), snap => {
+    const box = document.getElementById("dmMsgList");
+    if(!snap.exists()) { box.innerHTML = `<p class="small center">Say hi to start chatting!</p>`; return; }
+    
+    let html = "";
+    snap.forEach(c => {
+      const m = c.val();
+      const isMe = m.sender === sender;
+      html += `
+        <div style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; margin-bottom:12px;">
+          <div style="background:${isMe ? '#dfb72c' : '#222'}; color:${isMe ? '#000' : '#fff'}; padding:10px 14px; border-radius:12px; max-width:80%; font-size:14px; font-weight:500;">
+            ${m.message}
+          </div>
+          <span style="font-size:10px; color:#888; margin-top:4px;">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+        </div>`;
+    });
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+  });
+};
+window.closeDM = () => { document.getElementById("dmModal").classList.remove("open"); };
+
+window.sendDM = async () => {
+  const sender = localStorage.getItem("user");
+  const receiver = window.currentDMTarget;
+  const msgInput = document.getElementById('dmInput');
+  const msg = msgInput.value.trim();
+  if(!msg || !sender || !receiver) return;
+  
+  const chatId = getChatId(sender, receiver);
+  await push(ref(db, `direct_messages/${chatId}`), { sender, message: msg, timestamp: Date.now() });
+  
+  await update(ref(db, `user_chats/${sender}/${receiver}`), { lastMsg: msg, timestamp: Date.now(), unread: false });
+  await update(ref(db, `user_chats/${receiver}/${sender}`), { lastMsg: msg, timestamp: Date.now(), unread: true });
+  
+  msgInput.value = "";
+};
+
+// ==========================================
+// USER PROFILE PAGE
+// ==========================================
+window.openProfile = async (targetPhone) => {
+  const currentUser = localStorage.getItem("user");
+  if(!targetPhone) return;
+
+  const snap = await get(ref(db, `users/${targetPhone}`));
+  if(!snap.exists()) return;
+  const u = snap.val();
+  
+  document.getElementById("profileName").innerText = u.name || "Creator";
+  document.getElementById("profileHandle").innerText = `@${u.name || maskPhone(targetPhone)}`;
+  document.getElementById("profileFollowers").innerText = u.subscribersCount || 0;
+  document.getElementById("profilePoints").innerText = u.points || 0;
+  
+  const followBtn = document.getElementById("profileFollowBtn");
+  const msgBtn = document.getElementById("profileMessageBtn");
+  
+  if(currentUser === targetPhone) {
+    followBtn.style.display = "none";
+    msgBtn.style.display = "none";
+  } else {
+    followBtn.style.display = "block";
+    followBtn.onclick = () => subscribeCreator(targetPhone);
+    msgBtn.style.display = "block";
+    msgBtn.onclick = () => openDM(targetPhone, u.name);
+  }
+
+  // Load User's Reels Grid
+  const postSnap = await get(ref(db, "posts"));
+  let gridHtml = "";
+  if(postSnap.exists()) {
+    let userPosts = [];
+    postSnap.forEach(p => { 
+      if(p.val().authorPhone === targetPhone && p.val().type !== 'story') userPosts.push(p.val()); 
+    });
+    userPosts.sort((a,b) => b.createdAt - a.createdAt);
+    
+    userPosts.forEach(p => {
+      let media = p.type === 'video' 
+        ? `<video src="${p.mediaUrl}" class="profile-grid-item"></video>` 
+        : `<img src="${p.mediaUrl}" class="profile-grid-item">`;
+      gridHtml += media;
+    });
+  }
+  document.getElementById("profileGrid").innerHTML = gridHtml || "<p class='small'>No reels uploaded yet.</p>";
+  document.getElementById("profileDrawer").classList.add("open");
+};
+window.closeProfile = () => { document.getElementById("profileDrawer").classList.remove("open"); };
+
+// ==========================================
+// REFERRAL & CORE LOGIC
+// ==========================================
+async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT) {
+  const levelPercentages = [10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2];
   let currentRefPhone = startReferrerPhone;
   const currentPrice = await getPrice();
 
   for (let i = 0; i < levelPercentages.length; i++) {
     if (!currentRefPhone) break;
-
     const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
     if (!refUserSnap.exists()) break;
-
+    
     const refUserData = refUserSnap.val();
-    const percentage = levelPercentages[i];
-    const commissionUSDT = (totalAmountUSDT * percentage) / 100;
+    const commissionUSDT = (totalAmountUSDT * levelPercentages[i]) / 100;
     const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
-
     const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
+    
     await update(ref(db, "users/" + currentRefPhone), { balance: newBalance });
-
     await push(ref(db, `referral_history/${currentRefPhone}`), {
-      fromUser: startReferrerPhone,
-      level: i + 1,
-      amountUSDT: commissionUSDT,
-      amountTokens: commissionTokens,
-      timestamp: Date.now()
+      fromUser: startReferrerPhone, level: i + 1, amountUSDT: commissionUSDT, amountTokens: commissionTokens, timestamp: Date.now()
     });
-
     currentRefPhone = refUserData.referrer || "";
   }
 }
 
-function maskPhone(phone) {
-  if (!phone || typeof phone !== 'string') return "Creator";
-  if (phone.length <= 4) return phone;
-  return "******" + phone.slice(-4);
-}
-
-function getPackageDurationMs(tier) {
-  return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
-}
-
+function getPackageDurationMs(tier) { return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000; }
 function checkAndHandlePackageExpiry(phone, u) {
   if (!u.tier || u.tier === "none" || !u.packageExpiresAt) return u.tier || "none";
   if (Date.now() > u.packageExpiresAt) {
-    update(ref(db, "users/" + phone), {
-      tier: "none",
-      packagePriceUSDT: 0,
-      packageExpired: true
-    });
+    update(ref(db, "users/" + phone), { tier: "none", packagePriceUSDT: 0, packageExpired: true });
     return "none";
   }
   return u.tier;
 }
 
-window.toggleAccordion = (id) => {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle("active");
-};
-
+// ==========================================
+// ROUTER & LANDING PAGE
+// ==========================================
 const routes = {
   "#": landing,
   "#login": loginPage,
@@ -578,34 +580,22 @@ router();
 function router() {
   const hash = location.hash.split("?")[0] || "#";
   const navBar = document.getElementById("mainNavbar");
-  
-  if (hash === "#feed") {
-    if (navBar) navBar.style.display = "none";
-  } else {
-    if (navBar) navBar.style.display = "flex";
-  }
-
+  if (hash === "#feed") { navBar.style.display = "none"; } else { navBar.style.display = "flex"; }
   (routes[hash] || landing)();
+  initGlobalListeners();
 }
 
 async function getLivePriceData() {
   try {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
     const data = await res.json();
-    if (data && data.pair && data.pair.priceUsd) {
-      const livePrice = parseFloat(data.pair.priceUsd);
-      if (livePrice > 0) return livePrice;
-    }
-  } catch (err) {
-    console.log("Dexscreener API fetch warning, trying fallback...", err);
-  }
-
+    if (data && data.pair && data.pair.priceUsd) return parseFloat(data.pair.priceUsd);
+  } catch (err) {}
+  
   try {
-    const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
-    const fallbackData = await fallbackRes.json();
-    if (fallbackData && fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"]?.usd) {
-      return parseFloat(fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"].usd);
-    }
+    const res = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
+    const data = await res.json();
+    if (data["0x50be31caab627ee8f98374d33b0454a8269a79e1"]?.usd) return parseFloat(data["0x50be31caab627ee8f98374d33b0454a8269a79e1"].usd);
   } catch (err) {}
   
   return 0.0002;
@@ -630,7 +620,7 @@ async function landing() {
         <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 15px; padding: 15px 24px;">
             🔗 Connect Wallet & Auto Login
         </button>
-        <p class="small" style="color: #aaa; margin-top: 8px;">MetaMask / Trust Wallet DApp Browser Auto-Login</p>
+        <p class="small" style="color: #aaa; margin-top: 8px;">MetaMask / Trust Wallet DApp Browser</p>
     </div>
 
     <div style="margin: 18px 0; padding: 14px; background: rgba(223, 183, 44, 0.08); border-radius: 10px; border: 1px solid #dfb72c; text-align: center;">
@@ -639,7 +629,7 @@ async function landing() {
     </div>
 
     <div id="launch-timer" style="margin: 22px 0; padding: 16px; background: rgba(223, 183, 44, 0.05); border-radius: 12px; border: 1px solid #dfb72c;">
-        <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold; letter-spacing: 2px;">OFFICIAL LISTING STATUS</p>
+        <p id="timer-label" style="color: #dfb72c; font-size: 13px; margin-bottom: 8px; font-weight: bold;">OFFICIAL LISTING STATUS</p>
         <div id="timer-display" style="font-size: 25px; font-weight: bold; color: #fff;">
             <span id="d">00</span>d : <span id="h">00</span>h : <span id="m">00</span>m : <span id="s">00</span>s
         </div>
@@ -654,32 +644,33 @@ async function landing() {
     <h3>About Temple_DA Ecosystem</h3>
     <p style="color: #ccc; line-height: 1.7;">
         Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
-        Showcase your reels, videos, art, and writing, interact with members, and earn real 
-        Temple_DA tokens. Holders also earn passive rewards through structured vesting and a 15-level referral system.
+        Showcase your reels, videos, interact with members, and earn real 
+        Temple_DA tokens. Holders also earn passive rewards through a 15-level referral system.
     </p>
   </div>
 
-  <style>#dexscreener-embed{position:relative;width:100%;padding-bottom:125%;}@media(min-width:1400px){#dexscreener-embed{padding-bottom:65%;}}#dexscreener-embed iframe{position:absolute;width:100%;height:100%;top:0;left:0;border:0;}</style>
-  <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
+  <div style="position:relative;width:100%;padding-bottom:125%;">
+    <iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&theme=dark" style="position:absolute;width:100%;height:100%;top:0;left:0;border:0;"></iframe>
+  </div>
   
   <div class="grid">
     <div class="card">
         <h3>Showcase & Earn</h3>
-        <p class="small">Upload reels and videos. Earn points on every like, subscriber & conversation.</p>
+        <p class="small">Upload reels and videos. Earn points on every like & subscriber.</p>
     </div>
     <div class="card">
         <h3>15-Level Referral</h3>
-        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions on community activations.</p>
+        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions.</p>
     </div>
   </div>
 
   <div class="card">
-    <h3>Vesting & Lifetime Rewards</h3>
+    <h3>Vesting & Rewards</h3>
     <table>
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
         <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
-        <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
+        <tr><td>Talent Conversion</td><td class="number">Instant To Temple_DA</td></tr>
     </table>
   </div>
   <div class="card center">
@@ -712,41 +703,33 @@ async function landing() {
   }, 1000);
 }
 
+// ==========================================
+// AUTHENTICATION
+// ==========================================
 window.connectWalletAndAutoLogin = async () => {
-  if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not detected! Please open in MetaMask, Trust Wallet, or DApp Browser.");
-  }
-
+  if (typeof window.ethereum === 'undefined') return alert("Web3 Wallet not detected!");
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const walletAddress = accounts[0];
-    if (!walletAddress) return alert("Wallet address not found!");
+    if (!walletAddress) return;
 
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
 
     usersSnap.forEach(child => {
-      const uData = child.val();
-      if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) {
-        foundPhone = child.key;
-      }
+      if (child.val().wallet && child.val().wallet.toLowerCase() === walletAddress.toLowerCase()) foundPhone = child.key;
     });
 
     if (foundPhone) {
       localStorage.setItem("user", foundPhone);
-      alert("✅ Wallet verified! Auto login successful.");
+      showToast("✅ Wallet verified! Auto login successful.");
       location.hash = "#user";
     } else {
-      alert("⚠️ No account registered with this wallet address. Please register first!");
+      alert("⚠️ Wallet not registered. Please register first!");
       location.hash = "#register";
-      setTimeout(() => {
-        const wInput = document.getElementById("wallet");
-        if (wInput) wInput.value = walletAddress;
-      }, 500);
+      setTimeout(() => { document.getElementById("wallet").value = walletAddress; }, 500);
     }
-  } catch (error) {
-    alert("Wallet login failed: " + error.message);
-  }
+  } catch (error) { alert("Wallet login failed: " + error.message); }
 };
 
 function registerPage() {
@@ -756,20 +739,16 @@ function registerPage() {
   appDiv().innerHTML = `
   <div class="card">
   <h2>Create Account</h2>
-
   <div style="background: rgba(223, 183, 44, 0.1); border: 1px solid #dfb72c; padding: 14px; border-radius: 10px; margin-bottom: 18px; text-align: center;">
       <p style="color: #dfb72c; font-weight: bold; font-size: 15px; margin-bottom: 6px;">🎉 Welcome to Temple_DA!</p>
-      <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> welcome reward instantly upon registration.</p>
+      <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> bonus instantly.</p>
   </div>
-
   <input id="name" placeholder="Full Name">
   <input id="phone" placeholder="Phone Number">
-  
   <div style="display:flex; gap:10px; align-items:center;">
     <input id="wallet" placeholder="BEP20 Wallet Address" readonly style="margin:0;">
     <button type="button" onclick="connectWeb3Wallet()" style="width:150px; margin:0; padding:12px 10px; font-size:11px; background:#dfb72c; color:#000;">Connect Wallet</button>
   </div>
-
   <input id="password" type="password" placeholder="Password" style="margin-top:14px;">
   <input id="ref" placeholder="Referral Phone" value="${refPhone}">
   <button onclick="registerUser()">Register</button>
@@ -778,60 +757,28 @@ function registerPage() {
 
 window.connectWeb3Wallet = async () => {
   if (typeof window.ethereum !== 'undefined') {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const walletAddress = accounts[0];
-      if (walletAddress) {
-        document.getElementById("wallet").value = walletAddress;
-        alert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
-      }
-    } catch (error) {
-      alert("Wallet connection cancelled or failed.");
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accounts[0]) {
+      document.getElementById("wallet").value = accounts[0];
+      showToast("Wallet connected successfully");
     }
-  } else {
-    alert("Web3 Wallet not detected!");
-  }
+  } else { alert("Web3 Wallet not detected!"); }
 };
 
 window.registerUser = async () => {
-  const name = v("name");
-  const phone = v("phone");
-  const wallet = v("wallet");
-  const password = v("password");
-  const referrer = v("ref");
-
+  const name = v("name"), phone = v("phone"), wallet = v("wallet"), password = v("password"), referrer = v("ref");
   if (!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
+  
   const usersSnap = await get(ref(db, "users"));
   let walletExists = false;
-
-  usersSnap.forEach(s => {
-    if (s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
-  });
-
+  usersSnap.forEach(s => { if (s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true; });
   if (walletExists) return alert("This wallet is already registered");
 
   const userSnap = await get(ref(db, "users/" + phone));
   if (userSnap.exists()) return alert("User exists");
 
   await set(ref(db, "users/" + phone), {
-    name,
-    wallet,
-    password: btoa(password),
-    balance: 6,
-    investment: 0,
-    locked: 0,
-    lockDate: 0,
-    referrer: referrer || "",
-    createdAt: Date.now(),
-    tier: "none",
-    packagePriceUSDT: 0,
-    packageActivatedAt: 0,
-    packageExpiresAt: 0,
-    packageExpired: false,
-    points: 0,
-    subscribersCount: 0,
-    elite21: false,
-    monthlyBusiness: 0
+    name, wallet, password: btoa(password), balance: 6, investment: 0, locked: 0, lockDate: 0, referrer: referrer || "", createdAt: Date.now(), tier: "none", packagePriceUSDT: 0, points: 0, subscribersCount: 0, elite21: false, monthlyBusiness: 0
   });
 
   alert("Registration successful! 6 Temple_DA added.");
@@ -853,179 +800,235 @@ function loginPage() {
 }
 
 window.login = async () => {
-  const phone = v("phone");
-  const pass = v("password");
-
+  const phone = v("phone"), pass = v("password");
   if (phone.includes("@")) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, phone, pass);
-      const user = userCredential.user;
-      const adminSnap = await get(ref(db, "admins/" + user.uid));
-      
+      const adminSnap = await get(ref(db, "admins/" + userCredential.user.uid));
       if (adminSnap.exists()) {
         localStorage.setItem("admin", "1");
         location.hash = "#admin";
-        alert("Admin Login Successful!");
-      } else {
-        alert("You are authenticated but not registered as an admin.");
-      }
-    } catch (error) {
-      alert("Admin Login Failed: " + error.message);
-    }
+      } else { alert("Not an admin."); }
+    } catch (error) { alert("Admin Login Failed: " + error.message); }
     return;
   }
 
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return alert("User not found");
-
-  const user = snap.val();
-  if (atob(user.password) !== pass) return alert("Wrong password");
+  if (atob(snap.val().password) !== pass) return alert("Wrong password");
 
   localStorage.setItem("user", phone);
   location.hash = "#user";
 };
 
-/* =========================================================================
-   DEDICATED REELS FEED PAGE
-========================================================================= */
-
+// ==========================================
+// DEDICATED REELS & STORIES FEED
+// ==========================================
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
+  
   appDiv().innerHTML = `
-    <div class="reels-page-wrapper" onclick="enableAudioOnFirstTouch()">
+    <div class="reels-page-wrapper">
       <div class="reels-top-bar">
-        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Back to Home</button></a>
-        ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">Login</button></a>'}
+        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Home</button></a>
+        <span style="font-family:'Orbitron', sans-serif; font-weight:bold; font-size:16px; color:#dfb72c;">Temple Reels</span>
+      </div>
+
+      <div class="stories-container" id="storiesContainer">
+        <div class="story-item" onclick="openQuickUpload('story')">
+          <div class="story-add-circle">+</div>
+          <div class="story-name">Add Story</div>
+        </div>
       </div>
       
-      <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
+      <div class="reels-viewport" id="reelsViewport">
+        <p class="center small" style="color:#fff; margin-top:50px;">Loading reels...</p>
+      </div>
+
+      ${currentUser ? `
+      <div class="fab-upload" onclick="openQuickUpload('video')">
+        🎥
+      </div>` : ''}
     </div>
   `;
+
+  loadStories();
 
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
     if (!listEl) return;
 
     if (!snap.exists()) {
-      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
+      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be the first creator!</p></div>`;
       return;
     }
 
     get(ref(db, "subscriptions")).then(subSnap => {
       const allSubs = subSnap.exists() ? subSnap.val() : {};
 
-      let posts = [];
-      snap.forEach(child => {
-        posts.push({ id: child.key, ...child.val() });
-      });
+      get(ref(db, "likes")).then(likesSnap => {
+        const allLikes = likesSnap.exists() ? likesSnap.val() : {};
 
-      posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-      let html = "";
-      posts.forEach(p => {
-        const isMyPost = currentUser && currentUser === p.authorPhone;
-        const isSubscribed = currentUser && allSubs[p.authorPhone] && allSubs[p.authorPhone][currentUser];
-        let mediaContent = "";
-
-        if (p.type === "video") {
-          if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
-            let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
-            mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
-          } else {
-            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+        let posts = [];
+        snap.forEach(child => {
+          if(child.val().type !== 'story') {
+            posts.push({ id: child.key, ...child.val() });
           }
-        } else {
-          mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
-        }
+        });
 
-        html += `
-          <div class="reel-item" data-id="${p.id}">
-            ${mediaContent}
+        posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-            <div class="reel-overlay-bottom">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <strong style="color:#dfb72c; font-size:16px;">@${p.authorName || 'Creator'}</strong>
-                <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
-                ${(!isMyPost && currentUser) ? (
-                  isSubscribed 
-                    ? `<span class="badge-tag" style="background:rgba(0,255,136,0.2); color:#00ff88; border-color:#00ff88; font-size:10px; padding:3px 10px;">Following ✓</span>` 
-                    : `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:4px 12px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>`
-                ) : ''}
+        let html = "";
+        posts.forEach(p => {
+          const isMyPost = currentUser && currentUser === p.authorPhone;
+          const isSubscribed = currentUser && allSubs[p.authorPhone] && allSubs[p.authorPhone][currentUser];
+          const hasLiked = currentUser && allLikes[p.id] && allLikes[p.id][currentUser];
+          
+          let mediaContent = "";
+
+          if (p.type === "video") {
+            if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
+              let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+              mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+            } else {
+              // True Autoplay Setup: Starts muted
+              mediaContent = `<video class="reel-video-element" loop playsinline muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+            }
+          } else {
+            mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
+          }
+
+          html += `
+            <div class="reel-item" data-id="${p.id}">
+              ${mediaContent}
+
+              <div class="reel-overlay-bottom">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <strong style="color:#dfb72c; font-size:16px; cursor:pointer;" onclick="openProfile('${p.authorPhone}')">@${p.authorName || 'Creator'}</strong>
+                  <span class="small" style="color:#bbb;">${maskPhone(p.authorPhone)}</span>
+                  ${(!isMyPost && currentUser && !isSubscribed) ? `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:4px 12px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>` : ''}
+                </div>
+                <p style="font-weight:bold; font-size:14px; margin-top:6px; color:#fff;">${p.title}</p>
+                ${p.description ? `<p class="small" style="color:#ddd; margin-top:3px;">${p.description}</p>` : ''}
               </div>
-              <p style="font-weight:bold; font-size:14px; margin-top:6px; color:#fff;">${p.title}</p>
-              ${p.description ? `<p class="small" style="color:#ddd; margin-top:3px;">${p.description}</p>` : ''}
+
+              <div class="reel-actions-bar">
+                <div style="text-align:center;">
+                  <button class="reel-circle-btn like-btn-${p.id}" onclick="likePost('${p.id}', this, '${p.authorPhone}')" style="color: ${hasLiked ? '#ff4444' : '#fff'};">❤️</button>
+                  <div class="reel-circle-label like-count-${p.id}">${p.likesCount || 0}</div>
+                </div>
+
+                <div style="text-align:center;">
+                  <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
+                  <div class="reel-circle-label">Msg</div>
+                </div>
+
+                <div style="text-align:center;">
+                  <button class="reel-circle-btn" onclick="openTipModal('${p.authorPhone}', '${p.authorName}')">🎁</button>
+                  <div class="reel-circle-label">Tip</div>
+                </div>
+
+                <div style="text-align:center;">
+                  <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
+                  <div class="reel-circle-label">Share</div>
+                </div>
+
+                ${isMyPost ? `
+                <div style="text-align:center;">
+                  <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
+                  <div class="reel-circle-label" style="color:#ff4444;">Del</div>
+                </div>` : ''}
+              </div>
             </div>
+          `;
+        });
 
-            <div class="reel-actions-bar">
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
-                <div class="reel-circle-label">${p.likesCount || 0}</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
-                <div class="reel-circle-label">Msg</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
-                <div class="reel-circle-label">Share</div>
-              </div>
-
-              ${isMyPost ? `
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
-                <div class="reel-circle-label" style="color:#ff4444;">Del</div>
-              </div>` : ''}
-            </div>
-          </div>
-        `;
+        listEl.innerHTML = html;
+        setupIntersectionAutoplay();
       });
-
-      listEl.innerHTML = html;
-      setupIntersectionAutoplay();
     });
   });
 }
 
-window.enableAudioOnFirstTouch = () => {
-  const activeVideo = document.querySelector('.reel-item video');
-  if (activeVideo && activeVideo.paused) {
-    activeVideo.play().catch(() => {});
-  }
-};
+function loadStories() {
+  onValue(ref(db, "posts"), snap => {
+    const container = document.getElementById("storiesContainer");
+    if (!container) return;
 
-window.toggleVideoPlayback = (videoEl) => {
-  if (videoEl.paused) {
-    videoEl.muted = false;
-    videoEl.play();
+    let storiesHTML = `
+      <div class="story-item" onclick="openQuickUpload('story')">
+        <div class="story-add-circle">+</div>
+        <div class="story-name">Add Story</div>
+      </div>
+    `;
+
+    if (snap.exists()) {
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000;
+      let activeStories = [];
+
+      snap.forEach(child => {
+        const p = child.val();
+        if (p.type === 'story' && (now - (p.createdAt || 0)) < oneDay) {
+          activeStories.push({ id: child.key, ...p });
+        }
+      });
+
+      activeStories.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      activeStories.forEach(s => {
+        let thumb = (s.mediaUrl.includes('.mp4') || s.mediaUrl.includes('youtube')) ? 'temple_logo.png.png' : s.mediaUrl;
+        storiesHTML += `
+          <div class="story-item" onclick="viewStory('${s.mediaUrl}', '${s.type}')">
+            <img src="${thumb}" class="story-circle">
+            <div class="story-name">${s.authorName || maskPhone(s.authorPhone)}</div>
+          </div>
+        `;
+      });
+    }
+    container.innerHTML = storiesHTML;
+  });
+}
+
+window.viewStory = (url, type) => {
+  const overlay = document.createElement("div");
+  overlay.style.position = "fixed"; overlay.style.top = "0"; overlay.style.left = "0";
+  overlay.style.width = "100%"; overlay.style.height = "100%";
+  overlay.style.background = "#000"; overlay.style.zIndex = "6000";
+  overlay.style.display = "flex"; overlay.style.alignItems = "center"; overlay.style.justifyContent = "center";
+  overlay.onclick = () => document.body.removeChild(overlay);
+
+  if (url.includes('.mp4')) {
+    overlay.innerHTML = `<video src="${url}" autoplay playsinline style="width:100%; max-height:100%; object-fit:contain;"></video><p style="position:absolute; top:20px; right:20px; color:#fff; font-weight:bold;">✕ Close</p>`;
   } else {
-    videoEl.pause();
+    overlay.innerHTML = `<img src="${url}" style="width:100%; max-height:100%; object-fit:contain;"><p style="position:absolute; top:20px; right:20px; color:#fff; font-weight:bold;">✕ Close</p>`;
   }
+  document.body.appendChild(overlay);
 };
 
+// True Autoplay Logic
 function setupIntersectionAutoplay() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const vid = entry.target.querySelector('video');
       if (vid) {
-        if (entry.isIntersecting) {
-          vid.play().catch(() => {});
-        } else {
-          vid.pause();
-          vid.muted = true;
-        }
+        if (entry.isIntersecting) { vid.play().catch(() => {}); } 
+        else { vid.pause(); }
       }
     });
-  }, { threshold: 0.5 });
+  }, { threshold: 0.6 });
 
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
 
+window.toggleVideoPlayback = (videoEl) => {
+  if(videoEl.muted) { videoEl.muted = false; } else { videoEl.muted = true; }
+};
+
 window.shareReel = (id) => {
   const shareLink = `${location.origin}${location.pathname}#feed`;
   navigator.clipboard.writeText(shareLink);
-  alert("Reel link successfully copied to clipboard!");
+  showToast("🔗 Link copied to clipboard!");
 };
 
 window.openCommentsModal = (postId, encodedTitle) => {
@@ -1069,7 +1072,7 @@ window.closeCommentsModal = () => {
 
 window.submitReelComment = async () => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login to message");
+  if (!phone) { showToast("⚠️ Login required"); return; }
   if (!activePostIdForComments) return;
 
   const input = document.getElementById("chatInput");
@@ -1089,10 +1092,195 @@ window.submitReelComment = async () => {
   input.value = "";
 };
 
-/* =========================================================================
-   USER DASHBOARD
-========================================================================= */
+/* ==========================================
+   SEAMLESS LIKE SYSTEM
+========================================== */
+window.likePost = async (postId, btnElement, authorPhone) => {
+  try {
+    const userPhone = localStorage.getItem("user");
+    if (!userPhone) { showToast("⚠️ Please login to like"); return; }
+    if (userPhone === authorPhone) { showToast("⚠️ Cannot like your own post"); return; }
 
+    const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
+    if (likeCheck.exists()) { showToast("Already liked!"); return; }
+
+    // Seamless UI Update
+    btnElement.style.color = '#ff4444';
+    const countEl = document.querySelector(`.like-count-${postId}`);
+    if(countEl) countEl.innerText = Number(countEl.innerText) + 1;
+    showToast("❤️ Liked! +2 Points Earned");
+
+    await set(ref(db, `likes/${postId}/${userPhone}`), true);
+    
+    const postSnap = await get(ref(db, `posts/${postId}`));
+    if (postSnap.exists()) {
+      const pData = postSnap.val();
+      await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
+      
+      const actualType = pData.type || "video";
+      let creatorPts = actualType === "video" ? 3 : 1;
+      let viewerPts = actualType === "video" ? 2 : 1;
+
+      const authorSnap = await get(ref(db, "users/" + authorPhone));
+      if (authorSnap.exists()) {
+        await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
+      }
+
+      if (viewerPts > 0) {
+        const viewerSnap = await get(ref(db, "users/" + userPhone));
+        if (viewerSnap.exists()) {
+          await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
+        }
+      }
+      
+      // Notify creator
+      sendNotification(authorPhone, 'like', `❤️ ${maskPhone(userPhone)} liked your reel!`);
+    }
+  } catch (err) { console.error("Like error:", err); }
+};
+
+/* ==========================================
+   MOBILE QUICK UPLOAD
+========================================== */
+window.openQuickUpload = (defaultType = 'video') => {
+  const phone = localStorage.getItem("user");
+  if (!phone) { showToast("⚠️ Please login first"); return; }
+  document.getElementById("quickUploadType").value = defaultType;
+  document.getElementById("quickUploadModal").classList.add("open");
+};
+
+window.closeQuickUpload = () => {
+  document.getElementById("quickUploadModal").classList.remove("open");
+  document.getElementById("quickUploadFile").value = "";
+  document.getElementById("quickUploadTitle").value = "";
+  document.getElementById("fileSelectedText").innerText = "";
+  document.getElementById("quickProgressContainer").style.display = "none";
+};
+
+window.submitQuickUpload = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return;
+
+  const type = document.getElementById("quickUploadType").value;
+  const title = document.getElementById("quickUploadTitle").value.trim();
+  const fileInput = document.getElementById("quickUploadFile");
+  const file = fileInput.files[0];
+
+  if (!title) { showToast("⚠️ Please enter a title/caption"); return; }
+  if (!file) { showToast("⚠️ Please select a video or photo"); return; }
+  if (file.size > 50 * 1024 * 1024) { showToast("⚠️ File size must be under 50MB"); return; }
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  const u = userSnap.exists() ? userSnap.val() : {};
+  const activeTier = checkAndHandlePackageExpiry(phone, u);
+
+  if (type === "video") {
+    const isAllowed = await checkDailyVideoLimit(phone, activeTier);
+    if (!isAllowed) return;
+  }
+
+  const btn = document.getElementById("quickSubmitBtn");
+  const progressContainer = document.getElementById("quickProgressContainer");
+  const progressBar = document.getElementById("quickProgressBar");
+  const statusText = document.getElementById("quickStatusText");
+
+  btn.disabled = true;
+  progressContainer.style.display = "block";
+
+  try {
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+    const storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
+    const fileRef = sRef(storage, storagePath);
+    const uploadTask = uploadBytesResumable(fileRef, file);
+
+    uploadTask.on("state_changed", 
+      snapshot => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        progressBar.style.width = progress + "%";
+        statusText.innerText = `Uploading: ${Math.round(progress)}%`;
+      },
+      error => {
+        btn.disabled = false;
+        progressContainer.style.display = "none";
+        showToast("❌ Upload failed");
+      },
+      async () => {
+        const mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
+        const newPostRef = push(ref(db, "posts"));
+        
+        await set(newPostRef, {
+          authorPhone: phone,
+          authorName: u.name || "Creator",
+          type: type,
+          title: title,
+          mediaUrl: mediaUrl,
+          storagePath: storagePath,
+          description: "",
+          likesCount: 0,
+          createdAt: Date.now()
+        });
+
+        showToast(`✅ ${type === 'story' ? 'Story' : 'Reel'} Published!`);
+        closeQuickUpload();
+        if(type === 'story') loadStories();
+      }
+    );
+  } catch(e) {
+    btn.disabled = false;
+    showToast("Error: " + e.message);
+  }
+};
+
+window.deleteMyPost = async (postId, storagePath) => {
+  const phone = localStorage.getItem("user");
+  const isAdmin = localStorage.getItem("admin");
+
+  if (!phone && !isAdmin) { showToast("⚠️ Please login"); return; }
+  if (!confirm("Are you sure you want to delete this reel?")) return;
+
+  try {
+    const postSnap = await get(ref(db, "posts/" + postId));
+    if (postSnap.exists() && storagePath) {
+      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+    }
+    await remove(ref(db, "posts/" + postId));
+    await remove(ref(db, "likes/" + postId));
+    await remove(ref(db, "post_comments/" + postId));
+    showToast("✅ Deleted!");
+  } catch (err) { showToast("Delete error: " + err.message); }
+};
+
+window.subscribeCreator = async (creatorPhone) => {
+  try {
+    const subscriberPhone = localStorage.getItem("user");
+    if (!subscriberPhone) { showToast("⚠️ Please login to follow"); return; }
+    if (subscriberPhone === creatorPhone) { showToast("⚠️ Cannot follow yourself"); return; }
+
+    await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
+
+    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
+    if (creatorSnap.exists()) {
+      await update(ref(db, "users/" + creatorPhone), {
+        subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
+        points: Number(creatorSnap.val().points || 0) + 35
+      });
+    }
+
+    const subSnap = await get(ref(db, "users/" + subscriberPhone));
+    if (subSnap.exists()) {
+      await update(ref(db, "users/" + subscriberPhone), {
+        points: Number(subSnap.val().points || 0) + 15
+      });
+    }
+    showToast("🎉 Followed! Creator +35 Pts | You +15 Pts");
+    sendNotification(creatorPhone, 'follow', `👤 ${maskPhone(subscriberPhone)} started following you!`);
+    feedPage();
+  } catch (err) { showToast("Subscribe error: " + err.message); }
+};
+
+/* ==========================================
+   USER DASHBOARD
+========================================== */
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
@@ -1133,7 +1321,7 @@ async function userDashboard() {
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
-      <h3 style="color:#dfb72c; font-size:15px; margin-bottom:6px;">🔗 Linked BEP20 Wallet Address</h3>
+      <h3 style="color:#dfb72c; font-size:15px; margin-bottom:6px;">🔗 Linked BEP20 Wallet</h3>
       <p style="font-size:15px; word-break:break-all; color:#00ff88; font-weight:bold; font-family:monospace;">${userWallet}</p>
     </div>
 
@@ -1148,27 +1336,22 @@ async function userDashboard() {
         ${balTda.toFixed(2)} Temple_DA<br>
         <span class="small" style="color:#dfb72c;">$${balUsd} USDT</span>
       </div>
-
       <div class="card">
         <h3>Talent Points</h3>
         <span class="number">${Number(u.points || 0)}</span> Pts
       </div>
-
       <div class="card">
         <h3>Subscribers</h3>
         <span class="number">${Number(u.subscribersCount || 0)}</span>
       </div>
-
       <div class="card">
-        <h3>USDT Investment</h3>
+        <h3>USDT Invested</h3>
         ${u.investment || 0} USDT
       </div>
-
       <div class="card">
         <h3>Locked Yield</h3>
-        ${Number(u.locked || 0).toFixed(2)} Temple_DA
+        ${Number(u.locked || 0).toFixed(2)} TDA
       </div>
-
       <div class="card">
         <h3>Package</h3>
         <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
@@ -1178,10 +1361,10 @@ async function userDashboard() {
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.05);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <h3 style="color:#dfb72c; margin-bottom:6px;">⭐ Temple Elite 21 Club</h3>
+          <h3 style="color:#dfb72c; margin-bottom:6px;">⭐ Temple Elite 21</h3>
           <p class="small">Join core leadership (Max 21 Members) with dedicated <strong>250 USDT</strong> Web3 payment to share monthly 5% pool distribution.</p>
-          <p class="small" style="margin-top:8px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
-          <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold; letter-spacing:1px;">Current Elite Members: <span style="font-size:16px;">${eliteCount} / 21</span></p>
+          <p class="small" style="margin-top:8px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
+          <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">Current Elite Members: <span style="font-size:16px;">${eliteCount} / 21</span></p>
         </div>
         <div style="text-align:right;">
           ${u.elite21 
@@ -1197,45 +1380,13 @@ async function userDashboard() {
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <h3 style="color:#00ff88; margin-bottom:6px;">Creator Subscription Status</h3>
+          <h3 style="color:#00ff88; margin-bottom:6px;">Creator Subscription</h3>
           <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
         </div>
         <div>
           <a href="#packages"><button style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <h3>Post Instagram-Style Reel</h3>
-      <select id="talentType">
-        <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
-        <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
-        <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
-      </select>
-
-      <input id="talentTitle" placeholder="Title / Caption for Reel">
-      
-      <div style="margin: 10px 0; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
-        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">
-          📁 Select Video/Image File from Device (Optional):
-        </label>
-        <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
-        <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 50MB)</p>
-      </div>
-
-      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / MP4) —</p>
-      <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
-      <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
-
-      <div id="uploadProgressContainer" style="display:none; margin: 12px 0;">
-        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
-        <div style="background:#222; border-radius:6px; height:8px; overflow:hidden; margin-top:6px;">
-          <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
-        </div>
-      </div>
-
-      <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
     </div>
 
     <div class="card">
@@ -1248,15 +1399,14 @@ async function userDashboard() {
 
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Upgrade (Direct Web3 USDT Deposit)</h3>
-      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and update your investment capital instantly (Max Total Investment: 500 USDT).</p>
       <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" style="margin-top:12px;">
-      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit / Upgrade via Web3 Wallet</button>
+      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit via Web3 Wallet</button>
     </div>
 
     <div class="card">
       <h3>Withdraw Temple_DA</h3>
       <input id="withdraw" placeholder="Temple_DA amount">
-      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (Temple_DA)</button>
+      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal</button>
     </div>
 
     <div class="card">
@@ -1264,45 +1414,25 @@ async function userDashboard() {
       <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
     </div>
 
-    <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
+    <h3 style="margin-top:28px;">Account Histories</h3>
 
-    <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
       <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
-        <span>👥 Referral Team Income</span>
-        <span>▼</span>
+        <span>👥 Referral Team Income</span><span>▼</span>
       </div>
       <div class="accordion-content" id="referralHistory">Loading...</div>
     </div>
 
-    <div class="accordion-wrapper" id="accMyPosts">
-      <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
-        <span>🎬 My Uploaded Reels & Posts</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="myUploadedPosts">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accPackages">
-      <div class="accordion-header" onclick="toggleAccordion('accPackages')">
-        <span>📦 Package Activation History</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="packageHistory">Loading...</div>
-    </div>
-
     <div class="accordion-wrapper" id="accInvest">
       <div class="accordion-header" onclick="toggleAccordion('accInvest')">
-        <span>💰 Investment History</span>
-        <span>▼</span>
+        <span>💰 Investment History</span><span>▼</span>
       </div>
       <div class="accordion-content" id="investHistory">Loading...</div>
     </div>
 
     <div class="accordion-wrapper" id="accWithdraw">
       <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
-        <span>📤 Withdrawal History</span>
-        <span>▼</span>
+        <span>📤 Withdrawal History</span><span>▼</span>
       </div>
       <div class="accordion-content" id="withdrawHistory">Loading...</div>
     </div>
@@ -1316,27 +1446,36 @@ async function userDashboard() {
     loadReferralHistory(phone);
     loadInvestHistory(phone);
     loadWithdrawHistory(phone);
-    loadPackageHistory(phone);
-    loadMyPosts(phone);
   });
 }
+
+window.convertPointsToToken = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return;
+  const snap = await get(ref(db, "users/" + phone));
+  const u = snap.val();
+
+  const currentPoints = Number(u.points || 0);
+  if (currentPoints < 100) return alert("Minimum 100 points required to convert.");
+
+  const tokensToCredit = Number((currentPoints / 10).toFixed(2));
+  const newBalance = Number(((u.balance || 0) + tokensToCredit).toFixed(2));
+
+  await update(ref(db, "users/" + phone), { points: 0, balance: newBalance });
+  alert(`Congratulations! ${currentPoints} Points converted to ${tokensToCredit} Temple_DA!`);
+};
 
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("withdraw"));
   
-  if (!amount || amount <= 0) {
-    return alert("Please enter a valid withdrawal amount!");
-  }
+  if (!amount || amount <= 0) return alert("Please enter a valid withdrawal amount!");
 
   const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User session not found!");
   const u = snap.val();
 
   const investment = u.investment || 0;
-  if (investment <= 0) {
-    return alert("Minimum investment is required before making withdrawals!");
-  }
+  if (investment <= 0) return alert("Minimum investment is required before making withdrawals!");
 
   const now = new Date();
   const todayDateString = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
@@ -1344,9 +1483,7 @@ window.withdraw = async () => {
   let lastWithdrawDate = u.lastWithdrawDate || "";
   let todayWithdrawnAmount = u.todayWithdrawnAmount || 0;
 
-  if (lastWithdrawDate !== todayDateString) {
-    todayWithdrawnAmount = 0;
-  }
+  if (lastWithdrawDate !== todayDateString) { todayWithdrawnAmount = 0; }
 
   let maxDailyAllowed = 0;
   if (investment >= 1 && investment <= 19) maxDailyAllowed = 60;
@@ -1363,14 +1500,10 @@ window.withdraw = async () => {
     return alert(`⚠️ Limit Exceeded!\nYou can withdraw a maximum of ${remainingLimit} Temple_DA more today.`);
   }
   
-  if (amount > (u.balance || 0)) {
-    return alert("Insufficient Temple_DA balance!");
-  }
+  if (amount > (u.balance || 0)) return alert("Insufficient Temple_DA balance!");
   
   const userWallet = u.wallet;
-  if (!userWallet || !walletRegex.test(userWallet)) {
-    return alert("No valid BEP20 wallet linked to your account!");
-  }
+  if (!userWallet || !walletRegex.test(userWallet)) return alert("No valid BEP20 wallet linked to your account!");
 
   const newBalance = Number((u.balance - amount).toFixed(2));
   const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
@@ -1384,20 +1517,8 @@ window.withdraw = async () => {
   const reqRef = push(ref(db, "withdrawals/pending"));
   const reqKey = reqRef.key;
 
-  await set(reqRef, {
-    phone: phone,
-    amount: amount,
-    wallet: userWallet,
-    timestamp: Date.now()
-  });
-
-  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
-    amount: amount,
-    asset: "Temple_DA",
-    wallet: userWallet,
-    timestamp: Date.now(),
-    status: "Pending Admin Approval"
-  });
+  await set(reqRef, { phone: phone, amount: amount, wallet: userWallet, timestamp: Date.now() });
+  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { amount: amount, asset: "Temple_DA", wallet: userWallet, timestamp: Date.now(), status: "Pending Admin Approval" });
 
   alert(`🎉 Success! ${amount} Temple_DA withdrawal request sent to admin. Upon approval, it will be transferred to your wallet.`);
   v("withdraw").value = "";
@@ -1418,9 +1539,7 @@ window.makeDirectUSDTDeposit = async () => {
     return alert(`Maximum total investment limit is 500 USDT! Your current investment is ${currentInvestment} USDT, you can invest up to ${500 - currentInvestment} USDT more.`);
   }
 
-  if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
-  }
+  if (typeof window.ethereum === 'undefined') return alert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
 
   try {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1430,19 +1549,7 @@ window.makeDirectUSDTDeposit = async () => {
     const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
     const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
-    const minABI = [
-      {
-        "constant": false,
-        "inputs": [
-          {"name": "_to", "type": "address"},
-          {"name": "_value", "type": "uint256"}
-        ],
-        "name": "transfer",
-        "outputs": [{"name": "", "type": "bool"}],
-        "type": "function"
-      }
-    ];
-
+    const minABI = [{"constant": false,"inputs": [{"name": "_to","type": "address"},{"name": "_value","type": "uint256"}],"name": "transfer","outputs": [{"name": "","type": "bool"}],"type": "function"}];
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
@@ -1467,14 +1574,9 @@ window.makeDirectUSDTDeposit = async () => {
       lockDate: u.lockDate || Date.now()
     });
 
-    await push(ref(db, "investments/history/" + phone), {
-      amountUSDT: amount,
-      timestamp: Date.now()
-    });
+    await push(ref(db, "investments/history/" + phone), { amountUSDT: amount, timestamp: Date.now() });
 
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, amount);
-    }
+    if (u.referrer) { await distribute15LevelCommission(u.referrer, amount); }
 
     alert("Investment successfully updated to your account!");
     userDashboard();
@@ -1488,9 +1590,6 @@ window.joinElite21 = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login first");
 
-  const pendingSnap = await get(ref(db, "elite21/pending/" + phone));
-  if (pendingSnap.exists()) return alert("Your Temple Elite 21 request is already pending.");
-
   // Strict 21 Members Check Lock
   const allUsersSnap = await get(ref(db, "users"));
   let eliteCount = 0;
@@ -1499,16 +1598,12 @@ window.joinElite21 = async () => {
       if (childSnap.val().elite21 === true) eliteCount++;
     });
   }
-  if (eliteCount >= 21) {
-    return alert("🔴 Sorry, all 21 slots for Temple Elite 21 are already full!");
-  }
+  if (eliteCount >= 21) { return alert("🔴 Sorry, all 21 slots for Temple Elite 21 are already full!"); }
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
-  if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found!");
-  }
+  if (typeof window.ethereum === 'undefined') return alert("Web3 Wallet not found!");
 
   try {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1518,7 +1613,7 @@ window.joinElite21 = async () => {
     const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
     const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
-    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
+    const minABI = [{"constant": false,"inputs": [{"name": "_to","type": "address"},{"name": "_value","type": "uint256"}],"name": "transfer","outputs": [{"name": "","type": "bool"}],"type": "function"}];
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits("250", 18);
 
@@ -1531,69 +1626,12 @@ window.joinElite21 = async () => {
       monthlyBusiness: Number(u.monthlyBusiness || 0) + 250 
     });
     
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, 250);
-    }
+    if (u.referrer) { await distribute15LevelCommission(u.referrer, 250); }
 
     alert("🎉 Congratulations! You have successfully joined Temple Elite 21!");
     userDashboard();
-  } catch (err) {
-    alert("Elite 21 join failed: " + err.message);
-  }
+  } catch (err) { alert("Elite 21 join failed: " + err.message); }
 };
-
-function loadMyPosts(phone) {
-  onValue(ref(db, "posts"), snap => {
-    const container = document.getElementById("myUploadedPosts");
-    if (!container) return;
-
-    if (!snap.exists()) {
-      container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`;
-      return;
-    }
-
-    let myPosts = [];
-    snap.forEach(child => {
-      const p = child.val();
-      if (p.authorPhone === phone) {
-        myPosts.push({ id: child.key, ...p });
-      }
-    });
-
-    if (myPosts.length === 0) {
-      container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`;
-      return;
-    }
-
-    myPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    let html = `<table>
-      <tr>
-        <th>Type</th>
-        <th>Title</th>
-        <th>Likes</th>
-        <th>Action</th>
-      </tr>`;
-
-    myPosts.forEach(p => {
-      html += `
-        <tr>
-          <td><span class="badge-tag">${p.type}</span></td>
-          <td><b>${p.title}</b></td>
-          <td><span class="number">${p.likesCount || 0}</span></td>
-          <td>
-            <button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `;
-    });
-
-    html += `</table>`;
-    container.innerHTML = html;
-  });
-}
 
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
@@ -1623,209 +1661,9 @@ async function checkDailyVideoLimit(phone, userTier) {
   return true;
 }
 
-window.publishTalent = async () => {
-  try {
-    const phone = localStorage.getItem("user");
-    if (!phone) return alert("Please login first");
-
-    const userSnap = await get(ref(db, "users/" + phone));
-    const u = userSnap.exists() ? userSnap.val() : {};
-    const activeTier = checkAndHandlePackageExpiry(phone, u);
-
-    const typeEl = document.getElementById("talentType");
-    const titleEl = document.getElementById("talentTitle");
-    const mediaEl = document.getElementById("talentMedia");
-    const descEl = document.getElementById("talentText");
-    const fileInput = document.getElementById("talentFile");
-
-    const type = typeEl ? typeEl.value : "video";
-    const title = titleEl ? titleEl.value.trim() : "";
-    let mediaUrl = mediaEl ? mediaEl.value.trim() : "";
-    const description = descEl ? descEl.value.trim() : "";
-    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-
-    if (!title) return alert("Please enter title/caption!");
-
-    if (type === "video") {
-      const isAllowed = await checkDailyVideoLimit(phone, activeTier);
-      if (!isAllowed) return;
-    }
-
-    let storagePath = "";
-
-    if (file) {
-      if (file.size > 50 * 1024 * 1024) return alert("File size must be less than 50MB!");
-
-      const publishBtn = document.getElementById("publishBtn");
-      const progressContainer = document.getElementById("uploadProgressContainer");
-      const progressBar = document.getElementById("uploadProgressBar");
-      const statusText = document.getElementById("uploadStatusText");
-
-      if (publishBtn) publishBtn.disabled = true;
-      if (progressContainer) progressContainer.style.display = "block";
-
-      try {
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-        storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
-        const fileRef = sRef(storage, storagePath);
-        const uploadTask = uploadBytesResumable(fileRef, file);
-
-        await new Promise((resolve, reject) => {
-          uploadTask.on(
-            "state_changed",
-            snapshot => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              if (progressBar) progressBar.style.width = progress + "%";
-              if (statusText) statusText.innerText = `Uploading Reel: ${Math.round(progress)}%`;
-            },
-            error => { reject(error); },
-            async () => {
-              mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve();
-            }
-          );
-        });
-      } catch (uploadErr) {
-        if (publishBtn) publishBtn.disabled = false;
-        if (progressContainer) progressContainer.style.display = "none";
-        if (!mediaUrl) return alert("⚠️ File upload failed. Please provide a YouTube Shorts or MP4 URL!");
-      }
-    }
-
-    if (type !== "text" && !mediaUrl) {
-      return alert("Select video file or provide direct URL!");
-    }
-
-    const newPostRef = push(ref(db, "posts"));
-    await set(newPostRef, {
-      authorPhone: phone,
-      authorName: u.name || "Creator",
-      type: type || "video",
-      title: title,
-      mediaUrl: mediaUrl || "",
-      storagePath: storagePath || "",
-      description: description || "",
-      likesCount: 0,
-      createdAt: Date.now()
-    });
-
-    alert("Reel published successfully!");
-    location.hash = "#feed";
-  } catch (error) {
-    alert("Publish error: " + error.message);
-  }
-};
-
-window.deleteMyPost = async (postId, storagePath) => {
-  const phone = localStorage.getItem("user");
-  const isAdmin = localStorage.getItem("admin");
-
-  if (!phone && !isAdmin) return alert("Please login first");
-  if (!confirm("Are you sure you want to delete this reel?")) return;
-
-  try {
-    const postSnap = await get(ref(db, "posts/" + postId));
-    if (postSnap.exists() && storagePath) {
-      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
-    }
-    await remove(ref(db, "posts/" + postId));
-    await remove(ref(db, "likes/" + postId));
-    await remove(ref(db, "post_comments/" + postId));
-    alert("Reel successfully deleted!");
-  } catch (err) {
-    alert("Delete error: " + err.message);
-  }
-};
-
-window.likePost = async (postId) => {
-  try {
-    const userPhone = localStorage.getItem("user");
-    if (!userPhone) return alert("Please login to like");
-
-    const postSnap = await get(ref(db, `posts/${postId}`));
-    if (!postSnap.exists()) return alert("Post not found");
-    const pData = postSnap.val();
-    const authorPhone = pData.authorPhone;
-
-    if (userPhone === authorPhone) return alert("You cannot like your own post");
-
-    const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
-    if (likeCheck.exists()) return alert("You have already supported this post!");
-
-    await set(ref(db, `likes/${postId}/${userPhone}`), true);
-    await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
-
-    const actualType = pData.type || "video";
-    let creatorPts = actualType === "video" ? 3 : 1;
-    let viewerPts = actualType === "video" ? 2 : (actualType === "photo" ? 1 : 0);
-
-    const authorSnap = await get(ref(db, "users/" + authorPhone));
-    if (authorSnap.exists()) {
-      await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
-    }
-
-    if (viewerPts > 0) {
-      const viewerSnap = await get(ref(db, "users/" + userPhone));
-      if (viewerSnap.exists()) {
-        await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
-      }
-    }
-    alert("Liked successfully!");
-  } catch (err) {
-    alert("Like error: " + err.message);
-  }
-};
-
-window.subscribeCreator = async (creatorPhone) => {
-  try {
-    const subscriberPhone = localStorage.getItem("user");
-    if (!subscriberPhone) return alert("Please login to follow");
-    if (subscriberPhone === creatorPhone) return alert("You cannot follow yourself");
-
-    await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
-
-    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
-    if (creatorSnap.exists()) {
-      await update(ref(db, "users/" + creatorPhone), {
-        subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
-        points: Number(creatorSnap.val().points || 0) + 35
-      });
-    }
-
-    const subSnap = await get(ref(db, "users/" + subscriberPhone));
-    if (subSnap.exists()) {
-      await update(ref(db, "users/" + subscriberPhone), {
-        points: Number(subSnap.val().points || 0) + 15
-      });
-    }
-    alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
-    feedPage();
-  } catch (err) {
-    alert("Subscribe error: " + err.message);
-  }
-};
-
-window.convertPointsToToken = async () => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login");
-
-  const snap = await get(ref(db, "users/" + phone));
-  const u = snap.val();
-
-  const currentPoints = Number(u.points || 0);
-  if (currentPoints < 100) return alert("Minimum 100 points required to convert.");
-
-  const tokensToCredit = Number((currentPoints / 10).toFixed(2));
-  const newBalance = Number(((u.balance || 0) + tokensToCredit).toFixed(2));
-
-  await update(ref(db, "users/" + phone), { points: 0, balance: newBalance });
-  alert(`Congratulations! ${currentPoints} Points converted to ${tokensToCredit} Temple_DA!`);
-};
-
-/* =========================================================================
+/* ==========================================
    PACKAGES PAGE
-========================================================================= */
-
+========================================== */
 async function packagesPage() {
   const phone = localStorage.getItem("user");
   let currentTier = "none";
@@ -1910,7 +1748,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
     const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
-    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
+    const minABI = [{"constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}];
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
@@ -1933,15 +1771,9 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
       monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
     });
 
-    await push(ref(db, "packages/history/" + phone), {
-      tier: tierName,
-      amountUSDT: usdtAmount,
-      timestamp: Date.now()
-    });
+    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
 
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, usdtAmount);
-    }
+    if (u.referrer) { await distribute15LevelCommission(u.referrer, usdtAmount); }
 
     alert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
     location.hash = "#user";
@@ -1983,24 +1815,17 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
   });
 
-  await push(ref(db, "packages/history/" + phone), {
-    tier: tierName,
-    amountUSDT: usdtAmount,
-    timestamp: Date.now()
-  });
+  await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
 
-  if (u.referrer) {
-    await distribute15LevelCommission(u.referrer, usdtAmount);
-  }
+  if (u.referrer) { await distribute15LevelCommission(u.referrer, usdtAmount); }
 
   alert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
   location.hash = "#user";
 };
 
-/* =========================================================================
-   ADMIN DASHBOARD
-========================================================================= */
-
+/* ==========================================
+   ADMIN DASHBOARD & 70/30 DISTRIB
+========================================== */
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
@@ -2154,6 +1979,9 @@ window.runMonthlyElite21Distribution = async () => {
       // उनके मौजूदा बैलेंस में नया रिवॉर्ड जोड़ें
       const newBalance = Number((member.balance + totalRewardTokens).toFixed(2));
       updates[`users/${member.phone}/balance`] = newBalance;
+      
+      // Notify them
+      sendNotification(member.phone, 'elite_bonus', `🏆 Elite 21 Bonus! You received ${totalRewardTokens} TDA.`);
     }
 
     // (C) सिंगल कमांड से सब कुछ एक साथ Firebase में अपडेट करें
@@ -2199,19 +2027,7 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
 
-    const minABI = [
-      {
-        "constant": false,
-        "inputs": [
-          {"name": "_to", "type": "address"},
-          {"name": "_value", "type": "uint256"}
-        ],
-        "name": "transfer",
-        "outputs": [{"name": "", "type": "bool"}],
-        "type": "function"
-      }
-    ];
-
+    const minABI = [{"constant": false,"inputs": [{"name": "_to","type": "address"},{"name": "_value","type": "uint256"}],"name": "transfer","outputs": [{"name": "","type": "bool"}],"type": "function"}];
     const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
@@ -2301,18 +2117,11 @@ window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "
 
 function loadReferralHistory(phone) {
   onValue(ref(db, "referral_history/" + phone), snap => {
-    let html = "";
-    let totalTDA = 0;
-    let totalUSDT = 0;
+    let html = ""; let totalTDA = 0; let totalUSDT = 0;
     snap.forEach(s => { 
-      const d = s.val(); 
-      const date = new Date(d.timestamp).toLocaleString();
-      totalTDA += d.amountTokens;
-      totalUSDT += d.amountUSDT;
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        <b>Level ${d.level}</b>: <span class="number">+${d.amountTokens} TDA</span> ($${d.amountUSDT.toFixed(2)}) <br>
-        <span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span>
-      </div>`; 
+      const d = s.val(); const date = new Date(d.timestamp).toLocaleString();
+      totalTDA += d.amountTokens; totalUSDT += d.amountUSDT;
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;"><b>Level ${d.level}</b>: <span class="number">+${d.amountTokens} TDA</span> ($${d.amountUSDT.toFixed(2)}) <br><span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span></div>`; 
     });
     const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total Earned: ${totalTDA.toFixed(2)} TDA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("referralHistory");
@@ -2320,32 +2129,12 @@ function loadReferralHistory(phone) {
   });
 }
 
-function loadPackageHistory(phone) {
-  onValue(ref(db, "packages/history/" + phone), snap => {
-    let html = "";
-    snap.forEach(s => { 
-      const d = s.val(); 
-      const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        <span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT<br>
-        <span style="color:#888;">${date}</span>
-      </div>`; 
-    });
-    const el = document.getElementById("packageHistory");
-    if (el) el.innerHTML = html || "No history";
-  });
-}
-
 function loadInvestHistory(phone) {
   onValue(ref(db, "investments/history/" + phone), snap => {
     let html = "";
     snap.forEach(s => { 
-      const d = s.val();
-      const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        Invested: <span class="number">${d.amountUSDT} USDT</span><br>
-        <span style="color:#888;">${date}</span>
-      </div>`; 
+      const d = s.val(); const date = new Date(d.timestamp).toLocaleString();
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Invested: <span class="number">${d.amountUSDT} USDT</span><br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("investHistory");
     if (el) el.innerHTML = html || "No investment history";
@@ -2356,22 +2145,14 @@ function loadWithdrawHistory(phone) {
   onValue(ref(db, "withdrawals/history/" + phone), snap => {
     let html = "";
     snap.forEach(s => { 
-      const d = s.val();
-      const date = new Date(d.timestamp).toLocaleString();
+      const d = s.val(); const date = new Date(d.timestamp).toLocaleString();
       let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected") ? "#ff4444" : "#00ff88");
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        Amount: <span class="number">${d.amount} Temple_DA</span><br>
-        Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>
-        <span style="color:#888;">${date}</span>
-      </div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Amount: <span class="number">${d.amount} Temple_DA</span><br>Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawals";
   });
 }
-
-function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
-function appDiv() { return document.getElementById("app"); }
 
 </script>
 </body>
