@@ -1026,7 +1026,7 @@ function setupIntersectionAutoplay() {
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
 
-// Gift / Tipping Logic Function
+// Gift / Tipping Logic Function with History Support for Both
 window.openGiftModal = async (creatorPhone, creatorName) => {
   const senderPhone = localStorage.getItem("user");
   if (!senderPhone) return alert("Please login to send gifts!");
@@ -1055,6 +1055,19 @@ window.openGiftModal = async (creatorPhone, creatorName) => {
 
   await update(ref(db, "users/" + senderPhone), { balance: newSenderBal });
   await update(ref(db, "users/" + creatorPhone), { balance: newCreatorBal });
+
+  // Save gift history for both sender and recipient
+  const giftData = {
+    amount: giftAmount,
+    timestamp: Date.now(),
+    senderPhone: senderPhone,
+    senderName: senderData.name || "Member",
+    recipientPhone: creatorPhone,
+    recipientName: creatorName
+  };
+
+  await push(ref(db, `gift_history/${senderPhone}/sent`), giftData);
+  await push(ref(db, `gift_history/${creatorPhone}/received`), giftData);
 
   alert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
 };
@@ -1319,6 +1332,15 @@ async function userDashboard() {
       <div class="accordion-content" id="myUploadedPosts">Loading...</div>
     </div>
 
+    <!-- Gift History Tab Added -->
+    <div class="accordion-wrapper" id="accGifts">
+      <div class="accordion-header" onclick="toggleAccordion('accGifts')">
+        <span>🎁 Gift History (Sent & Received)</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="giftHistory">Loading...</div>
+    </div>
+
     <div class="accordion-wrapper" id="accPackages">
       <div class="accordion-header" onclick="toggleAccordion('accPackages')">
         <span>📦 Package Activation History</span>
@@ -1354,6 +1376,7 @@ async function userDashboard() {
     loadWithdrawHistory(phone);
     loadPackageHistory(phone);
     loadMyPosts(phone);
+    loadGiftHistory(phone);
   });
 }
 
@@ -2385,6 +2408,52 @@ function loadWithdrawHistory(phone) {
     });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawals";
+  });
+}
+
+function loadGiftHistory(phone) {
+  onValue(ref(db, "gift_history/" + phone), snap => {
+    const el = document.getElementById("giftHistory");
+    if (!el) return;
+
+    if (!snap.exists()) {
+      el.innerHTML = `<p class="small">No gift history yet.</p>`;
+      return;
+    }
+
+    const data = snap.val();
+    const sentGifts = data.sent ? Object.values(data.sent) : [];
+    const receivedGifts = data.received ? Object.values(data.received) : [];
+
+    let html = `<h4 style="color:#dfb72c; margin-bottom:8px; font-size:13px;">🎁 Received Gifts</h4>`;
+    if (receivedGifts.length > 0) {
+      receivedGifts.sort((a, b) => b.timestamp - a.timestamp);
+      receivedGifts.forEach(g => {
+        const date = new Date(g.timestamp).toLocaleString();
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
+          Received <span class="number">+${g.amount} Temple_DA</span> from <b>@${g.senderName}</b> (${maskPhone(g.senderPhone)})<br>
+          <span style="color:#888;">${date}</span>
+        </div>`;
+      });
+    } else {
+      html += `<p class="small" style="margin-bottom:10px;">No gifts received yet.</p>`;
+    }
+
+    html += `<h4 style="color:#dfb72c; margin:14px 0 8px 0; font-size:13px;">📤 Sent Gifts</h4>`;
+    if (sentGifts.length > 0) {
+      sentGifts.sort((a, b) => b.timestamp - a.timestamp);
+      sentGifts.forEach(g => {
+        const date = new Date(g.timestamp).toLocaleString();
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
+          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br>
+          <span style="color:#888;">${date}</span>
+        </div>`;
+      });
+    } else {
+      html += `<p class="small">No gifts sent yet.</p>`;
+    }
+
+    el.innerHTML = html;
   });
 }
 
