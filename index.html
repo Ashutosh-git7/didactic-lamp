@@ -498,6 +498,50 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
+// BACKGROUND GLOBAL VESTING CHECK (Bina Login kiye 30 din par 5% auto-release)
+// =========================================================================
+async function backgroundGlobalVestingCheck() {
+  try {
+    const usersSnap = await get(ref(db, "users"));
+    if (!usersSnap.exists()) return;
+
+    const now = Date.now();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    let updates = {};
+
+    usersSnap.forEach(child => {
+      const phone = child.key;
+      const u = child.val();
+
+      if (u.locked && u.locked > 0 && u.lockDate) {
+        const timeElapsed = now - u.lockDate;
+
+        if (timeElapsed >= thirtyDaysMs) {
+          const releaseAmount = u.locked * 0.05;
+          const currentBalance = u.balance || 0;
+          
+          const newBalance = Number((currentBalance + releaseAmount).toFixed(2));
+          const newLocked = Number((u.locked - releaseAmount).toFixed(2));
+
+          updates[`users/${phone}/balance`] = newBalance;
+          updates[`users/${phone}/locked`] = newLocked;
+          updates[`users/${phone}/lockDate`] = now;
+        }
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      await update(ref(db), updates);
+    }
+  } catch (err) {
+    console.error("Background Vesting Error: ", err);
+  }
+}
+
+// App load hote hi background check run hoga
+backgroundGlobalVestingCheck();
+
+// =========================================================================
 // 15-LEVEL REFERRAL DISTRIBUTION SYSTEM
 // =========================================================================
 async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT) {
@@ -601,8 +645,8 @@ async function getLivePriceData() {
   try {
     const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
     const fallbackData = await fallbackRes.json();
-    if (fallbackData && fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"]?.usd) {
-      return parseFloat(fallbackData["0x50be31caab627ee8f98374d33b0454a8269a79e1"].usd);
+    if (fallbackData && fallbackData["0x50be31caab627ee8F98374d33b0454a8269a79e1"]?.usd) {
+      return parseFloat(fallbackData["0x50be31caab627ee8F98374d33b0454a8269a79e1"].usd);
     }
   } catch (err) {}
   
@@ -1026,7 +1070,6 @@ function setupIntersectionAutoplay() {
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
 
-// Gift / Tipping Logic Function with History Support for Both
 window.openGiftModal = async (creatorPhone, creatorName) => {
   const senderPhone = localStorage.getItem("user");
   if (!senderPhone) return alert("Please login to send gifts!");
@@ -1056,7 +1099,6 @@ window.openGiftModal = async (creatorPhone, creatorName) => {
   await update(ref(db, "users/" + senderPhone), { balance: newSenderBal });
   await update(ref(db, "users/" + creatorPhone), { balance: newCreatorBal });
 
-  // Save gift history for both sender and recipient
   const giftData = {
     amount: giftAmount,
     timestamp: Date.now(),
@@ -1215,7 +1257,11 @@ async function userDashboard() {
 
       <div class="card">
         <h3>Locked Yield</h3>
-        ${Number(u.locked || 0).toFixed(2)} Temple_DA
+        ${Number(u.locked || 0).toFixed(2)} Temple_DA<br>
+        <div style="margin-top: 6px; padding: 6px; background: rgba(223, 183, 44, 0.08); border-radius: 6px; border: 1px solid rgba(223, 183, 44, 0.3);">
+          <span class="small" style="color:#dfb72c; display:block; font-weight:bold; font-size:11px;">⏳ Next Release Timer:</span>
+          <span class="number" id="nextReleaseCountdown" style="font-size: 12px; color: #00ff88;">Calculating...</span>
+        </div>
       </div>
 
       <div class="card">
@@ -1370,7 +1416,7 @@ async function userDashboard() {
     </div>
     `;
 
-    autoRelease(phone, u);
+    startReleaseCountdown(u.lockDate, u.locked);
     loadReferralHistory(phone);
     loadInvestHistory(phone);
     loadWithdrawHistory(phone);
@@ -1378,6 +1424,43 @@ async function userDashboard() {
     loadMyPosts(phone);
     loadGiftHistory(phone);
   });
+}
+
+function startReleaseCountdown(lockDate, lockedAmount) {
+  const countdownEl = document.getElementById("nextReleaseCountdown");
+  if (!countdownEl) return;
+
+  if (!lockedAmount || lockedAmount <= 0 || !lockDate) {
+    countdownEl.innerText = "No locked tokens";
+    return;
+  }
+
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  const nextReleaseTime = lockDate + thirtyDaysMs;
+
+  const interval = setInterval(() => {
+    const now = Date.now();
+    const timeLeft = nextReleaseTime - now;
+
+    if (!document.getElementById("nextReleaseCountdown")) {
+      clearInterval(interval);
+      return;
+    }
+
+    if (timeLeft <= 0) {
+      countdownEl.innerText = "Ready! Refresh page";
+      clearInterval(interval);
+      return;
+    }
+
+    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    const formattedDate = new Date(nextReleaseTime).toLocaleDateString();
+    countdownEl.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s (${formattedDate})`;
+  }, 1000);
 }
 
 window.withdraw = async () => {
@@ -2297,19 +2380,6 @@ window.rejectWithdrawal = async (reqKey, phone) => {
   alert("Withdrawal rejected and balance refunded to user.");
   loadPendingWithdraw();
 };
-
-function autoRelease(phone, u) {
-  if (!u.lockDate || !u.locked || u.locked <= 0) return;
-  const days = (Date.now() - u.lockDate) / (1000 * 60 * 60 * 24);
-  if (days >= 30) {
-    const release = u.locked * 0.05;
-    update(ref(db, "users/" + phone), {
-      balance: Number(((u.balance || 0) + release).toFixed(2)),
-      locked: Number((u.locked - release).toFixed(2)),
-      lockDate: Date.now()
-    }).catch(e => {});
-  }
-}
 
 window.releaseLocked = async phone => {
   const snap = await get(ref(db, "users/" + phone));
