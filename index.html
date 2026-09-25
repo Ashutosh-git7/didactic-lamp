@@ -498,7 +498,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// BACKGROUND GLOBAL VESTING CHECK (Bina Login kiye 30 din par 5% auto-release)
+// BACKGROUND GLOBAL VESTING CHECK (30 din par 5% auto-release)
 // =========================================================================
 async function backgroundGlobalVestingCheck() {
   try {
@@ -538,8 +538,34 @@ async function backgroundGlobalVestingCheck() {
   }
 }
 
-// App load hote hi background check run hoga
 backgroundGlobalVestingCheck();
+
+// =========================================================================
+// DAILY LOGIN XP REWARD CHECK HELPER
+// =========================================================================
+async function checkAndApplyDailyLoginReward(phone) {
+  try {
+    const userRef = ref(db, "users/" + phone);
+    const snap = await get(userRef);
+    if (!snap.exists()) return;
+    
+    const u = snap.val();
+    const now = new Date();
+    const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+    if (u.lastLoginDate !== todayDateStr) {
+      const currentPoints = Number(u.points || 0);
+      const newPoints = currentPoints + 10; // Roz login par 10 XP Points
+
+      await update(userRef, {
+        points: newPoints,
+        lastLoginDate: todayDateStr
+      });
+    }
+  } catch (err) {
+    console.error("Daily Login Reward Error: ", err);
+  }
+}
 
 // =========================================================================
 // 15-LEVEL REFERRAL DISTRIBUTION SYSTEM
@@ -775,6 +801,7 @@ window.connectWalletAndAutoLogin = async () => {
     });
 
     if (foundPhone) {
+      await checkAndApplyDailyLoginReward(foundPhone);
       localStorage.setItem("user", foundPhone);
       alert("✅ Wallet verified! Auto login successful.");
       location.hash = "#user";
@@ -873,7 +900,8 @@ window.registerUser = async () => {
     points: 0,
     subscribersCount: 0,
     elite21: false,
-    monthlyBusiness: 0
+    monthlyBusiness: 0,
+    lastLoginDate: ""
   });
 
   alert("Registration successful! 6 Temple_DA added.");
@@ -923,6 +951,7 @@ window.login = async () => {
   const user = snap.val();
   if (atob(user.password) !== pass) return alert("Wrong password");
 
+  await checkAndApplyDailyLoginReward(phone);
   localStorage.setItem("user", phone);
   location.hash = "#user";
 };
@@ -1004,7 +1033,7 @@ function feedPage() {
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
               </div>
 
-              <!-- Gift / Tipping Button Added Here -->
+              <!-- Gift / Tipping Button -->
               <div style="text-align:center;">
                 <button class="reel-circle-btn" onclick="openGiftModal('${p.authorPhone}', '${p.authorName || 'Creator'}')">🎁</button>
                 <div class="reel-circle-label">Gift</div>
@@ -1378,7 +1407,7 @@ async function userDashboard() {
       <div class="accordion-content" id="myUploadedPosts">Loading...</div>
     </div>
 
-    <!-- Gift History Tab Added -->
+    <!-- Gift History Tab -->
     <div class="accordion-wrapper" id="accGifts">
       <div class="accordion-header" onclick="toggleAccordion('accGifts')">
         <span>🎁 Gift History (Sent & Received)</span>
@@ -2536,7 +2565,7 @@ function loadGiftHistory(phone) {
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
         html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
-          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientName)})<br>
+          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br>
           <span style="color:#888;">${date}</span>
         </div>`;
       });
