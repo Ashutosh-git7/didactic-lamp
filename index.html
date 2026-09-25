@@ -500,8 +500,8 @@ td {
   </div>
 </div>
 
-<!-- Dynamic Welcome Bonus Modal Container -->
-<div id="welcomeModalContainer"></div>
+<!-- Modal Container for Notifications & Welcome Bonus -->
+<div id="modalContainer"></div>
 
 <script type="module">
 
@@ -532,34 +532,32 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// WELCOME BONUS POPUP NOTIFICATION HELPER
+// POPUP NOTIFICATION MODAL HELPERS (Welcome Bonus vs Daily Login XP)
 // =========================================================================
-function showWelcomeBonusModal(userName, bonusAmount) {
-  const container = document.getElementById("welcomeModalContainer");
+function showModalPopup(title, subtitle, mainRewardText, buttonText) {
+  const container = document.getElementById("modalContainer");
   if (!container) return;
 
   container.innerHTML = `
     <div class="welcome-modal-overlay">
       <div class="welcome-modal-card">
         <div style="font-size: 42px; margin-bottom: 10px;">🎉</div>
-        <h3 style="color: #dfb72c; font-size: 20px; margin-bottom: 8px;">Welcome Bonus Unlocked!</h3>
-        <p style="color: #fff; font-size: 15px; margin-bottom: 14px;">
-          Hello <b>${userName || 'Member'}</b>, welcome to Temple_DA!
-        </p>
+        <h3 style="color: #dfb72c; font-size: 20px; margin-bottom: 8px;">${title}</h3>
+        <p style="color: #fff; font-size: 15px; margin-bottom: 14px;">${subtitle}</p>
         <div style="background: rgba(223, 183, 44, 0.12); border: 1px dashed #dfb72c; padding: 12px; border-radius: 10px; margin-bottom: 18px;">
           <span class="small" style="color: #aaa; display: block; margin-bottom: 4px;">REWARD CREDITED</span>
-          <span class="number" style="font-size: 24px; color: #00ff88;">+${bonusAmount} Temple_DA</span>
+          <span class="number" style="font-size: 24px; color: #00ff88;">${mainRewardText}</span>
         </div>
-        <button onclick="closeWelcomeBonusModal()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px;">
-          🚀 Start Exploring
+        <button onclick="closeModalPopup()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px;">
+          ${buttonText}
         </button>
       </div>
     </div>
   `;
 }
 
-window.closeWelcomeBonusModal = () => {
-  const container = document.getElementById("welcomeModalContainer");
+window.closeModalPopup = () => {
+  const container = document.getElementById("modalContainer");
   if (container) container.innerHTML = "";
 };
 
@@ -607,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (24 Hours / Once a Day -> +10 XP Points)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -627,6 +625,14 @@ async function checkAndApplyDailyLoginReward(phone) {
         points: newPoints,
         lastLoginDate: todayDateStr
       });
+
+      // Show popup notification for daily login reward
+      showModalPopup(
+        "Daily Login Bonus!", 
+        `Welcome back, <b>${u.name || 'Member'}</b>!`, 
+        "+10 XP Points", 
+        "Awesome, Let's Go!"
+      );
     }
   } catch (err) {
     console.error("Daily Login Reward Error: ", err);
@@ -858,21 +864,18 @@ window.connectWalletAndAutoLogin = async () => {
 
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
-    let foundUserData = null;
 
     usersSnap.forEach(child => {
       const uData = child.val();
       if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) {
         foundPhone = child.key;
-        foundUserData = uData;
       }
     });
 
     if (foundPhone) {
-      await checkAndApplyDailyLoginReward(foundPhone);
       localStorage.setItem("user", foundPhone);
-      showWelcomeBonusModal(foundUserData.name || "Member", 6);
-      setTimeout(() => { location.hash = "#user"; }, 1500);
+      await checkAndApplyDailyLoginReward(foundPhone);
+      setTimeout(() => { location.hash = "#user"; }, 1000);
     } else {
       alert("⚠️ No account registered with this wallet address. Please register first!");
       location.hash = "#register";
@@ -956,7 +959,7 @@ window.registerUser = async () => {
     name,
     wallet,
     password: btoa(password),
-    balance: 6,
+    balance: 6, // Welcome Bonus (6 Temple_DA)
     investment: 0,
     locked: 0,
     lockDate: 0,
@@ -974,7 +977,14 @@ window.registerUser = async () => {
     lastLoginDate: ""
   });
 
-  showWelcomeBonusModal(name, 6);
+  // Show Welcome Bonus Popup for new registration (+6 Temple_DA)
+  showModalPopup(
+    "Welcome Bonus Unlocked!", 
+    `Hello <b>${name}</b>, welcome to Temple_DA!`, 
+    "+6 Temple_DA", 
+    "🚀 Start Exploring"
+  );
+
   localStorage.setItem("user", phone);
   setTimeout(() => { location.hash = "#user"; }, 2000);
 };
@@ -1022,9 +1032,9 @@ window.login = async () => {
   const user = snap.val();
   if (atob(user.password) !== pass) return alert("Wrong password");
 
-  await checkAndApplyDailyLoginReward(phone);
   localStorage.setItem("user", phone);
-  showWelcomeBonusModal(user.name || "Member", 6);
+  // Check daily login XP points reward (+10 XP Points once every 24 hours)
+  await checkAndApplyDailyLoginReward(phone);
   setTimeout(() => { location.hash = "#user"; }, 1500);
 };
 
