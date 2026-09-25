@@ -1057,7 +1057,7 @@ function feedPage() {
     if (!listEl) return;
 
     if (!snap.exists()) {
-      listEl.innerHTML = `<div class="reel-item" style="padding:20px; text-align:center;"><p class="small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
+      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
       return;
     }
 
@@ -1093,10 +1093,10 @@ function feedPage() {
               </div>
             `;
           } else {
-            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'display:flex; align-items:center; justify-content:center; height:100%; color:#dfb72c; font-family:\\'Orbitron\\'; text-align:center; padding:20px;\\'>⚠️ Media format or URL unsupported</div>';"></video>`;
           }
         } else {
-          mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
+          mediaContent = `<img src="${p.mediaUrl || 'https://placehold.co/400x700/111/dfb72c?text=Temple_DA'}" alt="Reel Media" onerror="this.src='https://placehold.co/400x700/111/dfb72c?text=Temple_DA'">`;
         }
 
         html += `
@@ -1140,7 +1140,7 @@ function feedPage() {
 
               ${isMyPost ? `
               <div style="text-align:center;">
-                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '')">🗑️</button>
+                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}')">🗑️</button>
                 <div class="reel-circle-label" style="color:#ff4444;">Del</div>
               </div>` : ''}
             </div>
@@ -1431,10 +1431,10 @@ async function userDashboard() {
       
       <div style="margin: 10px 0; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
         <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">
-          📁 Select Video/Image File from Device (Optional):
+          📁 Select Video/Image File from Device (Max 25MB):
         </label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
-        <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 25MB)</p>
+        <p class="small" style="color:#888; margin-top:6px;">Select MP4, WebM or Image from phone/PC storage</p>
       </div>
 
       <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
@@ -1841,7 +1841,7 @@ function loadMyPosts(phone) {
           <td><b>${p.title}</b></td>
           <td><span class="number">${p.likesCount || 0}</span></td>
           <td>
-            <button onclick="deleteMyPost('${p.id}', '')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
+            <button onclick="deleteMyPost('${p.id}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
               Delete
             </button>
           </td>
@@ -1920,15 +1920,22 @@ window.publishTalent = async () => {
     const statusText = document.getElementById("uploadStatusText");
 
     if (file) {
-      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct upload!");
+      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct device upload!");
 
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
-      if (statusText) statusText.innerText = "Processing & Converting file...";
+      if (statusText) statusText.innerText = "Processing device file (0%)...";
 
       try {
         mediaUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
+          reader.onprogress = (e) => {
+            if (e.lengthComputable && progressBar) {
+              const pct = Math.round((e.loaded / e.total) * 100);
+              progressBar.style.width = pct + "%";
+              if (statusText) statusText.innerText = `Processing file: ${pct}%`;
+            }
+          };
           reader.onload = (e) => resolve(e.target.result);
           reader.onerror = (e) => reject(e);
           reader.readAsDataURL(file);
@@ -1938,12 +1945,12 @@ window.publishTalent = async () => {
       } catch (fileErr) {
         if (publishBtn) publishBtn.disabled = false;
         if (progressContainer) progressContainer.style.display = "none";
-        return alert("Failed to read file from device.");
+        return alert("Failed to read file from device storage.");
       }
     }
 
     if (type !== "text" && !mediaUrl) {
-      return alert("Select video/image file from your device or provide a direct video/Instagram URL!");
+      return alert("Please select a video/image file from your device OR paste a valid direct media/Instagram/YouTube URL!");
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -1958,10 +1965,12 @@ window.publishTalent = async () => {
       createdAt: Date.now()
     });
 
-    alert("Reel published successfully!");
+    alert("🎉 Reel successfully published and live in the feed!");
     location.hash = "#feed";
   } catch (error) {
     alert("Publish error: " + error.message);
+    const publishBtn = document.getElementById("publishBtn");
+    if (publishBtn) publishBtn.disabled = false;
   }
 };
 
