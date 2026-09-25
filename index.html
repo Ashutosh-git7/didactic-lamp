@@ -241,6 +241,37 @@ td {
   border: 1px solid #ff4444;
 }
 
+/* Custom Welcome Popup Modal */
+.welcome-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.welcome-modal-card {
+  background: linear-gradient(145deg, #181818 0%, #0d0d0d 100%);
+  border: 2px solid #dfb72c;
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 15px 50px rgba(223, 183, 44, 0.35);
+  animation: scaleUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleUp { from { transform: scale(0.8); } to { transform: scale(1); } }
+
 /* Accordion Histories */
 .accordion-wrapper {
   background: rgba(18, 18, 18, 0.85);
@@ -469,6 +500,9 @@ td {
   </div>
 </div>
 
+<!-- Dynamic Welcome Bonus Modal Container -->
+<div id="welcomeModalContainer"></div>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -496,6 +530,38 @@ signInAnonymously(auth).catch(e => console.log(e));
 const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
+
+// =========================================================================
+// WELCOME BONUS POPUP NOTIFICATION HELPER
+// =========================================================================
+function showWelcomeBonusModal(userName, bonusAmount) {
+  const container = document.getElementById("welcomeModalContainer");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="welcome-modal-overlay">
+      <div class="welcome-modal-card">
+        <div style="font-size: 42px; margin-bottom: 10px;">🎉</div>
+        <h3 style="color: #dfb72c; font-size: 20px; margin-bottom: 8px;">Welcome Bonus Unlocked!</h3>
+        <p style="color: #fff; font-size: 15px; margin-bottom: 14px;">
+          Hello <b>${userName || 'Member'}</b>, welcome to Temple_DA!
+        </p>
+        <div style="background: rgba(223, 183, 44, 0.12); border: 1px dashed #dfb72c; padding: 12px; border-radius: 10px; margin-bottom: 18px;">
+          <span class="small" style="color: #aaa; display: block; margin-bottom: 4px;">REWARD CREDITED</span>
+          <span class="number" style="font-size: 24px; color: #00ff88;">+${bonusAmount} Temple_DA</span>
+        </div>
+        <button onclick="closeWelcomeBonusModal()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px;">
+          🚀 Start Exploring
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+window.closeWelcomeBonusModal = () => {
+  const container = document.getElementById("welcomeModalContainer");
+  if (container) container.innerHTML = "";
+};
 
 // =========================================================================
 // BACKGROUND GLOBAL VESTING CHECK (30 din par 5% auto-release)
@@ -792,19 +858,21 @@ window.connectWalletAndAutoLogin = async () => {
 
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
+    let foundUserData = null;
 
     usersSnap.forEach(child => {
       const uData = child.val();
       if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) {
         foundPhone = child.key;
+        foundUserData = uData;
       }
     });
 
     if (foundPhone) {
       await checkAndApplyDailyLoginReward(foundPhone);
       localStorage.setItem("user", foundPhone);
-      alert("✅ Wallet verified! Auto login successful.");
-      location.hash = "#user";
+      showWelcomeBonusModal(foundUserData.name || "Member", 6);
+      setTimeout(() => { location.hash = "#user"; }, 1500);
     } else {
       alert("⚠️ No account registered with this wallet address. Please register first!");
       location.hash = "#register";
@@ -869,7 +937,9 @@ window.registerUser = async () => {
   const password = v("password");
   const referrer = v("ref");
 
+  if (!name || !phone || !password) return alert("Please fill in all required fields!");
   if (!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
+  
   const usersSnap = await get(ref(db, "users"));
   let walletExists = false;
 
@@ -904,8 +974,9 @@ window.registerUser = async () => {
     lastLoginDate: ""
   });
 
-  alert("Registration successful! 6 Temple_DA added.");
-  location.hash = "#login";
+  showWelcomeBonusModal(name, 6);
+  localStorage.setItem("user", phone);
+  setTimeout(() => { location.hash = "#user"; }, 2000);
 };
 
 function loginPage() {
@@ -953,7 +1024,8 @@ window.login = async () => {
 
   await checkAndApplyDailyLoginReward(phone);
   localStorage.setItem("user", phone);
-  location.hash = "#user";
+  showWelcomeBonusModal(user.name || "Member", 6);
+  setTimeout(() => { location.hash = "#user"; }, 1500);
 };
 
 /* =========================================================================
@@ -2565,7 +2637,7 @@ function loadGiftHistory(phone) {
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
         html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
-          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br>
+          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientName)})<br>
           <span style="color:#888;">${date}</span>
         </div>`;
       });
