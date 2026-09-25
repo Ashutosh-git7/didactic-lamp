@@ -1042,7 +1042,7 @@ window.login = async () => {
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
-    <div class="reels-page-wrapper" onclick="enableAudioOnFirstTouch()">
+    <div class="reels-page-wrapper">
       <div class="reels-top-bar">
         <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Back to Home</button></a>
         ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">Login</button></a>'}
@@ -1093,7 +1093,7 @@ function feedPage() {
               </div>
             `;
           } else {
-            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
+            mediaContent = `<video class="reel-video-element" loop playsinline autoplay src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
           }
         } else {
           mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
@@ -1118,6 +1118,11 @@ function feedPage() {
             </div>
 
             <div class="reel-actions-bar">
+              <div style="text-align:center;">
+                <button class="reel-circle-btn" onclick="toggleVideoSound(this)">🔊</button>
+                <div class="reel-circle-label">Sound</div>
+              </div>
+
               <div style="text-align:center;">
                 <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
@@ -1154,17 +1159,24 @@ function feedPage() {
   });
 }
 
-window.enableAudioOnFirstTouch = () => {
-  const activeVideo = document.querySelector('.reel-item video');
-  if (activeVideo && activeVideo.paused) {
-    activeVideo.play().catch(() => {});
+window.toggleVideoSound = (btnEl) => {
+  const itemEl = btnEl.closest('.reel-item');
+  if (!itemEl) return;
+  const vid = itemEl.querySelector('video');
+  if (!vid) return;
+
+  vid.muted = !vid.muted;
+  btnEl.innerText = vid.muted ? "🔇" : "🔊";
+  btnEl.style.borderColor = vid.muted ? "rgba(223, 183, 44, 0.6)" : "#00ff88";
+  
+  if (vid.paused) {
+    vid.play().catch(() => {});
   }
 };
 
 window.toggleVideoPlayback = (videoEl) => {
   if (videoEl.paused) {
-    videoEl.muted = false;
-    videoEl.play();
+    videoEl.play().catch(() => {});
   } else {
     videoEl.pause();
   }
@@ -1176,10 +1188,10 @@ function setupIntersectionAutoplay() {
       const vid = entry.target.querySelector('video');
       if (vid) {
         if (entry.isIntersecting) {
+          vid.muted = false;
           vid.play().catch(() => {});
         } else {
           vid.pause();
-          vid.muted = true;
         }
       }
     });
@@ -1854,11 +1866,7 @@ function loadMyPosts(phone) {
   });
 }
 
-// =========================================================================
-// STRICT DAILY VIDEO UPLOAD LIMIT ENFORCEMENT
-// =========================================================================
 async function checkDailyVideoLimit(phone, userTier) {
-  // Elite Yearly = Unlimited
   if (userTier === "yearly") return true;
 
   const now = new Date();
@@ -1870,18 +1878,17 @@ async function checkDailyVideoLimit(phone, userTier) {
   if (postsSnap.exists()) {
     postsSnap.forEach(s => {
       const p = s.val();
-      // Count video type posts uploaded today by this phone
       if (p.authorPhone === phone && p.type === "video" && (p.createdAt || 0) >= startOfDay) {
         todayVideoCount++;
       }
     });
   }
 
-  let maxAllowed = 2; // Starter Pack
-  if (userTier === "monthly") maxAllowed = 5; // Pro Creator Pack
+  let maxAllowed = 2;
+  if (userTier === "monthly") maxAllowed = 5;
 
   if (todayVideoCount >= maxAllowed) {
-    alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached today. Upgrade to Elite Yearly for unlimited uploads!`);
+    alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. Upgrade to Elite Yearly for unlimited uploads!`);
     return false;
   }
   return true;
@@ -1915,7 +1922,6 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
-    // 🔴 ENFORCE DAILY VIDEO LIMIT CHECK BEFORE PUBLISHING
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) return;
@@ -1951,8 +1957,6 @@ window.publishTalent = async () => {
     }
 
     if (type !== "text" && !mediaUrl) {
-      if (publishBtn) publishBtn.disabled = false;
-      if (progressContainer) progressContainer.style.display = "none";
       return alert("Select video/image file or provide a direct video/Instagram URL!");
     }
 
@@ -1973,8 +1977,6 @@ window.publishTalent = async () => {
     location.hash = "#feed";
   } catch (error) {
     alert("Publish error: " + error.message);
-    const publishBtn = document.getElementById("publishBtn");
-    if (publishBtn) publishBtn.disabled = false;
   }
 };
 
