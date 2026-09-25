@@ -1093,10 +1093,10 @@ function feedPage() {
               </div>
             `;
           } else {
-            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\'display:flex; align-items:center; justify-content:center; height:100%; color:#dfb72c; font-family:\\'Orbitron\\'; text-align:center; padding:20px;\\'>⚠️ Media format or URL unsupported</div>';"></video>`;
+            mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
           }
         } else {
-          mediaContent = `<img src="${p.mediaUrl || 'https://placehold.co/400x700/111/dfb72c?text=Temple_DA'}" alt="Reel Media" onerror="this.src='https://placehold.co/400x700/111/dfb72c?text=Temple_DA'">`;
+          mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
         }
 
         html += `
@@ -1140,7 +1140,7 @@ function feedPage() {
 
               ${isMyPost ? `
               <div style="text-align:center;">
-                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}')">🗑️</button>
+                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
                 <div class="reel-circle-label" style="color:#ff4444;">Del</div>
               </div>` : ''}
             </div>
@@ -1431,10 +1431,10 @@ async function userDashboard() {
       
       <div style="margin: 10px 0; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
         <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">
-          📁 Select Video/Image File from Device (Max 25MB):
+          📁 Select Video/Image File from Device (Optional):
         </label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
-        <p class="small" style="color:#888; margin-top:6px;">Select MP4, WebM or Image from phone/PC storage</p>
+        <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 25MB)</p>
       </div>
 
       <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
@@ -1841,7 +1841,7 @@ function loadMyPosts(phone) {
           <td><b>${p.title}</b></td>
           <td><span class="number">${p.likesCount || 0}</span></td>
           <td>
-            <button onclick="deleteMyPost('${p.id}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
+            <button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
               Delete
             </button>
           </td>
@@ -1854,7 +1854,11 @@ function loadMyPosts(phone) {
   });
 }
 
+// =========================================================================
+// STRICT DAILY VIDEO UPLOAD LIMIT ENFORCEMENT
+// =========================================================================
 async function checkDailyVideoLimit(phone, userTier) {
+  // Elite Yearly = Unlimited
   if (userTier === "yearly") return true;
 
   const now = new Date();
@@ -1866,17 +1870,18 @@ async function checkDailyVideoLimit(phone, userTier) {
   if (postsSnap.exists()) {
     postsSnap.forEach(s => {
       const p = s.val();
+      // Count video type posts uploaded today by this phone
       if (p.authorPhone === phone && p.type === "video" && (p.createdAt || 0) >= startOfDay) {
         todayVideoCount++;
       }
     });
   }
 
-  let maxAllowed = 2;
-  if (userTier === "monthly") maxAllowed = 5;
+  let maxAllowed = 2; // Starter Pack
+  if (userTier === "monthly") maxAllowed = 5; // Pro Creator Pack
 
   if (todayVideoCount >= maxAllowed) {
-    alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. Upgrade to Elite Yearly for unlimited uploads!`);
+    alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached today. Upgrade to Elite Yearly for unlimited uploads!`);
     return false;
   }
   return true;
@@ -1891,6 +1896,7 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
+    // 🔴 MANDATORY PACKAGE REQUIREMENT TO POST
     if (activeTier === "none") {
       return alert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
     }
@@ -1909,33 +1915,28 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
+    // 🔴 ENFORCE DAILY VIDEO LIMIT CHECK BEFORE PUBLISHING
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) return;
     }
 
+    let storagePath = "";
     const publishBtn = document.getElementById("publishBtn");
     const progressContainer = document.getElementById("uploadProgressContainer");
     const progressBar = document.getElementById("uploadProgressBar");
     const statusText = document.getElementById("uploadStatusText");
 
     if (file) {
-      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct device upload!");
+      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct upload!");
 
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
-      if (statusText) statusText.innerText = "Processing device file (0%)...";
+      if (statusText) statusText.innerText = "Processing & Converting file...";
 
       try {
         mediaUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onprogress = (e) => {
-            if (e.lengthComputable && progressBar) {
-              const pct = Math.round((e.loaded / e.total) * 100);
-              progressBar.style.width = pct + "%";
-              if (statusText) statusText.innerText = `Processing file: ${pct}%`;
-            }
-          };
           reader.onload = (e) => resolve(e.target.result);
           reader.onerror = (e) => reject(e);
           reader.readAsDataURL(file);
@@ -1945,12 +1946,14 @@ window.publishTalent = async () => {
       } catch (fileErr) {
         if (publishBtn) publishBtn.disabled = false;
         if (progressContainer) progressContainer.style.display = "none";
-        return alert("Failed to read file from device storage.");
+        return alert("Failed to read file from device.");
       }
     }
 
     if (type !== "text" && !mediaUrl) {
-      return alert("Please select a video/image file from your device OR paste a valid direct media/Instagram/YouTube URL!");
+      if (publishBtn) publishBtn.disabled = false;
+      if (progressContainer) progressContainer.style.display = "none";
+      return alert("Select video/image file or provide a direct video/Instagram URL!");
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -1960,12 +1963,13 @@ window.publishTalent = async () => {
       type: type || "video",
       title: title,
       mediaUrl: mediaUrl || "",
+      storagePath: storagePath || "",
       description: description || "",
       likesCount: 0,
       createdAt: Date.now()
     });
 
-    alert("🎉 Reel successfully published and live in the feed!");
+    alert("Reel published successfully!");
     location.hash = "#feed";
   } catch (error) {
     alert("Publish error: " + error.message);
@@ -1974,7 +1978,7 @@ window.publishTalent = async () => {
   }
 };
 
-window.deleteMyPost = async (postId) => {
+window.deleteMyPost = async (postId, storagePath) => {
   const phone = localStorage.getItem("user");
   const isAdmin = localStorage.getItem("admin");
 
@@ -1982,6 +1986,10 @@ window.deleteMyPost = async (postId) => {
   if (!confirm("Are you sure you want to delete this reel?")) return;
 
   try {
+    const postSnap = await get(ref(db, "posts/" + postId));
+    if (postSnap.exists() && storagePath) {
+      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+    }
     await remove(ref(db, "posts/" + postId));
     await remove(ref(db, "likes/" + postId));
     await remove(ref(db, "post_comments/" + postId));
