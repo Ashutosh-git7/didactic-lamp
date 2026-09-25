@@ -1057,7 +1057,7 @@ function feedPage() {
     if (!listEl) return;
 
     if (!snap.exists()) {
-      listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
+      listEl.innerHTML = `<div class="reel-item" style="padding:20px; text-align:center;"><p class="small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
       return;
     }
 
@@ -1140,7 +1140,7 @@ function feedPage() {
 
               ${isMyPost ? `
               <div style="text-align:center;">
-                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
+                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '')">🗑️</button>
                 <div class="reel-circle-label" style="color:#ff4444;">Del</div>
               </div>` : ''}
             </div>
@@ -1841,7 +1841,7 @@ function loadMyPosts(phone) {
           <td><b>${p.title}</b></td>
           <td><span class="number">${p.likesCount || 0}</span></td>
           <td>
-            <button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
+            <button onclick="deleteMyPost('${p.id}', '')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
               Delete
             </button>
           </td>
@@ -1891,7 +1891,6 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    // 🔴 MANDATORY PACKAGE REQUIREMENT TO POST
     if (activeTier === "none") {
       return alert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
     }
@@ -1915,7 +1914,6 @@ window.publishTalent = async () => {
       if (!isAllowed) return;
     }
 
-    let storagePath = "";
     const publishBtn = document.getElementById("publishBtn");
     const progressContainer = document.getElementById("uploadProgressContainer");
     const progressBar = document.getElementById("uploadProgressBar");
@@ -1929,7 +1927,6 @@ window.publishTalent = async () => {
       if (statusText) statusText.innerText = "Processing & Converting file...";
 
       try {
-        // Robust Base64 fallback if Firebase Storage CORS or bucket rule blocks direct blob upload
         mediaUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target.result);
@@ -1946,7 +1943,7 @@ window.publishTalent = async () => {
     }
 
     if (type !== "text" && !mediaUrl) {
-      return alert("Select video/image file or provide a direct video/Instagram URL!");
+      return alert("Select video/image file from your device or provide a direct video/Instagram URL!");
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -1956,7 +1953,6 @@ window.publishTalent = async () => {
       type: type || "video",
       title: title,
       mediaUrl: mediaUrl || "",
-      storagePath: storagePath || "",
       description: description || "",
       likesCount: 0,
       createdAt: Date.now()
@@ -1969,7 +1965,7 @@ window.publishTalent = async () => {
   }
 };
 
-window.deleteMyPost = async (postId, storagePath) => {
+window.deleteMyPost = async (postId) => {
   const phone = localStorage.getItem("user");
   const isAdmin = localStorage.getItem("admin");
 
@@ -1977,10 +1973,6 @@ window.deleteMyPost = async (postId, storagePath) => {
   if (!confirm("Are you sure you want to delete this reel?")) return;
 
   try {
-    const postSnap = await get(ref(db, "posts/" + postId));
-    if (postSnap.exists() && storagePath) {
-      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
-    }
     await remove(ref(db, "posts/" + postId));
     await remove(ref(db, "likes/" + postId));
     await remove(ref(db, "post_comments/" + postId));
