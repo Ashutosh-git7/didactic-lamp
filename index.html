@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -532,7 +533,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS (Welcome Bonus vs Daily Login XP)
+// POPUP NOTIFICATION MODAL HELPERS
 // =========================================================================
 function showModalPopup(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
@@ -562,7 +563,7 @@ window.closeModalPopup = () => {
 };
 
 // =========================================================================
-// BACKGROUND GLOBAL VESTING CHECK (30 din par 5% auto-release)
+// BACKGROUND GLOBAL VESTING CHECK
 // =========================================================================
 async function backgroundGlobalVestingCheck() {
   try {
@@ -605,7 +606,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER (24 Hours / Once a Day -> +10 XP Points)
+// DAILY LOGIN XP REWARD CHECK HELPER
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -619,14 +620,13 @@ async function checkAndApplyDailyLoginReward(phone) {
 
     if (u.lastLoginDate !== todayDateStr) {
       const currentPoints = Number(u.points || 0);
-      const newPoints = currentPoints + 10; // Roz login par 10 XP Points
+      const newPoints = currentPoints + 10;
 
       await update(userRef, {
         points: newPoints,
         lastLoginDate: todayDateStr
       });
 
-      // Show popup notification for daily login reward
       showModalPopup(
         "Daily Login Bonus!", 
         `Welcome back, <b>${u.name || 'Member'}</b>!`, 
@@ -743,8 +743,8 @@ async function getLivePriceData() {
   try {
     const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
     const fallbackData = await fallbackRes.json();
-    if (fallbackData && fallbackData["0x50be31caab627ee8F98374d33b0454a8269a79e1"]?.usd) {
-      return parseFloat(fallbackData["0x50be31caab627ee8F98374d33b0454a8269a79e1"].usd);
+    if (fallbackData && fallbackData["0x50be31caab627ee8F98374d33b0454a8269A79e1"]?.usd) {
+      return parseFloat(fallbackData["0x50be31caab627ee8F98374d33b0454a8269A79e1"].usd);
     }
   } catch (err) {}
   
@@ -959,7 +959,7 @@ window.registerUser = async () => {
     name,
     wallet,
     password: btoa(password),
-    balance: 6, // Welcome Bonus (6 Temple_DA)
+    balance: 6,
     investment: 0,
     locked: 0,
     lockDate: 0,
@@ -977,7 +977,6 @@ window.registerUser = async () => {
     lastLoginDate: ""
   });
 
-  // Show Welcome Bonus Popup for new registration (+6 Temple_DA)
   showModalPopup(
     "Welcome Bonus Unlocked!", 
     `Hello <b>${name}</b>, welcome to Temple_DA!`, 
@@ -1033,13 +1032,12 @@ window.login = async () => {
   if (atob(user.password) !== pass) return alert("Wrong password");
 
   localStorage.setItem("user", phone);
-  // Check daily login XP points reward (+10 XP Points once every 24 hours)
   await checkAndApplyDailyLoginReward(phone);
   setTimeout(() => { location.hash = "#user"; }, 1500);
 };
 
 /* =========================================================================
-   DEDICATED REELS FEED PAGE WITH GIFTING FEATURE
+   DEDICATED REELS FEED PAGE WITH INSTAGRAM FALLBACK & GIFTING
 ========================================================================= */
 
 function feedPage() {
@@ -1084,6 +1082,17 @@ function feedPage() {
           if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
             let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
             mediaContent = `<iframe src="${embed}?autoplay=0" style="width:100%; height:100%; border:0;" allowfullscreen></iframe>`;
+          } else if (p.mediaUrl && p.mediaUrl.includes("instagram.com")) {
+            mediaContent = `
+              <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:linear-gradient(135deg, #405de6, #5851db, #833ab4, #c13584, #fd1d1d, #fcb045); padding:20px; text-align:center;">
+                <span style="font-size:50px; margin-bottom:12px;">📸</span>
+                <h3 style="color:#fff; font-size:18px; margin-bottom:8px;">Instagram Reel / Post</h3>
+                <p class="small" style="color:#f0f0f0; margin-bottom:20px;">Click below to watch this content directly on Instagram.</p>
+                <a href="${p.mediaUrl}" target="_blank" style="background:#fff; color:#000; padding:12px 24px; border-radius:10px; font-weight:bold; font-family:'Orbitron',sans-serif; text-decoration:none; font-size:13px; box-shadow:0 5px 15px rgba(0,0,0,0.5);">
+                  🔗 Watch on Instagram
+                </a>
+              </div>
+            `;
           } else {
             mediaContent = `<video class="reel-video-element" loop playsinline autoplay muted src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
           }
@@ -1115,7 +1124,6 @@ function feedPage() {
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
               </div>
 
-              <!-- Gift / Tipping Button -->
               <div style="text-align:center;">
                 <button class="reel-circle-btn" onclick="openGiftModal('${p.authorPhone}', '${p.authorName || 'Creator'}')">🎁</button>
                 <div class="reel-circle-label">Gift</div>
@@ -1427,15 +1435,15 @@ async function userDashboard() {
           📁 Select Video/Image File from Device (Optional):
         </label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
-        <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 50MB)</p>
+        <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 25MB)</p>
       </div>
 
-      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / MP4) —</p>
-      <input id="talentMedia" placeholder="Direct Video MP4 URL or YouTube Shorts link">
+      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
+      <input id="talentMedia" placeholder="Direct Video MP4 URL, Instagram or YouTube Shorts link">
       <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
 
       <div id="uploadProgressContainer" style="display:none; margin: 12px 0;">
-        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Uploading Reel: 0%</p>
+        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Processing File: 0%</p>
         <div style="background:#222; border-radius:6px; height:8px; overflow:hidden; margin-top:6px;">
           <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
         </div>
@@ -1884,6 +1892,11 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
+    // 🔴 MANDATORY PACKAGE REQUIREMENT TO POST
+    if (activeTier === "none") {
+      return alert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
+    }
+
     const typeEl = document.getElementById("talentType");
     const titleEl = document.getElementById("talentTitle");
     const mediaEl = document.getElementById("talentMedia");
@@ -1904,48 +1917,37 @@ window.publishTalent = async () => {
     }
 
     let storagePath = "";
+    const publishBtn = document.getElementById("publishBtn");
+    const progressContainer = document.getElementById("uploadProgressContainer");
+    const progressBar = document.getElementById("uploadProgressBar");
+    const statusText = document.getElementById("uploadStatusText");
 
     if (file) {
-      if (file.size > 50 * 1024 * 1024) return alert("File size must be less than 50MB!");
-
-      const publishBtn = document.getElementById("publishBtn");
-      const progressContainer = document.getElementById("uploadProgressContainer");
-      const progressBar = document.getElementById("uploadProgressBar");
-      const statusText = document.getElementById("uploadStatusText");
+      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct upload!");
 
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
+      if (statusText) statusText.innerText = "Processing & Converting file...";
 
       try {
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-        storagePath = `posts/${phone}_${Date.now()}_${cleanFileName}`;
-        const fileRef = sRef(storage, storagePath);
-        const uploadTask = uploadBytesResumable(fileRef, file);
-
-        await new Promise((resolve, reject) => {
-          uploadTask.on(
-            "state_changed",
-            snapshot => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              if (progressBar) progressBar.style.width = progress + "%";
-              if (statusText) statusText.innerText = `Uploading Reel: ${Math.round(progress)}%`;
-            },
-            error => { reject(error); },
-            async () => {
-              mediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve();
-            }
-          );
+        // Robust Base64 fallback if Firebase Storage CORS or bucket rule blocks direct blob upload
+        mediaUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(e);
+          reader.readAsDataURL(file);
         });
-      } catch (uploadErr) {
+
+        if (progressBar) progressBar.style.width = "100%";
+      } catch (fileErr) {
         if (publishBtn) publishBtn.disabled = false;
         if (progressContainer) progressContainer.style.display = "none";
-        if (!mediaUrl) return alert("⚠️ File upload failed. Please provide a YouTube Shorts or MP4 URL!");
+        return alert("Failed to read file from device.");
       }
     }
 
     if (type !== "text" && !mediaUrl) {
-      return alert("Select video file or provide direct URL!");
+      return alert("Select video/image file or provide a direct video/Instagram URL!");
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -2665,3 +2667,4 @@ function appDiv() { return document.getElementById("app"); }
 </script>
 </body>
 </html>
+```
