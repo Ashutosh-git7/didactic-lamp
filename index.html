@@ -1078,7 +1078,6 @@ window.login = async () => {
 /* =========================================================================
    DEDICATED REELS FEED PAGE
 ========================================================================= */
-
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
@@ -1095,6 +1094,9 @@ function feedPage() {
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
     if (!listEl) return;
+
+    // Save current scroll position before re-rendering so user doesn't jump
+    const currentScroll = listEl.scrollTop;
 
     if (!snap.exists()) {
       listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
@@ -1194,10 +1196,12 @@ function feedPage() {
       });
 
       listEl.innerHTML = html;
+      listEl.scrollTop = currentScroll; // Restores exact scroll position instantly
       setupIntersectionAutoplay();
     });
   });
 }
+
 
 window.toggleVideoSound = (btnEl) => {
   const itemEl = btnEl.closest('.reel-item');
