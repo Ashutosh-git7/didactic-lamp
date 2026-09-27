@@ -532,7 +532,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS (Globally Attached)
+// POPUP NOTIFICATION MODAL HELPERS
 // =========================================================================
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
@@ -605,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (Fixed to trigger on session load)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -617,7 +617,6 @@ async function checkAndApplyDailyLoginReward(phone) {
     const now = new Date();
     const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 
-    // Agar aaj login nahi kiya hai ya date match nahi ho rahi
     if (u.lastLoginDate !== todayDateStr) {
       const currentPoints = Number(u.points || 0);
       const newPoints = currentPoints + 10;
@@ -633,7 +632,6 @@ async function checkAndApplyDailyLoginReward(phone) {
         timestamp: Date.now()
       });
 
-      // Turant popup trigger karein
       window.showModalPopup(
         "Daily Login Bonus!", 
         `Welcome back, <b>${u.name || 'Member'}</b>!`, 
@@ -1078,7 +1076,7 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   DEDICATED REELS FEED PAGE WITH INSTAGRAM FALLBACK & GIFTING
+   DEDICATED REELS FEED PAGE
 ========================================================================= */
 
 function feedPage() {
@@ -1360,6 +1358,9 @@ window.submitReelComment = async () => {
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
+
+  // Fixed: Daily login reward check added on dashboard load
+  await checkAndApplyDailyLoginReward(phone);
 
   const priceUsd = await getPrice();
 
@@ -1936,35 +1937,42 @@ function loadMyPosts(phone) {
   });
 }
 
+// Fixed & Robust Daily Video Limit Check Function
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-  const postsSnap = await get(ref(db, "posts"));
-  let todayVideoCount = 0;
+  try {
+    const postsSnap = await get(ref(db, "posts"));
+    let todayVideoCount = 0;
 
-  if (postsSnap.exists()) {
-    postsSnap.forEach(s => {
-      const p = s.val();
-      if (p.authorPhone === phone && p.type === "video" && (p.createdAt || 0) >= startOfDay) {
-        todayVideoCount++;
-      }
-    });
-  }
+    if (postsSnap.exists()) {
+      postsSnap.forEach(s => {
+        const p = s.val();
+        if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) {
+          todayVideoCount++;
+        }
+      });
+    }
 
-  let maxAllowed = 2;
-  if (userTier === "monthly") maxAllowed = 5;
+    let maxAllowed = 2; // Starter limit
+    if (userTier === "monthly") maxAllowed = 5; // Pro limit
 
-  if (todayVideoCount >= maxAllowed) {
-    alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. Upgrade to Elite Yearly for unlimited uploads!`);
+    if (todayVideoCount >= maxAllowed) {
+      alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Limit check error:", err);
     return false;
   }
-  return true;
 }
 
 window.publishTalent = async () => {
+  const publishBtn = document.getElementById("publishBtn");
   try {
     const phone = localStorage.getItem("user");
     if (!phone) return alert("Please login first");
@@ -1991,13 +1999,16 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
+    // Fixed: Properly stopping execution if daily limit is reached
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
-      if (!isAllowed) return;
+      if (!isAllowed) {
+        if (publishBtn) publishBtn.disabled = false;
+        return; 
+      }
     }
 
     let storagePath = "";
-    const publishBtn = document.getElementById("publishBtn");
     const progressContainer = document.getElementById("uploadProgressContainer");
     const progressBar = document.getElementById("uploadProgressBar");
     const statusText = document.getElementById("uploadStatusText");
@@ -2026,6 +2037,8 @@ window.publishTalent = async () => {
     }
 
     if (type !== "text" && !mediaUrl) {
+      if (publishBtn) publishBtn.disabled = false;
+      if (progressContainer) progressContainer.style.display = "none";
       return alert("Select video/image file or provide a direct video/Instagram URL!");
     }
 
@@ -2045,6 +2058,7 @@ window.publishTalent = async () => {
     alert("Reel published successfully!");
     location.hash = "#feed";
   } catch (error) {
+    if (publishBtn) publishBtn.disabled = false;
     alert("Publish error: " + error.message);
   }
 };
@@ -2158,6 +2172,7 @@ window.subscribeCreator = async (creatorPhone) => {
   }
 };
 
+// Fixed: Points conversion now properly deducts only convertible points and retains remainder points instead of wiping everything to 0
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login");
@@ -2189,11 +2204,13 @@ window.convertPointsToToken = async () => {
     return alert("⚠️ Conversion Restricted!\nTo convert your points to Temple_DA, you must either have an Active Package or at least 1 Direct Referral.");
   }
 
-  const tokensToCredit = Number((currentPoints / 200).toFixed(2));
+  const convertiblePoints = Math.floor(currentPoints / 200) * 200;
+  const remainingPoints = currentPoints - convertiblePoints;
+  const tokensToCredit = Number((convertiblePoints / 200).toFixed(2));
   const newBalance = Number(((u.balance || 0) + tokensToCredit).toFixed(2));
 
-  await update(ref(db, "users/" + phone), { points: 0, balance: newBalance });
-  alert(`🎉 Congratulations! ${currentPoints} Points successfully converted to ${tokensToCredit} Temple_DA!`);
+  await update(ref(db, "users/" + phone), { points: remainingPoints, balance: newBalance });
+  alert(`🎉 Congratulations! ${convertiblePoints} Points successfully converted to ${tokensToCredit} Temple_DA! Remaining points: ${remainingPoints}`);
 };
 
 /* =========================================================================
