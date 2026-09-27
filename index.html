@@ -2150,7 +2150,9 @@ window.likePost = async (postId) => {
     if (likeCheck.exists()) return alert("You have already supported this post!");
 
     await set(ref(db, `likes/${postId}/${userPhone}`), true);
-    await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
+    
+    const newLikesCount = Number(pData.likesCount || 0) + 1;
+    await update(ref(db, `posts/${postId}`), { likesCount: newLikesCount });
 
     const actualType = pData.type || "video";
     let creatorPts = actualType === "video" ? 3 : 1;
@@ -2178,12 +2180,20 @@ window.likePost = async (postId) => {
       }
     }
 
-    // Floating Animation Trigger on Reels Page without redirecting
+    // UI par likes count ko instantly update karna bina page hate
+    const reelItem = document.querySelector(`.reel-item[data-id="${postId}"]`);
+    if (reelItem) {
+      const likeLabel = reelItem.querySelector('.reel-actions-bar div:nth-child(2) .reel-circle-label');
+      if (likeLabel) likeLabel.innerText = newLikesCount;
+    }
+
+    // Smooth Floating Animation Trigger on Reels Page
     showFloatingRewardAnimation(`+${viewerPts} Pts`);
   } catch (err) {
     alert("Like error: " + err.message);
   }
 };
+
 
 window.subscribeCreator = async (creatorPhone) => {
   try {
