@@ -241,43 +241,6 @@ td {
   border: 1px solid #ff4444;
 }
 
-/* Floating Points Animation Styles */
-@keyframes floatUpAndFade {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-60px) scale(1.2);
-  }
-}
-
-.floating-reward {
-  position: fixed;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  color: #00ff88;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-  pointer-events: none;
-  z-index: 9999;
-  animation: floatUpAndFade 1s ease-out forwards;
-}
-
-.live-points-badge {
-  background: rgba(223, 183, 44, 0.15);
-  border: 1px solid #dfb72c;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
-  color: #dfb72c;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 /* Custom Welcome Popup Modal */
 .welcome-modal-overlay {
   position: fixed;
@@ -569,27 +532,6 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// FLOATING REWARD ANIMATION HELPER
-// =========================================================================
-window.showFloatingReward = function(event, text) {
-  const el = document.createElement("div");
-  el.className = "floating-reward";
-  el.innerText = text;
-
-  const x = event ? event.clientX : window.innerWidth / 2;
-  const y = event ? event.clientY : window.innerHeight - 150;
-
-  el.style.left = `${x - 20}px`;
-  el.style.top = `${y - 20}px`;
-
-  document.body.appendChild(el);
-
-  setTimeout(() => {
-    el.remove();
-  }, 1000);
-};
-
-// =========================================================================
 // POPUP NOTIFICATION MODAL HELPERS
 // =========================================================================
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
@@ -663,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (Fixed to trigger on session load)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -1134,40 +1076,21 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   DEDICATED REELS FEED PAGE (Updated with Live Points Badge)
+   DEDICATED REELS FEED PAGE
 ========================================================================= */
 
 function feedPage() {
-  const currentUser = localStorage.getItem("user"] || "";
+  const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
     <div class="reels-page-wrapper">
       <div class="reels-top-bar">
-        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Back</button></a>
-        
-        <div id="liveReelsPointsBadge" class="live-points-badge" style="display:none;">
-          <span>⭐</span> <span id="reelsLivePts">0</span> Pts
-        </div>
-
+        <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Back to Home</button></a>
         ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">Login</button></a>'}
       </div>
       
       <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
     </div>
   `;
-
-  if (currentUser) {
-    onValue(ref(db, "users/" + currentUser), snap => {
-      if (snap.exists()) {
-        const u = snap.val();
-        const badge = document.getElementById("liveReelsPointsBadge");
-        const ptsSpan = document.getElementById("reelsLivePts");
-        if (badge && ptsSpan) {
-          badge.style.display = "flex";
-          ptsSpan.innerText = Number(u.points || 0);
-        }
-      }
-    });
-  }
 
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
@@ -1241,7 +1164,7 @@ function feedPage() {
               </div>
 
               <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="likePost('${p.id}', event)">❤️</button>
+                <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
               </div>
 
@@ -1436,6 +1359,7 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
+  // Fixed: Daily login reward check added on dashboard load
   await checkAndApplyDailyLoginReward(phone);
 
   const priceUsd = await getPrice();
@@ -2013,6 +1937,7 @@ function loadMyPosts(phone) {
   });
 }
 
+// Fixed & Robust Daily Video Limit Check Function
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
 
@@ -2032,8 +1957,8 @@ async function checkDailyVideoLimit(phone, userTier) {
       });
     }
 
-    let maxAllowed = 2;
-    if (userTier === "monthly") maxAllowed = 5;
+    let maxAllowed = 2; // Starter limit
+    if (userTier === "monthly") maxAllowed = 5; // Pro limit
 
     if (todayVideoCount >= maxAllowed) {
       alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
@@ -2074,6 +1999,7 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
+    // Fixed: Properly stopping execution if daily limit is reached
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) {
@@ -2158,7 +2084,7 @@ window.deleteMyPost = async (postId, storagePath) => {
   }
 };
 
-window.likePost = async (postId, event) => {
+window.likePost = async (postId) => {
   try {
     const userPhone = localStorage.getItem("user");
     if (!userPhone) return alert("Please login to like");
@@ -2200,9 +2126,8 @@ window.likePost = async (postId, event) => {
           timestamp: Date.now()
         });
       }
-      // Floating reward animation trigger
-      window.showFloatingReward(event, `+${viewerPts} Pts`);
     }
+    alert("Liked successfully!");
   } catch (err) {
     alert("Like error: " + err.message);
   }
@@ -2240,7 +2165,6 @@ window.subscribeCreator = async (creatorPhone) => {
         timestamp: Date.now()
       });
     }
-    window.showFloatingReward(null, `+15 Pts`);
     alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
     feedPage();
   } catch (err) {
@@ -2248,6 +2172,7 @@ window.subscribeCreator = async (creatorPhone) => {
   }
 };
 
+// Fixed: Points conversion now properly deducts only convertible points and retains remainder points instead of wiping everything to 0
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login");
