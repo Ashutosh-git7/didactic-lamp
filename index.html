@@ -626,6 +626,12 @@ async function checkAndApplyDailyLoginReward(phone) {
         lastLoginDate: todayDateStr
       });
 
+      await push(ref(db, `points_history/${phone}`), {
+        source: "Daily Login",
+        points: 10,
+        timestamp: Date.now()
+      });
+
       showModalPopup(
         "Daily Login Bonus!", 
         `Welcome back, <b>${u.name || 'Member'}</b>!`, 
@@ -975,6 +981,31 @@ window.registerUser = async () => {
     monthlyBusiness: 0,
     lastLoginDate: ""
   });
+
+  if (referrer) {
+    const referrerSnap = await get(ref(db, "users/" + referrer));
+    if (referrerSnap.exists()) {
+      const referrerData = referrerSnap.val();
+      const currentPoints = Number(referrerData.points || 0);
+      const newPoints = currentPoints + 20;
+
+      await update(ref(db, "users/" + referrer), {
+        points: newPoints
+      });
+
+      await push(ref(db, `points_history/${referrer}`), {
+        source: "Referral Bonus",
+        points: 20,
+        timestamp: Date.now()
+      });
+
+      await push(ref(db, `referral_points_history/${referrer}`), {
+        fromUser: phone,
+        pointsAwarded: 20,
+        timestamp: Date.now()
+      });
+    }
+  }
 
   showModalPopup(
     "Welcome Bonus Unlocked!", 
@@ -1376,6 +1407,11 @@ async function userDashboard() {
       </div>
 
       <div class="card">
+        <h3>Referral Points Earned</h3>
+        <span class="number" id="totalRefPointsDisplay">0</span> Pts
+      </div>
+
+      <div class="card">
         <h3>Subscribers</h3>
         <span class="number">${Number(u.subscribersCount || 0)}</span>
       </div>
@@ -1500,6 +1536,24 @@ async function userDashboard() {
       <div class="accordion-content" id="referralHistory">Loading...</div>
     </div>
 
+    <!-- Referral Points History Tab -->
+    <div class="accordion-wrapper" id="accRefPointsHistory">
+      <div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')">
+        <span>🌟 Referral Points History (+20 Pts Earnings)</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="refPointsHistoryList">Loading...</div>
+    </div>
+
+    <!-- Master Points Earnings History Tab -->
+    <div class="accordion-wrapper" id="accMasterPoints">
+      <div class="accordion-header" onclick="toggleAccordion('accMasterPoints')">
+        <span>📊 Master Points Earnings History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="masterPointsHistoryList">Loading...</div>
+    </div>
+
     <div class="accordion-wrapper" id="accMyPosts">
       <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
         <span>🎬 My Uploaded Reels & Posts</span>
@@ -1548,6 +1602,8 @@ async function userDashboard() {
 
     startReleaseCountdown(u.lockDate, u.locked);
     loadReferralHistory(phone);
+    loadReferralPointsHistory(phone);
+    loadMasterPointsHistory(phone);
     loadInvestHistory(phone);
     loadWithdrawHistory(phone);
     loadPackageHistory(phone);
@@ -1606,8 +1662,11 @@ window.withdraw = async () => {
   const u = snap.val();
 
   const investment = u.investment || 0;
-  if (investment <= 0) {
-    return alert("Minimum investment is required before making withdrawals!");
+  const activeTier = checkAndHandlePackageExpiry(phone, u);
+  const hasValidActivePackage = activeTier !== "none" && u.packageExpiresAt && Date.now() <= u.packageExpiresAt;
+
+  if (investment <= 0 && !hasValidActivePackage) {
+    return alert("Minimum investment or a valid active Creator Package is required before making withdrawals!");
   }
 
   const now = new Date();
@@ -1620,14 +1679,14 @@ window.withdraw = async () => {
     todayWithdrawnAmount = 0;
   }
 
-  let maxDailyAllowed = 0;
+  let maxDailyAllowed = 1000;
   if (investment >= 1 && investment <= 19) maxDailyAllowed = 60;
   else if (investment >= 20 && investment <= 250) maxDailyAllowed = 1000;
   else if (investment >= 251 && investment <= 500) maxDailyAllowed = 2500;
   else if (investment > 500) maxDailyAllowed = 2500;
 
   if (todayWithdrawnAmount >= maxDailyAllowed) {
-    return alert(`⚠️ Daily Withdrawal Limit Reached!\nYour current investment ($${investment} USDT) has exhausted today's limit of ${maxDailyAllowed} Temple_DA.`);
+    return alert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account status has exhausted today's limit of ${maxDailyAllowed} Temple_DA.`);
   }
 
   if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
@@ -1903,7 +1962,6 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    // 🔴 MANDATORY PACKAGE REQUIREMENT TO POST
     if (activeTier === "none") {
       return alert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
     }
@@ -2026,12 +2084,22 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
+      await push(ref(db, `points_history/${authorPhone}`), {
+        source: "Reel Like / View",
+        points: creatorPts,
+        timestamp: Date.now()
+      });
     }
 
     if (viewerPts > 0) {
       const viewerSnap = await get(ref(db, "users/" + userPhone));
       if (viewerSnap.exists()) {
         await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
+        await push(ref(db, `points_history/${userPhone}`), {
+          source: "Reel Like / View",
+          points: viewerPts,
+          timestamp: Date.now()
+        });
       }
     }
     alert("Liked successfully!");
@@ -2054,12 +2122,22 @@ window.subscribeCreator = async (creatorPhone) => {
         subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
         points: Number(creatorSnap.val().points || 0) + 35
       });
+      await push(ref(db, `points_history/${creatorPhone}`), {
+        source: "Creator Subscription",
+        points: 35,
+        timestamp: Date.now()
+      });
     }
 
     const subSnap = await get(ref(db, "users/" + subscriberPhone));
     if (subSnap.exists()) {
       await update(ref(db, "users/" + subscriberPhone), {
         points: Number(subSnap.val().points || 0) + 15
+      });
+      await push(ref(db, `points_history/${subscriberPhone}`), {
+        source: "Creator Subscription",
+        points: 15,
+        timestamp: Date.now()
       });
     }
     alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
@@ -2572,6 +2650,91 @@ function loadReferralHistory(phone) {
     const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total Earned: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("referralHistory");
     if (el) el.innerHTML = headerHtml + (html || "No referral income yet.");
+  });
+}
+
+function loadReferralPointsHistory(phone) {
+  onValue(ref(db, `referral_points_history/${phone}`), snap => {
+    const container = document.getElementById("refPointsHistoryList");
+    const totalDisplay = document.getElementById("totalRefPointsDisplay");
+    if (!container) return;
+
+    if (!snap.exists()) {
+      container.innerHTML = `<p class="small">No referral points earned yet. Share your link!</p>`;
+      if (totalDisplay) totalDisplay.innerText = "0";
+      return;
+    }
+
+    let html = `<table>
+      <tr>
+        <th>Joined User</th>
+        <th>Points Awarded</th>
+        <th>Time</th>
+      </tr>`;
+    
+    let totalPointsEarned = 0;
+
+    snap.forEach(child => {
+      const d = child.val();
+      totalPointsEarned += (d.pointsAwarded || 20);
+      const date = new Date(d.timestamp).toLocaleString();
+
+      html += `
+        <tr>
+          <td><b>${maskPhone(d.fromUser)}</b></td>
+          <td><span class="number" style="color:#00ff88;">+${d.pointsAwarded || 20} Pts</span></td>
+          <td class="small">${date}</td>
+        </tr>
+      `;
+    });
+
+    html += `</table>`;
+    container.innerHTML = html;
+
+    if (totalDisplay) {
+      totalDisplay.innerText = totalPointsEarned;
+    }
+  });
+}
+
+function loadMasterPointsHistory(phone) {
+  onValue(ref(db, `points_history/${phone}`), snap => {
+    const container = document.getElementById("masterPointsHistoryList");
+    if (!container) return;
+
+    if (!snap.exists()) {
+      container.innerHTML = `<p class="small">No points activity yet. Start logging in, posting reels, or referring friends!</p>`;
+      return;
+    }
+
+    let html = `<table>
+      <tr>
+        <th>Source / Activity</th>
+        <th>Points</th>
+        <th>Time</th>
+      </tr>`;
+
+    snap.forEach(child => {
+      const d = child.val();
+      const date = new Date(d.timestamp).toLocaleString();
+      
+      let badgeColor = "#dfb72c";
+      if (d.source === "Daily Login") badgeColor = "#00ff88";
+      else if (d.source === "Referral Bonus") badgeColor = "#3498db";
+      else if (d.source === "Reel Like / View") badgeColor = "#e67e22";
+      else if (d.source === "Creator Subscription") badgeColor = "#9b59b6";
+
+      html += `
+        <tr>
+          <td><span class="badge-tag" style="background:${badgeColor}22; color:${badgeColor}; border-color:${badgeColor};">${d.source}</span></td>
+          <td><span class="number" style="color:${badgeColor};">+${d.points} Pts</span></td>
+          <td class="small">${date}</td>
+        </tr>
+      `;
+    });
+
+    html += `</table>`;
+    container.innerHTML = html;
   });
 }
 
