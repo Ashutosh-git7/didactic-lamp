@@ -465,30 +465,6 @@ td {
   border-radius: 8px;
   margin-bottom: 10px;
 }
-
-/* Floating Points Animation CSS */
-@keyframes floatUpFade {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-60px) scale(1.2);
-  }
-}
-
-.floating-points {
-  position: absolute;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-  color: #00ff88;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-  pointer-events: none;
-  animation: floatUpFade 1s ease-out forwards;
-  z-index: 99;
-}
 </style>
 </head>
 
@@ -629,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (Fixed to trigger on session load)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -1174,7 +1150,7 @@ function feedPage() {
                 ${(!isMyPost && currentUser) ? (
                   isSubscribed 
                     ? `<span class="badge-tag" style="background:rgba(0,255,136,0.2); color:#00ff88; border-color:#00ff88; font-size:10px; padding:3px 10px;">Following ✓</span>` 
-                    : `<button onclick="subscribeCreator('${p.authorPhone}', this)" style="width:auto; padding:4px 12px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>`
+                    : `<button onclick="subscribeCreator('${p.authorPhone}')" style="width:auto; padding:4px 12px; margin:0; font-size:11px; background:#dfb72c; color:#000;">+ Follow</button>`
                 ) : ''}
               </div>
               <p style="font-weight:bold; font-size:14px; margin-top:6px; color:#fff;">${p.title}</p>
@@ -1188,7 +1164,7 @@ function feedPage() {
               </div>
 
               <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="likePost('${p.id}', event)">❤️</button>
+                <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
                 <div class="reel-circle-label">${p.likesCount || 0}</div>
               </div>
 
@@ -1383,6 +1359,7 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
+  // Fixed: Daily login reward check added on dashboard load
   await checkAndApplyDailyLoginReward(phone);
 
   const priceUsd = await getPrice();
@@ -1562,6 +1539,7 @@ async function userDashboard() {
 
     <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
 
+    <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
       <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
         <span>👥 Referral Team Income</span>
@@ -1570,6 +1548,7 @@ async function userDashboard() {
       <div class="accordion-content" id="referralHistory">Loading...</div>
     </div>
 
+    <!-- Referral Points History Tab -->
     <div class="accordion-wrapper" id="accRefPointsHistory">
       <div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')">
         <span>🌟 Referral Points History (+20 Pts Earnings)</span>
@@ -1578,6 +1557,7 @@ async function userDashboard() {
       <div class="accordion-content" id="refPointsHistoryList">Loading...</div>
     </div>
 
+    <!-- Master Points Earnings History Tab -->
     <div class="accordion-wrapper" id="accMasterPoints">
       <div class="accordion-header" onclick="toggleAccordion('accMasterPoints')">
         <span>📊 Master Points Earnings History</span>
@@ -1594,6 +1574,7 @@ async function userDashboard() {
       <div class="accordion-content" id="myUploadedPosts">Loading...</div>
     </div>
 
+    <!-- Gift History Tab -->
     <div class="accordion-wrapper" id="accGifts">
       <div class="accordion-header" onclick="toggleAccordion('accGifts')">
         <span>🎁 Gift History (Sent & Received)</span>
@@ -1956,6 +1937,7 @@ function loadMyPosts(phone) {
   });
 }
 
+// Fixed & Robust Daily Video Limit Check Function
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
 
@@ -1975,8 +1957,8 @@ async function checkDailyVideoLimit(phone, userTier) {
       });
     }
 
-    let maxAllowed = 2; 
-    if (userTier === "monthly") maxAllowed = 5; 
+    let maxAllowed = 2; // Starter limit
+    if (userTier === "monthly") maxAllowed = 5; // Pro limit
 
     if (todayVideoCount >= maxAllowed) {
       alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
@@ -2017,6 +1999,7 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
+    // Fixed: Properly stopping execution if daily limit is reached
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) {
@@ -2101,11 +2084,7 @@ window.deleteMyPost = async (postId, storagePath) => {
   }
 };
 
-// =========================================================================
-// UPDATED LIKE & FOLLOW FUNCTIONS WITH LIVE DOM & FLOATING ANIMATION
-// =========================================================================
-
-window.likePost = async (postId, event) => {
+window.likePost = async (postId) => {
   try {
     const userPhone = localStorage.getItem("user");
     if (!userPhone) return alert("Please login to like");
@@ -2121,8 +2100,7 @@ window.likePost = async (postId, event) => {
     if (likeCheck.exists()) return alert("You have already supported this post!");
 
     await set(ref(db, `likes/${postId}/${userPhone}`), true);
-    const newLikesCount = Number(pData.likesCount || 0) + 1;
-    await update(ref(db, `posts/${postId}`), { likesCount: newLikesCount });
+    await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
 
     const actualType = pData.type || "video";
     let creatorPts = actualType === "video" ? 3 : 1;
@@ -2149,23 +2127,13 @@ window.likePost = async (postId, event) => {
         });
       }
     }
-
-    // Update UI directly on the current card without changing the page
-    const cardEl = document.querySelector(`.reel-item[data-id="${postId}"]`);
-    if (cardEl) {
-      const likeCountLabel = cardEl.querySelector('.reel-circle-btn[onclick*="likePost"]').closest('div').querySelector('.reel-circle-label');
-      if (likeCountLabel) likeCountLabel.innerText = newLikesCount;
-
-      if (viewerPts > 0) {
-        showFloatingPoints(cardEl, `+${viewerPts} Pts`);
-      }
-    }
+    alert("Liked successfully!");
   } catch (err) {
     alert("Like error: " + err.message);
   }
 };
 
-window.subscribeCreator = async (creatorPhone, buttonElement) => {
+window.subscribeCreator = async (creatorPhone) => {
   try {
     const subscriberPhone = localStorage.getItem("user");
     if (!subscriberPhone) return alert("Please login to follow");
@@ -2197,37 +2165,14 @@ window.subscribeCreator = async (creatorPhone, buttonElement) => {
         timestamp: Date.now()
       });
     }
-
-    // Change button to "Following ✓" directly without page reload
-    if (buttonElement) {
-      const parentContainer = buttonElement.parentElement;
-      buttonElement.outerHTML = `<span class="badge-tag" style="background:rgba(0,255,136,0.2); color:#00ff88; border-color:#00ff88; font-size:10px; padding:3px 10px;">Following ✓</span>`;
-      
-      const cardEl = parentContainer.closest('.reel-item');
-      if (cardEl) {
-        showFloatingPoints(cardEl, `+15 Pts 🎉`);
-      }
-    }
+    alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
+    feedPage();
   } catch (err) {
     alert("Subscribe error: " + err.message);
   }
 };
 
-function showFloatingPoints(containerEl, text) {
-  const floatDiv = document.createElement('div');
-  floatDiv.className = 'floating-points';
-  floatDiv.innerText = text;
-  floatDiv.style.left = '50%';
-  floatDiv.style.top = '60%';
-  floatDiv.style.transform = 'translate(-50%, -50%)';
-
-  containerEl.appendChild(floatDiv);
-
-  setTimeout(() => {
-    floatDiv.remove();
-  }, 1000);
-}
-
+// Fixed: Points conversion now properly deducts only convertible points and retains remainder points instead of wiping everything to 0
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login");
