@@ -532,9 +532,9 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS
+// POPUP NOTIFICATION MODAL HELPERS (Globally Attached)
 // =========================================================================
-function showModalPopup(title, subtitle, mainRewardText, buttonText) {
+window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
   if (!container) return;
 
@@ -617,6 +617,7 @@ async function checkAndApplyDailyLoginReward(phone) {
     const now = new Date();
     const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 
+    // Agar aaj login nahi kiya hai ya date match nahi ho rahi
     if (u.lastLoginDate !== todayDateStr) {
       const currentPoints = Number(u.points || 0);
       const newPoints = currentPoints + 10;
@@ -632,7 +633,8 @@ async function checkAndApplyDailyLoginReward(phone) {
         timestamp: Date.now()
       });
 
-      showModalPopup(
+      // Turant popup trigger karein
+      window.showModalPopup(
         "Daily Login Bonus!", 
         `Welcome back, <b>${u.name || 'Member'}</b>!`, 
         "+10 XP Points", 
@@ -960,6 +962,9 @@ window.registerUser = async () => {
   const userSnap = await get(ref(db, "users/" + phone));
   if (userSnap.exists()) return alert("User exists");
 
+  const now = new Date();
+  const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
   await set(ref(db, "users/" + phone), {
     name,
     wallet,
@@ -975,11 +980,17 @@ window.registerUser = async () => {
     packageActivatedAt: 0,
     packageExpiresAt: 0,
     packageExpired: false,
-    points: 0,
+    points: 10,
     subscribersCount: 0,
     elite21: false,
     monthlyBusiness: 0,
-    lastLoginDate: ""
+    lastLoginDate: todayDateStr
+  });
+
+  await push(ref(db, `points_history/${phone}`), {
+    source: "Daily Login",
+    points: 10,
+    timestamp: Date.now()
   });
 
   if (referrer) {
@@ -1007,10 +1018,10 @@ window.registerUser = async () => {
     }
   }
 
-  showModalPopup(
+  window.showModalPopup(
     "Welcome Bonus Unlocked!", 
     `Hello <b>${name}</b>, welcome to Temple_DA!`, 
-    "+6 Temple_DA", 
+    "+6 Temple_DA & +10 XP", 
     "🚀 Start Exploring"
   );
 
