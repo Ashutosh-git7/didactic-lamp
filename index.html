@@ -605,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (Fixed to trigger on session load)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -1078,6 +1078,7 @@ window.login = async () => {
 /* =========================================================================
    DEDICATED REELS FEED PAGE
 ========================================================================= */
+
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
@@ -1094,9 +1095,6 @@ function feedPage() {
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
     if (!listEl) return;
-
-    // Save current scroll position before re-rendering so user doesn't jump
-    const currentScroll = listEl.scrollTop;
 
     if (!snap.exists()) {
       listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
@@ -1196,12 +1194,10 @@ function feedPage() {
       });
 
       listEl.innerHTML = html;
-      listEl.scrollTop = currentScroll; // Restores exact scroll position instantly
       setupIntersectionAutoplay();
     });
   });
 }
-
 
 window.toggleVideoSound = (btnEl) => {
   const itemEl = btnEl.closest('.reel-item');
@@ -1356,55 +1352,6 @@ window.submitReelComment = async () => {
 };
 
 /* =========================================================================
-   FLOATING REWARD ANIMATION HELPER (Stays on Reels Page without Redirect)
-========================================================================= */
-function showFloatingRewardAnimation(text) {
-  const existingAnim = document.getElementById("floatingRewardPopup");
-  if (existingAnim) existingAnim.remove();
-
-  const popup = document.createElement("div");
-  popup.id = "floatingRewardPopup";
-  popup.innerHTML = `🎉 ${text}`;
-  popup.style.cssText = `
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);
-    color: #000;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: bold;
-    font-size: 15px;
-    padding: 10px 22px;
-    border-radius: 30px;
-    box-shadow: 0 5px 25px rgba(0,255,136,0.6);
-    z-index: 99999;
-    animation: floatUpAndFade 1.5s ease forwards;
-    pointer-events: none;
-  `;
-
-  document.body.appendChild(popup);
-
-  if (!document.getElementById("floatingAnimationStyle")) {
-    const style = document.createElement("style");
-    style.id = "floatingAnimationStyle";
-    style.innerHTML = `
-      @keyframes floatUpAndFade {
-        0% { opacity: 0; transform: translate(-50%, 20px) scale(0.8); }
-        20% { opacity: 1; transform: translate(-50%, 0px) scale(1.1); }
-        80% { opacity: 1; transform: translate(-50%, -20px) scale(1); }
-        100% { opacity: 0; transform: translate(-50%, -50px) scale(0.9); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  setTimeout(() => {
-    if (popup) popup.remove();
-  }, 1500);
-}
-
-/* =========================================================================
    USER DASHBOARD
 ========================================================================= */
 
@@ -1412,6 +1359,7 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
+  // Fixed: Daily login reward check added on dashboard load
   await checkAndApplyDailyLoginReward(phone);
 
   const priceUsd = await getPrice();
@@ -1989,6 +1937,7 @@ function loadMyPosts(phone) {
   });
 }
 
+// Fixed & Robust Daily Video Limit Check Function
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
 
@@ -2008,8 +1957,8 @@ async function checkDailyVideoLimit(phone, userTier) {
       });
     }
 
-    let maxAllowed = 2;
-    if (userTier === "monthly") maxAllowed = 5;
+    let maxAllowed = 2; // Starter limit
+    if (userTier === "monthly") maxAllowed = 5; // Pro limit
 
     if (todayVideoCount >= maxAllowed) {
       alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
@@ -2050,6 +1999,7 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
+    // Fixed: Properly stopping execution if daily limit is reached
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) {
@@ -2134,9 +2084,6 @@ window.deleteMyPost = async (postId, storagePath) => {
   }
 };
 
-/* =========================================================================
-   UPDATED likePost & subscribeCreator (Keeps user on reels page & animates)
-========================================================================= */
 window.likePost = async (postId) => {
   try {
     const userPhone = localStorage.getItem("user");
@@ -2180,9 +2127,7 @@ window.likePost = async (postId) => {
         });
       }
     }
-
-    // Floating Animation Trigger on Reels Page without redirecting
-    showFloatingRewardAnimation(`+${viewerPts} Pts`);
+    alert("Liked successfully!");
   } catch (err) {
     alert("Like error: " + err.message);
   }
@@ -2220,56 +2165,14 @@ window.subscribeCreator = async (creatorPhone) => {
         timestamp: Date.now()
       });
     }
-
-    // Floating Animation Trigger on Reels Page without redirecting
-    showFloatingRewardAnimation("+15 Pts (Followed!)");
+    alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
+    feedPage();
   } catch (err) {
     alert("Subscribe error: " + err.message);
   }
 };
 
-
-
-window.subscribeCreator = async (creatorPhone) => {
-  try {
-    const subscriberPhone = localStorage.getItem("user");
-    if (!subscriberPhone) return alert("Please login to follow");
-    if (subscriberPhone === creatorPhone) return alert("You cannot follow yourself");
-
-    await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
-
-    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
-    if (creatorSnap.exists()) {
-      await update(ref(db, "users/" + creatorPhone), {
-        subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
-        points: Number(creatorSnap.val().points || 0) + 35
-      });
-      await push(ref(db, `points_history/${creatorPhone}`), {
-        source: "Creator Subscription",
-        points: 35,
-        timestamp: Date.now()
-      });
-    }
-
-    const subSnap = await get(ref(db, "users/" + subscriberPhone));
-    if (subSnap.exists()) {
-      await update(ref(db, "users/" + subscriberPhone), {
-        points: Number(subSnap.val().points || 0) + 15
-      });
-      await push(ref(db, `points_history/${subscriberPhone}`), {
-        source: "Creator Subscription",
-        points: 15,
-        timestamp: Date.now()
-      });
-    }
-
-    // Floating Animation Trigger on Reels Page without redirecting
-    showFloatingRewardAnimation("+15 Pts (Followed!)");
-  } catch (err) {
-    alert("Subscribe error: " + err.message);
-  }
-};
-
+// Fixed: Points conversion now properly deducts only convertible points and retains remainder points instead of wiping everything to 0
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login");
