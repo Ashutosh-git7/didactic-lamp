@@ -1507,7 +1507,7 @@ async function userDashboard() {
           ${u.elite21 
             ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' 
             : (eliteCount >= eliteConfig.slots 
-                ? `<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All ${eliteConfig.slots} Slots Full</span>` 
+                ? '<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All ${eliteConfig.slots} Slots Full</span>' 
                 : `<button onclick="joinElite21(${eliteConfig.price})" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite (${eliteConfig.price} USDT)</button>`)
           }
         </div>
@@ -1586,6 +1586,7 @@ async function userDashboard() {
 
     <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
 
+    ${u.elite21 ? `
     <!-- Elite Monthly Pool Earnings History Tab -->
     <div class="accordion-wrapper" id="accEliteEarnings">
       <div class="accordion-header" onclick="toggleAccordion('accEliteEarnings')">
@@ -1593,7 +1594,7 @@ async function userDashboard() {
         <span>▼</span>
       </div>
       <div class="accordion-content" id="eliteEarningsHistory">Loading...</div>
-    </div>
+    </div>` : ''}
 
     <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
@@ -1677,7 +1678,7 @@ async function userDashboard() {
     loadPackageHistory(phone);
     loadMyPosts(phone);
     loadGiftHistory(phone);
-    loadEliteEarningsHistory(phone);
+    if (u.elite21) loadEliteEarningsHistory(phone);
   });
 }
 
@@ -2682,12 +2683,11 @@ window.runMonthlyEliteDistribution = async () => {
         updates[`users/${member.phone}/balance`] = newBalance;
         distributedCount++;
 
-        const historyRefKey = push(ref(db, `elite_earnings_history/${member.phone}`)).key;
-        updates[`elite_earnings_history/${member.phone}/${historyRefKey}`] = {
+        push(ref(db, `elite_earnings_history/${member.phone}`), {
           amountUSDT: poolPerSlotUSDT,
           amountTokens: poolPerSlotTokens,
           timestamp: timestamp
-        };
+        });
       }
     });
 
@@ -2825,27 +2825,19 @@ function loadEliteEarningsHistory(phone) {
     let html = "";
     let totalTDA = 0;
     let totalUSDT = 0;
-    
-    if (!snap.exists()) {
-      const el = document.getElementById("eliteEarningsHistory");
-      if (el) el.innerHTML = "No elite pool earnings yet.";
-      return;
-    }
-
     snap.forEach(s => { 
       const d = s.val(); 
       const date = new Date(d.timestamp).toLocaleString();
-      totalTDA += Number(d.amountTokens || 0);
-      totalUSDT += Number(d.amountUSDT || 0);
+      totalTDA += d.amountTokens;
+      totalUSDT += d.amountUSDT;
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        Monthly Share: <span class="number">+${Number(d.amountTokens || 0).toFixed(2)} Temple_DA</span> ($${Number(d.amountUSDT || 0).toFixed(2)}) <br>
+        Monthly Share: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br>
         <span style="color:#888;">${date}</span>
       </div>`; 
     });
-
     const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total Elite Pool Earned: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("eliteEarningsHistory");
-    if (el) el.innerHTML = headerHtml + html;
+    if (el) el.innerHTML = headerHtml + (html || "No elite pool earnings yet.");
   });
 }
 
@@ -2993,7 +2985,7 @@ function loadWithdrawHistory(phone) {
     snap.forEach(s => { 
       const d = s.val();
       const date = new Date(d.timestamp).toLocaleString();
-      let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected") ? "#ff4444" : "#00ff88");
+      let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected" ) ? "#ff4444" : "#00ff88");
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
         Amount: <span class="number">${d.amount} Temple_DA</span><br>
         Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>
