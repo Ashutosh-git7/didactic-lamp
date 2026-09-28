@@ -1393,7 +1393,6 @@ async function userDashboard() {
     const balUsd = (balTda * priceUsd).toFixed(2);
     const userWallet = u.wallet || "Not Linked";
 
-    // Dynamic max slots check for joining visibility
     const maxSlotsSnap = await get(ref(db, "config/maxEliteSlots"));
     const maxAllowedSlots = maxSlotsSnap.exists() ? parseInt(maxSlotsSnap.val()) : 21;
 
@@ -2710,7 +2709,7 @@ window.runMonthlyElite21Distribution = async () => {
 
     const pool5Percent = totalNewBusinessUSDT * 0.05;
 
-    // Fixed equal division using dynamic denominator (maxAllowedSlots). Unclaimed pool tokens remain in system and zero out.
+    // Fixed equal division using dynamic denominator (maxAllowedSlots)
     const baseSharePerMemberUSDT = pool5Percent / maxAllowedSlots;
     const tokensPerMember = Number((baseSharePerMemberUSDT / currentPrice).toFixed(2));
 
