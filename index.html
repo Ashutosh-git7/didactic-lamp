@@ -605,7 +605,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER (Fixed to trigger on session load)
+// DAILY LOGIN XP REWARD CHECK HELPER
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -762,6 +762,19 @@ async function getPrice() {
     if (s.exists() && parseFloat(s.val()) > 0) return parseFloat(s.val());
   } catch (e) {}
   return await getLivePriceData();
+}
+
+async function getElite21Config() {
+  try {
+    const slotsSnap = await get(ref(db, "config/elite21Slots"));
+    const priceSnap = await get(ref(db, "config/elite21Price"));
+    return {
+      slots: slotsSnap.exists() ? parseInt(slotsSnap.val()) : 21,
+      price: priceSnap.exists() ? parseFloat(priceSnap.val()) : 250
+    };
+  } catch (e) {
+    return { slots: 21, price: 250 };
+  }
 }
 
 async function landing() {
@@ -1359,10 +1372,10 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
-  // Fixed: Daily login reward check added on dashboard load
   await checkAndApplyDailyLoginReward(phone);
 
   const priceUsd = await getPrice();
+  const eliteConfig = await getElite21Config();
 
   onValue(ref(db, "users/" + phone), async snap => {
     const u = snap.val() || {};
@@ -1394,6 +1407,39 @@ async function userDashboard() {
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
     const userWallet = u.wallet || "Not Linked";
+
+    // 5-year lock checking for Elite Member
+    const fiveYearsMs = 5 * 365 * 24 * 60 * 60 * 1000;
+    let eliteLockHtml = "";
+    if (u.elite21 === true) {
+      const eliteJoinedAt = u.eliteJoinedAt || u.createdAt || Date.now();
+      const eliteLockExpiresAt = eliteJoinedAt + fiveYearsMs;
+      const isLockExpired = Date.now() >= eliteLockExpiresAt;
+      const eliteTokensLocked = Number((u.eliteLockedTokens || (eliteConfig.price / priceUsd)).toFixed(2));
+
+      if (!isLockExpired) {
+        const msRemaining = eliteLockExpiresAt - Date.now();
+        const daysRem = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+        eliteLockHtml = `
+          <div style="margin-top:10px; padding:10px; background:rgba(223,183,44,0.1); border-radius:8px; border:1px solid #dfb72c;">
+            <span class="small" style="color:#dfb72c; display:block; font-weight:bold;">🔒 Elite 5-Year Lock Status: ACTIVE</span>
+            <span class="number" style="font-size:14px; color:#00ff88;">${eliteTokensLocked} Temple_DA locked</span>
+            <span class="small" style="display:block; color:#aaa;">Unlocks in approx. ${daysRem} days (${new Date(eliteLockExpiresAt).toLocaleDateString()})</span>
+          </div>
+        `;
+      } else {
+        eliteLockHtml = `
+          <div style="margin-top:10px; padding:10px; background:rgba(0,255,136,0.1); border-radius:8px; border:1px solid #00ff88;">
+            <span class="small" style="color:#00ff88; display:block; font-weight:bold;">🔓 Elite 5-Year Lock Period Completed!</span>
+            <span class="number" style="font-size:14px;">${eliteTokensLocked} Temple_DA unlocked</span>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <button onclick="relockEliteTokens()" style="width:auto; padding:6px 12px; font-size:11px; background:#dfb72c; color:#000; margin:0;">🔄 Relock for 5 Years</button>
+              <button onclick="leaveEliteClub()" class="btn-danger" style="width:auto; padding:6px 12px; font-size:11px; margin:0;">🚪 Leave Elite & Claim Tokens</button>
+            </div>
+          </div>
+        `;
+      }
+    }
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
@@ -1451,17 +1497,18 @@ async function userDashboard() {
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.05);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <h3 style="color:#dfb72c; margin-bottom:6px;">⭐ Temple Elite 21 Club</h3>
-          <p class="small">Join core leadership (Max 21 Members) with dedicated <strong>250 USDT</strong> Web3 payment to share monthly 5% pool distribution.</p>
+          <h3 style="color:#dfb72c; margin-bottom:6px;">⭐ Elite Leadership Club</h3>
+          <p class="small">Join core leadership (Max ${eliteConfig.slots} Members) with dedicated <strong>${eliteConfig.price} USDT</strong> Web3 payment to share monthly 5% equal pool distribution (5-Year Token Lock).</p>
           <p class="small" style="margin-top:8px;">Status: <span class="badge-tag">${u.elite21 ? 'ELITE MEMBER ACTIVE' : 'NOT JOINED'}</span> | Monthly Business: <strong>${u.monthlyBusiness || 0} USDT</strong></p>
-          <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold; letter-spacing:1px;">Current Elite Members: <span style="font-size:16px;">${eliteCount} / 21</span></p>
+          <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold; letter-spacing:1px;">Active Elite Members: <span style="font-size:16px;">${eliteCount} / ${eliteConfig.slots}</span></p>
+          ${eliteLockHtml}
         </div>
         <div style="text-align:right;">
           ${u.elite21 
             ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' 
-            : (eliteCount >= 21 
-                ? '<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All 21 Slots Full</span>' 
-                : '<button onclick="joinElite21()" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite 21 (Web3)</button>')
+            : (eliteCount >= eliteConfig.slots 
+                ? '<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All ${eliteConfig.slots} Slots Full</span>' 
+                : `<button onclick="joinElite21(${eliteConfig.price})" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite (${eliteConfig.price} USDT)</button>`)
           }
         </div>
       </div>
@@ -1538,6 +1585,16 @@ async function userDashboard() {
     </div>
 
     <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
+
+    ${u.elite21 ? `
+    <!-- Elite Monthly Pool Earnings History Tab -->
+    <div class="accordion-wrapper" id="accEliteEarnings">
+      <div class="accordion-header" onclick="toggleAccordion('accEliteEarnings')">
+        <span>⭐ Elite Monthly Pool Earnings History</span>
+        <span>▼</span>
+      </div>
+      <div class="accordion-content" id="eliteEarningsHistory">Loading...</div>
+    </div>` : ''}
 
     <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
@@ -1621,6 +1678,7 @@ async function userDashboard() {
     loadPackageHistory(phone);
     loadMyPosts(phone);
     loadGiftHistory(phone);
+    if (u.elite21) loadEliteEarningsHistory(phone);
   });
 }
 
@@ -1827,13 +1885,11 @@ window.makeDirectUSDTDeposit = async () => {
   }
 };
 
-window.joinElite21 = async () => {
+window.joinElite21 = async (entryPrice) => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login first");
 
-  const pendingSnap = await get(ref(db, "elite21/pending/" + phone));
-  if (pendingSnap.exists()) return alert("Your Temple Elite 21 request is already pending.");
-
+  const eliteConfig = await getElite21Config();
   const allUsersSnap = await get(ref(db, "users"));
   let eliteCount = 0;
   if (allUsersSnap.exists()) {
@@ -1841,8 +1897,8 @@ window.joinElite21 = async () => {
       if (childSnap.val().elite21 === true) eliteCount++;
     });
   }
-  if (eliteCount >= 21) {
-    return alert("🔴 Sorry, all 21 slots for Temple Elite 21 are already full!");
+  if (eliteCount >= eliteConfig.slots) {
+    return alert(`🔴 Sorry, all ${eliteConfig.slots} slots for Elite Leadership are already full!`);
   }
 
   const userSnap = await get(ref(db, "users/" + phone));
@@ -1862,26 +1918,67 @@ window.joinElite21 = async () => {
 
     const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits("250", 18);
+    const parsedAmount = ethers.utils.parseUnits(entryPrice.toString(), 18);
 
-    alert("Confirm 250 USDT transfer to join Temple Elite 21!");
+    alert(`Confirm ${entryPrice} USDT transfer to join Elite Leadership Club!`);
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
     await tx.wait();
 
+    const currentPrice = await getPrice();
+    const lockedTokensCount = Number((entryPrice / currentPrice).toFixed(2));
+    const nowTime = Date.now();
+
     await update(ref(db, "users/" + phone), { 
       elite21: true, 
-      monthlyBusiness: Number(u.monthlyBusiness || 0) + 250 
+      eliteJoinedAt: nowTime,
+      eliteLockedTokens: lockedTokensCount,
+      monthlyBusiness: Number(u.monthlyBusiness || 0) + entryPrice 
     });
     
     if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, 250);
+      await distribute15LevelCommission(u.referrer, entryPrice);
     }
 
-    alert("🎉 Congratulations! You have successfully joined Temple Elite 21!");
+    alert("🎉 Congratulations! You have successfully joined Elite Leadership Club with a 5-year token lock!");
     userDashboard();
   } catch (err) {
-    alert("Elite 21 join failed: " + err.message);
+    alert("Elite join failed: " + err.message);
   }
+};
+
+window.relockEliteTokens = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return;
+  if (!confirm("Relock your Elite tokens for another 5 years?")) return;
+
+  await update(ref(db, "users/" + phone), {
+    eliteJoinedAt: Date.now()
+  });
+  alert("✅ Elite tokens successfully relocked for 5 more years!");
+  userDashboard();
+};
+
+window.leaveEliteClub = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return;
+  if (!confirm("Are you sure you want to leave the Elite Leadership Club? Your locked tokens will be released directly to your balance and your slot will become available for others.")) return;
+
+  const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return;
+  const u = userSnap.val();
+
+  const lockedTokens = Number(u.eliteLockedTokens || 0);
+  const newBal = Number(((u.balance || 0) + lockedTokens).toFixed(2));
+
+  await update(ref(db, "users/" + phone), {
+    elite21: false,
+    eliteJoinedAt: 0,
+    eliteLockedTokens: 0,
+    balance: newBal
+  });
+
+  alert(`🚪 You have successfully left the Elite Club. ${lockedTokens} Temple_DA released to your balance!`);
+  userDashboard();
 };
 
 function loadMyPosts(phone) {
@@ -1937,7 +2034,6 @@ function loadMyPosts(phone) {
   });
 }
 
-// Fixed & Robust Daily Video Limit Check Function
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
 
@@ -1957,8 +2053,8 @@ async function checkDailyVideoLimit(phone, userTier) {
       });
     }
 
-    let maxAllowed = 2; // Starter limit
-    if (userTier === "monthly") maxAllowed = 5; // Pro limit
+    let maxAllowed = 2;
+    if (userTier === "monthly") maxAllowed = 5;
 
     if (todayVideoCount >= maxAllowed) {
       alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
@@ -1999,7 +2095,6 @@ window.publishTalent = async () => {
 
     if (!title) return alert("Please enter title/caption!");
 
-    // Fixed: Properly stopping execution if daily limit is reached
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
       if (!isAllowed) {
@@ -2172,7 +2267,6 @@ window.subscribeCreator = async (creatorPhone) => {
   }
 };
 
-// Fixed: Points conversion now properly deducts only convertible points and retains remainder points instead of wiping everything to 0
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return alert("Please login");
@@ -2396,6 +2490,11 @@ async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
   const priceUsd = await getPrice();
+  const eliteConfig = await getElite21Config();
+  
+  const configSnap = await get(ref(db, "config/lastEliteDistribution"));
+  const lastDistTime = configSnap.exists() ? configSnap.val() : Date.now();
+
   const usersSnap = await get(ref(db, "users"));
   let totalCurrentPoolUSDT = 0;
 
@@ -2440,23 +2539,40 @@ async function adminDashboard() {
     </div>
 
     <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05);">
-      <h3 style="color:#00ff88; margin-bottom:8px;">📊 Current Cycle Pool Summary (Elite 21)</h3>
-      <p class="small">Total New Business: <strong>$${totalCurrentPoolUSDT.toFixed(2)} USDT</strong></p>
+      <h3 style="color:#00ff88; margin-bottom:8px;">📊 Current Cycle Elite Pool Summary</h3>
+      <p class="small">Total Turnover Business: <strong>$${totalCurrentPoolUSDT.toFixed(2)} USDT</strong></p>
       <p class="small" style="margin-top:6px;">Available 5% Distribution Pool: <strong style="color:#dfb72c; font-size:18px;">$${currentPool5Percent.toFixed(2)} USDT</strong></p>
+      <p class="small" style="margin-top:6px; color:#aaa;">Configured Slot Limit: <strong>${eliteConfig.slots} Slots</strong> | Entry Price: <strong>${eliteConfig.price} USDT</strong></p>
+      <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 8px;">
+        <span class="small" style="color:#dfb72c; display:block; font-weight:bold;">⏳ Elite Distribution Timer (30-Day Cycle):</span>
+        <span class="number" id="eliteTimerDisplay" style="font-size: 14px; color: #00ff88;">Calculating...</span>
+      </div>
     </div>
 
     <div class="card">
-    <h2>Admin Dashboard</h2>
-    <input id="price" placeholder="Override Temple_DA USD price">
-    <button onclick="updatePrice()">Update Price Override</button>
+      <h2>Admin Controls & Settings</h2>
+      <input id="price" placeholder="Override Temple_DA USD price">
+      <button onclick="updatePrice()">Update Price Override</button>
 
-    <div style="margin-top:18px; border-top:1px solid rgba(223,183,44,0.3); padding-top:14px;">
-      <label class="small" style="color:#dfb72c; font-weight:bold;">Temple_DA Contract Address (Configured):</label>
-      <input id="adminTokenAddress" value="${TEMPLE_DA_CONTRACT}" readonly style="color:#00ff88; font-family:monospace;">
-    </div>
+      <div style="margin-top:14px;">
+        <label class="small" style="color:#dfb72c; font-weight:bold;">Configure Elite Slot Limit (e.g. 21, 30, 40):</label>
+        <input id="adminEliteSlots" type="number" value="${eliteConfig.slots}">
+        <button onclick="updateEliteSlots()" class="btn-secondary">Update Slot Limit</button>
+      </div>
 
-    <button onclick="runMonthlyElite21Distribution()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; margin-top:18px;">⚡ Run Monthly Elite 21 Pool Distribution</button>
-    <button onclick="adminLogout()" style="margin-top:12px;">Admin Logout</button>
+      <div style="margin-top:14px;">
+        <label class="small" style="color:#dfb72c; font-weight:bold;">Configure Elite Joining Price (USDT):</label>
+        <input id="adminElitePrice" type="number" value="${eliteConfig.price}">
+        <button onclick="updateElitePrice()" class="btn-secondary">Update Elite Entry Price</button>
+      </div>
+
+      <div style="margin-top:18px; border-top:1px solid rgba(223,183,44,0.3); padding-top:14px;">
+        <label class="small" style="color:#dfb72c; font-weight:bold;">Temple_DA Contract Address (Configured):</label>
+        <input id="adminTokenAddress" value="${TEMPLE_DA_CONTRACT}" readonly style="color:#00ff88; font-family:monospace;">
+      </div>
+
+      <button onclick="runMonthlyEliteDistribution()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; margin-top:18px;">⚡ Run Elite 5% Equal Pool Distribution</button>
+      <button onclick="adminLogout()" style="margin-top:12px;">Admin Logout</button>
     </div>
 
     <div class="card">
@@ -2470,16 +2586,64 @@ async function adminDashboard() {
     <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
     `;
 
+    startEliteDistributionTimer(lastDistTime);
     loadPendingWithdraw();
   });
 }
 
-window.runMonthlyElite21Distribution = async () => {
+function startEliteDistributionTimer(lastDistTime) {
+  const timerEl = document.getElementById("eliteTimerDisplay");
+  if (!timerEl) return;
+
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  const nextTarget = lastDistTime + thirtyDaysMs;
+
+  const interval = setInterval(() => {
+    const now = Date.now();
+    let timeLeft = nextTarget - now;
+    const el = document.getElementById("eliteTimerDisplay");
+    if (!el) { clearInterval(interval); return; }
+
+    if (timeLeft <= 0) {
+      el.innerText = "Cycle Complete! Ready for Distribution.";
+      el.style.color = "#00ff88";
+      return;
+    }
+
+    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    el.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
+  }, 1000);
+}
+
+window.updateEliteSlots = async () => {
+  const val = parseInt(v("adminEliteSlots"));
+  if (isNaN(val) || val <= 0) return alert("Please enter a valid slot number!");
+  await set(ref(db, "config/elite21Slots"), val);
+  alert(`✅ Elite slot limit successfully updated to ${val} slots!`);
+  adminDashboard();
+};
+
+window.updateElitePrice = async () => {
+  const val = parseFloat(v("adminElitePrice"));
+  if (isNaN(val) || val <= 0) return alert("Please enter a valid USDT price!");
+  await set(ref(db, "config/elite21Price"), val);
+  alert(`✅ Elite joining price successfully updated to ${val} USDT!`);
+  adminDashboard();
+};
+
+window.runMonthlyEliteDistribution = async () => {
   try {
     const usersSnap = await get(ref(db, "users"));
     if (!usersSnap.exists()) return alert("No users found");
 
     const currentPrice = await getPrice();
+    const eliteConfig = await getElite21Config();
+    const slotLimit = eliteConfig.slots;
+
     let totalNewBusinessUSDT = 0;
     let eliteMembers = [];
     let allUsers = [];
@@ -2490,53 +2654,49 @@ window.runMonthlyElite21Distribution = async () => {
       const biz = Number(u.monthlyBusiness || 0);
 
       totalNewBusinessUSDT += biz;
-      allUsers.push({ phone: phone, balance: Number(u.balance || 0) });
+      allUsers.push({ phone: phone });
 
       if (u.elite21 === true) {
-        eliteMembers.push({ phone: phone, business: biz, balance: Number(u.balance || 0), name: u.name || "User" });
+        eliteMembers.push({ phone: phone, balance: Number(u.balance || 0), name: u.name || "User" });
       }
     });
 
-    if (totalNewBusinessUSDT <= 0 || eliteMembers.length === 0) {
-      return alert("⚠️ Distribution Cancelled! No new business or active Elite 21 members found this month.");
+    if (totalNewBusinessUSDT <= 0) {
+      return alert("⚠️ Distribution Notice: Total turnover business is 0 USDT.");
     }
 
-    const pool5Percent = totalNewBusinessUSDT * 0.05;
-    const pool70 = pool5Percent * 0.70;
-    const pool30 = pool5Percent * 0.30;
-
-    const perEliteTokens = Number((pool70 / eliteMembers.length / currentPrice).toFixed(2));
-    eliteMembers.sort((a, b) => b.business - a.business);
-    const top5Percentages = [0.30, 0.25, 0.20, 0.15, 0.10];
+    const pool5PercentUSDT = totalNewBusinessUSDT * 0.05;
+    const poolPerSlotUSDT = pool5PercentUSDT / slotLimit;
+    const poolPerSlotTokens = Number((poolPerSlotUSDT / currentPrice).toFixed(2));
 
     let updates = {};
-    let top5Message = "";
+    let distributedCount = 0;
+    const timestamp = Date.now();
 
     allUsers.forEach(u => {
       updates[`users/${u.phone}/monthlyBusiness`] = 0;
     });
 
-    for (let i = 0; i < eliteMembers.length; i++) {
-      const member = eliteMembers[i];
-      let totalRewardTokens = perEliteTokens;
-      let top5BonusTokens = 0;
+    eliteMembers.forEach((member, index) => {
+      if (index < slotLimit) {
+        const newBalance = Number((member.balance + poolPerSlotTokens).toFixed(2));
+        updates[`users/${member.phone}/balance`] = newBalance;
+        distributedCount++;
 
-      if (i < 5) {
-        const rankShare = top5Percentages[i]; 
-        const bonusUSDT = pool30 * rankShare; 
-        top5BonusTokens = Number((bonusUSDT / currentPrice).toFixed(2)); 
-        totalRewardTokens += top5BonusTokens; 
-        top5Message += `\nRank ${i + 1} (${member.name}): +${top5BonusTokens} Temple_DA (${rankShare * 100}%)`;
+        push(ref(db, `elite_earnings_history/${member.phone}`), {
+          amountUSDT: poolPerSlotUSDT,
+          amountTokens: poolPerSlotTokens,
+          timestamp: timestamp
+        });
       }
+    });
 
-      const newBalance = Number((member.balance + totalRewardTokens).toFixed(2));
-      updates[`users/${member.phone}/balance`] = newBalance;
-    }
+    updates[`config/lastEliteDistribution`] = timestamp;
 
     await update(ref(db), updates);
 
-    alert(`✅ Monthly Distribution Successful!\n\nTotal 5% Pool: $${pool5Percent.toFixed(2)} USDT\nBase Reward (All Elite): ${perEliteTokens} Temple_DA\n\n🏆 Top 5 Performers Bonus:${top5Message || " None"}`);
-    adminDashboard(); 
+    alert(`✅ Elite 5% Distribution Successful!\n\nTotal Business: $${totalNewBusinessUSDT.toFixed(2)} USDT\n5% Pool: $${pool5PercentUSDT.toFixed(2)} USDT\nSlot Limit: ${slotLimit}\nActive Members Paid: ${distributedCount}\nPer Slot Share: ${poolPerSlotTokens} Temple_DA ($${poolPerSlotUSDT.toFixed(2)})\nExcess/Vacant slot share sent to system & reset.`);
+    adminDashboard();
 
   } catch (err) {
     console.error("Distribution Error: ", err);
@@ -2659,6 +2819,27 @@ window.editUser = async oldId => {
 window.deleteUser = async id => { await remove(ref(db, "users/" + id)); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
+
+function loadEliteEarningsHistory(phone) {
+  onValue(ref(db, "elite_earnings_history/" + phone), snap => {
+    let html = "";
+    let totalTDA = 0;
+    let totalUSDT = 0;
+    snap.forEach(s => { 
+      const d = s.val(); 
+      const date = new Date(d.timestamp).toLocaleString();
+      totalTDA += d.amountTokens;
+      totalUSDT += d.amountUSDT;
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
+        Monthly Share: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br>
+        <span style="color:#888;">${date}</span>
+      </div>`; 
+    });
+    const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total Elite Pool Earned: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
+    const el = document.getElementById("eliteEarningsHistory");
+    if (el) el.innerHTML = headerHtml + (html || "No elite pool earnings yet.");
+  });
+}
 
 function loadReferralHistory(phone) {
   onValue(ref(db, "referral_history/" + phone), snap => {
@@ -2804,7 +2985,7 @@ function loadWithdrawHistory(phone) {
     snap.forEach(s => { 
       const d = s.val();
       const date = new Date(d.timestamp).toLocaleString();
-      let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected") ? "#ff4444" : "#00ff88");
+      let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected" ) ? "#ff4444" : "#00ff88");
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
         Amount: <span class="number">${d.amount} Temple_DA</span><br>
         Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>
