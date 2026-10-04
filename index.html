@@ -241,7 +241,7 @@ td {
   border: 1px solid #ff4444;
 }
 
-/* Custom Welcome Popup Modal */
+/* Custom Welcome & Daily Login Popup Modal */
 .welcome-modal-overlay {
   position: fixed;
   top: 0;
@@ -500,11 +500,56 @@ td {
   </div>
 </div>
 
-<!-- Modal Container for Notifications & Welcome Bonus -->
+<!-- Modal Container for Notifications & Welcome Bonus (INCLUDING DAILY LOGIN) -->
 <div id="modalContainer"></div>
 
-<script type="module">
+<!-- Custom Alert Modal (ADDED BACK TO FIX MISSING ALERTS) -->
+<div id="customAlertOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:400px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    <h3 style="color:#dfb72c; margin-bottom: 10px;">Notice</h3>
+    <p id="customAlertMessage" style="color:#fff; margin-bottom:20px; font-size: 16px;"></p>
+    <button onclick="closeCustomAlert()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; padding:12px 24px; border-radius: 8px;">OK</button>
+  </div>
+</div>
 
+<!-- Custom Confirm Modal (ADDED BACK TO FIX MISSING CONFIRMS) -->
+<div id="customConfirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:400px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    <h3 style="color:#dfb72c; margin-bottom: 10px;">Confirm Action</h3>
+    <p id="customConfirmMessage" style="color:#fff; margin-bottom:24px; font-size: 16px;"></p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+      <button onclick="executeCustomConfirm()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; padding:12px 24px; width:auto; border-radius: 8px;">Confirm</button>
+      <button onclick="closeCustomConfirm()" style="background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%); color:#fff; padding:12px 24px; width:auto; border-radius: 8px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.customAlert = (msg) => {
+    document.getElementById('customAlertMessage').innerText = msg;
+    document.getElementById('customAlertOverlay').style.display = 'flex';
+  };
+  window.closeCustomAlert = () => {
+    document.getElementById('customAlertOverlay').style.display = 'none';
+  };
+  
+  let confirmCallback = null;
+  window.customConfirm = (msg, callback) => {
+    document.getElementById('customConfirmMessage').innerText = msg;
+    confirmCallback = callback;
+    document.getElementById('customConfirmOverlay').style.display = 'flex';
+  };
+  window.executeCustomConfirm = () => {
+    document.getElementById('customConfirmOverlay').style.display = 'none';
+    if(confirmCallback) confirmCallback();
+  };
+  window.closeCustomConfirm = () => {
+    document.getElementById('customConfirmOverlay').style.display = 'none';
+    confirmCallback = null;
+  };
+</script>
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, update, remove, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getAuth, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -532,7 +577,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS
+// POPUP NOTIFICATION MODAL HELPERS (Works for Welcome & Daily Login)
 // =========================================================================
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
@@ -605,7 +650,7 @@ async function backgroundGlobalVestingCheck() {
 backgroundGlobalVestingCheck();
 
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER
+// DAILY LOGIN XP REWARD CHECK HELPER (Shows Popup and Saves to History)
 // =========================================================================
 async function checkAndApplyDailyLoginReward(phone) {
   try {
@@ -626,12 +671,14 @@ async function checkAndApplyDailyLoginReward(phone) {
         lastLoginDate: todayDateStr
       });
 
+      // Saving to points_history so it shows in the Master Points tab
       await push(ref(db, `points_history/${phone}`), {
         source: "Daily Login",
         points: 10,
         timestamp: Date.now()
       });
 
+      // Triggering Daily Login Popup
       window.showModalPopup(
         "Daily Login Bonus!", 
         `Welcome back, <b>${u.name || 'Member'}</b>!`, 
@@ -872,13 +919,13 @@ async function landing() {
 
 window.connectWalletAndAutoLogin = async () => {
   if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not detected! Please open in MetaMask, Trust Wallet, or DApp Browser.");
+    return customAlert("Web3 Wallet not detected! Please open in MetaMask, Trust Wallet, or DApp Browser.");
   }
 
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const walletAddress = accounts[0];
-    if (!walletAddress) return alert("Wallet address not found!");
+    if (!walletAddress) return customAlert("Wallet address not found!");
 
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
@@ -895,7 +942,7 @@ window.connectWalletAndAutoLogin = async () => {
       await checkAndApplyDailyLoginReward(foundPhone);
       setTimeout(() => { location.hash = "#user"; }, 1000);
     } else {
-      alert("⚠️ No account registered with this wallet address. Please register first!");
+      customAlert("⚠️ No account registered with this wallet address. Please register first!");
       location.hash = "#register";
       setTimeout(() => {
         const wInput = document.getElementById("wallet");
@@ -903,7 +950,7 @@ window.connectWalletAndAutoLogin = async () => {
       }, 500);
     }
   } catch (error) {
-    alert("Wallet login failed: " + error.message);
+    customAlert("Wallet login failed: " + error.message);
   }
 };
 
@@ -941,13 +988,13 @@ window.connectWeb3Wallet = async () => {
       const walletAddress = accounts[0];
       if (walletAddress) {
         document.getElementById("wallet").value = walletAddress;
-        alert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
+        customAlert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
       }
     } catch (error) {
-      alert("Wallet connection cancelled or failed.");
+      customAlert("Wallet connection cancelled or failed.");
     }
   } else {
-    alert("Web3 Wallet not detected!");
+    customAlert("Web3 Wallet not detected!");
   }
 };
 
@@ -958,8 +1005,8 @@ window.registerUser = async () => {
   const password = v("password");
   const referrer = v("ref");
 
-  if (!name || !phone || !password) return alert("Please fill in all required fields!");
-  if (!walletRegex.test(wallet)) return alert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
+  if (!name || !phone || !password) return customAlert("Please fill in all required fields!");
+  if (!walletRegex.test(wallet)) return customAlert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
   
   const usersSnap = await get(ref(db, "users"));
   let walletExists = false;
@@ -968,10 +1015,10 @@ window.registerUser = async () => {
     if (s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
   });
 
-  if (walletExists) return alert("This wallet is already registered");
+  if (walletExists) return customAlert("This wallet is already registered");
 
   const userSnap = await get(ref(db, "users/" + phone));
-  if (userSnap.exists()) return alert("User exists");
+  if (userSnap.exists()) return customAlert("User exists");
 
   const now = new Date();
   const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
@@ -998,6 +1045,7 @@ window.registerUser = async () => {
     lastLoginDate: todayDateStr
   });
 
+  // Log Daily Login to points history automatically upon registration
   await push(ref(db, `points_history/${phone}`), {
     source: "Daily Login",
     points: 10,
@@ -1015,6 +1063,7 @@ window.registerUser = async () => {
         points: newPoints
       });
 
+      // Saving Referral Bonus point to history
       await push(ref(db, `points_history/${referrer}`), {
         source: "Referral Bonus",
         points: 20,
@@ -1067,21 +1116,21 @@ window.login = async () => {
       if (adminSnap.exists()) {
         localStorage.setItem("admin", "1");
         location.hash = "#admin";
-        alert("Admin Login Successful!");
+        customAlert("Admin Login Successful!");
       } else {
-        alert("You are authenticated but not registered as an admin.");
+        customAlert("You are authenticated but not registered as an admin.");
       }
     } catch (error) {
-      alert("Admin Login Failed: " + error.message);
+      customAlert("Admin Login Failed: " + error.message);
     }
     return;
   }
 
   const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) return customAlert("User not found");
 
   const user = snap.val();
-  if (atob(user.password) !== pass) return alert("Wrong password");
+  if (atob(user.password) !== pass) return customAlert("Wrong password");
 
   localStorage.setItem("user", phone);
   await checkAndApplyDailyLoginReward(phone);
@@ -1255,25 +1304,25 @@ function setupIntersectionAutoplay() {
 
 window.openGiftModal = async (creatorPhone, creatorName) => {
   const senderPhone = localStorage.getItem("user");
-  if (!senderPhone) return alert("Please login to send gifts!");
-  if (senderPhone === creatorPhone) return alert("You cannot send a gift to yourself!");
+  if (!senderPhone) return customAlert("Please login to send gifts!");
+  if (senderPhone === creatorPhone) return customAlert("You cannot send a gift to yourself!");
 
   const giftAmountStr = prompt(`Send Temple_DA gift to @${creatorName}:\nEnter amount of Temple_DA to transfer from your wallet:`);
   if (!giftAmountStr) return;
   const giftAmount = parseFloat(giftAmountStr);
 
-  if (isNaN(giftAmount) || giftAmount <= 0) return alert("Invalid gift amount!");
+  if (isNaN(giftAmount) || giftAmount <= 0) return customAlert("Invalid gift amount!");
 
   const senderSnap = await get(ref(db, "users/" + senderPhone));
-  if (!senderSnap.exists()) return alert("Sender account not found!");
+  if (!senderSnap.exists()) return customAlert("Sender account not found!");
   const senderData = senderSnap.val();
 
   if ((senderData.balance || 0) < giftAmount) {
-    return alert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
+    return customAlert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
   }
 
   const creatorSnap = await get(ref(db, "users/" + creatorPhone));
-  if (!creatorSnap.exists()) return alert("Creator account not found!");
+  if (!creatorSnap.exists()) return customAlert("Creator account not found!");
   const creatorData = creatorSnap.val();
 
   const newSenderBal = Number(((senderData.balance || 0) - giftAmount).toFixed(2));
@@ -1294,13 +1343,18 @@ window.openGiftModal = async (creatorPhone, creatorName) => {
   await push(ref(db, `gift_history/${senderPhone}/sent`), giftData);
   await push(ref(db, `gift_history/${creatorPhone}/received`), giftData);
 
-  alert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
+  customAlert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
 };
 
 window.shareReel = (id) => {
   const shareLink = `${location.origin}${location.pathname}#feed`;
-  navigator.clipboard.writeText(shareLink);
-  alert("Reel link successfully copied to clipboard!");
+  const tempInput = document.createElement("input");
+  document.body.appendChild(tempInput);
+  tempInput.value = shareLink;
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  customAlert("Reel link successfully copied to clipboard!");
 };
 
 window.openCommentsModal = (postId, encodedTitle) => {
@@ -1344,7 +1398,7 @@ window.closeCommentsModal = () => {
 
 window.submitReelComment = async () => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login to message");
+  if (!phone) return customAlert("Please login to message");
   if (!activePostIdForComments) return;
 
   const input = document.getElementById("chatInput");
@@ -1614,10 +1668,10 @@ async function userDashboard() {
       <div class="accordion-content" id="refPointsHistoryList">Loading...</div>
     </div>
 
-    <!-- Master Points Earnings History Tab -->
+    <!-- Master Points Earnings History Tab (DAILY LOGIN HIGHLIGHTED) -->
     <div class="accordion-wrapper" id="accMasterPoints">
       <div class="accordion-header" onclick="toggleAccordion('accMasterPoints')">
-        <span>📊 Master Points Earnings History</span>
+        <span>📊 Master Points & Daily Login History</span>
         <span>▼</span>
       </div>
       <div class="accordion-content" id="masterPointsHistoryList">Loading...</div>
@@ -1724,11 +1778,11 @@ window.withdraw = async () => {
   const amount = parseFloat(v("withdraw"));
   
   if (!amount || amount <= 0) {
-    return alert("Please enter a valid withdrawal amount!");
+    return customAlert("Please enter a valid withdrawal amount!");
   }
 
   const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User session not found!");
+  if (!snap.exists()) return customAlert("User session not found!");
   const u = snap.val();
 
   const investment = u.investment || 0;
@@ -1736,7 +1790,7 @@ window.withdraw = async () => {
   const hasValidActivePackage = activeTier !== "none" && u.packageExpiresAt && Date.now() <= u.packageExpiresAt;
 
   if (investment <= 0 && !hasValidActivePackage) {
-    return alert("Minimum investment or a valid active Creator Package is required before making withdrawals!");
+    return customAlert("Minimum investment or a valid active Creator Package is required before making withdrawals!");
   }
 
   const now = new Date();
@@ -1756,21 +1810,21 @@ window.withdraw = async () => {
   else if (investment > 500) maxDailyAllowed = 2500;
 
   if (todayWithdrawnAmount >= maxDailyAllowed) {
-    return alert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account status has exhausted today's limit of ${maxDailyAllowed} Temple_DA.`);
+    return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account status has exhausted today's limit of ${maxDailyAllowed} Temple_DA.`);
   }
 
   if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
     const remainingLimit = maxDailyAllowed - todayWithdrawnAmount;
-    return alert(`⚠️ Limit Exceeded!\nYou can withdraw a maximum of ${remainingLimit} Temple_DA more today.`);
+    return customAlert(`⚠️ Limit Exceeded!\nYou can withdraw a maximum of ${remainingLimit} Temple_DA more today.`);
   }
   
   if (amount > (u.balance || 0)) {
-    return alert("Insufficient Temple_DA balance!");
+    return customAlert("Insufficient Temple_DA balance!");
   }
   
   const userWallet = u.wallet;
   if (!userWallet || !walletRegex.test(userWallet)) {
-    return alert("No valid BEP20 wallet linked to your account!");
+    return customAlert("No valid BEP20 wallet linked to your account!");
   }
 
   const newBalance = Number((u.balance - amount).toFixed(2));
@@ -1800,7 +1854,7 @@ window.withdraw = async () => {
     status: "Pending Admin Approval"
   });
 
-  alert(`🎉 Success! ${amount} Temple_DA withdrawal request sent to admin. Upon approval, it will be transferred to your wallet.`);
+  customAlert(`🎉 Success! ${amount} Temple_DA withdrawal request sent to admin. Upon approval, it will be transferred to your wallet.`);
   v("withdraw").value = "";
 };
 
@@ -1808,19 +1862,19 @@ window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amount = parseFloat(v("invest"));
 
-  if (!amount || amount < 1) return alert("Investment amount must be at least 1 USDT");
+  if (!amount || amount < 1) return customAlert("Investment amount must be at least 1 USDT");
 
   const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return alert("User session not found!");
+  if (!userSnap.exists()) return customAlert("User session not found!");
   const u = userSnap.val();
 
   const currentInvestment = Number(u.investment || 0);
   if (currentInvestment + amount > 500) {
-    return alert(`Maximum total investment limit is 500 USDT! Your current investment is ${currentInvestment} USDT, you can invest up to ${500 - currentInvestment} USDT more.`);
+    return customAlert(`Maximum total investment limit is 500 USDT! Your current investment is ${currentInvestment} USDT, you can invest up to ${500 - currentInvestment} USDT more.`);
   }
 
   if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
+    return customAlert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
   }
 
   try {
@@ -1847,12 +1901,12 @@ window.makeDirectUSDTDeposit = async () => {
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-    alert("Wallet popup opening. Please confirm the transaction!");
+    customAlert("Wallet popup opening. Please confirm the transaction!");
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
-    alert("Transaction broadcasted! Hash: " + tx.hash);
+    customAlert("Transaction broadcasted! Hash: " + tx.hash);
 
     await tx.wait();
-    alert("USDT transfer successful! Updating investment...");
+    customAlert("USDT transfer successful! Updating investment...");
 
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
@@ -1877,17 +1931,17 @@ window.makeDirectUSDTDeposit = async () => {
       await distribute15LevelCommission(u.referrer, amount);
     }
 
-    alert("Investment successfully updated to your account!");
+    customAlert("Investment successfully updated to your account!");
     userDashboard();
   } catch (error) {
     console.error("Direct deposit error:", error);
-    alert("Deposit failed: " + (error.data?.message || error.message));
+    customAlert("Deposit failed: " + (error.data?.message || error.message));
   }
 };
 
 window.joinElite21 = async (entryPrice) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+  if (!phone) return customAlert("Please login first");
 
   const eliteConfig = await getElite21Config();
   const allUsersSnap = await get(ref(db, "users"));
@@ -1898,14 +1952,14 @@ window.joinElite21 = async (entryPrice) => {
     });
   }
   if (eliteCount >= eliteConfig.slots) {
-    return alert(`🔴 Sorry, all ${eliteConfig.slots} slots for Elite Leadership are already full!`);
+    return customAlert(`🔴 Sorry, all ${eliteConfig.slots} slots for Elite Leadership are already full!`);
   }
 
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
   if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found!");
+    return customAlert("Web3 Wallet not found!");
   }
 
   try {
@@ -1920,7 +1974,7 @@ window.joinElite21 = async (entryPrice) => {
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(entryPrice.toString(), 18);
 
-    alert(`Confirm ${entryPrice} USDT transfer to join Elite Leadership Club!`);
+    customAlert(`Confirm ${entryPrice} USDT transfer to join Elite Leadership Club!`);
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
     await tx.wait();
 
@@ -1939,46 +1993,46 @@ window.joinElite21 = async (entryPrice) => {
       await distribute15LevelCommission(u.referrer, entryPrice);
     }
 
-    alert("🎉 Congratulations! You have successfully joined Elite Leadership Club with a 5-year token lock!");
+    customAlert("🎉 Congratulations! You have successfully joined Elite Leadership Club with a 5-year token lock!");
     userDashboard();
   } catch (err) {
-    alert("Elite join failed: " + err.message);
+    customAlert("Elite join failed: " + err.message);
   }
 };
 
 window.relockEliteTokens = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return;
-  if (!confirm("Relock your Elite tokens for another 5 years?")) return;
-
-  await update(ref(db, "users/" + phone), {
-    eliteJoinedAt: Date.now()
+  
+  customConfirm("Relock your Elite tokens for another 5 years?", async () => {
+    await update(ref(db, "users/" + phone), { eliteJoinedAt: Date.now() });
+    customAlert("✅ Elite tokens successfully relocked for 5 more years!");
+    userDashboard();
   });
-  alert("✅ Elite tokens successfully relocked for 5 more years!");
-  userDashboard();
 };
 
 window.leaveEliteClub = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return;
-  if (!confirm("Are you sure you want to leave the Elite Leadership Club? Your locked tokens will be released directly to your balance and your slot will become available for others.")) return;
+  
+  customConfirm("Are you sure you want to leave the Elite Leadership Club? Your locked tokens will be released directly to your balance and your slot will become available for others.", async () => {
+    const userSnap = await get(ref(db, "users/" + phone));
+    if (!userSnap.exists()) return;
+    const u = userSnap.val();
 
-  const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return;
-  const u = userSnap.val();
+    const lockedTokens = Number(u.eliteLockedTokens || 0);
+    const newBal = Number(((u.balance || 0) + lockedTokens).toFixed(2));
 
-  const lockedTokens = Number(u.eliteLockedTokens || 0);
-  const newBal = Number(((u.balance || 0) + lockedTokens).toFixed(2));
+    await update(ref(db, "users/" + phone), {
+      elite21: false,
+      eliteJoinedAt: 0,
+      eliteLockedTokens: 0,
+      balance: newBal
+    });
 
-  await update(ref(db, "users/" + phone), {
-    elite21: false,
-    eliteJoinedAt: 0,
-    eliteLockedTokens: 0,
-    balance: newBal
+    customAlert(`🚪 You have successfully left the Elite Club. ${lockedTokens} Temple_DA released to your balance!`);
+    userDashboard();
   });
-
-  alert(`🚪 You have successfully left the Elite Club. ${lockedTokens} Temple_DA released to your balance!`);
-  userDashboard();
 };
 
 function loadMyPosts(phone) {
@@ -2057,7 +2111,7 @@ async function checkDailyVideoLimit(phone, userTier) {
     if (userTier === "monthly") maxAllowed = 5;
 
     if (todayVideoCount >= maxAllowed) {
-      alert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
+      customAlert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
       return false;
     }
     return true;
@@ -2071,14 +2125,14 @@ window.publishTalent = async () => {
   const publishBtn = document.getElementById("publishBtn");
   try {
     const phone = localStorage.getItem("user");
-    if (!phone) return alert("Please login first");
+    if (!phone) return customAlert("Please login first");
 
     const userSnap = await get(ref(db, "users/" + phone));
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
     if (activeTier === "none") {
-      return alert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
+      return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
     }
 
     const typeEl = document.getElementById("talentType");
@@ -2093,7 +2147,7 @@ window.publishTalent = async () => {
     const description = descEl ? descEl.value.trim() : "";
     const file = fileInput && fileInput.files ? fileInput.files[0] : null;
 
-    if (!title) return alert("Please enter title/caption!");
+    if (!title) return customAlert("Please enter title/caption!");
 
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
@@ -2109,7 +2163,7 @@ window.publishTalent = async () => {
     const statusText = document.getElementById("uploadStatusText");
 
     if (file) {
-      if (file.size > 25 * 1024 * 1024) return alert("File size must be less than 25MB for direct upload!");
+      if (file.size > 25 * 1024 * 1024) return customAlert("File size must be less than 25MB for direct upload!");
 
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
@@ -2127,14 +2181,14 @@ window.publishTalent = async () => {
       } catch (fileErr) {
         if (publishBtn) publishBtn.disabled = false;
         if (progressContainer) progressContainer.style.display = "none";
-        return alert("Failed to read file from device.");
+        return customAlert("Failed to read file from device.");
       }
     }
 
     if (type !== "text" && !mediaUrl) {
       if (publishBtn) publishBtn.disabled = false;
       if (progressContainer) progressContainer.style.display = "none";
-      return alert("Select video/image file or provide a direct video/Instagram URL!");
+      return customAlert("Select video/image file or provide a direct video/Instagram URL!");
     }
 
     const newPostRef = push(ref(db, "posts"));
@@ -2150,11 +2204,11 @@ window.publishTalent = async () => {
       createdAt: Date.now()
     });
 
-    alert("Reel published successfully!");
+    customAlert("Reel published successfully!");
     location.hash = "#feed";
   } catch (error) {
     if (publishBtn) publishBtn.disabled = false;
-    alert("Publish error: " + error.message);
+    customAlert("Publish error: " + error.message);
   }
 };
 
@@ -2162,37 +2216,38 @@ window.deleteMyPost = async (postId, storagePath) => {
   const phone = localStorage.getItem("user");
   const isAdmin = localStorage.getItem("admin");
 
-  if (!phone && !isAdmin) return alert("Please login first");
-  if (!confirm("Are you sure you want to delete this reel?")) return;
-
-  try {
-    const postSnap = await get(ref(db, "posts/" + postId));
-    if (postSnap.exists() && storagePath) {
-      try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+  if (!phone && !isAdmin) return customAlert("Please login first");
+  
+  customConfirm("Are you sure you want to delete this reel?", async () => {
+    try {
+      const postSnap = await get(ref(db, "posts/" + postId));
+      if (postSnap.exists() && storagePath) {
+        try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
+      }
+      await remove(ref(db, "posts/" + postId));
+      await remove(ref(db, "likes/" + postId));
+      await remove(ref(db, "post_comments/" + postId));
+      customAlert("Reel successfully deleted!");
+    } catch (err) {
+      customAlert("Delete error: " + err.message);
     }
-    await remove(ref(db, "posts/" + postId));
-    await remove(ref(db, "likes/" + postId));
-    await remove(ref(db, "post_comments/" + postId));
-    alert("Reel successfully deleted!");
-  } catch (err) {
-    alert("Delete error: " + err.message);
-  }
+  });
 };
 
 window.likePost = async (postId) => {
   try {
     const userPhone = localStorage.getItem("user");
-    if (!userPhone) return alert("Please login to like");
+    if (!userPhone) return customAlert("Please login to like");
 
     const postSnap = await get(ref(db, `posts/${postId}`));
-    if (!postSnap.exists()) return alert("Post not found");
+    if (!postSnap.exists()) return customAlert("Post not found");
     const pData = postSnap.val();
     const authorPhone = pData.authorPhone;
 
-    if (userPhone === authorPhone) return alert("You cannot like your own post");
+    if (userPhone === authorPhone) return customAlert("You cannot like your own post");
 
     const likeCheck = await get(ref(db, `likes/${postId}/${userPhone}`));
-    if (likeCheck.exists()) return alert("You have already supported this post!");
+    if (likeCheck.exists()) return customAlert("You have already supported this post!");
 
     await set(ref(db, `likes/${postId}/${userPhone}`), true);
     await update(ref(db, `posts/${postId}`), { likesCount: Number(pData.likesCount || 0) + 1 });
@@ -2204,6 +2259,7 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
+      // Points logged for History
       await push(ref(db, `points_history/${authorPhone}`), {
         source: "Reel Like / View",
         points: creatorPts,
@@ -2215,6 +2271,7 @@ window.likePost = async (postId) => {
       const viewerSnap = await get(ref(db, "users/" + userPhone));
       if (viewerSnap.exists()) {
         await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
+        // Points logged for History
         await push(ref(db, `points_history/${userPhone}`), {
           source: "Reel Like / View",
           points: viewerPts,
@@ -2222,17 +2279,17 @@ window.likePost = async (postId) => {
         });
       }
     }
-    alert("Liked successfully!");
+    customAlert("Liked successfully!");
   } catch (err) {
-    alert("Like error: " + err.message);
+    customAlert("Like error: " + err.message);
   }
 };
 
 window.subscribeCreator = async (creatorPhone) => {
   try {
     const subscriberPhone = localStorage.getItem("user");
-    if (!subscriberPhone) return alert("Please login to follow");
-    if (subscriberPhone === creatorPhone) return alert("You cannot follow yourself");
+    if (!subscriberPhone) return customAlert("Please login to follow");
+    if (subscriberPhone === creatorPhone) return customAlert("You cannot follow yourself");
 
     await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
 
@@ -2242,6 +2299,7 @@ window.subscribeCreator = async (creatorPhone) => {
         subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
         points: Number(creatorSnap.val().points || 0) + 35
       });
+      // Log for History
       await push(ref(db, `points_history/${creatorPhone}`), {
         source: "Creator Subscription",
         points: 35,
@@ -2254,30 +2312,31 @@ window.subscribeCreator = async (creatorPhone) => {
       await update(ref(db, "users/" + subscriberPhone), {
         points: Number(subSnap.val().points || 0) + 15
       });
+      // Log for History
       await push(ref(db, `points_history/${subscriberPhone}`), {
         source: "Creator Subscription",
         points: 15,
         timestamp: Date.now()
       });
     }
-    alert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
+    customAlert("🎉 Subscribed successfully! Creator: +35 Pts | You: +15 Pts.");
     feedPage();
   } catch (err) {
-    alert("Subscribe error: " + err.message);
+    customAlert("Subscribe error: " + err.message);
   }
 };
 
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login");
+  if (!phone) return customAlert("Please login");
 
   const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) return customAlert("User not found");
   const u = snap.val();
 
   const currentPoints = Number(u.points || 0);
   if (currentPoints < 1000) {
-    return alert("Minimum 1000 points required to convert to Temple_DA.");
+    return customAlert("Minimum 1000 points required to convert to Temple_DA.");
   }
 
   const activeTier = checkAndHandlePackageExpiry(phone, u);
@@ -2295,7 +2354,7 @@ window.convertPointsToToken = async () => {
   }
 
   if (!hasActivePackage && directReferralsCount < 1) {
-    return alert("⚠️ Conversion Restricted!\nTo convert your points to Temple_DA, you must either have an Active Package or at least 1 Direct Referral.");
+    return customAlert("⚠️ Conversion Restricted!\nTo convert your points to Temple_DA, you must either have an Active Package or at least 1 Direct Referral.");
   }
 
   const convertiblePoints = Math.floor(currentPoints / 200) * 200;
@@ -2304,13 +2363,12 @@ window.convertPointsToToken = async () => {
   const newBalance = Number(((u.balance || 0) + tokensToCredit).toFixed(2));
 
   await update(ref(db, "users/" + phone), { points: remainingPoints, balance: newBalance });
-  alert(`🎉 Congratulations! ${convertiblePoints} Points successfully converted to ${tokensToCredit} Temple_DA! Remaining points: ${remainingPoints}`);
+  customAlert(`🎉 Congratulations! ${convertiblePoints} Points successfully converted to ${tokensToCredit} Temple_DA! Remaining points: ${remainingPoints}`);
 };
 
 /* =========================================================================
    PACKAGES PAGE
 ========================================================================= */
-
 async function packagesPage() {
   const phone = localStorage.getItem("user");
   let currentTier = "none";
@@ -2381,10 +2439,10 @@ async function packagesPage() {
 
 window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+  if (!phone) return customAlert("Please login first");
 
   if (typeof window.ethereum === 'undefined') {
-    return alert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
+    return customAlert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
   }
 
   try {
@@ -2399,7 +2457,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
-    alert(`Confirm ${usdtAmount} USDT transaction for ${tierName.toUpperCase()} package activation!`);
+    customAlert(`Confirm ${usdtAmount} USDT transaction for ${tierName.toUpperCase()} package activation!`);
     const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
     await tx.wait();
 
@@ -2428,20 +2486,20 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
       await distribute15LevelCommission(u.referrer, usdtAmount);
     }
 
-    alert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
+    customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
     location.hash = "#user";
   } catch (error) {
     console.error("Package upgrade error:", error);
-    alert("Package activation failed: " + (error.data?.message || error.message));
+    customAlert("Package activation failed: " + (error.data?.message || error.message));
   }
 };
 
 window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
-  if (!phone) return alert("Please login first");
+  if (!phone) return customAlert("Please login first");
 
   const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return alert("User not found");
+  if (!userSnap.exists()) return customAlert("User not found");
   const u = userSnap.val();
 
   const currentPrice = await getPrice();
@@ -2449,43 +2507,42 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const currentBalance = Number(u.balance || 0);
 
   if (currentBalance < requiredTokens) {
-    return alert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
+    return customAlert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
   }
 
-  if (!confirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} package?`)) return;
+  customConfirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} package?`, async () => {
+    const activatedAt = Date.now();
+    const expiresAt = activatedAt + getPackageDurationMs(tierName);
+    const newBalance = Number((currentBalance - requiredTokens).toFixed(2));
 
-  const activatedAt = Date.now();
-  const expiresAt = activatedAt + getPackageDurationMs(tierName);
-  const newBalance = Number((currentBalance - requiredTokens).toFixed(2));
+    await update(ref(db, "users/" + phone), {
+      balance: newBalance,
+      tier: tierName,
+      packagePriceUSDT: usdtAmount,
+      packageActivatedAt: activatedAt,
+      packageExpiresAt: expiresAt,
+      packageExpired: false,
+      monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
+    });
 
-  await update(ref(db, "users/" + phone), {
-    balance: newBalance,
-    tier: tierName,
-    packagePriceUSDT: usdtAmount,
-    packageActivatedAt: activatedAt,
-    packageExpiresAt: expiresAt,
-    packageExpired: false,
-    monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
+    await push(ref(db, "packages/history/" + phone), {
+      tier: tierName,
+      amountUSDT: usdtAmount,
+      timestamp: Date.now()
+    });
+
+    if (u.referrer) {
+      await distribute15LevelCommission(u.referrer, usdtAmount);
+    }
+
+    customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
+    location.hash = "#user";
   });
-
-  await push(ref(db, "packages/history/" + phone), {
-    tier: tierName,
-    amountUSDT: usdtAmount,
-    timestamp: Date.now()
-  });
-
-  if (u.referrer) {
-    await distribute15LevelCommission(u.referrer, usdtAmount);
-  }
-
-  alert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
-  location.hash = "#user";
 };
 
 /* =========================================================================
    ADMIN DASHBOARD
 ========================================================================= */
-
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
@@ -2526,7 +2583,7 @@ async function adminDashboard() {
       <td>${Number(u.locked || 0).toFixed(2)}</td>
       <td>
         <button onclick="editUser('${p}')">Edit</button>
-        <button onclick="deleteUser('${p}')">Delete</button>
+        <button onclick="deleteUser('${p}')" class="btn-danger">Delete</button>
         <button onclick="releaseLocked('${p}')" style="background:#00ff88; color:#000;">Release</button>
       </td>
       </tr>`;
@@ -2577,10 +2634,12 @@ async function adminDashboard() {
 
     <div class="card">
     <h3>Users & Business Overview</h3>
-    <table>
-    <tr><th>ID</th><th>Name</th><th>Wallet Address</th><th>Package</th><th>Balance</th><th>Invested</th><th>Locked</th><th>Action</th></tr>
-    ${rows}
-    </table>
+    <div style="overflow-x: auto;">
+      <table>
+      <tr><th>ID</th><th>Name</th><th>Wallet Address</th><th>Package</th><th>Balance</th><th>Invested</th><th>Locked</th><th>Action</th></tr>
+      ${rows}
+      </table>
+    </div>
     </div>
 
     <div class="card"><h3>Pending Withdrawals</h3><div id="pendingWithdraw"></div></div>
@@ -2621,24 +2680,24 @@ function startEliteDistributionTimer(lastDistTime) {
 
 window.updateEliteSlots = async () => {
   const val = parseInt(v("adminEliteSlots"));
-  if (isNaN(val) || val <= 0) return alert("Please enter a valid slot number!");
+  if (isNaN(val) || val <= 0) return customAlert("Please enter a valid slot number!");
   await set(ref(db, "config/elite21Slots"), val);
-  alert(`✅ Elite slot limit successfully updated to ${val} slots!`);
+  customAlert(`✅ Elite slot limit successfully updated to ${val} slots!`);
   adminDashboard();
 };
 
 window.updateElitePrice = async () => {
   const val = parseFloat(v("adminElitePrice"));
-  if (isNaN(val) || val <= 0) return alert("Please enter a valid USDT price!");
+  if (isNaN(val) || val <= 0) return customAlert("Please enter a valid USDT price!");
   await set(ref(db, "config/elite21Price"), val);
-  alert(`✅ Elite joining price successfully updated to ${val} USDT!`);
+  customAlert(`✅ Elite joining price successfully updated to ${val} USDT!`);
   adminDashboard();
 };
 
 window.runMonthlyEliteDistribution = async () => {
   try {
     const usersSnap = await get(ref(db, "users"));
-    if (!usersSnap.exists()) return alert("No users found");
+    if (!usersSnap.exists()) return customAlert("No users found");
 
     const currentPrice = await getPrice();
     const eliteConfig = await getElite21Config();
@@ -2662,7 +2721,7 @@ window.runMonthlyEliteDistribution = async () => {
     });
 
     if (totalNewBusinessUSDT <= 0) {
-      return alert("⚠️ Distribution Notice: Total turnover business is 0 USDT.");
+      return customAlert("⚠️ Distribution Notice: Total turnover business is 0 USDT.");
     }
 
     const pool5PercentUSDT = totalNewBusinessUSDT * 0.05;
@@ -2695,12 +2754,12 @@ window.runMonthlyEliteDistribution = async () => {
 
     await update(ref(db), updates);
 
-    alert(`✅ Elite 5% Distribution Successful!\n\nTotal Business: $${totalNewBusinessUSDT.toFixed(2)} USDT\n5% Pool: $${pool5PercentUSDT.toFixed(2)} USDT\nSlot Limit: ${slotLimit}\nActive Members Paid: ${distributedCount}\nPer Slot Share: ${poolPerSlotTokens} Temple_DA ($${poolPerSlotUSDT.toFixed(2)})\nExcess/Vacant slot share sent to system & reset.`);
+    customAlert(`✅ Elite 5% Distribution Successful!\n\nTotal Business: $${totalNewBusinessUSDT.toFixed(2)} USDT\n5% Pool: $${pool5PercentUSDT.toFixed(2)} USDT\nSlot Limit: ${slotLimit}\nActive Members Paid: ${distributedCount}\nPer Slot Share: ${poolPerSlotTokens} Temple_DA ($${poolPerSlotUSDT.toFixed(2)})\nExcess/Vacant slot share sent to system & reset.`);
     adminDashboard();
 
   } catch (err) {
     console.error("Distribution Error: ", err);
-    alert("❌ Error: " + err.message);
+    customAlert("❌ Error: " + err.message);
   }
 };
 
@@ -2725,7 +2784,7 @@ async function loadPendingWithdraw() {
 
 window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
   if (typeof window.ethereum === 'undefined') {
-    return alert("Admin Web3 Wallet (MetaMask) not detected!");
+    return customAlert("Admin Web3 Wallet (MetaMask) not detected!");
   }
 
   try {
@@ -2749,10 +2808,10 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, minABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-    alert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm MetaMask!`);
+    customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm MetaMask!`);
     
     const tx = await contract.transfer(userWallet, parsedAmount);
-    alert("Transaction broadcasted! Hash: " + tx.hash);
+    customAlert("Transaction broadcasted! Hash: " + tx.hash);
     await tx.wait();
 
     await remove(ref(db, "withdrawals/pending/" + reqKey));
@@ -2762,11 +2821,11 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
       processedAt: Date.now()
     });
 
-    alert("✅ Withdrawal successfully approved and tokens sent to user wallet!");
+    customAlert("✅ Withdrawal successfully approved and tokens sent to user wallet!");
     loadPendingWithdraw();
   } catch (error) {
     console.error("Withdrawal payout error:", error);
-    alert("Payout failed: " + (error.data?.message || error.message));
+    customAlert("Payout failed: " + (error.data?.message || error.message));
   }
 };
 
@@ -2787,36 +2846,41 @@ window.rejectWithdrawal = async (reqKey, phone) => {
     processedAt: Date.now()
   });
 
-  alert("Withdrawal rejected and balance refunded to user.");
+  customAlert("Withdrawal rejected and balance refunded to user.");
   loadPendingWithdraw();
 };
 
 window.releaseLocked = async phone => {
   const snap = await get(ref(db, "users/" + phone));
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) return customAlert("User not found");
   const u = snap.val();
-  if (!u.locked || u.locked <= 0) return alert("No locked tokens");
+  if (!u.locked || u.locked <= 0) return customAlert("No locked tokens");
 
   await update(ref(db, "users/" + phone), { balance: (u.balance || 0) + u.locked, locked: 0, lockDate: 0, investment: 0 });
-  alert("Tokens released!");
+  customAlert("Tokens released!");
 };
 
 window.updatePrice = async () => {
   await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price")));
-  alert("Price updated! System will now prioritize this over Dexscreener.");
+  customAlert("Price updated! System will now prioritize this over Dexscreener.");
 };
 
 window.editUser = async oldId => {
   const newId = prompt("Enter new user ID");
   if (!newId) return;
   const snap = await get(ref(db, "users/" + oldId));
-  if (!snap.exists()) return alert("User not found");
+  if (!snap.exists()) return customAlert("User not found");
   await set(ref(db, "users/" + newId), snap.val());
   await remove(ref(db, "users/" + oldId));
-  alert("User ID updated");
+  customAlert("User ID updated");
 };
 
-window.deleteUser = async id => { await remove(ref(db, "users/" + id)); };
+window.deleteUser = async id => { 
+  customConfirm("Are you sure you want to delete this user?", async () => {
+    await remove(ref(db, "users/" + id)); 
+    customAlert("User deleted.");
+  });
+};
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
 
