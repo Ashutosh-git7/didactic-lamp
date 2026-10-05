@@ -271,6 +271,11 @@ td {
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleUp { from { transform: scale(0.8); } to { transform: scale(1); } }
+@keyframes pulseBtn {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
 
 /* Accordion Histories */
 .accordion-wrapper {
@@ -465,12 +470,6 @@ td {
   border-radius: 8px;
   margin-bottom: 10px;
 }
-
-@keyframes pulseBtn {
-  0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-  70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-}
 </style>
 </head>
 
@@ -655,9 +654,8 @@ async function backgroundGlobalVestingCheck() {
 
 backgroundGlobalVestingCheck();
 
-
 // =========================================================================
-// MANUAL DAILY CLAIM FUNCTION (Replaced Auto-claim)
+// MANUAL DAILY CLAIM FUNCTION
 // =========================================================================
 window.claimDailyReward = async () => {
   const phone = localStorage.getItem("user");
@@ -698,7 +696,6 @@ window.claimDailyReward = async () => {
     "Keep it up!"
   );
 };
-
 
 // =========================================================================
 // 15-LEVEL REFERRAL DISTRIBUTION SYSTEM
@@ -1053,7 +1050,7 @@ window.registerUser = async () => {
     lastLoginDate: todayDateStr // Welcome bonus set the date so they can't double-claim on day 1
   });
 
-  // Log Daily Login (Welcome Bonus) to points history automatically upon registration
+  // Log Welcome Bonus to points history
   await push(ref(db, `points_history/${phone}`), {
     source: "Welcome Bonus",
     points: 10,
@@ -1952,7 +1949,6 @@ window.makeDirectUSDTDeposit = async () => {
     }
 
     customAlert("Investment successfully updated to your account!");
-    userDashboard();
   } catch (error) {
     console.error("Direct deposit error:", error);
     customAlert("Deposit failed: " + (error.data?.message || error.message));
@@ -2014,7 +2010,6 @@ window.joinElite21 = async (entryPrice) => {
     }
 
     customAlert("🎉 Congratulations! You have successfully joined Elite Leadership Club with a 5-year token lock!");
-    userDashboard();
   } catch (err) {
     customAlert("Elite join failed: " + err.message);
   }
@@ -2027,7 +2022,6 @@ window.relockEliteTokens = async () => {
   customConfirm("Relock your Elite tokens for another 5 years?", async () => {
     await update(ref(db, "users/" + phone), { eliteJoinedAt: Date.now() });
     customAlert("✅ Elite tokens successfully relocked for 5 more years!");
-    userDashboard();
   });
 };
 
@@ -2051,7 +2045,6 @@ window.leaveEliteClub = async () => {
     });
 
     customAlert(`🚪 You have successfully left the Elite Club. ${lockedTokens} Temple_DA released to your balance!`);
-    userDashboard();
   });
 };
 
@@ -2224,16 +2217,18 @@ window.publishTalent = async () => {
       createdAt: Date.now()
     });
 
-    // Upload Points Assigned Here
+    // Giving Upload Points to the Creator
     let earnPts = type === "video" ? 3 : 1;
     await update(ref(db, "users/" + phone), { points: Number(u.points || 0) + earnPts });
+    
+    // Logging Point History
     await push(ref(db, `points_history/${phone}`), {
       source: "Post Upload",
       points: earnPts,
       timestamp: Date.now()
     });
 
-    // Upload Popup Shows Here
+    // Showing Popup
     window.showModalPopup(
       "Post Published! 🎉", 
       "You earned points for sharing your talent.", 
@@ -2295,7 +2290,6 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
-      // Points logged for History
       await push(ref(db, `points_history/${authorPhone}`), {
         source: "Reel Like / View",
         points: creatorPts,
@@ -2307,14 +2301,12 @@ window.likePost = async (postId) => {
       const viewerSnap = await get(ref(db, "users/" + userPhone));
       if (viewerSnap.exists()) {
         await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
-        // Points logged for History
         await push(ref(db, `points_history/${userPhone}`), {
           source: "Reel Like / View",
           points: viewerPts,
           timestamp: Date.now()
         });
         
-        // Like Point Popup
         window.showModalPopup(
           "Points Earned! ⭐", 
           "You liked a reel.", 
@@ -2325,6 +2317,7 @@ window.likePost = async (postId) => {
     } else {
       customAlert("Liked successfully!");
     }
+    
     feedPage();
   } catch (err) {
     customAlert("Like error: " + err.message);
@@ -2345,7 +2338,6 @@ window.subscribeCreator = async (creatorPhone) => {
         subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
         points: Number(creatorSnap.val().points || 0) + 35
       });
-      // Log for History
       await push(ref(db, `points_history/${creatorPhone}`), {
         source: "Creator Subscription",
         points: 35,
@@ -2358,14 +2350,12 @@ window.subscribeCreator = async (creatorPhone) => {
       await update(ref(db, "users/" + subscriberPhone), {
         points: Number(subSnap.val().points || 0) + 15
       });
-      // Log for History
       await push(ref(db, `points_history/${subscriberPhone}`), {
         source: "Creator Subscription",
         points: 15,
         timestamp: Date.now()
       });
       
-      // Follow Point Popup
       window.showModalPopup(
         "Subscribed! 🌟", 
         "You followed a creator.", 
@@ -2540,7 +2530,6 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     }
 
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
-    location.hash = "#user";
   } catch (error) {
     console.error("Package upgrade error:", error);
     customAlert("Package activation failed: " + (error.data?.message || error.message));
@@ -2589,7 +2578,6 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     }
 
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
-    location.hash = "#user";
   });
 };
 
@@ -2736,7 +2724,6 @@ window.updateEliteSlots = async () => {
   if (isNaN(val) || val <= 0) return customAlert("Please enter a valid slot number!");
   await set(ref(db, "config/elite21Slots"), val);
   customAlert(`✅ Elite slot limit successfully updated to ${val} slots!`);
-  adminDashboard();
 };
 
 window.updateElitePrice = async () => {
@@ -2744,7 +2731,6 @@ window.updateElitePrice = async () => {
   if (isNaN(val) || val <= 0) return customAlert("Please enter a valid USDT price!");
   await set(ref(db, "config/elite21Price"), val);
   customAlert(`✅ Elite joining price successfully updated to ${val} USDT!`);
-  adminDashboard();
 };
 
 window.runMonthlyEliteDistribution = async () => {
@@ -2808,7 +2794,6 @@ window.runMonthlyEliteDistribution = async () => {
     await update(ref(db), updates);
 
     customAlert(`✅ Elite 5% Distribution Successful!\n\nTotal Business: $${totalNewBusinessUSDT.toFixed(2)} USDT\n5% Pool: $${pool5PercentUSDT.toFixed(2)} USDT\nSlot Limit: ${slotLimit}\nActive Members Paid: ${distributedCount}\nPer Slot Share: ${poolPerSlotTokens} Temple_DA ($${poolPerSlotUSDT.toFixed(2)})\nExcess/Vacant slot share sent to system & reset.`);
-    adminDashboard();
 
   } catch (err) {
     console.error("Distribution Error: ", err);
@@ -2875,7 +2860,6 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     });
 
     customAlert("✅ Withdrawal successfully approved and tokens sent to user wallet!");
-    loadPendingWithdraw();
   } catch (error) {
     console.error("Withdrawal payout error:", error);
     customAlert("Payout failed: " + (error.data?.message || error.message));
@@ -2900,7 +2884,6 @@ window.rejectWithdrawal = async (reqKey, phone) => {
   });
 
   customAlert("Withdrawal rejected and balance refunded to user.");
-  loadPendingWithdraw();
 };
 
 window.releaseLocked = async phone => {
@@ -2999,9 +2982,15 @@ function loadReferralPointsHistory(phone) {
       </tr>`;
     
     let totalPointsEarned = 0;
+    let historyArr = [];
 
     snap.forEach(child => {
-      const d = child.val();
+      historyArr.push(child.val());
+    });
+    
+    historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    historyArr.forEach(d => {
       totalPointsEarned += (d.pointsAwarded || 20);
       const date = new Date(d.timestamp).toLocaleString();
 
@@ -3038,8 +3027,8 @@ function loadMasterPointsHistory(phone) {
       pointsArr.push(child.val());
     });
     
-    // REVERSE SORT: Naye Points sabse upar dikhenge
-    pointsArr.sort((a, b) => b.timestamp - a.timestamp);
+    // Yahan Reverse Sort kiya gaya hai taaki naye points uper dikhein
+    pointsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     let html = `<table>
       <tr>
@@ -3049,19 +3038,19 @@ function loadMasterPointsHistory(phone) {
       </tr>`;
 
     pointsArr.forEach(d => {
-      const date = new Date(d.timestamp).toLocaleString();
+      const date = d.timestamp ? new Date(d.timestamp).toLocaleString() : "Unknown Time";
       
       let badgeColor = "#dfb72c";
       if (d.source === "Daily Login") badgeColor = "#00ff88";
       else if (d.source === "Referral Bonus") badgeColor = "#3498db";
       else if (d.source === "Reel Like / View") badgeColor = "#e67e22";
       else if (d.source === "Creator Subscription") badgeColor = "#9b59b6";
+      else if (d.source === "Post Upload") badgeColor = "#ff4444";
       else if (d.source === "Welcome Bonus") badgeColor = "#f1c40f";
-      else if (d.source === "Post Upload") badgeColor = "#e74c3c";
 
       html += `
         <tr>
-          <td><span class="badge-tag" style="background:${badgeColor}22; color:${badgeColor}; border-color:${badgeColor};">${d.source}</span></td>
+          <td><span class="badge-tag" style="background:${badgeColor}22; color:${badgeColor}; border-color:${badgeColor};">${d.source || 'Activity'}</span></td>
           <td><span class="number" style="color:${badgeColor};">+${d.points} Pts</span></td>
           <td class="small">${date}</td>
         </tr>
@@ -3075,9 +3064,12 @@ function loadMasterPointsHistory(phone) {
 
 function loadPackageHistory(phone) {
   onValue(ref(db, "packages/history/" + phone), snap => {
+    let historyArr = [];
+    snap.forEach(s => historyArr.push(s.val()));
+    historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
     let html = "";
-    snap.forEach(s => { 
-      const d = s.val(); 
+    historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
         <span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT<br>
@@ -3091,9 +3083,12 @@ function loadPackageHistory(phone) {
 
 function loadInvestHistory(phone) {
   onValue(ref(db, "investments/history/" + phone), snap => {
+    let historyArr = [];
+    snap.forEach(s => historyArr.push(s.val()));
+    historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
     let html = "";
-    snap.forEach(s => { 
-      const d = s.val();
+    historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
         Invested: <span class="number">${d.amountUSDT} USDT</span><br>
@@ -3107,9 +3102,12 @@ function loadInvestHistory(phone) {
 
 function loadWithdrawHistory(phone) {
   onValue(ref(db, "withdrawals/history/" + phone), snap => {
+    let historyArr = [];
+    snap.forEach(s => historyArr.push(s.val()));
+    historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
     let html = "";
-    snap.forEach(s => { 
-      const d = s.val();
+    historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
       let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected" ) ? "#ff4444" : "#00ff88");
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
