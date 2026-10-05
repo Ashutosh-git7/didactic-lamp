@@ -465,6 +465,12 @@ td {
   border-radius: 8px;
   margin-bottom: 10px;
 }
+
+@keyframes pulseBtn {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
 </style>
 </head>
 
@@ -577,7 +583,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS (Works for Welcome & Daily Login)
+// POPUP NOTIFICATION MODAL HELPERS (Works for Welcome, Daily Login, Posts)
 // =========================================================================
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
@@ -649,47 +655,50 @@ async function backgroundGlobalVestingCheck() {
 
 backgroundGlobalVestingCheck();
 
+
 // =========================================================================
-// DAILY LOGIN XP REWARD CHECK HELPER (Shows Popup and Saves to History)
+// MANUAL DAILY CLAIM FUNCTION (Replaced Auto-claim)
 // =========================================================================
-async function checkAndApplyDailyLoginReward(phone) {
-  try {
-    const userRef = ref(db, "users/" + phone);
-    const snap = await get(userRef);
-    if (!snap.exists()) return;
-    
-    const u = snap.val();
-    const now = new Date();
-    const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+window.claimDailyReward = async () => {
+  const phone = localStorage.getItem("user");
+  if (!phone) return customAlert("Please login first!");
 
-    if (u.lastLoginDate !== todayDateStr) {
-      const currentPoints = Number(u.points || 0);
-      const newPoints = currentPoints + 10;
+  const userRef = ref(db, "users/" + phone);
+  const snap = await get(userRef);
+  if (!snap.exists()) return;
+  
+  const u = snap.val();
+  const now = new Date();
+  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-      await update(userRef, {
-        points: newPoints,
-        lastLoginDate: todayDateStr
-      });
-
-      // Saving to points_history so it shows in the Master Points tab
-      await push(ref(db, `points_history/${phone}`), {
-        source: "Daily Login",
-        points: 10,
-        timestamp: Date.now()
-      });
-
-      // Triggering Daily Login Popup
-      window.showModalPopup(
-        "Daily Login Bonus!", 
-        `Welcome back, <b>${u.name || 'Member'}</b>!`, 
-        "+10 XP Points", 
-        "Awesome, Let's Go!"
-      );
-    }
-  } catch (err) {
-    console.error("Daily Login Reward Error: ", err);
+  if (u.lastLoginDate === todayDateStr) {
+    return customAlert("You have already claimed your reward today!");
   }
-}
+
+  const currentPoints = Number(u.points || 0);
+  const newPoints = currentPoints + 10;
+
+  await update(userRef, {
+    points: newPoints,
+    lastLoginDate: todayDateStr
+  });
+
+  // Saving to points_history so it shows in the Master Points tab
+  await push(ref(db, `points_history/${phone}`), {
+    source: "Daily Login",
+    points: 10,
+    timestamp: Date.now()
+  });
+
+  // Triggering Daily Login Popup
+  window.showModalPopup(
+    "Daily Reward Claimed!", 
+    `Awesome work, <b>${u.name || 'Member'}</b>!`, 
+    "+10 XP Points", 
+    "Keep it up!"
+  );
+};
+
 
 // =========================================================================
 // 15-LEVEL REFERRAL DISTRIBUTION SYSTEM
@@ -939,7 +948,6 @@ window.connectWalletAndAutoLogin = async () => {
 
     if (foundPhone) {
       localStorage.setItem("user", foundPhone);
-      await checkAndApplyDailyLoginReward(foundPhone);
       setTimeout(() => { location.hash = "#user"; }, 1000);
     } else {
       customAlert("⚠️ No account registered with this wallet address. Please register first!");
@@ -1021,7 +1029,7 @@ window.registerUser = async () => {
   if (userSnap.exists()) return customAlert("User exists");
 
   const now = new Date();
-  const todayDateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   await set(ref(db, "users/" + phone), {
     name,
@@ -1042,12 +1050,12 @@ window.registerUser = async () => {
     subscribersCount: 0,
     elite21: false,
     monthlyBusiness: 0,
-    lastLoginDate: todayDateStr
+    lastLoginDate: todayDateStr // Welcome bonus set the date so they can't double-claim on day 1
   });
 
-  // Log Daily Login to points history automatically upon registration
+  // Log Daily Login (Welcome Bonus) to points history automatically upon registration
   await push(ref(db, `points_history/${phone}`), {
-    source: "Daily Login",
+    source: "Welcome Bonus",
     points: 10,
     timestamp: Date.now()
   });
@@ -1133,8 +1141,7 @@ window.login = async () => {
   if (atob(user.password) !== pass) return customAlert("Wrong password");
 
   localStorage.setItem("user", phone);
-  await checkAndApplyDailyLoginReward(phone);
-  setTimeout(() => { location.hash = "#user"; }, 1500);
+  setTimeout(() => { location.hash = "#user"; }, 1000);
 };
 
 /* =========================================================================
@@ -1426,8 +1433,6 @@ async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
 
-  await checkAndApplyDailyLoginReward(phone);
-
   const priceUsd = await getPrice();
   const eliteConfig = await getElite21Config();
 
@@ -1461,6 +1466,11 @@ async function userDashboard() {
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
     const userWallet = u.wallet || "Not Linked";
+
+    // Checking if today is claimed
+    const now = new Date();
+    const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const isClaimedToday = (u.lastLoginDate === todayDateStr);
 
     // 5-year lock checking for Elite Member
     const fiveYearsMs = 5 * 365 * 24 * 60 * 60 * 1000;
@@ -1504,6 +1514,16 @@ async function userDashboard() {
     <div style="margin-bottom: 18px; padding: 12px 18px; background: rgba(223, 183, 44, 0.08); border-radius: 10px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
         <span style="font-weight:bold; color:#dfb72c;">Live Market Rate:</span>
         <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
+    </div>
+
+    <!-- DAILY REWARD CLAIM CARD -->
+    <div class="card center" style="border: 2px solid ${isClaimedToday ? '#444' : '#00ff88'}; background: ${isClaimedToday ? 'rgba(255,255,255,0.02)' : 'rgba(0, 255, 136, 0.05)'}; padding: 20px;">
+      <h3 style="color:${isClaimedToday ? '#888' : '#00ff88'}; margin-bottom: 6px;">🎁 Daily Login Reward</h3>
+      <p class="small" style="color: ${isClaimedToday ? '#666' : '#fff'};">Claim your free 10 XP points every day!</p>
+      ${isClaimedToday ? 
+        `<button disabled style="background: #222; color: #555; cursor: not-allowed; border: 1px solid #444; box-shadow: none;">✅ Claimed Today (Come Back Tomorrow)</button>` : 
+        `<button onclick="claimDailyReward()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 15px; padding: 12px; margin-top: 12px; animation: pulseBtn 2s infinite;">⚡ Claim +10 XP Now</button>`
+      }
     </div>
 
     <div class="grid">
@@ -2204,7 +2224,7 @@ window.publishTalent = async () => {
       createdAt: Date.now()
     });
 
-    // UPLOAD PAR BHI POINTS ADD KIYE GAYE HAIN! (New Fix)
+    // Upload Points Assigned Here
     let earnPts = type === "video" ? 3 : 1;
     await update(ref(db, "users/" + phone), { points: Number(u.points || 0) + earnPts });
     await push(ref(db, `points_history/${phone}`), {
@@ -2213,7 +2233,14 @@ window.publishTalent = async () => {
       timestamp: Date.now()
     });
 
-    window.showModalPopup("Post Published! 🎉", "You earned points for sharing.", `+${earnPts} XP Points`, "Awesome!");
+    // Upload Popup Shows Here
+    window.showModalPopup(
+      "Post Published! 🎉", 
+      "You earned points for sharing your talent.", 
+      `+${earnPts} XP Points`, 
+      "Awesome!"
+    );
+
     location.hash = "#feed";
   } catch (error) {
     if (publishBtn) publishBtn.disabled = false;
@@ -2268,6 +2295,7 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
+      // Points logged for History
       await push(ref(db, `points_history/${authorPhone}`), {
         source: "Reel Like / View",
         points: creatorPts,
@@ -2279,13 +2307,14 @@ window.likePost = async (postId) => {
       const viewerSnap = await get(ref(db, "users/" + userPhone));
       if (viewerSnap.exists()) {
         await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
+        // Points logged for History
         await push(ref(db, `points_history/${userPhone}`), {
           source: "Reel Like / View",
           points: viewerPts,
           timestamp: Date.now()
         });
         
-        // POPUP ADDED
+        // Like Point Popup
         window.showModalPopup(
           "Points Earned! ⭐", 
           "You liked a reel.", 
@@ -2294,9 +2323,8 @@ window.likePost = async (postId) => {
         );
       }
     } else {
-        customAlert("Liked successfully!");
+      customAlert("Liked successfully!");
     }
-    
     feedPage();
   } catch (err) {
     customAlert("Like error: " + err.message);
@@ -2317,6 +2345,7 @@ window.subscribeCreator = async (creatorPhone) => {
         subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
         points: Number(creatorSnap.val().points || 0) + 35
       });
+      // Log for History
       await push(ref(db, `points_history/${creatorPhone}`), {
         source: "Creator Subscription",
         points: 35,
@@ -2329,21 +2358,21 @@ window.subscribeCreator = async (creatorPhone) => {
       await update(ref(db, "users/" + subscriberPhone), {
         points: Number(subSnap.val().points || 0) + 15
       });
+      // Log for History
       await push(ref(db, `points_history/${subscriberPhone}`), {
         source: "Creator Subscription",
         points: 15,
         timestamp: Date.now()
       });
+      
+      // Follow Point Popup
+      window.showModalPopup(
+        "Subscribed! 🌟", 
+        "You followed a creator.", 
+        "+15 XP Points", 
+        "Keep Exploring!"
+      );
     }
-    
-    // POPUP ADDED
-    window.showModalPopup(
-      "Subscribed! 🌟", 
-      "You followed a creator.", 
-      "+15 XP Points", 
-      "Keep Exploring!"
-    );
-    
     feedPage();
   } catch (err) {
     customAlert("Subscribe error: " + err.message);
@@ -3004,11 +3033,12 @@ function loadMasterPointsHistory(phone) {
       return;
     }
 
-    // Convert to Array and Sort by Timestamp (Newest first)
     let pointsArr = [];
     snap.forEach(child => {
       pointsArr.push(child.val());
     });
+    
+    // REVERSE SORT: Naye Points sabse upar dikhenge
     pointsArr.sort((a, b) => b.timestamp - a.timestamp);
 
     let html = `<table>
@@ -3026,7 +3056,8 @@ function loadMasterPointsHistory(phone) {
       else if (d.source === "Referral Bonus") badgeColor = "#3498db";
       else if (d.source === "Reel Like / View") badgeColor = "#e67e22";
       else if (d.source === "Creator Subscription") badgeColor = "#9b59b6";
-      else if (d.source === "Post Upload") badgeColor = "#e74c3c"; // Color for upload
+      else if (d.source === "Welcome Bonus") badgeColor = "#f1c40f";
+      else if (d.source === "Post Upload") badgeColor = "#e74c3c";
 
       html += `
         <tr>
