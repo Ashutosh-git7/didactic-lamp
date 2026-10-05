@@ -2801,23 +2801,25 @@ window.runMonthlyEliteDistribution = async () => {
   }
 };
 
-async function loadPendingWithdraw() {
-  const snap = await get(ref(db, "withdrawals/pending"));
-  let html = "";
-  snap.forEach(child => {
-    const key = child.key;
-    const d = child.val();
-    const date = new Date(d.timestamp).toLocaleString();
-    html += `
-      <div class="card" style="border: 1px solid #00ff88;">
-        <b>User Phone:</b> ${d.phone} | <b>Amount:</b> <span class="number">${d.amount} Temple_DA</span><br>
-        <b>User Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
-        <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
-        <button onclick="approveAndSendWithdrawal('${key}', '${d.phone}', '${d.wallet}', ${d.amount})" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Approve & Send via Official Wallet</button>
-        <button onclick="rejectWithdrawal('${key}', '${d.phone}')" class="btn-danger" style="margin-top:8px;">Reject & Refund</button>
-      </div>`;
+function loadPendingWithdraw() {
+  onValue(ref(db, "withdrawals/pending"), snap => {
+    let html = "";
+    snap.forEach(child => {
+      const key = child.key;
+      const d = child.val();
+      const date = new Date(d.timestamp).toLocaleString();
+      html += `
+        <div class="card" style="border: 1px solid #00ff88;">
+          <b>User Phone:</b> ${d.phone} | <b>Amount:</b> <span class="number">${d.amount} Temple_DA</span><br>
+          <b>User Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
+          <span style="font-size:12px; color:#aaa;">${date}</span><br><br>
+          <button onclick="approveAndSendWithdrawal('${key}', '${d.phone}', '${d.wallet}', ${d.amount})" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Approve & Send via Official Wallet</button>
+          <button onclick="rejectWithdrawal('${key}', '${d.phone}')" class="btn-danger" style="margin-top:8px;">Reject & Refund</button>
+        </div>`;
+    });
+    const pendingEl = document.getElementById("pendingWithdraw");
+    if (pendingEl) pendingEl.innerHTML = html || "No pending withdrawal records";
   });
-  document.getElementById("pendingWithdraw").innerHTML = html || "No pending withdrawal records";
 }
 
 window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
