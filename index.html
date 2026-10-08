@@ -505,23 +505,23 @@ td {
   </div>
 </div>
 
-<!-- Modal Container for Notifications & Welcome Bonus (INCLUDING DAILY LOGIN) -->
+<!-- Modal Container for Notifications & Welcome Bonus -->
 <div id="modalContainer"></div>
 
 <!-- Custom Alert Modal -->
-<div id="customAlertOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
-  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:400px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-    <h3 style="color:#dfb72c; margin-bottom: 10px;">Notice</h3>
-    <p id="customAlertMessage" style="color:#fff; margin-bottom:20px; font-size: 16px;"></p>
-    <button onclick="closeCustomAlert()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; padding:12px 24px; border-radius: 8px;">OK</button>
+<div id="customAlertOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:420px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    <h3 style="color:#dfb72c; margin-bottom: 12px;">Notice</h3>
+    <p id="customAlertMessage" style="color:#fff; margin-bottom:20px; font-size: 15px; line-height: 1.5; white-space: pre-line; word-break: break-word;"></p>
+    <button onclick="closeCustomAlert()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; padding:12px 28px; border-radius: 8px; width: auto; min-width: 120px;">OK</button>
   </div>
 </div>
 
 <!-- Custom Confirm Modal -->
-<div id="customConfirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
-  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:400px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-    <h3 style="color:#dfb72c; margin-bottom: 10px;">Confirm Action</h3>
-    <p id="customConfirmMessage" style="color:#fff; margin-bottom:24px; font-size: 16px;"></p>
+<div id="customConfirmOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:#181818; padding:30px; border:2px solid #dfb72c; border-radius:16px; max-width:420px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    <h3 style="color:#dfb72c; margin-bottom: 12px;">Confirm Action</h3>
+    <p id="customConfirmMessage" style="color:#fff; margin-bottom:24px; font-size: 15px; line-height: 1.5; white-space: pre-line;"></p>
     <div style="display:flex; gap:12px; justify-content:center;">
       <button onclick="executeCustomConfirm()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; padding:12px 24px; width:auto; border-radius: 8px;">Confirm</button>
       <button onclick="closeCustomConfirm()" style="background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%); color:#fff; padding:12px 24px; width:auto; border-radius: 8px;">Cancel</button>
@@ -531,25 +531,32 @@ td {
 
 <script>
   window.customAlert = (msg) => {
-    document.getElementById('customAlertMessage').innerText = msg;
-    document.getElementById('customAlertOverlay').style.display = 'flex';
+    const el = document.getElementById('customAlertMessage');
+    if (el) el.innerText = msg;
+    const overlay = document.getElementById('customAlertOverlay');
+    if (overlay) overlay.style.display = 'flex';
   };
   window.closeCustomAlert = () => {
-    document.getElementById('customAlertOverlay').style.display = 'none';
+    const overlay = document.getElementById('customAlertOverlay');
+    if (overlay) overlay.style.display = 'none';
   };
   
   let confirmCallback = null;
   window.customConfirm = (msg, callback) => {
-    document.getElementById('customConfirmMessage').innerText = msg;
+    const el = document.getElementById('customConfirmMessage');
+    if (el) el.innerText = msg;
     confirmCallback = callback;
-    document.getElementById('customConfirmOverlay').style.display = 'flex';
+    const overlay = document.getElementById('customConfirmOverlay');
+    if (overlay) overlay.style.display = 'flex';
   };
   window.executeCustomConfirm = () => {
-    document.getElementById('customConfirmOverlay').style.display = 'none';
+    const overlay = document.getElementById('customConfirmOverlay');
+    if (overlay) overlay.style.display = 'none';
     if(confirmCallback) confirmCallback();
   };
   window.closeCustomConfirm = () => {
-    document.getElementById('customConfirmOverlay').style.display = 'none';
+    const overlay = document.getElementById('customConfirmOverlay');
+    if (overlay) overlay.style.display = 'none';
     confirmCallback = null;
   };
 </script>
@@ -579,10 +586,165 @@ signInAnonymously(auth).catch(e => console.log(e));
 
 const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
+const OFFICIAL_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; // BSC BEP20 USDT
+const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; // Vault / Admin receiver
+
 let activePostIdForComments = null;
 
 // =========================================================================
-// POPUP NOTIFICATION MODAL HELPERS (Works for Welcome, Daily Login, Posts)
+// STANDARD ERC20 / BEP20 MINIMAL ABI FOR TRANSACTIONS
+// =========================================================================
+const BEP20_ABI = [
+  {
+    "constant": true,
+    "inputs": [{"name": "_owner", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"name": "balance", "type": "uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"name": "", "type": "uint8"}],
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "_to", "type": "address"},
+      {"name": "_value", "type": "uint256"}
+    ],
+    "name": "transfer",
+    "outputs": [{"name": "", "type": "bool"}],
+    "type": "function"
+  }
+];
+
+// =========================================================================
+// AUTOMATED BSC NETWORK ENSURANCE & SWITCHER (FIXES MAIN DEPOSIT FAILURE)
+// =========================================================================
+async function ensureBscNetwork() {
+  if (typeof window.ethereum === "undefined") {
+    throw new Error("Web3 Wallet not detected! Please open in MetaMask, Trust Wallet, or Web3 DApp Browser.");
+  }
+
+  const BSC_HEX_CHAIN_ID = "0x38"; // 56 in decimal
+
+  let currentChainId;
+  try {
+    currentChainId = await window.ethereum.request({ method: "eth_chainId" });
+  } catch (err) {
+    throw new Error("Could not detect wallet network: " + err.message);
+  }
+
+  if (currentChainId !== BSC_HEX_CHAIN_ID && parseInt(currentChainId, 16) !== 56) {
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: BSC_HEX_CHAIN_ID }],
+      });
+    } catch (switchError) {
+      // 4902 code means the chain has not been added to user wallet yet
+      if (switchError.code === 4902 || switchError?.data?.originalError?.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: BSC_HEX_CHAIN_ID,
+              chainName: "BNB Smart Chain Mainnet",
+              nativeCurrency: {
+                name: "BNB",
+                symbol: "BNB",
+                decimals: 18,
+              },
+              rpcUrls: [
+                "https://bsc-dataseed.binance.org/",
+                "https://bsc-dataseed1.defibit.io/",
+                "https://rpc.ankr.com/bsc"
+              ],
+              blockExplorerUrls: ["https://bscscan.com/"],
+            },
+          ],
+        });
+      } else {
+        throw new Error("Please switch your wallet network to BNB Smart Chain (BSC) to complete this transaction!");
+      }
+    }
+  }
+}
+
+// User-friendly Web3 error message formatter
+function formatWeb3Error(err) {
+  if (!err) return "Transaction failed.";
+  if (err.code === 4001 || err.code === "ACTION_REJECTED" || err.message?.includes("rejected") || err.message?.includes("denied")) {
+    return "Transaction was cancelled / rejected in your wallet.";
+  }
+  if (err.message?.includes("insufficient funds")) {
+    return "Insufficient BNB in your wallet to cover network gas fees!";
+  }
+  return err.reason || err.data?.message || err.message || String(err);
+}
+
+// =========================================================================
+// UNIFIED ROBUST USDT DEPOSIT HELPER (With Pre-validation & Safe Gas Limits)
+// =========================================================================
+async function executeUsdtTransfer(amount, descriptionLabel) {
+  await ensureBscNetwork();
+
+  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  if (!accounts || accounts.length === 0) {
+    throw new Error("No wallet account selected. Please unlock your Web3 wallet!");
+  }
+  const senderAddress = accounts[0];
+
+  const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+  const signer = provider.getSigner();
+
+  // 1. Gas Fee Pre-check (Native BNB)
+  const bnbBalance = await provider.getBalance(senderAddress);
+  if (bnbBalance.eq(0)) {
+    throw new Error("Insufficient BNB in your wallet! You need a small amount of BNB (approx 0.001 BNB) to pay for BSC network gas fees.");
+  }
+
+  // 2. Token Contract & Decimals Check
+  const usdtContract = new ethers.Contract(OFFICIAL_USDT_CONTRACT, BEP20_ABI, signer);
+  let decimals = 18;
+  try {
+    decimals = await usdtContract.decimals();
+  } catch (e) {
+    decimals = 18;
+  }
+
+  const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
+
+  // 3. User USDT Balance Pre-check
+  const userUsdtBal = await usdtContract.balanceOf(senderAddress);
+  if (userUsdtBal.lt(parsedAmount)) {
+    const readableBal = parseFloat(ethers.utils.formatUnits(userUsdtBal, decimals)).toFixed(2);
+    throw new Error(`Insufficient USDT in your wallet! Your balance is ${readableBal} USDT, but this transaction requires ${amount} USDT.`);
+  }
+
+  // 4. Safe Gas Estimation with 25% safety margin
+  let gasLimit;
+  try {
+    const estGas = await usdtContract.estimateGas.transfer(OFFICIAL_RECEIVER_ADDRESS, parsedAmount);
+    gasLimit = estGas.mul(125).div(100);
+  } catch (gasErr) {
+    gasLimit = ethers.BigNumber.from("120000"); // Safe fallback for BEP20 USDT
+  }
+
+  customAlert(`Wallet confirmation opening for ${descriptionLabel}.\nPlease approve the transaction in MetaMask / Trust Wallet.`);
+
+  const tx = await usdtContract.transfer(OFFICIAL_RECEIVER_ADDRESS, parsedAmount, { gasLimit });
+  customAlert(`Transaction broadcasted to BSC!\nTx Hash: ${tx.hash.slice(0, 10)}...${tx.hash.slice(-8)}\nConfirming on blockchain...`);
+
+  const receipt = await tx.wait(1);
+  return { tx, receipt, senderAddress };
+}
+
+// =========================================================================
+// POPUP NOTIFICATION MODAL HELPERS
 // =========================================================================
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
@@ -604,7 +766,7 @@ window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
       </div>
     </div>
   `;
-}
+};
 
 window.closeModalPopup = () => {
   const container = document.getElementById("modalContainer");
@@ -681,14 +843,12 @@ window.claimDailyReward = async () => {
     lastLoginDate: todayDateStr
   });
 
-  // Saving to points_history so it shows in the Master Points tab
   await push(ref(db, `points_history/${phone}`), {
     source: "Daily Login",
     points: 10,
     timestamp: Date.now()
   });
 
-  // Triggering Daily Login Popup
   window.showModalPopup(
     "Daily Reward Claimed!", 
     `Awesome work, <b>${u.name || 'Member'}</b>!`, 
@@ -929,6 +1089,7 @@ window.connectWalletAndAutoLogin = async () => {
   }
 
   try {
+    await ensureBscNetwork();
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const walletAddress = accounts[0];
     if (!walletAddress) return customAlert("Wallet address not found!");
@@ -945,7 +1106,7 @@ window.connectWalletAndAutoLogin = async () => {
 
     if (foundPhone) {
       localStorage.setItem("user", foundPhone);
-      setTimeout(() => { location.hash = "#user"; }, 1000);
+      setTimeout(() => { location.hash = "#user"; }, 500);
     } else {
       customAlert("⚠️ No account registered with this wallet address. Please register first!");
       location.hash = "#register";
@@ -955,7 +1116,7 @@ window.connectWalletAndAutoLogin = async () => {
       }, 500);
     }
   } catch (error) {
-    customAlert("Wallet login failed: " + error.message);
+    customAlert("Wallet login failed: " + formatWeb3Error(error));
   }
 };
 
@@ -989,6 +1150,7 @@ function registerPage() {
 window.connectWeb3Wallet = async () => {
   if (typeof window.ethereum !== 'undefined') {
     try {
+      await ensureBscNetwork();
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const walletAddress = accounts[0];
       if (walletAddress) {
@@ -996,10 +1158,10 @@ window.connectWeb3Wallet = async () => {
         customAlert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
       }
     } catch (error) {
-      customAlert("Wallet connection cancelled or failed.");
+      customAlert("Wallet connection failed: " + formatWeb3Error(error));
     }
   } else {
-    customAlert("Web3 Wallet not detected!");
+    customAlert("Web3 Wallet not detected! Please open in MetaMask or Trust Wallet.");
   }
 };
 
@@ -1017,13 +1179,13 @@ window.registerUser = async () => {
   let walletExists = false;
 
   usersSnap.forEach(s => {
-    if (s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
+    if (s.val().wallet && s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
   });
 
-  if (walletExists) return customAlert("This wallet is already registered");
+  if (walletExists) return customAlert("This wallet is already registered to another account!");
 
   const userSnap = await get(ref(db, "users/" + phone));
-  if (userSnap.exists()) return customAlert("User exists");
+  if (userSnap.exists()) return customAlert("User with this phone already exists");
 
   const now = new Date();
   const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -1047,10 +1209,9 @@ window.registerUser = async () => {
     subscribersCount: 0,
     elite21: false,
     monthlyBusiness: 0,
-    lastLoginDate: todayDateStr // Welcome bonus set the date so they can't double-claim on day 1
+    lastLoginDate: todayDateStr
   });
 
-  // Log Welcome Bonus to points history
   await push(ref(db, `points_history/${phone}`), {
     source: "Welcome Bonus",
     points: 10,
@@ -1068,7 +1229,6 @@ window.registerUser = async () => {
         points: newPoints
       });
 
-      // Saving Referral Bonus point to history
       await push(ref(db, `points_history/${referrer}`), {
         source: "Referral Bonus",
         points: 20,
@@ -1138,13 +1298,12 @@ window.login = async () => {
   if (atob(user.password) !== pass) return customAlert("Wrong password");
 
   localStorage.setItem("user", phone);
-  setTimeout(() => { location.hash = "#user"; }, 1000);
+  setTimeout(() => { location.hash = "#user"; }, 500);
 };
 
 /* =========================================================================
    DEDICATED REELS FEED PAGE
 ========================================================================= */
-
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
@@ -1425,7 +1584,6 @@ window.submitReelComment = async () => {
 /* =========================================================================
    USER DASHBOARD
 ========================================================================= */
-
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
@@ -1464,12 +1622,10 @@ async function userDashboard() {
     const balUsd = (balTda * priceUsd).toFixed(2);
     const userWallet = u.wallet || "Not Linked";
 
-    // Checking if today is claimed
     const now = new Date();
     const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const isClaimedToday = (u.lastLoginDate === todayDateStr);
 
-    // 5-year lock checking for Elite Member
     const fiveYearsMs = 5 * 365 * 24 * 60 * 60 * 1000;
     let eliteLockHtml = "";
     if (u.elite21 === true) {
@@ -1578,7 +1734,7 @@ async function userDashboard() {
           ${u.elite21 
             ? '<span style="color:#00ff88; font-weight:bold;">Member Verified ✓</span>' 
             : (eliteCount >= eliteConfig.slots 
-                ? '<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All ${eliteConfig.slots} Slots Full</span>' 
+                ? `<span style="color:#ff4444; font-weight:bold; font-size:14px; border:1px solid #ff4444; padding:8px 12px; border-radius:8px;">🔴 All ${eliteConfig.slots} Slots Full</span>` 
                 : `<button onclick="joinElite21(${eliteConfig.price})" style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">Join Elite (${eliteConfig.price} USDT)</button>`)
           }
         </div>
@@ -1639,7 +1795,7 @@ async function userDashboard() {
 
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Upgrade (Direct Web3 USDT Deposit)</h3>
-      <p class="small">Clicking below will automatically trigger MetaMask / Trust Wallet to transfer USDT (BEP20) to the official address and update your investment capital instantly (Max Total Investment: 500 USDT).</p>
+      <p class="small">Clicking below will automatically switch your wallet to <strong>BNB Smart Chain (BSC)</strong>, approve USDT (BEP20), and credit your investment capital instantly (Max Total Investment: 500 USDT).</p>
       <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" style="margin-top:12px;">
       <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit / Upgrade via Web3 Wallet</button>
     </div>
@@ -1658,7 +1814,6 @@ async function userDashboard() {
     <h3 style="margin-top:28px;">Account Histories & Posts (Click To View)</h3>
 
     ${u.elite21 ? `
-    <!-- Elite Monthly Pool Earnings History Tab -->
     <div class="accordion-wrapper" id="accEliteEarnings">
       <div class="accordion-header" onclick="toggleAccordion('accEliteEarnings')">
         <span>⭐ Elite Monthly Pool Earnings History</span>
@@ -1667,7 +1822,6 @@ async function userDashboard() {
       <div class="accordion-content" id="eliteEarningsHistory">Loading...</div>
     </div>` : ''}
 
-    <!-- Referral History Tab -->
     <div class="accordion-wrapper" id="accReferrals">
       <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
         <span>👥 Referral Team Income</span>
@@ -1676,7 +1830,6 @@ async function userDashboard() {
       <div class="accordion-content" id="referralHistory">Loading...</div>
     </div>
 
-    <!-- Referral Points History Tab -->
     <div class="accordion-wrapper" id="accRefPointsHistory">
       <div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')">
         <span>🌟 Referral Points History (+20 Pts Earnings)</span>
@@ -1685,7 +1838,6 @@ async function userDashboard() {
       <div class="accordion-content" id="refPointsHistoryList">Loading...</div>
     </div>
 
-    <!-- Master Points Earnings History Tab (DAILY LOGIN HIGHLIGHTED) -->
     <div class="accordion-wrapper" id="accMasterPoints">
       <div class="accordion-header" onclick="toggleAccordion('accMasterPoints')">
         <span>📊 Master Points & Daily Login History</span>
@@ -1702,7 +1854,6 @@ async function userDashboard() {
       <div class="accordion-content" id="myUploadedPosts">Loading...</div>
     </div>
 
-    <!-- Gift History Tab -->
     <div class="accordion-wrapper" id="accGifts">
       <div class="accordion-header" onclick="toggleAccordion('accGifts')">
         <span>🎁 Gift History (Sent & Received)</span>
@@ -1792,7 +1943,8 @@ function startReleaseCountdown(lockDate, lockedAmount) {
 
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
-  const amount = parseFloat(v("withdraw"));
+  const withdrawInput = document.getElementById("withdraw");
+  const amount = parseFloat(withdrawInput ? withdrawInput.value.trim() : "0");
   
   if (!amount || amount <= 0) {
     return customAlert("Please enter a valid withdrawal amount!");
@@ -1871,13 +2023,17 @@ window.withdraw = async () => {
     status: "Pending Admin Approval"
   });
 
-  customAlert(`🎉 Success! ${amount} Temple_DA withdrawal request sent to admin. Upon approval, it will be transferred to your wallet.`);
-  v("withdraw").value = "";
+  if (withdrawInput) withdrawInput.value = "";
+  customAlert(`🎉 Success! ${amount} Temple_DA withdrawal request submitted.\nUpon admin review, tokens will be sent directly to your BEP20 address.`);
 };
 
+// =========================================================================
+// FIXED DIRECT WEB3 USDT DEPOSIT
+// =========================================================================
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
-  const amount = parseFloat(v("invest"));
+  const investInput = document.getElementById("invest");
+  const amount = parseFloat(investInput ? investInput.value.trim() : "0");
 
   if (!amount || amount < 1) return customAlert("Investment amount must be at least 1 USDT");
 
@@ -1887,43 +2043,11 @@ window.makeDirectUSDTDeposit = async () => {
 
   const currentInvestment = Number(u.investment || 0);
   if (currentInvestment + amount > 500) {
-    return customAlert(`Maximum total investment limit is 500 USDT! Your current investment is ${currentInvestment} USDT, you can invest up to ${500 - currentInvestment} USDT more.`);
-  }
-
-  if (typeof window.ethereum === 'undefined') {
-    return customAlert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
+    return customAlert(`Maximum total investment limit is 500 USDT!\nYour current investment is ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
   }
 
   try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
-    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-
-    const minABI = [
-      {
-        "constant": false,
-        "inputs": [
-          {"name": "_to", "type": "address"},
-          {"name": "_value", "type": "uint256"}
-        ],
-        "name": "transfer",
-        "outputs": [{"name": "", "type": "bool"}],
-        "type": "function"
-      }
-    ];
-
-    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
-
-    customAlert("Wallet popup opening. Please confirm the transaction!");
-    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
-    customAlert("Transaction broadcasted! Hash: " + tx.hash);
-
-    await tx.wait();
-    customAlert("USDT transfer successful! Updating investment...");
+    const { tx } = await executeUsdtTransfer(amount, `${amount} USDT Investment Deposit`);
 
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
@@ -1941,6 +2065,7 @@ window.makeDirectUSDTDeposit = async () => {
 
     await push(ref(db, "investments/history/" + phone), {
       amountUSDT: amount,
+      txHash: tx.hash,
       timestamp: Date.now()
     });
 
@@ -1948,10 +2073,11 @@ window.makeDirectUSDTDeposit = async () => {
       await distribute15LevelCommission(u.referrer, amount);
     }
 
-    customAlert("Investment successfully updated to your account!");
+    if (investInput) investInput.value = "";
+    customAlert(`✅ Success! ${amount} USDT deposited successfully.\n${temple_DA} Temple_DA added to locked yield!`);
   } catch (error) {
     console.error("Direct deposit error:", error);
-    customAlert("Deposit failed: " + (error.data?.message || error.message));
+    customAlert("Deposit Failed: " + formatWeb3Error(error));
   }
 };
 
@@ -1974,25 +2100,8 @@ window.joinElite21 = async (entryPrice) => {
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.val();
 
-  if (typeof window.ethereum === 'undefined') {
-    return customAlert("Web3 Wallet not found!");
-  }
-
   try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
-    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-
-    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
-    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(entryPrice.toString(), 18);
-
-    customAlert(`Confirm ${entryPrice} USDT transfer to join Elite Leadership Club!`);
-    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
-    await tx.wait();
+    const { tx } = await executeUsdtTransfer(entryPrice, "Elite Leadership Club Entry");
 
     const currentPrice = await getPrice();
     const lockedTokensCount = Number((entryPrice / currentPrice).toFixed(2));
@@ -2009,9 +2118,9 @@ window.joinElite21 = async (entryPrice) => {
       await distribute15LevelCommission(u.referrer, entryPrice);
     }
 
-    customAlert("🎉 Congratulations! You have successfully joined Elite Leadership Club with a 5-year token lock!");
+    customAlert("🎉 Congratulations! You have successfully joined Elite Leadership Club with 5-year locked tokens!");
   } catch (err) {
-    customAlert("Elite join failed: " + err.message);
+    customAlert("Elite join failed: " + formatWeb3Error(err));
   }
 };
 
@@ -2217,18 +2326,15 @@ window.publishTalent = async () => {
       createdAt: Date.now()
     });
 
-    // Giving Upload Points to the Creator
     let earnPts = type === "video" ? 3 : 1;
     await update(ref(db, "users/" + phone), { points: Number(u.points || 0) + earnPts });
     
-    // Logging Point History
     await push(ref(db, `points_history/${phone}`), {
       source: "Post Upload",
       points: earnPts,
       timestamp: Date.now()
     });
 
-    // Showing Popup
     window.showModalPopup(
       "Post Published! 🎉", 
       "You earned points for sharing your talent.", 
@@ -2484,25 +2590,8 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
 
-  if (typeof window.ethereum === 'undefined') {
-    return customAlert("Web3 Wallet not found! Please open MetaMask or Trust Wallet.");
-  }
-
   try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955";
-    const officialReceiverAddress = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-
-    const minABI = [{ "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }];
-    const contract = new ethers.Contract(usdtContractAddress, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
-
-    customAlert(`Confirm ${usdtAmount} USDT transaction for ${tierName.toUpperCase()} package activation!`);
-    const tx = await contract.transfer(officialReceiverAddress, parsedAmount);
-    await tx.wait();
+    const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Package Upgrade`);
 
     const activatedAt = Date.now();
     const expiresAt = activatedAt + getPackageDurationMs(tierName);
@@ -2522,6 +2611,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     await push(ref(db, "packages/history/" + phone), {
       tier: tierName,
       amountUSDT: usdtAmount,
+      txHash: tx.hash,
       timestamp: Date.now()
     });
 
@@ -2532,7 +2622,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
   } catch (error) {
     console.error("Package upgrade error:", error);
-    customAlert("Package activation failed: " + (error.data?.message || error.message));
+    customAlert("Package activation failed: " + formatWeb3Error(error));
   }
 };
 
@@ -2828,43 +2918,43 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
   }
 
   try {
+    await ensureBscNetwork();
     await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
 
-    const minABI = [
-      {
-        "constant": false,
-        "inputs": [
-          {"name": "_to", "type": "address"},
-          {"name": "_value", "type": "uint256"}
-        ],
-        "name": "transfer",
-        "outputs": [{"name": "", "type": "bool"}],
-        "type": "function"
-      }
-    ];
-
-    const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, minABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
-
-    customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm MetaMask!`);
+    const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, BEP20_ABI, signer);
+    let decimals = 18;
+    try { decimals = await contract.decimals(); } catch (e) { decimals = 18; }
     
-    const tx = await contract.transfer(userWallet, parsedAmount);
+    const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
+
+    customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm in MetaMask!`);
+    
+    let gasLimit;
+    try {
+      const estGas = await contract.estimateGas.transfer(userWallet, parsedAmount);
+      gasLimit = estGas.mul(125).div(100);
+    } catch (gasErr) {
+      gasLimit = ethers.BigNumber.from("120000");
+    }
+
+    const tx = await contract.transfer(userWallet, parsedAmount, { gasLimit });
     customAlert("Transaction broadcasted! Hash: " + tx.hash);
-    await tx.wait();
+    await tx.wait(1);
 
     await remove(ref(db, "withdrawals/pending/" + reqKey));
     
     await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
       status: "Processed via Web3",
+      txHash: tx.hash,
       processedAt: Date.now()
     });
 
     customAlert("✅ Withdrawal successfully approved and tokens sent to user wallet!");
   } catch (error) {
     console.error("Withdrawal payout error:", error);
-    customAlert("Payout failed: " + (error.data?.message || error.message));
+    customAlert("Payout failed: " + formatWeb3Error(error));
   }
 };
 
@@ -3029,7 +3119,6 @@ function loadMasterPointsHistory(phone) {
       pointsArr.push(child.val());
     });
     
-    // Yahan Reverse Sort kiya gaya hai taaki naye points uper dikhein
     pointsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     let html = `<table>
