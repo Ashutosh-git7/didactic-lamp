@@ -618,8 +618,23 @@ td {
     confirmCallback = null;
   };
 
+  // ROBUST WEB3 ERROR PARSER (PREVENTS "Deposit error: undefined")
+  window.parseWeb3Error = (err) => {
+    if (!err) return "Unknown transaction error.";
+    if (err.code === 4001 || err.code === "ACTION_REJECTED" || err.message?.includes("rejected") || err.message?.includes("denied")) {
+      return "Transaction was cancelled in your wallet.";
+    }
+    if (err.code === "INSUFFICIENT_FUNDS" || err.message?.includes("insufficient funds") || err.data?.message?.includes("insufficient funds")) {
+      return "⚠️ Insufficient BNB for Gas Fee!\nPlease keep at least $0.10 (0.0005 BNB) in your wallet to cover blockchain transaction fees.";
+    }
+    const reasonStr = err.reason || err.data?.message || err.error?.message || err.message || "";
+    if (reasonStr.includes("execution reverted") || reasonStr.includes("transfer amount exceeds balance")) {
+      return "⚠️ Insufficient USDT (BEP20) Balance!\nYour wallet does not have enough USDT to complete this deposit.";
+    }
+    return reasonStr || "Transaction failed. Please ensure you have USDT (BEP20) and BNB for gas fee.";
+  };
+
   // ROBUST BNB SMART CHAIN (BSC) NETWORK SWITCH HELPER
-  // Handles Trust Wallet, MetaMask, SafePal, Bitget DApp browsers safely without blocking execution
   window.ensureBSCNetwork = async () => {
     if (typeof window.ethereum === 'undefined') return true;
     try {
@@ -947,7 +962,7 @@ window.connectWalletAndAutoLogin = async () => {
         if (wInput) wInput.value = walletAddress;
       }, 500);
     }
-  } catch (error) { customAlert("Wallet login failed: " + error.message); }
+  } catch (error) { customAlert("Wallet login failed: " + window.parseWeb3Error(error)); }
 };
 
 function registerPage() {
@@ -982,7 +997,7 @@ window.connectWeb3Wallet = async () => {
       document.getElementById("wallet").value = walletAddress;
       customAlert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
     }
-  } catch (error) { customAlert("Wallet connection cancelled or failed: " + error.message); }
+  } catch (error) { customAlert("Wallet connection failed: " + window.parseWeb3Error(error)); }
 };
 
 window.registerUser = async () => {
@@ -1046,7 +1061,7 @@ window.login = async () => {
 };
 
 /* =========================================================================
-   USER DASHBOARD (WITH REAL-TIME ACCUMULATOR, VACANT SLOTS & 80/20 SPLIT)
+   USER DASHBOARD
 ========================================================================= */
 async function userDashboard() {
   const phone = localStorage.getItem("user");
@@ -1222,7 +1237,7 @@ async function userDashboard() {
               <button onclick="joinEliteClub('${cId}', true)" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; padding:6px 10px; font-size:10px; width:100%; margin:0;">
                 💎 Pay 100% Vault
               </button>` : (hasPartialVault ? `
-              <button onclick="joinEliteClubHybrid('${cId}')" style="background: linear-gradient(135deg, #00ff88 0%, #dfb72c 100%); color:#000; padding:6px 10px; font-size:10px; width:100%; margin:0; font-weight:bold;">
+              <button onclick="joinEliteClubHybrid('${cId}')" style="background: linear-gradient(135deg, #00ff88 0%, #dfb72c 100%); color:#000; font-size:10px; padding:6px; width:100%; margin:0; font-weight:bold;">
                 ⚡ Vault ($${vaultValueUSDT}) + Pay $${shortfallUSDT}
               </button>
               <span class="small" style="color:#aaa; display:block; font-size:9px; margin-top:2px;">Uses your vault + extra USDT</span>` : `
@@ -1590,7 +1605,7 @@ window.claimClubRewards = async (clubId) => {
   );
 };
 
-// DIRECT WEB3 JOIN CLUB (WITHOUT BLOCKING PRE-CHECKS)
+// DIRECT WEB3 JOIN CLUB
 window.joinEliteClub = async (clubId, useVault = false) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
@@ -1673,6 +1688,14 @@ window.joinEliteClub = async (clubId, useVault = false) => {
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(club.price.toString(), 18);
 
+    // Pre-validation to avoid undefined errors
+    try {
+      const usdtBal = await contract.balanceOf(userWalletAddress);
+      if (usdtBal.lt(parsedAmount)) {
+        return customAlert(`⚠️ Insufficient USDT Balance!\nYour wallet has ${ethers.utils.formatUnits(usdtBal, 18)} USDT. You need ${club.price} USDT to join.`);
+      }
+    } catch(e) {}
+
     customAlert(`Opening wallet to confirm $${club.price} USDT transfer for ${club.name} Club. Please confirm in your wallet!`);
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
     
@@ -1695,11 +1718,7 @@ window.joinEliteClub = async (clubId, useVault = false) => {
 
     customAlert(`🎉 Success! You are now in the ${club.name} Club with a ${club.capMultiplier}x target.`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-      customAlert("Transaction was cancelled in wallet.");
-    } else {
-      customAlert("Transaction failed: " + (err.data?.message || err.message));
-    }
+    customAlert(window.parseWeb3Error(err));
   }
 };
 
@@ -1782,11 +1801,7 @@ window.joinEliteClubHybrid = async (clubId) => {
 
       customAlert(`🎉 Success! ${club.name} Club activated with Vault + $${shortfallUSDT} USDT!`);
     } catch (err) {
-      if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-        customAlert("Transaction was cancelled.");
-      } else {
-        customAlert("Transaction failed: " + (err.data?.message || err.message));
-      }
+      customAlert(window.parseWeb3Error(err));
     }
   });
 };
@@ -1837,11 +1852,7 @@ window.topUpUpgradeVaultWeb3 = async () => {
     if (inputEl) inputEl.value = "";
     customAlert(`💎 Upgrade Vault topped up with +${tokensToAdd.toLocaleString()} Temple_DA!`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-      customAlert("Top-Up was cancelled.");
-    } else {
-      customAlert("Top-Up failed: " + (err.data?.message || err.message));
-    }
+    customAlert(window.parseWeb3Error(err));
   }
 };
 
@@ -1916,7 +1927,7 @@ window.withdraw = async () => {
   customAlert(`Withdrawal request placed for ${amount} Temple_DA!`);
 };
 
-// DIRECT USDT INVESTMENT VIA DAPP WEB3 (RESTORED TO DIRECT SMOOTH POPUP FLOW)
+// DIRECT USDT INVESTMENT VIA DAPP WEB3
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amountStr = v("invest");
@@ -1952,6 +1963,15 @@ window.makeDirectUSDTDeposit = async () => {
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
+    // USDT Balance pre-validation to avoid generic reverted errors
+    try {
+      const usdtBal = await contract.balanceOf(userWalletAddress);
+      if (usdtBal.lt(parsedAmount)) {
+        const readableBal = parseFloat(ethers.utils.formatUnits(usdtBal, 18)).toFixed(2);
+        return customAlert(`⚠️ Insufficient USDT (BEP20)!\nYour wallet has ${readableBal} USDT, but you are trying to deposit ${amount} USDT.`);
+      }
+    } catch (balErr) {}
+
     customAlert("Opening wallet confirmation... Please approve the transaction in your wallet!");
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
     
@@ -1985,11 +2005,7 @@ window.makeDirectUSDTDeposit = async () => {
 
     customAlert(`🎉 Success! ${amount} USDT successfully deposited. +${tokenAmount} Temple_DA locked with 5% monthly vesting!`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-      customAlert("Transaction was cancelled in your wallet.");
-    } else {
-      customAlert("Deposit error: " + (err.data?.message || err.message));
-    }
+    customAlert(window.parseWeb3Error(err));
   }
 };
 
@@ -2363,7 +2379,7 @@ window.submitReelComment = async () => {
 };
 
 /* =========================================================================
-   PACKAGES PAGE (WEB3, LIQUID BALANCE, OR 20% UPGRADE VAULT / HYBRID)
+   PACKAGES PAGE
 ========================================================================= */
 async function packagesPage() {
   const phone = localStorage.getItem("user");
@@ -2481,11 +2497,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     customAlert(`🎉 ${tierName.toUpperCase()} package activated successfully!`);
     location.hash = "#user";
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-      customAlert("Package activation was cancelled.");
-    } else {
-      customAlert("Transaction failed: " + (err.data?.message || err.message));
-    }
+    customAlert(window.parseWeb3Error(err));
   }
 };
 
@@ -2608,11 +2620,7 @@ window.upgradePackageHybrid = async (tierName, usdtAmount) => {
       customAlert(`🎉 ${tierName.toUpperCase()} package activated with Vault + $${shortfallUSDT} USDT!`);
       location.hash = "#user";
     } catch (err) {
-      if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
-        customAlert("Activation was cancelled.");
-      } else {
-        customAlert("Transaction failed: " + (err.data?.message || err.message));
-      }
+      customAlert(window.parseWeb3Error(err));
     }
   });
 };
@@ -2748,7 +2756,7 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { status: "Processed via Web3", processedAt: Date.now() });
     customAlert("Withdrawal processed successfully!");
   } catch (err) {
-    customAlert("Approval failed: " + err.message);
+    customAlert("Approval failed: " + window.parseWeb3Error(err));
   }
 };
 
