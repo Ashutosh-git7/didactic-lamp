@@ -618,42 +618,42 @@ td {
     confirmCallback = null;
   };
 
-  // AUTOMATIC BNB SMART CHAIN (BSC) NETWORK SWITCH HELPER
+  // ROBUST BNB SMART CHAIN (BSC) NETWORK SWITCH HELPER
+  // Handles Trust Wallet, MetaMask, SafePal, Bitget DApp browsers safely without blocking execution
   window.ensureBSCNetwork = async () => {
-    if (typeof window.ethereum === 'undefined') {
-      customAlert("Web3 Wallet not detected! Please open inside MetaMask or Trust Wallet DApp Browser.");
-      return false;
-    }
-    const BSC_CHAIN_ID_HEX = "0x38"; // 56 in decimal
+    if (typeof window.ethereum === 'undefined') return true;
     try {
-      const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
-      if (currentChain === BSC_CHAIN_ID_HEX) return true;
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const decimalChain = parseInt(chainId, 16);
+      if (decimalChain === 56 || chainId === "56" || chainId === "0x38") {
+        return true;
+      }
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: BSC_CHAIN_ID_HEX }]
+          params: [{ chainId: '0x38' }]
         });
         return true;
       } catch (switchError) {
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: BSC_CHAIN_ID_HEX,
-              chainName: 'BNB Smart Chain Mainnet',
-              nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-              rpcUrls: ['https://bsc-dataseed.binance.org/'],
-              blockExplorerUrls: ['https://bscscan.com/']
-            }]
-          });
-          return true;
+        if (switchError.code === 4902 || switchError.code === -32603) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x38',
+                chainName: 'BNB Smart Chain Mainnet',
+                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                blockExplorerUrls: ['https://bscscan.com/']
+              }]
+            });
+            return true;
+          } catch (addErr) {}
         }
-        customAlert("Please switch your wallet network to BNB Smart Chain (BSC Mainnet) to continue!");
-        return false;
+        return true;
       }
     } catch (e) {
-      customAlert("Network check error: " + e.message);
-      return false;
+      return true;
     }
   };
 </script>
@@ -686,7 +686,7 @@ const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 const USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
 const OFFICIAL_RECEIVER = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 
-// STANDARD ERC20 / BEP20 MINIMAL ABI FOR TRANSFERS AND BALANCE CHECKS
+// STANDARD ERC20 / BEP20 MINIMAL ABI FOR DIRECT TRANSFERS
 const BEP20_ABI = [
   { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
   { "constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
@@ -700,7 +700,7 @@ let activePostIdForComments = null;
 const ELITE_CLUBS = {
   bronze: { id: "bronze", name: "Bronze", price: 50, slots: 250, poolPercent: 1, capMultiplier: 3.0 },
   silver: { id: "silver", name: "Silver", price: 100, slots: 125, poolPercent: 1, capMultiplier: 3.5 },
-  gold: { id: "gold", name: "Gold", price: 250, slots: 65, poolPercent: 1, capMultiplier: 4.0 }, // Legacy Elite 21 maps here!
+  gold: { id: "gold", name: "Gold", price: 250, slots: 65, poolPercent: 1, capMultiplier: 4.0 },
   platinum: { id: "platinum", name: "Platinum", price: 500, slots: 40, poolPercent: 1, capMultiplier: 4.5 },
   diamond: { id: "diamond", name: "Diamond", price: 1000, slots: 20, poolPercent: 1, capMultiplier: 5.0 }
 };
@@ -781,7 +781,7 @@ async function triggerRealtimeTurnoverSplit(incomingUSDT) {
     let poolUpdates = {};
     for (const [cId, club] of Object.entries(ELITE_CLUBS)) {
       const clubShareUSDT = (incomingUSDT * club.poolPercent) / 100;
-      const sharePerSlotUSDT = clubShareUSDT / club.slots; // Fixed capacity prevents system loss!
+      const sharePerSlotUSDT = clubShareUSDT / club.slots;
       
       const snap = await get(ref(db, `club_accumulators/${cId}`));
       const currentAcc = snap.exists() ? Number(snap.val()) : 0;
@@ -929,8 +929,7 @@ async function landing() {
 
 window.connectWalletAndAutoLogin = async () => {
   if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Please open inside MetaMask or Trust Wallet DApp Browser.");
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  await window.ensureBSCNetwork();
 
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -974,8 +973,7 @@ function registerPage() {
 
 window.connectWeb3Wallet = async () => {
   if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open in MetaMask or Trust Wallet DApp Browser.");
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  await window.ensureBSCNetwork();
 
   try {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -1060,9 +1058,7 @@ async function userDashboard() {
     const u = snap.val() || {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    // =========================================================================
     // AUTOMATIC MIGRATION FOR LEGACY "ELITE 21" MEMBERS TO "GOLD CLUB ($250)"
-    // =========================================================================
     if (u.elite21 === true && (!u.eliteClubs || !u.eliteClubs.gold)) {
       const accSnap = await get(ref(db, "club_accumulators/gold"));
       const currentGoldAcc = accSnap.exists() ? Number(accSnap.val()) : 0;
@@ -1089,7 +1085,7 @@ async function userDashboard() {
       window.showModalPopup("Elite 21 Upgraded! 🏆", "Your status has been upgraded to the <b>Gold Leadership Club ($250)</b> with real-time turnover rewards!", "Gold Slot Reserved", "Continue");
     }
 
-    // Fetch Global Accumulators for real-time yield calculation
+    // Fetch Global Accumulators
     const accSnap = await get(ref(db, "club_accumulators"));
     const accumulators = accSnap.exists() ? accSnap.val() : {};
 
@@ -1146,7 +1142,6 @@ async function userDashboard() {
       let totalEarnedUSDT = myData ? (myData.totalEarnedUSDT || 0) : 0;
       const maxCapUSDT = c.price * c.capMultiplier;
 
-      // Real-time calculation on user load
       if (isMyActive) {
         const lastUserAcc = myData.lastAccumulator || 0;
         const delta = Math.max(0, globalAcc - lastUserAcc);
@@ -1169,7 +1164,6 @@ async function userDashboard() {
       const hasPartialVault = (vaultBalTda > 0 && !canPayWithVault);
       const shortfallUSDT = Number(Math.max(0, c.price - vaultValueUSDT).toFixed(2));
 
-      // Dynamic High-FOMO Vacancy Badge
       let vacancyBadge = "";
       if (vacantSlots === 0) {
         vacancyBadge = `<span style="color:#ff4444; font-weight:bold; background:rgba(255,68,68,0.15); padding:4px 8px; border-radius:6px; font-size:11px; border:1px solid #ff4444;">🔴 HOUSEFULL (0 SLOTS AVAILABLE)</span>`;
@@ -1403,7 +1397,7 @@ async function userDashboard() {
       <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
     </div>
 
-    <!-- DIRECT USDT INVESTMENT (WITH PRE-VALIDATED BSC & GAS CHECK) -->
+    <!-- DIRECT USDT INVESTMENT VIA DAPP WEB3 (CLEAN AND RELIABLE) -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Capital Growth (Direct Web3 USDT)</h3>
       <p class="small">Deposit USDT (BEP20) to lock and earn monthly 5% vesting release (Max Total: 500 USDT).</p>
@@ -1557,7 +1551,6 @@ window.claimClubRewards = async (clubId) => {
   const currentPrice = await getPrice();
   const totalTokens = Number((claimableUSDT / currentPrice).toFixed(2));
   
-  // 80% to Liquid Balance, 20% to Upgrade Vault
   const liquidTokens = Number((totalTokens * 0.80).toFixed(2));
   const vaultTokens = Number((totalTokens * 0.20).toFixed(2));
 
@@ -1597,7 +1590,7 @@ window.claimClubRewards = async (clubId) => {
   );
 };
 
-// JOIN CLUB VIA USDT OR 100% UPGRADE VAULT
+// DIRECT WEB3 JOIN CLUB (WITHOUT BLOCKING PRE-CHECKS)
 window.joinEliteClub = async (clubId, useVault = false) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
@@ -1663,33 +1656,27 @@ window.joinEliteClub = async (clubId, useVault = false) => {
     return;
   }
 
-  // Web3 USDT Transfer with BSC check
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') {
+    return customAlert("Web3 Wallet not detected! Please open inside MetaMask or Trust Wallet DApp Browser.");
+  }
 
   try {
+    await window.ensureBSCNetwork();
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
+    if (!userWalletAddress) return customAlert("Wallet address not found!");
 
-    // Check BNB Balance for Gas
-    const bnbBalance = await provider.getBalance(userWalletAddress);
-    if (bnbBalance.isZero()) {
-      return customAlert("⚠️ Insufficient BNB for Gas Fee!\nYou need a tiny amount of BNB (approx $0.05) in your wallet to confirm this transaction.");
-    }
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    const signer = provider.getSigner();
 
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(club.price.toString(), 18);
 
-    // Check USDT Balance
-    const usdtBalance = await contract.balanceOf(userWalletAddress);
-    if (usdtBalance.lt(parsedAmount)) {
-      const formattedBal = ethers.utils.formatUnits(usdtBalance, 18);
-      return customAlert(`⚠️ Insufficient USDT Balance!\nYour wallet has ${Number(formattedBal).toFixed(2)} USDT (BEP20), but ${club.price} USDT is required.`);
-    }
-
+    customAlert(`Opening wallet to confirm $${club.price} USDT transfer for ${club.name} Club. Please confirm in your wallet!`);
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    
+    customAlert("Transaction broadcasted! Waiting for confirmation on BSC...");
     await tx.wait();
 
     await update(ref(db, `users/${phone}/eliteClubs/${clubId}`), {
@@ -1708,7 +1695,7 @@ window.joinEliteClub = async (clubId, useVault = false) => {
 
     customAlert(`🎉 Success! You are now in the ${club.name} Club with a ${club.capMultiplier}x target.`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected")) {
+    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
       customAlert("Transaction was cancelled in wallet.");
     } else {
       customAlert("Transaction failed: " + (err.data?.message || err.message));
@@ -1716,7 +1703,7 @@ window.joinEliteClub = async (clubId, useVault = false) => {
   }
 };
 
-// HYBRID JOIN: USE PARTIAL VAULT + PAY SHORTFALL VIA WEB3 USDT
+// HYBRID JOIN: USE PARTIAL VAULT + PAY SHORTFALL VIA DIRECT WEB3 USDT
 window.joinEliteClubHybrid = async (clubId) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
@@ -1753,30 +1740,26 @@ window.joinEliteClubHybrid = async (clubId) => {
 
   if (shortfallUSDT <= 0) return window.joinEliteClub(clubId, true);
 
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') {
+    return customAlert("Web3 Wallet not detected! Open in MetaMask or Trust Wallet DApp Browser.");
+  }
 
   customConfirm(`Use ${currentVaultTokens.toLocaleString()} T_DA ($${currentVaultUSD} value) from Upgrade Vault and pay $${shortfallUSDT} USDT via Web3 to activate ${club.name} Club?`, async () => {
     try {
+      await window.ensureBSCNetwork();
+
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const userWalletAddress = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
       const signer = provider.getSigner();
-
-      const bnbBalance = await provider.getBalance(userWalletAddress);
-      if (bnbBalance.isZero()) {
-        return customAlert("⚠️ Insufficient BNB for gas fee in your wallet!");
-      }
 
       const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
       const parsedAmount = ethers.utils.parseUnits(shortfallUSDT.toString(), 18);
 
-      const usdtBalance = await contract.balanceOf(userWalletAddress);
-      if (usdtBalance.lt(parsedAmount)) {
-        return customAlert(`⚠️ Insufficient USDT! You need $${shortfallUSDT} USDT (BEP20) in wallet.`);
-      }
-
+      customAlert(`Opening wallet for $${shortfallUSDT} USDT... Please confirm!`);
       const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+      
+      customAlert("Transaction broadcasted! Waiting for confirmation...");
       await tx.wait();
 
       const accSnap = await get(ref(db, `club_accumulators/${clubId}`));
@@ -1799,7 +1782,7 @@ window.joinEliteClubHybrid = async (clubId) => {
 
       customAlert(`🎉 Success! ${club.name} Club activated with Vault + $${shortfallUSDT} USDT!`);
     } catch (err) {
-      if (err.code === 4001 || err.message?.includes("rejected")) {
+      if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
         customAlert("Transaction was cancelled.");
       } else {
         customAlert("Transaction failed: " + (err.data?.message || err.message));
@@ -1820,26 +1803,24 @@ window.topUpUpgradeVaultWeb3 = async () => {
   const usdtAmount = parseFloat(inputEl ? inputEl.value : 0);
 
   if (!usdtAmount || usdtAmount < 1) return customAlert("Please enter a valid amount (Min. 1 USDT)!");
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open in DApp browser.");
 
   try {
+    await window.ensureBSCNetwork();
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
-
-    const bnbBalance = await provider.getBalance(userWalletAddress);
-    if (bnbBalance.isZero()) return customAlert("⚠️ Insufficient BNB for gas fee in wallet!");
 
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
-    const usdtBalance = await contract.balanceOf(userWalletAddress);
-    if (usdtBalance.lt(parsedAmount)) return customAlert(`⚠️ Insufficient USDT! Wallet needs ${usdtAmount} USDT.`);
-
     window.closeTopUpVaultModal();
+    customAlert(`Opening wallet to deposit $${usdtAmount} USDT into Upgrade Vault...`);
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    
+    customAlert("Transaction broadcasted! Waiting for confirmation...");
     await tx.wait();
 
     const currentPrice = await getPrice();
@@ -1856,7 +1837,7 @@ window.topUpUpgradeVaultWeb3 = async () => {
     if (inputEl) inputEl.value = "";
     customAlert(`💎 Upgrade Vault topped up with +${tokensToAdd.toLocaleString()} Temple_DA!`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected")) {
+    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
       customAlert("Top-Up was cancelled.");
     } else {
       customAlert("Top-Up failed: " + (err.data?.message || err.message));
@@ -1935,7 +1916,7 @@ window.withdraw = async () => {
   customAlert(`Withdrawal request placed for ${amount} Temple_DA!`);
 };
 
-// DIRECT USDT INVESTMENT & UPGRADE (WITH BSC CHECK, GAS CHECK & BALANCE PRE-VALIDATION)
+// DIRECT USDT INVESTMENT VIA DAPP WEB3 (RESTORED TO DIRECT SMOOTH POPUP FLOW)
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amountStr = v("invest");
@@ -1951,63 +1932,63 @@ window.makeDirectUSDTDeposit = async () => {
   const currentInvestment = Number(u.investment || 0);
 
   if (currentInvestment + amount > 500) {
-    return customAlert(`Maximum investment cap is 500 USDT!\nYou currently have ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
+    return customAlert(`Maximum total investment cap is 500 USDT!\nYou currently have ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
   }
 
-  // Ensure wallet is on BSC Mainnet
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') {
+    return customAlert("Web3 Wallet not detected! Please open inside MetaMask or Trust Wallet DApp Browser.");
+  }
 
   try {
+    await window.ensureBSCNetwork();
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
     if (!userWalletAddress) return customAlert("Wallet address not found!");
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
 
-    // Check BNB Balance for Gas
-    const bnbBalance = await provider.getBalance(userWalletAddress);
-    if (bnbBalance.isZero()) {
-      return customAlert("⚠️ Insufficient BNB for Gas Fee!\nYou need a tiny amount of BNB (approx $0.05) in your wallet to confirm this transaction.");
-    }
-
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
-    const parsedAmount = ethers.utils.parseUnits(amount.toFixed(4), 18);
+    const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-    // Check USDT Balance
-    const usdtBalance = await contract.balanceOf(userWalletAddress);
-    if (usdtBalance.lt(parsedAmount)) {
-      const formattedBal = ethers.utils.formatUnits(usdtBalance, 18);
-      return customAlert(`⚠️ Insufficient USDT Balance!\nYour wallet has ${Number(formattedBal).toFixed(2)} USDT (BEP20), but ${amount} USDT is required.`);
-    }
-
+    customAlert("Opening wallet confirmation... Please approve the transaction in your wallet!");
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    
+    customAlert("Transaction broadcasted to BSC! Waiting for blockchain confirmation...");
     await tx.wait();
 
     const currentPrice = await getPrice();
     const tokenAmount = Number((amount / currentPrice).toFixed(2));
 
+    const newInvestment = currentInvestment + amount;
+    const newLocked = Number(((u.locked || 0) + tokenAmount).toFixed(2));
+    const newBiz = Number((u.monthlyBusiness || 0) + amount);
+
     await update(ref(db, "users/" + phone), {
-      investment: currentInvestment + amount,
-      locked: Number((u.locked || 0) + tokenAmount).toFixed(2),
-      monthlyBusiness: Number(u.monthlyBusiness || 0) + amount,
+      investment: newInvestment,
+      locked: newLocked,
+      monthlyBusiness: newBiz,
       lockDate: u.lockDate || Date.now()
     });
 
-    await push(ref(db, "investments/history/" + phone), { amountUSDT: amount, timestamp: Date.now() });
+    await push(ref(db, "investments/history/" + phone), {
+      amountUSDT: amount,
+      timestamp: Date.now()
+    });
+
     await triggerRealtimeTurnoverSplit(amount);
     if (u.referrer) await distribute15LevelCommission(u.referrer, amount);
 
     const investInput = document.getElementById("invest");
     if (investInput) investInput.value = "";
 
-    customAlert(`🎉 Success! ${amount} USDT successfully invested. +${tokenAmount} Temple_DA locked with 5% monthly vesting!`);
+    customAlert(`🎉 Success! ${amount} USDT successfully deposited. +${tokenAmount} Temple_DA locked with 5% monthly vesting!`);
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected")) {
-      customAlert("Deposit was cancelled in your wallet.");
+    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
+      customAlert("Transaction was cancelled in your wallet.");
     } else {
-      customAlert("Deposit failed: " + (err.data?.message || err.message));
+      customAlert("Deposit error: " + (err.data?.message || err.message));
     }
   }
 };
@@ -2429,11 +2410,9 @@ async function packagesPage() {
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:14px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ ${pkg.limit}</p>
         
-        <!-- Action Options -->
         <button onclick="upgradePackageWithWeb3('${pkg.id}', ${pkg.priceUSDT})" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Pay via Web3 Wallet</button>
         <button onclick="upgradePackageWithBalance('${pkg.id}', ${pkg.priceUSDT})" class="btn-secondary" style="font-size:11px; margin-top:6px;">💎 Pay with Liquid Balance</button>
         
-        <!-- Universal 20% Vault Integration for Packages -->
         ${canPayVault ? `
           <button onclick="upgradePackageWithVault('${pkg.id}', ${pkg.priceUSDT})" style="background:linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px; margin-top:6px; font-weight:bold;">
             🎟️ Pay 100% via 20% Vault (${pkgTokens.toLocaleString()} T_DA)
@@ -2457,29 +2436,27 @@ async function packagesPage() {
   `;
 }
 
-// PACKAGE UPGRADE WITH WEB3 USDT
+// DIRECT WEB3 PACKAGE UPGRADE
 window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open inside DApp Browser.");
 
   try {
+    await window.ensureBSCNetwork();
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
-
-    const bnbBalance = await provider.getBalance(userWalletAddress);
-    if (bnbBalance.isZero()) return customAlert("⚠️ Insufficient BNB for gas fee in your wallet!");
 
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
-    const usdtBalance = await contract.balanceOf(userWalletAddress);
-    if (usdtBalance.lt(parsedAmount)) return customAlert(`⚠️ Insufficient USDT! Wallet needs ${usdtAmount} USDT.`);
-
+    customAlert(`Opening wallet to confirm $${usdtAmount} USDT for ${tierName.toUpperCase()} package...`);
     const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    
+    customAlert("Transaction broadcasted! Waiting for confirmation...");
     await tx.wait();
 
     const activatedAt = Date.now();
@@ -2504,7 +2481,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     customAlert(`🎉 ${tierName.toUpperCase()} package activated successfully!`);
     location.hash = "#user";
   } catch (err) {
-    if (err.code === 4001 || err.message?.includes("rejected")) {
+    if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
       customAlert("Package activation was cancelled.");
     } else {
       customAlert("Transaction failed: " + (err.data?.message || err.message));
@@ -2591,26 +2568,24 @@ window.upgradePackageHybrid = async (tierName, usdtAmount) => {
 
   if (shortfallUSDT <= 0) return window.upgradePackageWithVault(tierName, usdtAmount);
 
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open inside DApp Browser.");
 
   customConfirm(`Use ${currentVaultTokens.toLocaleString()} T_DA ($${currentVaultUSD}) from Upgrade Vault and pay $${shortfallUSDT} USDT via Web3 to activate ${tierName.toUpperCase()} package?`, async () => {
     try {
+      await window.ensureBSCNetwork();
+
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const userWalletAddress = accounts[0];
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
       const signer = provider.getSigner();
-
-      const bnbBalance = await provider.getBalance(userWalletAddress);
-      if (bnbBalance.isZero()) return customAlert("⚠️ Insufficient BNB for gas fee in wallet!");
 
       const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
       const parsedAmount = ethers.utils.parseUnits(shortfallUSDT.toString(), 18);
 
-      const usdtBalance = await contract.balanceOf(userWalletAddress);
-      if (usdtBalance.lt(parsedAmount)) return customAlert(`⚠️ Insufficient USDT! Wallet needs ${shortfallUSDT} USDT.`);
-
+      customAlert(`Opening wallet for $${shortfallUSDT} USDT...`);
       const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+      
+      customAlert("Transaction broadcasted! Waiting for confirmation...");
       await tx.wait();
 
       const activatedAt = Date.now();
@@ -2633,7 +2608,7 @@ window.upgradePackageHybrid = async (tierName, usdtAmount) => {
       customAlert(`🎉 ${tierName.toUpperCase()} package activated with Vault + $${shortfallUSDT} USDT!`);
       location.hash = "#user";
     } catch (err) {
-      if (err.code === 4001 || err.message?.includes("rejected")) {
+      if (err.code === 4001 || err.message?.includes("rejected") || err.message?.includes("denied")) {
         customAlert("Activation was cancelled.");
       } else {
         customAlert("Transaction failed: " + (err.data?.message || err.message));
@@ -2753,18 +2728,19 @@ function loadPendingWithdraw() {
 }
 
 window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
-  const isBSC = await window.ensureBSCNetwork();
-  if (!isBSC) return;
+  if (typeof window.ethereum === 'undefined') return customAlert("Admin Web3 Wallet not detected!");
 
   try {
+    await window.ensureBSCNetwork();
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
 
     const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-    customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm MetaMask!`);
+    customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm in MetaMask!`);
     const tx = await contract.transfer(userWallet, parsedAmount);
     await tx.wait();
 
