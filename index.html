@@ -267,7 +267,6 @@ td {
   to { top: 75px; opacity: 1; }
 }
 
-/* Custom Welcome & Daily Login Popup Modal */
 .welcome-modal-overlay {
   position: fixed;
   top: 0;
@@ -347,7 +346,6 @@ td {
   transform: rotate(180deg);
 }
 
-/* Dedicated Full-Screen Reels Feed */
 .reels-page-wrapper {
   display: flex;
   flex-direction: column;
@@ -631,7 +629,7 @@ signInAnonymously(auth).catch(e => console.log(e));
 const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 const OFFICIAL_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; // BSC BEP20 USDT (Binance-Peg)
-const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; // Vault / Admin receiver
+const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; // Vault receiver
 
 let activePostIdForComments = null;
 
@@ -693,15 +691,6 @@ window.showWeb3NotDetectedModal = function() {
           <button onclick="copyCurrentSiteUrl()" class="btn-secondary" style="margin:0;">
             📋 Copy Website Link to paste in DApp Browser
           </button>
-        </div>
-
-        <div style="border-top:1px dashed rgba(223,183,44,0.3); padding-top:12px;">
-          <p class="small" style="color:#dfb72c; font-weight:bold; margin-bottom:4px;">Or Manual Deposit Address (BEP20 BSC):</p>
-          <div style="background:#000; border:1px solid rgba(223,183,44,0.5); padding:8px 10px; border-radius:8px; font-family:monospace; font-size:11px; color:#00ff88; word-break:break-all; display:flex; justify-content:space-between; align-items:center;">
-            <span>${OFFICIAL_RECEIVER_ADDRESS}</span>
-            <button onclick="copyToClipboard('${OFFICIAL_RECEIVER_ADDRESS}')" style="width:auto; padding:4px 8px; font-size:10px; margin:0; background:#dfb72c; color:#000;">Copy</button>
-          </div>
-          <p class="small" style="color:#aaa; margin-top:4px; font-size:11px;">Network: BNB Smart Chain (BEP20) USDT Only</p>
         </div>
 
         <button onclick="closeModalPopup()" class="btn-secondary" style="margin-top:14px; border-color:#ff4444; color:#ff4444;">
@@ -791,7 +780,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
 
   showWeb3Toast("Requesting wallet connection...");
 
-  // Step 1: Request Account permission FIRST so the wallet is authorized
   let accounts;
   try {
     accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -809,16 +797,13 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   }
   const senderAddress = accounts[0];
 
-  // Step 2: Ensure BSC Chain (56)
   showWeb3Toast("Verifying BNB Smart Chain network...");
   await ensureBscNetwork();
 
-  // Step 3: Parse amount to 18 decimals (BSC BEP20 USDT standard)
   const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   const signer = provider.getSigner();
   const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-  // Encode ERC20 transfer data: transfer(address,uint256) -> method 0xa9059cbb
   const iface = new ethers.utils.Interface(BEP20_ABI);
   const transferData = iface.encodeFunctionData("transfer", [OFFICIAL_RECEIVER_ADDRESS, parsedAmount]);
 
@@ -828,16 +813,13 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   let txObj = null;
 
   try {
-    // Attempt A: Direct ethers Contract call with explicit gasLimit (bypasses estimateGas failure)
     const usdtContract = new ethers.Contract(OFFICIAL_USDT_CONTRACT, BEP20_ABI, signer);
     txObj = await usdtContract.transfer(OFFICIAL_RECEIVER_ADDRESS, parsedAmount, {
-      gasLimit: ethers.BigNumber.from("120000") // Explicit gas limit guarantees popup triggers
+      gasLimit: ethers.BigNumber.from("120000")
     });
     txHash = txObj.hash;
   } catch (contractErr) {
-    console.warn("Contract call failed, triggering direct eth_sendTransaction fallback:", contractErr);
-    
-    // Attempt B: Raw eth_sendTransaction directly via window.ethereum (bypasses all ethers wrappers)
+    console.warn("Contract call fallback:", contractErr);
     try {
       txHash = await window.ethereum.request({
         method: "eth_sendTransaction",
@@ -861,7 +843,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   hideWeb3Toast();
   customAlert(`Transaction Broadcasted to BSC!\nTx Hash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}\nConfirming on blockchain...`);
 
-  // Wait for 1 blockchain confirmation
   try {
     if (txObj && typeof txObj.wait === "function") {
       await txObj.wait(1);
@@ -1909,36 +1890,15 @@ async function userDashboard() {
       </button>
     </div>
 
+    <!-- DIRECT WEB3 WALLET DEPOSIT CARD (Manual Deposit Removed) -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
-      <h3 style="color:#00ff88;">Investment & Upgrade (USDT BEP20)</h3>
-      <p class="small">Choose your preferred deposit method below. Works directly with MetaMask, Trust Wallet, or manual transfer from any exchange.</p>
-      
-      <div style="display:flex; gap:10px; margin: 12px 0;">
-        <button id="btnTabWeb3" onclick="switchDepositTab('web3')" style="margin:0; background:#00ff88; color:#000; font-size:12px; padding:10px;">⚡ One-Click Web3 Wallet</button>
-        <button id="btnTabManual" onclick="switchDepositTab('manual')" class="btn-secondary" style="margin:0; font-size:12px; padding:10px;">📋 Manual Transfer (Address/QR)</button>
-      </div>
-
-      <!-- Tab 1: Direct Web3 Wallet Deposit -->
-      <div id="tabWeb3Deposit">
-        <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" type="number" step="any" style="margin-top:8px;">
-        <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
-          ⚡ Deposit USDT via Web3 Wallet
-        </button>
-        <p class="small" style="color:#aaa;">* Make sure your wallet is on BNB Smart Chain and has a tiny amount of BNB for network gas.</p>
-      </div>
-
-      <!-- Tab 2: Manual Transfer Fallback -->
-      <div id="tabManualDeposit" style="display:none; padding:12px; background:rgba(0,0,0,0.6); border-radius:10px; border:1px dashed #dfb72c; margin-top:8px;">
-        <p class="small" style="color:#dfb72c; font-weight:bold; margin-bottom:6px;">Official Deposit Address (BSC BEP20 Only):</p>
-        <div style="background:#0d0d0d; padding:10px; border-radius:8px; border:1px solid #333; font-family:monospace; font-size:12px; color:#00ff88; word-break:break-all; display:flex; justify-content:space-between; align-items:center;">
-          <span>${OFFICIAL_RECEIVER_ADDRESS}</span>
-          <button onclick="copyToClipboard('${OFFICIAL_RECEIVER_ADDRESS}')" style="width:auto; padding:6px 12px; font-size:11px; margin:0; background:#dfb72c; color:#000;">Copy</button>
-        </div>
-        <p class="small" style="color:#aaa; margin:10px 0 6px 0;">After transferring from your wallet or exchange, enter your Transaction Hash below:</p>
-        <input id="manualTxHash" placeholder="Enter BscScan Transaction Hash (0x...)" style="margin:4px 0;">
-        <input id="manualAmount" placeholder="Amount of USDT transferred" type="number" step="any" style="margin:4px 0;">
-        <button onclick="submitManualDeposit()" class="btn-secondary" style="margin-top:8px; background:rgba(223,183,44,0.15);">Submit Deposit for Verification</button>
-      </div>
+      <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
+      <p class="small">Direct, instant Web3 wallet deposit. Connect MetaMask or Trust Wallet to deposit USDT on BNB Smart Chain.</p>
+      <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" type="number" step="any" style="margin-top:12px;">
+      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
+        ⚡ Deposit USDT via Web3 Wallet
+      </button>
+      <p class="small" style="color:#aaa;">* Ensure your connected wallet has BNB Smart Chain selected with a small amount of BNB for gas fees.</p>
     </div>
 
     <div class="card">
@@ -2045,53 +2005,6 @@ async function userDashboard() {
   });
 }
 
-window.switchDepositTab = (tab) => {
-  const w3 = document.getElementById("tabWeb3Deposit");
-  const man = document.getElementById("tabManualDeposit");
-  const btnW = document.getElementById("btnTabWeb3");
-  const btnM = document.getElementById("btnTabManual");
-
-  if (tab === 'web3') {
-    if (w3) w3.style.display = "block";
-    if (man) man.style.display = "none";
-    if (btnW) { btnW.style.background = "#00ff88"; btnW.style.color = "#000"; }
-    if (btnM) { btnM.style.background = "transparent"; btnM.style.color = "#dfb72c"; }
-  } else {
-    if (w3) w3.style.display = "none";
-    if (man) man.style.display = "block";
-    if (btnM) { btnM.style.background = "#dfb72c"; btnM.style.color = "#000"; }
-    if (btnW) { btnW.style.background = "transparent"; btnW.style.color = "#dfb72c"; }
-  }
-};
-
-window.submitManualDeposit = async () => {
-  const phone = localStorage.getItem("user");
-  const txHash = v("manualTxHash");
-  const amount = parseFloat(v("manualAmount"));
-
-  if (!txHash || !txHash.startsWith("0x") || txHash.length < 30) {
-    return customAlert("Please enter a valid BscScan transaction hash (0x...)");
-  }
-  if (!amount || amount < 1) {
-    return customAlert("Please enter a valid USDT amount (Min 1 USDT)");
-  }
-
-  await push(ref(db, "manual_deposits/pending"), {
-    phone: phone,
-    amountUSDT: amount,
-    txHash: txHash,
-    timestamp: Date.now(),
-    status: "Pending Admin Verification"
-  });
-
-  const hInput = document.getElementById("manualTxHash");
-  const aInput = document.getElementById("manualAmount");
-  if (hInput) hInput.value = "";
-  if (aInput) aInput.value = "";
-
-  customAlert("🎉 Manual deposit submitted successfully!\nAdmin will verify the BscScan transaction hash and credit your account shortly.");
-};
-
 function startReleaseCountdown(lockDate, lockedAmount) {
   const countdownEl = document.getElementById("nextReleaseCountdown");
   if (!countdownEl) return;
@@ -2121,7 +2034,7 @@ function startReleaseCountdown(lockDate, lockedAmount) {
 
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
     const formattedDate = new Date(nextReleaseTime).toLocaleDateString();
@@ -2259,7 +2172,7 @@ window.makeDirectUSDTDeposit = async () => {
     }
 
     if (investInput) investInput.value = "";
-    customAlert(`✅ Success! ${amount} USDT deposited successfully.\n${temple_DA} Temple_DA added to locked yield!`);
+    customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield!`);
   } catch (error) {
     console.error("Direct deposit error:", error);
     customAlert("Deposit Failed: " + formatWeb3Error(error));
@@ -2981,7 +2894,7 @@ function startEliteDistributionTimer(lastDistTime) {
 
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
     el.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
