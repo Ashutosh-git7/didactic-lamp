@@ -766,12 +766,13 @@ function formatWeb3Error(err) {
   if (err.code === 4001 || err.code === "ACTION_REJECTED" || err.message?.includes("rejected") || err.message?.includes("denied") || err.message?.includes("User rejected")) {
     return "Transaction was cancelled / rejected in your wallet.";
   }
-  if (err.message?.includes("insufficient funds")) {
+  if (err.message?.includes("insufficient funds") || err.message?.includes("exceeds balance")) {
     return "Insufficient BNB in your wallet to cover network gas fees!";
   }
   return err.reason || err.data?.message || err.message || String(err);
 }
 
+// SECURE USDT TRANSFER WITH BALANCE & RECEIPT STATUS CHECK
 async function executeUsdtTransfer(amount, descriptionLabel) {
   if (typeof window.ethereum === "undefined") {
     showWeb3NotDetectedModal();
@@ -802,57 +803,72 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
 
   const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   const signer = provider.getSigner();
-  const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-  const iface = new ethers.utils.Interface(BEP20_ABI);
-  const transferData = iface.encodeFunctionData("transfer", [OFFICIAL_RECEIVER_ADDRESS, parsedAmount]);
+  // 1. Gas fee check (BNB)
+  const bnbBalance = await provider.getBalance(senderAddress);
+  if (bnbBalance.isZero()) {
+    hideWeb3Toast();
+    throw new Error("Insufficient BNB in your wallet! You need a small amount of BNB to pay network gas fees.");
+  }
 
-  showWeb3Toast("Wallet confirmation popup opening... Please approve!");
+  // 2. USDT Contract & Balance Pre-Check
+  showWeb3Toast("Verifying USDT balance in your wallet...");
+  const usdtContract = new ethers.Contract(OFFICIAL_USDT_CONTRACT, BEP20_ABI, signer);
 
-  let txHash = null;
+  let decimals = 18;
+  try {
+    decimals = await usdtContract.decimals();
+  } catch (decErr) {
+    decimals = 18;
+  }
+
+  const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
+  const userUsdtBalance = await usdtContract.balanceOf(senderAddress);
+
+  if (userUsdtBalance.lt(parsedAmount)) {
+    hideWeb3Toast();
+    const formattedBal = ethers.utils.formatUnits(userUsdtBalance, decimals);
+    throw new Error(`Insufficient USDT balance!\nYou have ${parseFloat(formattedBal).toFixed(2)} USDT in your wallet, but ${amount} USDT is required.`);
+  }
+
+  showWeb3Toast("Wallet confirmation opening... Please approve!");
+
   let txObj = null;
+  let txHash = null;
 
   try {
-    const usdtContract = new ethers.Contract(OFFICIAL_USDT_CONTRACT, BEP20_ABI, signer);
-    txObj = await usdtContract.transfer(OFFICIAL_RECEIVER_ADDRESS, parsedAmount, {
-      gasLimit: ethers.BigNumber.from("120000")
-    });
+    txObj = await usdtContract.transfer(OFFICIAL_RECEIVER_ADDRESS, parsedAmount);
     txHash = txObj.hash;
   } catch (contractErr) {
-    console.warn("Contract call fallback:", contractErr);
-    try {
-      txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [{
-          from: senderAddress,
-          to: OFFICIAL_USDT_CONTRACT,
-          data: transferData,
-          gas: "0x1d4c0", // 120,000 gas in hex
-          value: "0x0"
-        }]
-      });
-    } catch (rawErr) {
-      hideWeb3Toast();
-      if (rawErr.code === 4001 || rawErr.code === "ACTION_REJECTED" || rawErr.message?.includes("rejected")) {
-        throw new Error("Transaction was rejected / cancelled in your wallet.");
-      }
-      throw rawErr;
+    hideWeb3Toast();
+    if (contractErr.code === 4001 || contractErr.code === "ACTION_REJECTED" || contractErr.message?.includes("rejected")) {
+      throw new Error("Transaction was rejected / cancelled in your wallet.");
     }
+    throw contractErr;
+  }
+
+  showWeb3Toast("Waiting for BNB Smart Chain confirmation...");
+
+  // 3. STRICT Blockchain Receipt Status Check (Cannot be bypassed)
+  let receipt = null;
+  try {
+    if (txObj && typeof txObj.wait === "function") {
+      receipt = await txObj.wait(1);
+    } else {
+      receipt = await provider.waitForTransaction(txHash, 1, 60000);
+    }
+  } catch (waitErr) {
+    hideWeb3Toast();
+    throw new Error("Blockchain confirmation failed: " + (waitErr.reason || waitErr.message || waitErr));
   }
 
   hideWeb3Toast();
-  customAlert(`Transaction Broadcasted to BSC!\nTx Hash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}\nConfirming on blockchain...`);
 
-  try {
-    if (txObj && typeof txObj.wait === "function") {
-      await txObj.wait(1);
-    } else {
-      await provider.waitForTransaction(txHash, 1, 60000);
-    }
-  } catch (waitErr) {
-    console.warn("Tx wait note:", waitErr);
+  if (!receipt || receipt.status !== 1) {
+    throw new Error("Transaction failed or reverted on BNB Smart Chain! Payment was not received.");
   }
 
+  customAlert(`Transaction Confirmed on BSC!\nTx Hash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`);
   return { tx: { hash: txHash }, senderAddress };
 }
 
@@ -1890,7 +1906,7 @@ async function userDashboard() {
       </button>
     </div>
 
-    <!-- DIRECT WEB3 WALLET DEPOSIT CARD (Manual Deposit Removed) -->
+    <!-- DIRECT WEB3 WALLET DEPOSIT CARD -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
       <p class="small">Direct, instant Web3 wallet deposit. Connect MetaMask or Trust Wallet to deposit USDT on BNB Smart Chain.</p>
@@ -2218,6 +2234,7 @@ window.joinElite21 = async (entryPrice) => {
 
     customAlert("🎉 Congratulations! You have successfully joined Elite Leadership Club with 5-year locked tokens!");
   } catch (err) {
+    console.error("Elite join failed:", err);
     customAlert("Elite join failed: " + formatWeb3Error(err));
   }
 };
