@@ -618,20 +618,20 @@ td {
     confirmCallback = null;
   };
 
-  // ROBUST WEB3 ERROR PARSER (PREVENTS "Deposit error: undefined")
+  // ROBUST WEB3 ERROR PARSER (RESOLVES "Deposit error: undefined")
   window.parseWeb3Error = (err) => {
-    if (!err) return "Unknown transaction error.";
+    if (!err) return "Transaction error: Wallet rejected or connection lost.";
     if (err.code === 4001 || err.code === "ACTION_REJECTED" || err.message?.includes("rejected") || err.message?.includes("denied")) {
       return "Transaction was cancelled in your wallet.";
     }
     if (err.code === "INSUFFICIENT_FUNDS" || err.message?.includes("insufficient funds") || err.data?.message?.includes("insufficient funds")) {
-      return "⚠️ Insufficient BNB for Gas Fee!\nPlease keep at least $0.10 (0.0005 BNB) in your wallet to cover blockchain transaction fees.";
+      return "⚠️ Insufficient BNB for Gas Fee!\nPlease ensure you have at least 0.0005 BNB (~$0.10) to cover blockchain transaction fees.";
     }
-    const reasonStr = err.reason || err.data?.message || err.error?.message || err.message || "";
-    if (reasonStr.includes("execution reverted") || reasonStr.includes("transfer amount exceeds balance")) {
-      return "⚠️ Insufficient USDT (BEP20) Balance!\nYour wallet does not have enough USDT to complete this deposit.";
+    const raw = err.reason || err.data?.message || err.error?.message || err.message || "";
+    if (raw.includes("execution reverted") || raw.includes("transfer amount exceeds balance")) {
+      return "⚠️ Insufficient USDT (BEP20) Balance!\nYour wallet does not have enough BEP20 USDT on BNB Smart Chain.";
     }
-    return reasonStr || "Transaction failed. Please ensure you have USDT (BEP20) and BNB for gas fee.";
+    return raw || "Transaction failed. Please ensure you are connected to BNB Smart Chain with sufficient USDT and BNB.";
   };
 
   // ROBUST BNB SMART CHAIN (BSC) NETWORK SWITCH HELPER
@@ -665,10 +665,10 @@ td {
             return true;
           } catch (addErr) {}
         }
-        return true;
+        return false;
       }
     } catch (e) {
-      return true;
+      return false;
     }
   };
 </script>
@@ -1060,6 +1060,51 @@ window.login = async () => {
   localStorage.setItem("user", phone); location.hash = "#user";
 };
 
+// LIVE WEB3 WALLET DIAGNOSTIC HELPER
+window.refreshConnectedWeb3Diagnostic = async () => {
+  const statusEl = document.getElementById("liveWalletDiagStatus");
+  if (!statusEl || typeof window.ethereum === 'undefined') return;
+
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    const decimalChain = parseInt(chainId, 16);
+    const isBSC = (decimalChain === 56);
+
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    const acc = accounts[0];
+
+    if (!acc) {
+      statusEl.innerHTML = `<span style="color:#ffaa00;">⚠️ Wallet not connected to page. Click 'Connect Wallet' above.</span>`;
+      return;
+    }
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    const bnbBalanceRaw = await provider.getBalance(acc);
+    const bnbBal = parseFloat(ethers.utils.formatEther(bnbBalanceRaw)).toFixed(4);
+
+    let usdtBal = "0.00";
+    if (isBSC) {
+      try {
+        const usdtContract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, provider);
+        const usdtRaw = await usdtContract.balanceOf(acc);
+        usdtBal = parseFloat(ethers.utils.formatUnits(usdtRaw, 18)).toFixed(2);
+      } catch (e) {}
+    }
+
+    statusEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:12px;">
+        <span>Account: <b style="color:#00ff88; font-family:monospace;">${acc.slice(0, 6)}...${acc.slice(-4)}</b></span>
+        <span>Network: ${isBSC ? '<b style="color:#00ff88;">🟢 BNB Smart Chain (56)</b>' : '<b style="color:#ff4444;">🔴 Wrong Network (Click Switch)</b>'}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:12px;">
+        <span>USDT (BEP20): <b style="color:#dfb72c;">${usdtBal} USDT</b></span>
+        <span>BNB (Gas): <b style="color:#00ff88;">${bnbBal} BNB</b></span>
+      </div>
+      ${!isBSC ? `<button onclick="window.ensureBSCNetwork().then(() => window.refreshConnectedWeb3Diagnostic())" style="padding:6px 10px; font-size:11px; margin-top:8px; background:#ff4444; color:#fff;">⚡ Switch to BNB Smart Chain</button>` : ''}
+    `;
+  } catch (err) {}
+};
+
 /* =========================================================================
    USER DASHBOARD
 ========================================================================= */
@@ -1412,11 +1457,23 @@ async function userDashboard() {
       <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
     </div>
 
-    <!-- DIRECT USDT INVESTMENT VIA DAPP WEB3 (CLEAN AND RELIABLE) -->
+    <!-- DIRECT USDT INVESTMENT VIA DAPP WEB3 WITH LIVE DIAGNOSTIC -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Capital Growth (Direct Web3 USDT)</h3>
       <p class="small">Deposit USDT (BEP20) to lock and earn monthly 5% vesting release (Max Total: 500 USDT).</p>
-      <input id="invest" type="number" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" style="margin-top:12px;">
+
+      <!-- LIVE WALLET DIAGNOSTIC CARD (SHOWS NETWORK & ACTUAL BALANCE) -->
+      <div style="margin:14px 0; padding:12px; background:rgba(0,0,0,0.5); border-radius:10px; border:1px solid rgba(0,255,136,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:11px; color:#aaa; font-weight:bold; text-transform:uppercase;">Connected Web3 Wallet Diagnostic:</span>
+          <button onclick="window.refreshConnectedWeb3Diagnostic()" style="width:auto; padding:3px 8px; font-size:10px; margin:0; background:transparent; border:1px solid #dfb72c; color:#dfb72c;">↻ Check Live Balance</button>
+        </div>
+        <div id="liveWalletDiagStatus">
+          <span class="small" style="color:#888;">Checking connected Web3 wallet state...</span>
+        </div>
+      </div>
+
+      <input id="invest" type="number" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" style="margin-top:6px;">
       <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit / Upgrade via Web3 Wallet</button>
     </div>
 
@@ -1490,6 +1547,7 @@ async function userDashboard() {
     <div class="card center" style="margin-top:22px;"><button onclick="logout()">Logout</button></div>
     `;
 
+    window.refreshConnectedWeb3Diagnostic();
     startReleaseCountdown(u.lockDate, u.locked);
     loadReferralHistory(phone);
     loadReferralPointsHistory(phone);
@@ -1605,7 +1663,7 @@ window.claimClubRewards = async (clubId) => {
   );
 };
 
-// DIRECT WEB3 JOIN CLUB
+// DIRECT WEB3 JOIN CLUB (WITH EXPLICIT GAS LIMIT & NETWORK RECOVERY)
 window.joinEliteClub = async (clubId, useVault = false) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
@@ -1676,7 +1734,10 @@ window.joinEliteClub = async (clubId, useVault = false) => {
   }
 
   try {
-    await window.ensureBSCNetwork();
+    const isBSC = await window.ensureBSCNetwork();
+    if (!isBSC) {
+      return customAlert("⚠️ Please switch your wallet network to BNB Smart Chain (BSC)!");
+    }
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
@@ -1688,16 +1749,8 @@ window.joinEliteClub = async (clubId, useVault = false) => {
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(club.price.toString(), 18);
 
-    // Pre-validation to avoid undefined errors
-    try {
-      const usdtBal = await contract.balanceOf(userWalletAddress);
-      if (usdtBal.lt(parsedAmount)) {
-        return customAlert(`⚠️ Insufficient USDT Balance!\nYour wallet has ${ethers.utils.formatUnits(usdtBal, 18)} USDT. You need ${club.price} USDT to join.`);
-      }
-    } catch(e) {}
-
-    customAlert(`Opening wallet to confirm $${club.price} USDT transfer for ${club.name} Club. Please confirm in your wallet!`);
-    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    // Using explicit gasLimit 100000 bypasses problematic eth_estimateGas calls on mobile DApps
+    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
     
     customAlert("Transaction broadcasted! Waiting for confirmation on BSC...");
     await tx.wait();
@@ -1765,7 +1818,8 @@ window.joinEliteClubHybrid = async (clubId) => {
 
   customConfirm(`Use ${currentVaultTokens.toLocaleString()} T_DA ($${currentVaultUSD} value) from Upgrade Vault and pay $${shortfallUSDT} USDT via Web3 to activate ${club.name} Club?`, async () => {
     try {
-      await window.ensureBSCNetwork();
+      const isBSC = await window.ensureBSCNetwork();
+      if (!isBSC) return customAlert("Please switch to BNB Smart Chain!");
 
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const userWalletAddress = accounts[0];
@@ -1775,8 +1829,7 @@ window.joinEliteClubHybrid = async (clubId) => {
       const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
       const parsedAmount = ethers.utils.parseUnits(shortfallUSDT.toString(), 18);
 
-      customAlert(`Opening wallet for $${shortfallUSDT} USDT... Please confirm!`);
-      const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+      const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
       
       customAlert("Transaction broadcasted! Waiting for confirmation...");
       await tx.wait();
@@ -1821,7 +1874,8 @@ window.topUpUpgradeVaultWeb3 = async () => {
   if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open in DApp browser.");
 
   try {
-    await window.ensureBSCNetwork();
+    const isBSC = await window.ensureBSCNetwork();
+    if (!isBSC) return customAlert("Please switch to BNB Smart Chain!");
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
@@ -1832,8 +1886,7 @@ window.topUpUpgradeVaultWeb3 = async () => {
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
     window.closeTopUpVaultModal();
-    customAlert(`Opening wallet to deposit $${usdtAmount} USDT into Upgrade Vault...`);
-    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
     
     customAlert("Transaction broadcasted! Waiting for confirmation...");
     await tx.wait();
@@ -1927,7 +1980,7 @@ window.withdraw = async () => {
   customAlert(`Withdrawal request placed for ${amount} Temple_DA!`);
 };
 
-// DIRECT USDT INVESTMENT VIA DAPP WEB3
+// DIRECT USDT INVESTMENT VIA DAPP WEB3 (FIXED WITH EXPLICIT GAS LIMIT & RECOVERY)
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const amountStr = v("invest");
@@ -1951,7 +2004,10 @@ window.makeDirectUSDTDeposit = async () => {
   }
 
   try {
-    await window.ensureBSCNetwork();
+    const isBSC = await window.ensureBSCNetwork();
+    if (!isBSC) {
+      return customAlert("⚠️ Please switch your wallet network to BNB Smart Chain (BSC)!");
+    }
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
@@ -1963,17 +2019,9 @@ window.makeDirectUSDTDeposit = async () => {
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
-    // USDT Balance pre-validation to avoid generic reverted errors
-    try {
-      const usdtBal = await contract.balanceOf(userWalletAddress);
-      if (usdtBal.lt(parsedAmount)) {
-        const readableBal = parseFloat(ethers.utils.formatUnits(usdtBal, 18)).toFixed(2);
-        return customAlert(`⚠️ Insufficient USDT (BEP20)!\nYour wallet has ${readableBal} USDT, but you are trying to deposit ${amount} USDT.`);
-      }
-    } catch (balErr) {}
-
-    customAlert("Opening wallet confirmation... Please approve the transaction in your wallet!");
-    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    // CRITICAL: Explicit gasLimit: 100000 bypasses eth_estimateGas failure on mobile DApps
+    // and forces MetaMask / Trust Wallet to immediately open the native confirmation popup!
+    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
     
     customAlert("Transaction broadcasted to BSC! Waiting for blockchain confirmation...");
     await tx.wait();
@@ -2004,6 +2052,7 @@ window.makeDirectUSDTDeposit = async () => {
     if (investInput) investInput.value = "";
 
     customAlert(`🎉 Success! ${amount} USDT successfully deposited. +${tokenAmount} Temple_DA locked with 5% monthly vesting!`);
+    window.refreshConnectedWeb3Diagnostic();
   } catch (err) {
     customAlert(window.parseWeb3Error(err));
   }
@@ -2452,14 +2501,15 @@ async function packagesPage() {
   `;
 }
 
-// DIRECT WEB3 PACKAGE UPGRADE
+// DIRECT WEB3 PACKAGE UPGRADE (WITH EXPLICIT GAS LIMIT & NETWORK RECOVERY)
 window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
   if (typeof window.ethereum === 'undefined') return customAlert("Web3 Wallet not detected! Open inside DApp Browser.");
 
   try {
-    await window.ensureBSCNetwork();
+    const isBSC = await window.ensureBSCNetwork();
+    if (!isBSC) return customAlert("Please switch to BNB Smart Chain!");
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const userWalletAddress = accounts[0];
@@ -2469,8 +2519,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
     const parsedAmount = ethers.utils.parseUnits(usdtAmount.toString(), 18);
 
-    customAlert(`Opening wallet to confirm $${usdtAmount} USDT for ${tierName.toUpperCase()} package...`);
-    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+    const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
     
     customAlert("Transaction broadcasted! Waiting for confirmation...");
     await tx.wait();
@@ -2584,7 +2633,8 @@ window.upgradePackageHybrid = async (tierName, usdtAmount) => {
 
   customConfirm(`Use ${currentVaultTokens.toLocaleString()} T_DA ($${currentVaultUSD}) from Upgrade Vault and pay $${shortfallUSDT} USDT via Web3 to activate ${tierName.toUpperCase()} package?`, async () => {
     try {
-      await window.ensureBSCNetwork();
+      const isBSC = await window.ensureBSCNetwork();
+      if (!isBSC) return customAlert("Please switch to BNB Smart Chain!");
 
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const userWalletAddress = accounts[0];
@@ -2594,8 +2644,7 @@ window.upgradePackageHybrid = async (tierName, usdtAmount) => {
       const contract = new ethers.Contract(USDT_CONTRACT, BEP20_ABI, signer);
       const parsedAmount = ethers.utils.parseUnits(shortfallUSDT.toString(), 18);
 
-      customAlert(`Opening wallet for $${shortfallUSDT} USDT...`);
-      const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount);
+      const tx = await contract.transfer(OFFICIAL_RECEIVER, parsedAmount, { gasLimit: 100000 });
       
       customAlert("Transaction broadcasted! Waiting for confirmation...");
       await tx.wait();
@@ -2749,7 +2798,7 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), 18);
 
     customAlert(`Sending ${amount} Temple_DA to user wallet (${userWallet.slice(0,6)}...) from official wallet. Please confirm in MetaMask!`);
-    const tx = await contract.transfer(userWallet, parsedAmount);
+    const tx = await contract.transfer(userWallet, parsedAmount, { gasLimit: 100000 });
     await tx.wait();
 
     await remove(ref(db, "withdrawals/pending/" + reqKey));
