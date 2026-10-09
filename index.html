@@ -676,20 +676,20 @@ const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; 
 
 let activePostIdForComments = null;
 
-// ==========================================
-// 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION
-// ==========================================
+// ========================================================
+// 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION (PRESTIGE TITLES)
+// ========================================================
 const CTO_CLUBS_CONFIG = [
-  { id: 1, name: "Club 1", slotsMax: 300, slotPrice: 25, ctoSharePct: 2.00, capMultiplier: 3.0, grossCap: 75, upgradeCost: 50, netUserWithdrawal: 25 },
-  { id: 2, name: "Club 2", slotsMax: 200, slotPrice: 50, ctoSharePct: 1.50, capMultiplier: 3.0, grossCap: 150, upgradeCost: 100, netUserWithdrawal: 50 },
-  { id: 3, name: "Club 3", slotsMax: 150, slotPrice: 100, ctoSharePct: 1.10, capMultiplier: 3.2, grossCap: 320, upgradeCost: 200, netUserWithdrawal: 120 },
-  { id: 4, name: "Club 4", slotsMax: 100, slotPrice: 200, ctoSharePct: 0.90, capMultiplier: 3.4, grossCap: 680, upgradeCost: 400, netUserWithdrawal: 280 },
-  { id: 5, name: "Club 5", slotsMax: 80, slotPrice: 400, ctoSharePct: 0.70, capMultiplier: 3.6, grossCap: 1440, upgradeCost: 800, netUserWithdrawal: 640 },
-  { id: 6, name: "Club 6", slotsMax: 60, slotPrice: 800, ctoSharePct: 0.50, capMultiplier: 3.8, grossCap: 3040, upgradeCost: 1500, netUserWithdrawal: 1540 },
-  { id: 7, name: "Club 7", slotsMax: 45, slotPrice: 1500, ctoSharePct: 0.40, capMultiplier: 4.0, grossCap: 6000, upgradeCost: 3000, netUserWithdrawal: 3000 },
-  { id: 8, name: "Club 8", slotsMax: 30, slotPrice: 3000, ctoSharePct: 0.35, capMultiplier: 4.2, grossCap: 12600, upgradeCost: 6000, netUserWithdrawal: 6600 },
-  { id: 9, name: "Club 9", slotsMax: 20, slotPrice: 6000, ctoSharePct: 0.30, capMultiplier: 4.5, grossCap: 27000, upgradeCost: 12000, netUserWithdrawal: 15000 },
-  { id: 10, name: "Club 10", slotsMax: 15, slotPrice: 12000, ctoSharePct: 0.25, capMultiplier: 5.0, grossCap: 60000, upgradeCost: 0, netUserWithdrawal: 50000 }
+  { id: 1, name: "Club 1 • Bronze Pillar", icon: "🏛️", slotsMax: 300, slotPrice: 25, ctoSharePct: 2.00, capMultiplier: 3.0, grossCap: 75, upgradeCost: 50, netUserWithdrawal: 25 },
+  { id: 2, name: "Club 2 • Silver Portal", icon: "⚔️", slotsMax: 200, slotPrice: 50, ctoSharePct: 1.50, capMultiplier: 3.0, grossCap: 150, upgradeCost: 100, netUserWithdrawal: 50 },
+  { id: 3, name: "Club 3 • Gold Sanctum", icon: "🪙", slotsMax: 150, slotPrice: 100, ctoSharePct: 1.10, capMultiplier: 3.2, grossCap: 320, upgradeCost: 200, netUserWithdrawal: 120 },
+  { id: 4, name: "Club 4 • Ruby Citadel", icon: "💎", slotsMax: 100, slotPrice: 200, ctoSharePct: 0.90, capMultiplier: 3.4, grossCap: 680, upgradeCost: 400, netUserWithdrawal: 280 },
+  { id: 5, name: "Club 5 • Emerald Vault", icon: "🛡️", slotsMax: 80, slotPrice: 400, ctoSharePct: 0.70, capMultiplier: 3.6, grossCap: 1440, upgradeCost: 800, netUserWithdrawal: 640 },
+  { id: 6, name: "Club 6 • Sapphire Dome", icon: "👑", slotsMax: 60, slotPrice: 800, ctoSharePct: 0.50, capMultiplier: 3.8, grossCap: 3040, upgradeCost: 1500, netUserWithdrawal: 1540 },
+  { id: 7, name: "Club 7 • Diamond Crown", icon: "✨", slotsMax: 45, slotPrice: 1500, ctoSharePct: 0.40, capMultiplier: 4.0, grossCap: 6000, upgradeCost: 3000, netUserWithdrawal: 3000 },
+  { id: 8, name: "Club 8 • Sovereign Throne", icon: "🔱", slotsMax: 30, slotPrice: 3000, ctoSharePct: 0.35, capMultiplier: 4.2, grossCap: 12600, upgradeCost: 6000, netUserWithdrawal: 6600 },
+  { id: 9, name: "Club 9 • Imperial Zenith", icon: "⚡", slotsMax: 20, slotPrice: 6000, ctoSharePct: 0.30, capMultiplier: 4.5, grossCap: 27000, upgradeCost: 12000, netUserWithdrawal: 15000 },
+  { id: 10, name: "Club 10 • Grand Celestial", icon: "🌌", slotsMax: 15, slotPrice: 12000, ctoSharePct: 0.25, capMultiplier: 5.0, grossCap: 60000, upgradeCost: 0, netUserWithdrawal: 50000 }
 ];
 
 // Standard ERC20 / BEP20 ABI for transfers & checks
@@ -974,7 +974,7 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   const userData = uSnap.exists() ? uSnap.val() : {};
   const sponsorPhone = userData.referrer || "";
 
-  // 1. Credit 25% Direct Referral immediately to Sponsor's main balance (USDT-backed TDA)
+  // 1. Credit 25% Direct Referral immediately to Sponsor's main balance (in Temple_DA tokens at live rate)
   if (sponsorPhone) {
     const sSnap = await get(ref(db, "users/" + sponsorPhone));
     if (sSnap.exists()) {
@@ -1354,7 +1354,7 @@ async function landing() {
     </div>
     <div class="card">
         <h3>90/10 Split & 0% Fee</h3>
-        <p class="small">Zero admin withdrawal charges. 90% direct to your wallet, 10% to Activation Wallet for P2P cash recovery.</p>
+        <p class="small">Zero admin withdrawal charges. 90% direct to your wallet in Temple_DA, 10% to Activation Wallet for P2P cash recovery.</p>
     </div>
   </div>
 
@@ -1534,7 +1534,9 @@ window.registerUser = async () => {
     points: 10,
     subscribersCount: 0,
     monthlyBusiness: 0,
-    lastLoginDate: todayDateStr
+    lastLoginDate: todayDateStr,
+    todayWithdrawnAmount: 0,
+    lastWithdrawDate: ""
   });
 
   await push(ref(db, `points_history/${phone}`), {
@@ -1661,20 +1663,6 @@ async function ctoClubsPage() {
     if (myQueuePosition !== -1) myQueueData = waitingList[myQueuePosition];
   }
 
-  // Count active direct referrals
-  let activeDirectsCount = 0;
-  if (phone) {
-    const allUsersSnap = await get(ref(db, "users"));
-    if (allUsersSnap.exists()) {
-      allUsersSnap.forEach(child => {
-        const val = child.val();
-        if (val.referrer === phone && (val.ctoActiveClub > 0 || val.inWaitingQueue)) {
-          activeDirectsCount++;
-        }
-      });
-    }
-  }
-
   let clubsCardsHtml = "";
   let userActiveSlotFound = null;
 
@@ -1731,7 +1719,7 @@ async function ctoClubsPage() {
       <div class="${cardClass}">
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h3 style="margin:0; font-size:17px; color:#fff;">${cfg.name}</h3>
+            <h3 style="margin:0; font-size:16px; color:#fff;">${cfg.icon} ${cfg.name}</h3>
             ${statusBadge || `<span class="small" style="color:#aaa;">${currentSlots} / ${cfg.slotsMax} Slots</span>`}
           </div>
 
@@ -1754,8 +1742,8 @@ async function ctoClubsPage() {
       <span class="badge-tag" style="margin-bottom:8px; color:#00ff88; border-color:#00ff88;">OFFICIAL 10-CLUB 1,000-SLOT ENGINE</span>
       <h2 style="font-size:26px;">10% GLOBAL CTO SYSTEM</h2>
       <p style="color:#ddd; max-width:800px; margin: 8px auto 0 auto; line-height:1.6;">
-        Start from <strong>$25 USDT (Club 1)</strong> and advance through 10 progressive clubs to achieve 
-        <strong>$77,255 USDT</strong> cumulative net profit with strict 24-hour rotation and FIFO waiting room protection.
+        Start from <strong>$25 USDT (Club 1 • Bronze Pillar)</strong> and advance through 10 progressive clubs to achieve 
+        <strong>$77,255 USDT</strong> cumulative net profit. <strong>Zero direct referrals required</strong> to participate and receive passive club dividends!
       </p>
 
       <!-- Point 1: 100% Inflow Master Breakup -->
@@ -1785,7 +1773,7 @@ async function ctoClubsPage() {
         <div>
           <h3 style="color:#00ff88; margin-bottom:4px;">👤 My CTO Participation Status</h3>
           <p class="small">
-            ${phone ? `Logged In: <strong>${maskPhone(phone)}</strong> | Direct Active Members: <strong style="color:#00ff88;">${activeDirectsCount}</strong> (Min. 1 required for 2X withdrawal)` : 'Please login to track or activate your slot.'}
+            ${phone ? `Logged In: <strong>${maskPhone(phone)}</strong> | Access Mode: <strong style="color:#00ff88;">Universal & Non-Conditional (No Direct Referrals Required)</strong>` : 'Please login to track or activate your slot.'}
           </p>
         </div>
         <div style="text-align:right;">
@@ -1802,10 +1790,10 @@ async function ctoClubsPage() {
             <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">2X Earning: $${(myQueueData.earned2x || 0).toFixed(2)} / $50.00</span>
           </div>
           <p class="small" style="margin-top:6px;">
-            Funded by 2% CTO pool & referral split. Once reaching $50, $25 cash is unlocked for withdrawal and $25 auto-claims the next open Club 1 slot!
+            Funded continuously by the 2% CTO pool & referral split. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
           </p>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:10px;">
-            <span class="small">Anti-Passive Rule: <strong style="color:${activeDirectsCount >= 1 ? '#00ff88' : '#ff4444'};">${activeDirectsCount >= 1 ? 'QUALIFIED (≥1 Direct Active) ✓' : 'NOT QUALIFIED (Need 1 Direct Member)'}</strong></span>
+            <span class="small" style="color:#00ff88; font-weight:bold;">✓ Direct Referrals Optional: Every user qualifies for passive payouts!</span>
             ${(myQueueData.earned2x || 0) >= 50 ? `<button onclick="claimWaitingRoom2X()" style="width:auto; padding:8px 18px; margin:0;" class="btn-green">Claim $25 Cash + Club 1 Slot</button>` : ''}
           </div>
         </div>
@@ -2019,22 +2007,8 @@ window.claimWaitingRoom2X = async () => {
 
   const currentPrice = await getPrice();
 
-  const allUsersSnap = await get(ref(db, "users"));
-  let activeDirects = 0;
-  if (allUsersSnap.exists()) {
-    allUsersSnap.forEach(child => {
-      const val = child.val();
-      if (val.referrer === phone && (val.ctoActiveClub > 0 || val.inWaitingQueue)) {
-        activeDirects++;
-      }
-    });
-  }
-
-  if (activeDirects < 1) {
-    return customAlert("⚠️ Anti-Passive Condition:\nYou must have at least 1 direct active referral ($25) before claiming your $25 cash and Club 1 slot!");
-  }
-
   const userSnap = await get(ref(db, "users/" + phone));
+  if (!userSnap.exists()) return customAlert("User account not found!");
   const u = userSnap.val();
 
   const cashTokens = Number((25 / currentPrice).toFixed(2));
@@ -2068,7 +2042,7 @@ window.claimWaitingRoom2X = async () => {
     ctoActiveClub: 1
   });
 
-  window.showModalPopup("2X Reward Claimed! 🚀", "$25 credited to Main Balance & Club 1 Slot confirmed!", "+$25 Cash + Club 1", "Proceed");
+  window.showModalPopup("2X Reward Claimed! 🚀", "$25 credited to Main Balance in Temple_DA & Club 1 Slot confirmed!", "+$25 Cash + Club 1", "Proceed");
   ctoClubsPage();
 };
 
@@ -2384,6 +2358,15 @@ async function userDashboard() {
     const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const isClaimedToday = (u.lastLoginDate === todayDateStr);
 
+    const investment = Number(u.investment || 0);
+    let maxDailyAllowed = 1000;
+    if (investment >= 1 && investment <= 19) maxDailyAllowed = 60;
+    else if (investment >= 20 && investment <= 250) maxDailyAllowed = 1000;
+    else if (investment >= 251 && investment <= 500) maxDailyAllowed = 2500;
+    else if (investment > 500) maxDailyAllowed = 2500;
+
+    const todayWithdrawn = (u.lastWithdrawDate === todayDateStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
+
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
       <h3 style="color:#dfb72c; font-size:15px; margin-bottom:6px;">🔗 Linked BEP20 Wallet Address</h3>
@@ -2535,17 +2518,33 @@ async function userDashboard() {
       <p class="small" style="color:#aaa;">* Ensure your connected wallet has BNB Smart Chain selected with a small amount of BNB for gas fees.</p>
     </div>
 
-    <!-- POINT 5: WITHDRAWAL CENTER WITH 90/10 SPLIT & 0% FEE -->
+    <!-- RESTORED WITHDRAWAL CENTER: ORIGINAL INVESTMENT TIERS WITH 90/10 SPLIT -->
     <div class="card" style="border: 2px solid #dfb72c;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <h3 style="margin:0;">Withdrawal Center (90/10 Split & 0% Fee)</h3>
+        <h3 style="margin:0;">Withdraw Temple_DA (90/10 Split & 0% Fee)</h3>
         <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">0% ADMIN CHARGES</span>
       </div>
       <p class="small" style="color:#ccc; margin-bottom:12px;">
-        Minimum withdrawal: <strong>$10 USDT (equivalent TDA)</strong>. Upon withdrawal: <strong>90%</strong> is sent directly to your linked BEP-20 wallet; <strong>10%</strong> is credited to your Activation Wallet for peer-to-peer ID activations.
+        Withdrawals are paid in <strong>Temple_DA tokens</strong> directly to your linked BEP-20 wallet (<strong>90% Net</strong>) and <strong>10%</strong> is credited to your Activation Wallet for peer-to-peer ID activations.
       </p>
-      <input id="withdraw" placeholder="Temple_DA amount (Min. $10 value)">
-      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (90% Wallet / 10% Activation)</button>
+
+      <!-- Original Investment-Based Daily Tier Limits -->
+      <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:12px 16px; margin-bottom:14px;">
+        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📊 Daily Withdrawal Limits based on USDT Investment:</span>
+        <div style="font-size:13px; color:#eee; line-height:1.6;">
+          • <strong>1 - 19 USDT:</strong> Max 60 Temple_DA / day<br>
+          • <strong>20 - 250 USDT:</strong> Max 1,000 Temple_DA / day<br>
+          • <strong>251 - 500 USDT:</strong> Max 2,500 Temple_DA / day<br>
+        </div>
+        <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">
+          Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your tier limit: ${maxDailyAllowed} TDA)
+        </p>
+      </div>
+
+      <input id="withdraw" placeholder="Enter Temple_DA amount to withdraw" type="number" step="any">
+      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
+        ⚡ Request Withdrawal (90% Temple_DA to Wallet / 10% to Activation)
+      </button>
     </div>
 
     <div class="card">
@@ -2613,7 +2612,7 @@ async function userDashboard() {
 
     <div class="accordion-wrapper" id="accWithdraw">
       <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
-        <span>📤 Withdrawal History (90% Dispatches)</span>
+        <span>📤 Withdrawal History (90% Dispatches in Temple_DA)</span>
         <span>▼</span>
       </div>
       <div class="accordion-content" id="withdrawHistory">Loading...</div>
@@ -2674,7 +2673,8 @@ function startReleaseCountdown(lockDate, lockedAmount) {
 }
 
 // -------------------------------------------------------------
-// POINT 5: WITHDRAWAL ARCHITECTURE (90/10 SPLIT & 0% ADMIN FEE)
+// RESTORED WITHDRAWAL FUNCTION: ORIGINAL INVESTMENT TIERS & 90/10 SPLIT
+// 1-19: 60 TDA | 20-250: 1000 TDA | 251-500: 2500 TDA
 // -------------------------------------------------------------
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
@@ -2683,16 +2683,54 @@ window.withdraw = async () => {
   const priceUsd = await getPrice();
   
   if (!amount || amount <= 0) {
-    return customAlert("Please enter a valid withdrawal amount!");
+    return customAlert("Please enter a valid Temple_DA withdrawal amount!");
   }
 
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return customAlert("User session not found!");
   const u = snap.val();
 
-  const withdrawalValueUSDT = amount * priceUsd;
-  if (withdrawalValueUSDT < 10) {
-    return customAlert(`⚠️ Minimum Withdrawal Threshold:\nMinimum withdrawal is $10 USDT equivalent (approx ${(10 / priceUsd).toFixed(0)} Temple_DA).`);
+  const investment = Number(u.investment || 0);
+  const activeTier = checkAndHandlePackageExpiry(phone, u);
+  const hasValidActivePackage = activeTier !== "none" && u.packageExpiresAt && Date.now() <= u.packageExpiresAt;
+  const isCtoActive = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue;
+
+  // Prerequisite check: Investment, Active Package, OR Active CTO Club member
+  if (investment <= 0 && !hasValidActivePackage && !isCtoActive) {
+    return customAlert("An active account status (Investment, Active Creator Package, or Active CTO Club Membership) is required before making withdrawals!");
+  }
+
+  const now = new Date();
+  const todayDateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  let lastWithdrawDate = u.lastWithdrawDate || "";
+  let todayWithdrawnAmount = Number(u.todayWithdrawnAmount || 0);
+
+  if (lastWithdrawDate !== todayDateString) {
+    todayWithdrawnAmount = 0;
+  }
+
+  // Exact Daily Limit Tiers in Temple_DA based on USDT investment
+  let maxDailyAllowed = 1000;
+  if (investment >= 1 && investment <= 19) {
+    maxDailyAllowed = 60;
+  } else if (investment >= 20 && investment <= 250) {
+    maxDailyAllowed = 1000;
+  } else if (investment >= 251 && investment <= 500) {
+    maxDailyAllowed = 2500;
+  } else if (investment > 500) {
+    maxDailyAllowed = 2500;
+  } else if (investment === 0 && (isCtoActive || hasValidActivePackage)) {
+    maxDailyAllowed = 1000; // Default limit for active club / creator members
+  }
+
+  if (todayWithdrawnAmount >= maxDailyAllowed) {
+    return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account investment level allows a maximum of ${maxDailyAllowed} Temple_DA per day. You have already withdrawn ${todayWithdrawnAmount} Temple_DA today.`);
+  }
+
+  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
+    const remainingLimit = maxDailyAllowed - todayWithdrawnAmount;
+    return customAlert(`⚠️ Daily Limit Exceeded!\nYou can withdraw a maximum of ${remainingLimit} Temple_DA more today.`);
   }
 
   if (amount > (u.balance || 0)) {
@@ -2704,16 +2742,21 @@ window.withdraw = async () => {
     return customAlert("No valid BEP20 wallet linked to your account!");
   }
 
-  // 90/10 Split & 0% Fee Calculation
+  // 90/10 Split with 0% Admin Fee:
+  // 90% in Temple_DA tokens dispatched directly to user's BEP20 wallet
+  // 10% credited in USDT equivalent into user's Activation / Gift Wallet
   const ninetyPercentTokens = Number((amount * 0.90).toFixed(2));
   const tenPercentTokens = Number((amount * 0.10).toFixed(2));
   const tenPercentUSDT = Number((tenPercentTokens * priceUsd).toFixed(2));
 
   const newBalance = Number((u.balance - amount).toFixed(2));
+  const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
   const newActivationWallet = Number(((u.activationWallet || 0) + tenPercentUSDT).toFixed(2));
 
   await update(ref(db, "users/" + phone), {
     balance: newBalance,
+    lastWithdrawDate: todayDateString,
+    todayWithdrawnAmount: newTodayWithdrawn,
     activationWallet: newActivationWallet
   });
 
@@ -2722,7 +2765,7 @@ window.withdraw = async () => {
 
   await set(reqRef, {
     phone: phone,
-    amount: ninetyPercentTokens,
+    amount: ninetyPercentTokens, // 90% Temple_DA delivered to BEP-20 address
     totalRequested: amount,
     tenPercentActivationUSDT: tenPercentUSDT,
     wallet: userWallet,
@@ -2735,11 +2778,11 @@ window.withdraw = async () => {
     creditedToActivationUSDT: tenPercentUSDT,
     wallet: userWallet,
     timestamp: Date.now(),
-    status: "Pending Admin Approval (0% Fee, 90% Net)"
+    status: "Pending Admin Approval (0% Fee, 90% Net Tokens)"
   });
 
   if (withdrawInput) withdrawInput.value = "";
-  customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Processed!\n\n• 90% (${ninetyPercentTokens} TDA) dispatched to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) credited to your Activation Wallet.\n• 0% Admin fee charged!`);
+  customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• 90% (${ninetyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) credited to your Activation Wallet.\n• 0% Admin fee charged!\n• Today's Withdrawn: ${newTodayWithdrawn} / ${maxDailyAllowed} Temple_DA.`);
 };
 
 window.makeDirectUSDTDeposit = async () => {
@@ -3392,7 +3435,7 @@ async function adminDashboard() {
     </div>
     </div>
 
-    <div class="card"><h3>Pending Withdrawals (90% Net Dispatches)</h3><div id="pendingWithdraw"></div></div>
+    <div class="card"><h3>Pending Withdrawals (90% Net Dispatches in Temple_DA)</h3><div id="pendingWithdraw"></div></div>
     `;
 
     loadPendingWithdraw();
@@ -3520,12 +3563,12 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount) => {
     await remove(ref(db, "withdrawals/pending/" + reqKey));
     
     await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
-      status: "Processed via Web3 (90% Delivered)",
+      status: "Processed via Web3 (90% Delivered in Temple_DA)",
       txHash: tx.hash,
       processedAt: Date.now()
     });
 
-    customAlert("✅ Withdrawal successfully approved and 90% tokens sent to user wallet!");
+    customAlert("✅ Withdrawal successfully approved and 90% Temple_DA tokens sent to user wallet!");
   } catch (error) {
     hideWeb3Toast();
     console.error("Withdrawal payout error:", error);
