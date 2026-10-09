@@ -692,19 +692,36 @@ const CTO_CLUBS_CONFIG = [
   { id: 10, name: "Club 10 • Grand Celestial", icon: "🌌", slotsMax: 15, slotPrice: 12000, ctoSharePct: 0.25, capMultiplier: 5.0, grossCap: 60000, upgradeCost: 0, netUserWithdrawal: 50000 }
 ];
 
-// Helper: Calculate Effective Daily Limit based on Max(Staking Investment, Active CTO Club Price)
+// Helper: Calculate Effective Daily Limit
+// Micro-Staking (< $25 single-shot without Club): 60 TDA/day
+// Single-Shot $25+ or Club 1-4: 1,000 TDA/day
+// High-Tier Staking ($251+) or Club 5+: 2,500 TDA/day
 function getEffectiveTierLimit(u) {
-  const investment = Number(u.investment || 0);
   const activeClubId = Number(u.ctoActiveClub || 0);
   const clubCfg = CTO_CLUBS_CONFIG.find(c => c.id === activeClubId);
   const clubPrice = clubCfg ? clubCfg.slotPrice : 0;
-  
-  const effectiveInvestment = Math.max(investment, clubPrice);
+  const investment = Number(u.investment || 0);
 
-  if (effectiveInvestment >= 1 && effectiveInvestment <= 19) return 60;
-  if (effectiveInvestment >= 20 && effectiveInvestment <= 250) return 1000;
-  if (effectiveInvestment >= 251) return 2500;
-  return 1000; // Default tier for active ecosystem participants
+  // If user has an active CTO club (Single-shot $25+ verified)
+  if (activeClubId > 0) {
+    const effective = Math.max(investment, clubPrice);
+    if (effective >= 251) return 2500;
+    return 1000;
+  }
+
+  // If user is in FIFO waiting queue or priority holding queue
+  if (u.inWaitingQueue || u.inHoldingQueueForClub) {
+    return 1000;
+  }
+
+  // If user has active package
+  if (u.tier && u.tier !== "none" && !u.packageExpired) {
+    if (u.tier === "yearly") return 2500;
+    return 1000;
+  }
+
+  // Pure micro-staking (< $25 single-shot without CTO Club):
+  return 60;
 }
 
 // Standard ERC20 / BEP20 ABI for transfers & checks
@@ -1375,7 +1392,7 @@ async function landing() {
         </div>
     </div>
     <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <a href="#ctoclub"><button style="width: 220px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">👑 10 CTO Clubs ($25)</button></a>
+      <a href="#ctoclub"><button style="width: 220px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">👑 10 CTO Clubs ($25+)</button></a>
       <a href="#feed"><button style="width: 200px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
     </div>
   </div>
@@ -1385,7 +1402,7 @@ async function landing() {
     <p style="color: #ccc; line-height: 1.7;">
         Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
         Showcase your reels, videos, art, and writing, interact with members, and earn real 
-        Temple_DA tokens. Holders also benefit from our revolutionary <strong>10-Club 1,000-Slot 10% CTO Progression Engine</strong> ($25 to $77,255 USDT net profit), structured vesting, and a 15-level referral system.
+        Temple_DA tokens. Holders also benefit from our revolutionary <strong>Single-Shot $25+ 10-Club 10% CTO Progression Engine</strong> ($25 to $77,255 USDT net profit), 100% token vesting asset backing (5% monthly release), and a 15-level referral system.
     </p>
   </div>
 
@@ -1416,8 +1433,8 @@ async function landing() {
     <table>
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
+        <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit</td></tr>
         <tr><td>Referral Levels</td><td class="number">15 Levels Deep (25% Pool)</td></tr>
-        <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
     </table>
   </div>
   <div class="card center">
@@ -1812,8 +1829,9 @@ async function ctoClubsPage() {
       <span class="badge-tag" style="margin-bottom:8px; color:#00ff88; border-color:#00ff88;">OFFICIAL 10-CLUB 1,000-SLOT ENGINE</span>
       <h2 style="font-size:26px;">10% GLOBAL CTO SYSTEM</h2>
       <p style="color:#ddd; max-width:800px; margin: 8px auto 0 auto; line-height:1.6;">
-        Start from <strong>$25 USDT (Club 1 • Bronze Pillar)</strong> and advance through 10 progressive clubs to achieve 
-        <strong>$77,255 USDT</strong> cumulative net profit. <strong>Zero direct referrals required</strong> to participate and receive passive club dividends!
+        Entry requirement: <strong>Strict Single-Shot $25+ Deposit</strong> to activate <strong>Club 1 • Bronze Pillar</strong>. 
+        Advance through 10 progressive clubs to achieve <strong>$77,255 USDT</strong> cumulative net profit. 
+        <strong style="color:#00ff88;">Zero direct referrals required</strong> to receive passive club dividends!
       </p>
 
       <!-- 100% Inflow Master Breakup -->
@@ -1870,7 +1888,7 @@ async function ctoClubsPage() {
             <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">2X Earning: $${(myQueueData.earned2x || 0).toFixed(2)} / $50.00</span>
           </div>
           <p class="small" style="margin-top:6px;">
-            Funded continuously by the dedicated 2% CTO pool & referral split. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
+            Funded continuously by the dedicated 2% CTO pool. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
           </p>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:10px;">
             <span class="small" style="color:#00ff88; font-weight:bold;">✓ Direct Referrals Optional: Every user qualifies for passive payouts!</span>
@@ -1933,9 +1951,28 @@ window.joinCtoClub1 = async () => {
       await processClub1Allocation(phone, u.name || "Member", "Activation Wallet");
     });
   } else {
-    customConfirm("Deposit 25 USDT via Web3 Wallet to activate Club 1?", async () => {
+    customConfirm("Deposit 25 USDT via Web3 Wallet to activate Club 1 & receive 25 USDT worth of Temple_DA tokens (5% monthly vesting)?", async () => {
       try {
-        await executeUsdtTransfer(25, "Club 1 CTO Entry ($25)");
+        const { tx } = await executeUsdtTransfer(25, "Club 1 CTO Entry ($25)");
+        
+        // Also credit tokens to locked vault so user gets full asset backing
+        const currentPrice = await getPrice();
+        const newTokens = Number((25 / currentPrice).toFixed(2));
+        const newLocked = Number(u.locked || 0) + newTokens;
+        const newInvestment = Number(u.investment || 0) + 25;
+
+        await update(ref(db, "users/" + phone), {
+          locked: newLocked,
+          investment: newInvestment,
+          lockDate: u.lockDate || Date.now()
+        });
+
+        await push(ref(db, "investments/history/" + phone), {
+          amountUSDT: 25,
+          txHash: tx.hash,
+          timestamp: Date.now()
+        });
+
         await processClub1Allocation(phone, u.name || "Member", "Web3 USDT");
       } catch (err) {
         customAlert("Deposit failed: " + formatWeb3Error(err));
@@ -2152,7 +2189,7 @@ window.claimWaitingRoom2X = async () => {
 };
 
 // =============================================================
-// ORIGINAL REELS FEED PAGE (PRESERVED)
+// ORIGINAL REELS FEED PAGE
 // =============================================================
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
@@ -2427,7 +2464,7 @@ window.submitReelComment = async () => {
 };
 
 // =============================================================
-// USER DASHBOARD (WITH UNIFIED EFFECTIVE WITHDRAWAL TIERS)
+// USER DASHBOARD (WITH STRICT SINGLE-SHOT & HYBRID WITHDRAWAL TIERS)
 // =============================================================
 async function userDashboard() {
   const phone = localStorage.getItem("user");
@@ -2465,6 +2502,7 @@ async function userDashboard() {
 
     const maxDailyAllowed = getEffectiveTierLimit(u);
     const todayWithdrawn = (u.lastWithdrawDate === todayDateStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
+    const isCtoMember = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub;
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
@@ -2494,16 +2532,24 @@ async function userDashboard() {
           <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">10% CTO PROGRESSION SYSTEM</span>
           <h3 style="color:#00ff88; margin-bottom:6px; font-size:18px;">👑 10-Club 1,000-Slot Ecosystem</h3>
           <p class="small" style="max-width:650px;">
-            Start with $25 USDT and climb the 10 progressive clubs to earn up to <strong>$77,255 USDT</strong> cumulative net profit! Net profits auto-credit to balance upon cap.
+            Qualify with a <strong>Strict Single-Shot $25+ Deposit</strong> to unlock Club 1 and climb 10 progressive clubs for up to <strong>$77,255 USDT</strong> cumulative net profit!
           </p>
           <p class="small" style="margin-top:6px;">
-            Status: <strong style="color:#dfb72c;">${u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Not Joined'))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
+            Status: <strong style="color:#dfb72c;">${u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Open Micro Staking (< $25)'))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
           </p>
         </div>
         <div>
           <a href="#ctoclub"><button class="btn-green" style="width:auto; padding:12px 24px; font-size:13px;">⚡ Open 10 CTO Clubs</button></a>
         </div>
       </div>
+      ${!isCtoMember ? `
+        <div style="margin-top:14px; padding:10px 14px; background:rgba(223,183,44,0.12); border-radius:8px; border:1px dashed #dfb72c;">
+          <span class="small" style="color:#dfb72c; font-weight:bold;">💡 CTO Qualification Rule:</span>
+          <span class="small" style="color:#fff; display:block; margin-top:2px;">
+            Cumulative micro-staking ($5+$10+$10) gives token yield but does not unlock CTO clubs. Deposit a <strong>single-shot of $25 USDT or more</strong> anytime to unlock Club 1 and raise your daily withdrawal limit to 1,000 Temple_DA!
+          </span>
+        </div>
+      ` : ''}
     </div>
 
     <div class="grid">
@@ -2535,7 +2581,7 @@ async function userDashboard() {
       </div>
 
       <div class="card">
-        <h3>USDT Investment</h3>
+        <h3>Total USDT Invested</h3>
         ${u.investment || 0} USDT
       </div>
 
@@ -2543,7 +2589,7 @@ async function userDashboard() {
         <h3>Locked Yield</h3>
         ${Number(u.locked || 0).toFixed(2)} Temple_DA<br>
         <div style="margin-top: 6px; padding: 6px; background: rgba(223, 183, 44, 0.08); border-radius: 6px; border: 1px solid rgba(223, 183, 44, 0.3);">
-          <span class="small" style="color:#dfb72c; display:block; font-weight:bold; font-size:11px;">⏳ Next Release Timer:</span>
+          <span class="small" style="color:#dfb72c; display:block; font-weight:bold; font-size:11px;">⏳ Next Release Timer (5%/mo):</span>
           <span class="number" id="nextReleaseCountdown" style="font-size: 12px; color: #00ff88;">Calculating...</span>
         </div>
       </div>
@@ -2606,11 +2652,14 @@ async function userDashboard() {
       </button>
     </div>
 
-    <!-- DIRECT WEB3 WALLET DEPOSIT CARD -->
+    <!-- DIRECT WEB3 WALLET DEPOSIT CARD (HYBRID STAKING & SINGLE-SHOT CTO CHECK) -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
-      <p class="small">Direct, instant Web3 wallet deposit. Connect MetaMask or Trust Wallet to deposit USDT on BNB Smart Chain.</p>
-      <input id="invest" placeholder="USDT amount (Min 1 USDT, Max 500 USDT total)" type="number" step="any" style="margin-top:12px;">
+      <p class="small">
+        • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
+        • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 ($75 Cap) Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
+      </p>
+      <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:12px;">
       <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
         ⚡ Deposit USDT via Web3 Wallet
       </button>
@@ -2628,11 +2677,11 @@ async function userDashboard() {
       </p>
 
       <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:12px 16px; margin-bottom:14px;">
-        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📊 Daily Withdrawal Tier Limits (Investment & CTO Unified):</span>
+        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📊 Daily Withdrawal Tier Limits:</span>
         <div style="font-size:13px; color:#eee; line-height:1.6;">
-          • <strong>1 - 19 USDT Tier:</strong> Max 60 Temple_DA / day<br>
-          • <strong>20 - 250 USDT Tier (Includes Club 1):</strong> Max 1,000 Temple_DA / day<br>
-          • <strong>251 - 500+ USDT Tier (Club 5+):</strong> Max 2,500 Temple_DA / day<br>
+          • <strong>Open Micro-Staking (< $25 single-shot):</strong> Max 60 Temple_DA / day<br>
+          • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
+          • <strong>High-Tier Staking ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
         </div>
         <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">
           Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)
@@ -2867,6 +2916,9 @@ window.withdraw = async () => {
   customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• ${amount} Temple_DA deducted from balance immediately.\n• 90% (${ninetyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) will be credited to your Activation Wallet once approved by admin.\n• Today's Withdrawn: ${newTodayWithdrawn} / ${maxDailyAllowed} Temple_DA.`);
 };
 
+// -------------------------------------------------------------
+// STRICT SINGLE-SHOT $25+ HYBRID DEPOSIT & CTO ALLOCATION
+// -------------------------------------------------------------
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const investInput = document.getElementById("invest");
@@ -2896,7 +2948,7 @@ window.makeDirectUSDTDeposit = async () => {
     await update(ref(db, "users/" + phone), {
       investment: newInvestment,
       locked: newLocked,
-      monthlyBusiness: newMonthlyBiz,
+      monthlyBiz: newMonthlyBiz,
       lockDate: u.lockDate || Date.now()
     });
 
@@ -2906,12 +2958,33 @@ window.makeDirectUSDTDeposit = async () => {
       timestamp: Date.now()
     });
 
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, amount, phone, "Staking Investment");
+    // STRICT SINGLE-SHOT $25+ QUALIFICATION CHECK
+    const isSingleShotEligible = (amount >= 25);
+    const notInAnyClubYet = (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub;
+
+    if (isSingleShotEligible && notInAnyClubYet) {
+      // 100% Inflow Master Breakup (25% Referral, 10% CTO, 50% LP, 15% Admin)
+      await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
+      
+      // Auto-assign Club 1 Slot or FIFO Waiting List
+      await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
+    } else {
+      // Pure Micro-Staking (< $25) or additional top-up: distribute standard 15-level staking commission
+      if (u.referrer) {
+        await distribute15LevelCommission(u.referrer, amount, phone, `Staking Investment ($${amount})`);
+      }
     }
 
     if (investInput) investInput.value = "";
-    customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield!`);
+
+    let qualificationNote = "";
+    if (isSingleShotEligible && notInAnyClubYet) {
+      qualificationNote = `\n\n👑 Single-shot deposit of $${amount} qualified you for Club 1 • Bronze Pillar ($75 Cap) & Daily withdrawal limit raised to 1,000 Temple_DA!`;
+    } else if (amount < 25 && notInAnyClubYet) {
+      qualificationNote = `\n\n💡 Note: Micro-staking (< $25) provides 5% monthly vesting. To unlock Club 1 and 1,000 TDA daily withdrawal limit, deposit a single-shot of $25+ anytime!`;
+    }
+
+    customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield (5% monthly release)!${qualificationNote}`);
   } catch (error) {
     console.error("Direct deposit error:", error);
     customAlert("Deposit Failed: " + formatWeb3Error(error));
@@ -3430,7 +3503,7 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
 };
 
 // =============================================================
-// ADMIN DASHBOARD (CTO GLOBAL MASTER VAULT & APPROVAL CENTER)
+// ADMIN DASHBOARD (CTO MASTER VAULT & FAIR INVESTOR MIGRATION)
 // =============================================================
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
@@ -3459,7 +3532,7 @@ async function adminDashboard() {
       <td>${p}</td>
       <td>${u.name || 'Member'}</td>
       <td style="font-family:monospace; font-size:11px; color:#00ff88;">${u.wallet || 'N/A'}</td>
-      <td><span class="badge-tag">${u.ctoActiveClub > 0 ? `Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `Queue C${u.inHoldingQueueForClub}` : (u.inWaitingQueue ? 'In Queue' : 'None'))}</span></td>
+      <td><span class="badge-tag">${u.ctoActiveClub > 0 ? `Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `Queue C${u.inHoldingQueueForClub}` : (u.inWaitingQueue ? 'In Queue' : 'Micro'))}</span></td>
       <td>${balTda.toFixed(2)} Temple_DA</td>
       <td style="color:#00ff88; font-weight:bold;">$${(u.activationWallet || 0).toFixed(2)}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
@@ -3489,9 +3562,14 @@ async function adminDashboard() {
         <tr><td>Members in FIFO Waiting Queue:</td><td class="number">${queueCount} Users</td></tr>
       </table>
 
-      <button onclick="runCtoGlobalDistribution()" class="btn-green" style="margin-top:14px;">
-        ⚡ Execute 8% Club & 2% Waiting Pool Distribution
-      </button>
+      <div style="display:flex; gap:12px; margin-top:14px; flex-wrap:wrap;">
+        <button onclick="runCtoGlobalDistribution()" class="btn-green" style="flex:1;">
+          ⚡ Execute 8% Club & 2% Waiting Pool Distribution
+        </button>
+        <button onclick="runFairInvestorMigration()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; flex:1;">
+          🏛️ Run Fair Legacy Migration (Single-Shot >= $25)
+        </button>
+      </div>
     </div>
 
     <div class="card">
@@ -3523,6 +3601,101 @@ async function adminDashboard() {
     loadPendingWithdraw();
   });
 }
+
+// -------------------------------------------------------------
+// FAIR MIGRATION ENGINE FOR EXISTING INVESTORS (>= $25 USDT)
+// -------------------------------------------------------------
+window.runFairInvestorMigration = async () => {
+  customConfirm("क्या आप सभी योग्य पुराने निवेशकों (कम से कम $25 कुल निवेश) को वरिष्ठता (Timestamp) के अनुसार Club 1 में माइग्रेट करना चाहते हैं?", async () => {
+    try {
+      const usersSnap = await get(ref(db, "users"));
+      if (!usersSnap.exists()) return customAlert("कोई यूज़र डेटा नहीं मिला।");
+
+      let eligibleInvestors = [];
+
+      usersSnap.forEach(child => {
+        const phone = child.key;
+        const u = child.val();
+        const totalInvested = Number(u.investment || 0);
+
+        if (totalInvested >= 25 && (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub) {
+          eligibleInvestors.push({
+            phone: phone,
+            name: u.name || "Investor",
+            investment: totalInvested,
+            joinedTimestamp: u.lockDate || u.createdAt || 0
+          });
+        }
+      });
+
+      if (eligibleInvestors.length === 0) {
+        return customAlert("कोई भी अन-माइग्रेटेड योग्य निवेशक (>= $25) शेष नहीं है।");
+      }
+
+      // वरिष्ठता (Seniority/Timestamp) के आधार पर सॉर्ट करें
+      eligibleInvestors.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
+
+      const c1Snap = await get(ref(db, "cto_clubs/1/slots"));
+      const currentSlots = c1Snap.exists() ? c1Snap.val() : {};
+      let filledCount = Object.keys(currentSlots).length;
+
+      let migratedToClub1 = 0;
+      let queuedCount = 0;
+
+      for (const inv of eligibleInvestors) {
+        if (filledCount < 300) {
+          const slotRef = push(ref(db, "cto_clubs/1/slots"));
+          await set(slotRef, {
+            phone: inv.phone,
+            userName: inv.name,
+            earnedUSDT: 0,
+            capUSDT: 75,
+            status: "active",
+            joinedAt: inv.joinedTimestamp || Date.now(),
+            migratedFromLegacy: true
+          });
+
+          await update(ref(db, `users/${inv.phone}`), {
+            ctoActiveClub: 1,
+            inWaitingQueue: false
+          });
+
+          filledCount++;
+          migratedToClub1++;
+        } else {
+          const qRef = push(ref(db, "cto_waiting_queue"));
+          await set(qRef, {
+            phone: inv.phone,
+            userName: inv.name,
+            paidAmount: 25,
+            earned2x: 0,
+            cap: 50,
+            joinedAt: inv.joinedTimestamp || Date.now(),
+            migratedFromLegacy: true
+          });
+
+          await update(ref(db, `users/${inv.phone}`), {
+            ctoActiveClub: 0,
+            inWaitingQueue: true
+          });
+
+          queuedCount++;
+        }
+      }
+
+      customAlert(
+        `🎉 निष्पक्ष माइग्रेशन पूर्ण!\n\n` +
+        `• कुल योग्य निवेशक (>= $25): ${eligibleInvestors.length}\n` +
+        `• Club 1 में सक्रिय स्लॉट मिले: ${migratedToClub1}\n` +
+        `• FIFO वेटिंग रूम में गए: ${queuedCount}\n\n` +
+        `सभी पुराने निवेशकों को वरिष्ठता (Timestamp) के आधार पर स्थान दिया गया है!`
+      );
+      adminDashboard();
+    } catch (err) {
+      customAlert("माइग्रेशन त्रुटि: " + err.message);
+    }
+  });
+};
 
 // -------------------------------------------------------------
 // EXECUTE CTO DIVIDENDS & AUTO-CREDIT NET PROFIT TO BALANCE
