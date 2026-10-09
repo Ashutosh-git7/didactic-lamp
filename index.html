@@ -959,12 +959,58 @@ window.closeModalPopup = () => {
 };
 
 // -------------------------------------------------------------
-// Point 1: MASTER FUND INFLOW ENGINE (100% BREAKUP)
-// 25% Sponsor, 10% CTO (8% Clubs + 2% Waiting), 50% LP, 15% Admin
+// ORIGINAL 15-LEVEL COMMISSION ENGINE (10% + 5% + 3% ... = EXACT 25%)
+// -------------------------------------------------------------
+async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, sourceUserPhone = "", purposeLabel = "15-Level Referral") {
+  const levelPercentages = [
+    10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2
+  ];
+
+  let currentRefPhone = startReferrerPhone;
+  const currentPrice = await getPrice();
+
+  for (let i = 0; i < levelPercentages.length; i++) {
+    if (!currentRefPhone) break;
+
+    const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
+    if (!refUserSnap.exists()) break;
+
+    const refUserData = refUserSnap.val();
+    const percentage = levelPercentages[i];
+    const commissionUSDT = Number(((totalAmountUSDT * percentage) / 100).toFixed(4));
+    const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
+
+    const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
+    const currentRefIncomeUSDT = Number(((refUserData.referralEarnedUSDT || 0) + commissionUSDT).toFixed(2));
+
+    await update(ref(db, "users/" + currentRefPhone), { 
+      balance: newBalance,
+      referralEarnedUSDT: currentRefIncomeUSDT
+    });
+
+    await push(ref(db, `referral_history/${currentRefPhone}`), {
+      fromUser: sourceUserPhone || startReferrerPhone,
+      level: i + 1,
+      percentage: percentage,
+      amountUSDT: commissionUSDT,
+      amountTokens: commissionTokens,
+      source: `${purposeLabel} (Level ${i + 1} - ${percentage}%)`,
+      timestamp: Date.now()
+    });
+
+    currentRefPhone = refUserData.referrer || "";
+  }
+}
+
+// -------------------------------------------------------------
+// Point 1: MASTER FUND INFLOW ENGINE (100% EXACT BREAKUP)
+// 25% — 15-Level Referral Program
+// 10% — Global CTO (8% Active Clubs + 2% FIFO Waiting Queue)
+// 50% — Core Liquidity Pool (LP) Reserve
+// 15% — Company Admin & Infrastructure Reserve
 // -------------------------------------------------------------
 async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel) {
-  const currentPrice = await getPrice();
-  const direct25 = amountUSDT * 0.25;
+  const direct25Total = amountUSDT * 0.25;
   const cto8 = amountUSDT * 0.08;
   const cto2Waiting = amountUSDT * 0.02;
   const lp50 = amountUSDT * 0.50;
@@ -974,29 +1020,9 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   const userData = uSnap.exists() ? uSnap.val() : {};
   const sponsorPhone = userData.referrer || "";
 
-  // 1. Credit 25% Direct Referral immediately to Sponsor's main balance (in Temple_DA tokens at live rate)
+  // 1. Distribute the full 25% referral allocation across all 15 Levels upline
   if (sponsorPhone) {
-    const sSnap = await get(ref(db, "users/" + sponsorPhone));
-    if (sSnap.exists()) {
-      const sData = sSnap.val();
-      const earnedTokens = Number((direct25 / currentPrice).toFixed(2));
-      const newBal = Number(((sData.balance || 0) + earnedTokens).toFixed(2));
-      const newDirectEarnings = Number(((sData.ctoDirectEarnedUSDT || 0) + direct25).toFixed(2));
-
-      await update(ref(db, "users/" + sponsorPhone), {
-        balance: newBal,
-        ctoDirectEarnedUSDT: newDirectEarnings
-      });
-
-      await push(ref(db, `referral_history/${sponsorPhone}`), {
-        fromUser: userPhone,
-        level: 1,
-        amountUSDT: direct25,
-        amountTokens: earnedTokens,
-        source: `25% Direct Referral (${purposeLabel})`,
-        timestamp: Date.now()
-      });
-    }
+    await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
   }
 
   // 2. Global CTO Ledger Update
@@ -1013,7 +1039,7 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
     lastUpdated: Date.now()
   });
 
-  return { direct25, cto8, cto2Waiting, lp50, admin15 };
+  return { direct25Total, cto8, cto2Waiting, lp50, admin15 };
 }
 
 // -------------------------------------------------------------
@@ -1098,7 +1124,7 @@ async function promoteNextWaitingQueueMemberToClub1() {
 }
 
 // -------------------------------------------------------------
-// ORIGINAL VESTING & 15-LEVEL LOGIC (PRESERVED)
+// ORIGINAL VESTING & LIFETIME STAKING CHECK (PRESERVED)
 // -------------------------------------------------------------
 async function backgroundGlobalVestingCheck() {
   try {
@@ -1177,40 +1203,6 @@ window.claimDailyReward = async () => {
     "Keep it up!"
   );
 };
-
-async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT) {
-  const levelPercentages = [
-    10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2
-  ];
-
-  let currentRefPhone = startReferrerPhone;
-  const currentPrice = await getPrice();
-
-  for (let i = 0; i < levelPercentages.length; i++) {
-    if (!currentRefPhone) break;
-
-    const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
-    if (!refUserSnap.exists()) break;
-
-    const refUserData = refUserSnap.val();
-    const percentage = levelPercentages[i];
-    const commissionUSDT = (totalAmountUSDT * percentage) / 100;
-    const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
-
-    const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
-    await update(ref(db, "users/" + currentRefPhone), { balance: newBalance });
-
-    await push(ref(db, `referral_history/${currentRefPhone}`), {
-      fromUser: startReferrerPhone,
-      level: i + 1,
-      amountUSDT: commissionUSDT,
-      amountTokens: commissionTokens,
-      timestamp: Date.now()
-    });
-
-    currentRefPhone = refUserData.referrer || "";
-  }
-}
 
 function maskPhone(phone) {
   if (!phone || typeof phone !== 'string') return "Creator";
@@ -1350,11 +1342,11 @@ async function landing() {
     </div>
     <div class="card">
         <h3>15-Level Referral</h3>
-        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions on community activations.</p>
+        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions (25% total pool) on community activations.</p>
     </div>
     <div class="card">
         <h3>90/10 Split & 0% Fee</h3>
-        <p class="small">Zero admin withdrawal charges. 90% direct to your wallet in Temple_DA, 10% to Activation Wallet for P2P cash recovery.</p>
+        <p class="small">Zero admin withdrawal charges. 90% direct to your wallet in Temple_DA tokens, 10% to Activation Wallet for P2P cash recovery.</p>
     </div>
   </div>
 
@@ -1363,7 +1355,7 @@ async function landing() {
     <table>
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
-        <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
+        <tr><td>Referral Levels</td><td class="number">15 Levels Deep (25% Pool)</td></tr>
         <tr><td>Talent Reward Conversion</td><td class="number">Instant To Temple_DA</td></tr>
     </table>
   </div>
@@ -1519,7 +1511,7 @@ window.registerUser = async () => {
     activationWallet: 0, // 10% Activation / Gift Wallet
     ctoActiveClub: 0,
     ctoEarnedUSDT: 0,
-    ctoDirectEarnedUSDT: 0,
+    referralEarnedUSDT: 0,
     inWaitingQueue: false,
     investment: 0,
     locked: 0,
@@ -1749,8 +1741,8 @@ async function ctoClubsPage() {
       <!-- Point 1: 100% Inflow Master Breakup -->
       <div class="grid" style="margin-top:18px;">
         <div class="card" style="padding:14px;">
-          <h3 style="font-size:11px;">25% Direct Referral</h3>
-          <span style="color:#dfb72c; font-size:15px; font-weight:bold;">Instant Sponsor Payout</span>
+          <h3 style="font-size:11px;">25% 15-Level Referral</h3>
+          <span style="color:#dfb72c; font-size:15px; font-weight:bold;">15 Tiers Team Income</span>
         </div>
         <div class="card" style="padding:14px; border-color:#00ff88;">
           <h3 style="font-size:11px;">10% Global CTO</h3>
@@ -1790,7 +1782,7 @@ async function ctoClubsPage() {
             <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">2X Earning: $${(myQueueData.earned2x || 0).toFixed(2)} / $50.00</span>
           </div>
           <p class="small" style="margin-top:6px;">
-            Funded continuously by the 2% CTO pool & referral split. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
+            Funded continuously by the dedicated 2% CTO pool & referral split. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
           </p>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:10px;">
             <span class="small" style="color:#00ff88; font-weight:bold;">✓ Direct Referrals Optional: Every user qualifies for passive payouts!</span>
@@ -1887,7 +1879,7 @@ async function processClub1Allocation(phone, userName, source) {
       inWaitingQueue: false
     });
 
-    window.showModalPopup("Club 1 Activated! 🏛️", "You secured an active slot in Club 1.", "Cap: $75 USDT (3.0X)", "View Matrix");
+    window.showModalPopup("Club 1 Activated! 🏛️", "You secured an active slot in Club 1 • Bronze Pillar.", "Cap: $75 USDT (3.0X)", "View Matrix");
   } else {
     const queueRef = push(ref(db, "cto_waiting_queue"));
     await set(queueRef, {
@@ -2322,7 +2314,7 @@ window.submitReelComment = async () => {
 };
 
 // =============================================================
-// USER DASHBOARD (WITH 10 CTO CLUBS CARD & 90/10 WITHDRAWAL)
+// USER DASHBOARD (WITH 10 CTO CLUBS CARD & 90/10 TOKEN WITHDRAWAL)
 // =============================================================
 async function userDashboard() {
   const phone = localStorage.getItem("user");
@@ -2518,7 +2510,7 @@ async function userDashboard() {
       <p class="small" style="color:#aaa;">* Ensure your connected wallet has BNB Smart Chain selected with a small amount of BNB for gas fees.</p>
     </div>
 
-    <!-- RESTORED WITHDRAWAL CENTER: ORIGINAL INVESTMENT TIERS WITH 90/10 SPLIT -->
+    <!-- RESTORED WITHDRAWAL CENTER: ORIGINAL INVESTMENT TIERS WITH 90/10 TOKEN SPLIT -->
     <div class="card" style="border: 2px solid #dfb72c;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <h3 style="margin:0;">Withdraw Temple_DA (90/10 Split & 0% Fee)</h3>
@@ -2556,7 +2548,7 @@ async function userDashboard() {
 
     <div class="accordion-wrapper" id="accReferrals">
       <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
-        <span>👥 25% Direct & 15-Level Referral Income</span>
+        <span>👥 15-Level Referral Income (25% Total Pool)</span>
         <span>▼</span>
       </div>
       <div class="accordion-content" id="referralHistory">Loading...</div>
@@ -2825,7 +2817,7 @@ window.makeDirectUSDTDeposit = async () => {
     });
 
     if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, amount);
+      await distribute15LevelCommission(u.referrer, amount, phone, "Staking Investment");
     }
 
     if (investInput) investInput.value = "";
@@ -3292,7 +3284,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     });
 
     if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, usdtAmount);
+      await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package`);
     }
 
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
@@ -3340,7 +3332,7 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
     });
 
     if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, usdtAmount);
+      await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package (Balance)`);
     }
 
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
@@ -3641,14 +3633,14 @@ function loadReferralHistory(phone) {
     snap.forEach(s => { 
       const d = s.val(); 
       const date = new Date(d.timestamp).toLocaleString();
-      totalTDA += d.amountTokens;
-      totalUSDT += d.amountUSDT;
+      totalTDA += (d.amountTokens || 0);
+      totalUSDT += (d.amountUSDT || 0);
       html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
         <b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br>
         <span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span>
       </div>`; 
     });
-    const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total Earned: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
+    const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total 15-Level Team Income: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("referralHistory");
     if (el) el.innerHTML = headerHtml + (html || "No referral income yet.");
   });
@@ -3847,7 +3839,7 @@ function loadGiftHistory(phone) {
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
         html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
-          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone || g.recipientName)})<br>
+          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br>
           <span style="color:#888;">${date}</span>
         </div>`;
       });
