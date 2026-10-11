@@ -531,10 +531,6 @@ td {
   border-color: #00ff88;
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
 }
-.cto-club-card.frozen-slot {
-  border-color: #ff4444;
-  box-shadow: 0 0 20px rgba(255, 68, 68, 0.35);
-}
 </style>
 </head>
 
@@ -633,7 +629,6 @@ td {
     confirmCallback = null;
   };
 
-  // Toast controls
   window.showWeb3Toast = (text) => {
     const t = document.getElementById("web3Toast");
     const label = document.getElementById("web3ToastText");
@@ -671,8 +666,8 @@ signInAnonymously(auth).catch(e => console.log(e));
 
 const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
-const OFFICIAL_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; // BSC BEP20 USDT
-const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; // Vault receiver
+const OFFICIAL_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; 
+const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; 
 
 let activePostIdForComments = null;
 
@@ -692,64 +687,34 @@ const CTO_CLUBS_CONFIG = [
   { id: 10, name: "Club 10 • Grand Celestial", icon: "🌌", slotsMax: 15, slotPrice: 12000, ctoSharePct: 0.25, capMultiplier: 5.0, grossCap: 60000, upgradeCost: 0, netUserWithdrawal: 50000 }
 ];
 
-// Helper: Calculate Effective Daily Limit
-// Micro-Staking (< $25 single-shot without Club): 60 TDA/day
-// Single-Shot $25+ or Club 1-4: 1,000 TDA/day
-// High-Tier Staking ($251+) or Club 5+: 2,500 TDA/day
 function getEffectiveTierLimit(u) {
   const activeClubId = Number(u.ctoActiveClub || 0);
   const clubCfg = CTO_CLUBS_CONFIG.find(c => c.id === activeClubId);
   const clubPrice = clubCfg ? clubCfg.slotPrice : 0;
   const investment = Number(u.investment || 0);
 
-  // If user has an active CTO club (Single-shot $25+ verified)
   if (activeClubId > 0) {
     const effective = Math.max(investment, clubPrice);
     if (effective >= 251) return 2500;
     return 1000;
   }
 
-  // If user is in FIFO waiting queue or priority holding queue
-  if (u.inWaitingQueue || u.inHoldingQueueForClub) {
+  if (u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador) {
     return 1000;
   }
 
-  // If user has active package
   if (u.tier && u.tier !== "none" && !u.packageExpired) {
     if (u.tier === "yearly") return 2500;
     return 1000;
   }
 
-  // Pure micro-staking (< $25 single-shot without CTO Club):
   return 60;
 }
 
-// Standard ERC20 / BEP20 ABI for transfers & checks
 const BEP20_ABI = [
-  {
-    "constant": true,
-    "inputs": [{"name": "_owner", "type": "address"}],
-    "name": "balanceOf",
-    "outputs": [{"name": "balance", "type": "uint256"}],
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [{"name": "", "type": "uint8"}],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {"name": "_to", "type": "address"},
-      {"name": "_value", "type": "uint256"}
-    ],
-    "name": "transfer",
-    "outputs": [{"name": "", "type": "bool"}],
-    "type": "function"
-  }
+  { "constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function" },
+  { "constant": true, "inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "type": "function" },
+  { "constant": false, "inputs": [ {"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"} ], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function" }
 ];
 
 window.showWeb3NotDetectedModal = function() {
@@ -811,14 +776,12 @@ async function ensureBscNetwork() {
     throw new Error("Web3 Wallet not detected! Please open in MetaMask or Trust Wallet DApp Browser.");
   }
 
-  const BSC_HEX_CHAIN_ID = "0x38"; // 56 decimal
+  const BSC_HEX_CHAIN_ID = "0x38"; 
 
   let currentChainId = null;
   try {
     currentChainId = await window.ethereum.request({ method: "eth_chainId" });
-  } catch (err) {
-    console.warn("Could not read eth_chainId:", err);
-  }
+  } catch (err) { }
 
   if (currentChainId && currentChainId !== BSC_HEX_CHAIN_ID && parseInt(currentChainId, 16) !== 56) {
     try {
@@ -863,7 +826,6 @@ function formatWeb3Error(err) {
   return err.reason || err.data?.message || err.message || String(err);
 }
 
-// SECURE USDT TRANSFER WITH BALANCE & RECEIPT STATUS CHECK
 async function executeUsdtTransfer(amount, descriptionLabel) {
   if (typeof window.ethereum === "undefined") {
     showWeb3NotDetectedModal();
@@ -871,16 +833,12 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   }
 
   showWeb3Toast("Requesting wallet connection...");
-
   let accounts;
   try {
     accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
   } catch (accErr) {
     hideWeb3Toast();
-    if (accErr.code === 4001 || accErr.code === "ACTION_REJECTED") {
-      throw new Error("Wallet connection request was cancelled.");
-    }
-    throw new Error("Could not connect to wallet: " + (accErr.message || accErr));
+    throw new Error("Wallet connection request was cancelled.");
   }
 
   if (!accounts || accounts.length === 0) {
@@ -895,23 +853,17 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   const signer = provider.getSigner();
 
-  // 1. Gas fee check (BNB)
   const bnbBalance = await provider.getBalance(senderAddress);
   if (bnbBalance.isZero()) {
     hideWeb3Toast();
     throw new Error("Insufficient BNB in your wallet! You need a small amount of BNB to pay network gas fees.");
   }
 
-  // 2. USDT Contract & Balance Pre-Check
   showWeb3Toast("Verifying USDT balance in your wallet...");
   const usdtContract = new ethers.Contract(OFFICIAL_USDT_CONTRACT, BEP20_ABI, signer);
 
   let decimals = 18;
-  try {
-    decimals = await usdtContract.decimals();
-  } catch (decErr) {
-    decimals = 18;
-  }
+  try { decimals = await usdtContract.decimals(); } catch (decErr) { decimals = 18; }
 
   const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
   const userUsdtBalance = await usdtContract.balanceOf(senderAddress);
@@ -923,7 +875,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   }
 
   showWeb3Toast("Wallet confirmation opening... Please approve!");
-
   let txObj = null;
   let txHash = null;
 
@@ -932,15 +883,10 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
     txHash = txObj.hash;
   } catch (contractErr) {
     hideWeb3Toast();
-    if (contractErr.code === 4001 || contractErr.code === "ACTION_REJECTED" || contractErr.message?.includes("rejected")) {
-      throw new Error("Transaction was rejected / cancelled in your wallet.");
-    }
     throw contractErr;
   }
 
   showWeb3Toast("Waiting for BNB Smart Chain confirmation...");
-
-  // 3. STRICT Blockchain Receipt Status Check
   let receipt = null;
   try {
     if (txObj && typeof txObj.wait === "function") {
@@ -954,7 +900,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
   }
 
   hideWeb3Toast();
-
   if (!receipt || receipt.status !== 1) {
     throw new Error("Transaction failed or reverted on BNB Smart Chain! Payment was not received.");
   }
@@ -966,7 +911,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
 window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
   const container = document.getElementById("modalContainer");
   if (!container) return;
-
   container.innerHTML = `
     <div class="welcome-modal-overlay">
       <div class="welcome-modal-card">
@@ -984,26 +928,18 @@ window.showModalPopup = function(title, subtitle, mainRewardText, buttonText) {
     </div>
   `;
 };
-
 window.closeModalPopup = () => {
   const container = document.getElementById("modalContainer");
   if (container) container.innerHTML = "";
 };
 
-// -------------------------------------------------------------
-// ORIGINAL 15-LEVEL COMMISSION ENGINE (EXACT 25% DISTRIBUTED UPLINE)
-// -------------------------------------------------------------
 async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, sourceUserPhone = "", purposeLabel = "15-Level Referral") {
-  const levelPercentages = [
-    10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2
-  ];
-
+  const levelPercentages = [10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2];
   let currentRefPhone = startReferrerPhone;
   const currentPrice = await getPrice();
 
   for (let i = 0; i < levelPercentages.length; i++) {
     if (!currentRefPhone) break;
-
     const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
     if (!refUserSnap.exists()) break;
 
@@ -1022,12 +958,8 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
 
     await push(ref(db, `referral_history/${currentRefPhone}`), {
       fromUser: sourceUserPhone || startReferrerPhone,
-      level: i + 1,
-      percentage: percentage,
-      amountUSDT: commissionUSDT,
-      amountTokens: commissionTokens,
-      source: `${purposeLabel} (Level ${i + 1} - ${percentage}%)`,
-      timestamp: Date.now()
+      level: i + 1, percentage: percentage, amountUSDT: commissionUSDT, amountTokens: commissionTokens,
+      source: `${purposeLabel} (Level ${i + 1} - ${percentage}%)`, timestamp: Date.now()
     });
 
     currentRefPhone = refUserData.referrer || "";
@@ -1035,14 +967,15 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
 }
 
 // -------------------------------------------------------------
-// MASTER FUND INFLOW ENGINE (100% BREAKUP)
+// MASTER FUND INFLOW ENGINE (100% BREAKUP WITH AMBASSADOR & ADMIN)
 // -------------------------------------------------------------
 async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel) {
   const direct25Total = amountUSDT * 0.25;
   const cto8 = amountUSDT * 0.08;
   const cto2Waiting = amountUSDT * 0.02;
   const lp50 = amountUSDT * 0.50;
-  const admin15 = amountUSDT * 0.15;
+  const ambassador1 = amountUSDT * 0.01;
+  const admin14 = amountUSDT * 0.14; // Changed from 15% to 14% to fit Ambassador
 
   const uSnap = await get(ref(db, "users/" + userPhone));
   const userData = uSnap.exists() ? uSnap.val() : {};
@@ -1059,13 +992,14 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   await update(masterRef, {
     totalInflowUSDT: Number(((mData.totalInflowUSDT || 0) + amountUSDT).toFixed(2)),
     lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + lp50).toFixed(2)),
-    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + admin15).toFixed(2)),
+    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + admin14).toFixed(2)),
+    ambassadorPoolUSDT: Number(((mData.ambassadorPoolUSDT || 0) + ambassador1).toFixed(2)),
     cto8PoolUSDT: Number(((mData.cto8PoolUSDT || 0) + cto8).toFixed(2)),
     cto2WaitingPoolUSDT: Number(((mData.cto2WaitingPoolUSDT || 0) + cto2Waiting).toFixed(2)),
     lastUpdated: Date.now()
   });
 
-  return { direct25Total, cto8, cto2Waiting, lp50, admin15 };
+  return { direct25Total, cto8, cto2Waiting, lp50, admin14, ambassador1 };
 }
 
 // -------------------------------------------------------------
@@ -1080,10 +1014,7 @@ async function promoteNextInQueue(clubId) {
   if (!qSnap.exists()) return;
 
   let queueList = [];
-  qSnap.forEach(child => {
-    queueList.push({ key: child.key, ...child.val() });
-  });
-
+  qSnap.forEach(child => { queueList.push({ key: child.key, ...child.val() }); });
   queueList.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
   if (queueList.length === 0) return;
 
@@ -1097,83 +1028,22 @@ async function promoteNextInQueue(clubId) {
 
     const newSlotRef = push(ref(db, `cto_clubs/${clubId}/slots`));
     await set(newSlotRef, {
-      phone: candidate.phone,
-      userName: candidate.userName || "Leader",
-      earnedUSDT: 0,
-      capUSDT: targetClubCfg.grossCap,
-      status: "active",
-      joinedAt: Date.now()
+      phone: candidate.phone, userName: candidate.userName || "Leader",
+      earnedUSDT: 0, capUSDT: targetClubCfg.grossCap, status: "active", joinedAt: Date.now()
     });
 
     await update(ref(db, "users/" + candidate.phone), {
-      ctoActiveClub: clubId,
-      inHoldingQueueForClub: null,
-      holdingQueueJoinedAt: 0
+      ctoActiveClub: clubId, inHoldingQueueForClub: null, holdingQueueJoinedAt: 0
     });
   }
 }
 
-// -------------------------------------------------------------
-// 24-HOUR TIMER & SLOT VACANCY SUPERVISOR WITH HOLDING CAPACITY CHECK
-// -------------------------------------------------------------
-async function checkSlotVacanciesAnd24hTimers() {
-  try {
-    const clubsSnap = await get(ref(db, "cto_clubs"));
-    if (!clubsSnap.exists()) return;
-
-    const now = Date.now();
-    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-
-    clubsSnap.forEach(clubChild => {
-      const clubId = parseInt(clubChild.key);
-      const slots = clubChild.val().slots || {};
-
-      Object.keys(slots).forEach(async slotKey => {
-        const slot = slots[slotKey];
-        if (slot.status === "frozen" && slot.freezeTimerStart) {
-          // Check if next club is full: If full, user's timer is protected (DO NOT FLUSH)
-          const nextClubCfg = CTO_CLUBS_CONFIG.find(c => c.id === clubId + 1);
-          if (nextClubCfg) {
-            const nextClubSlotsSnap = await get(ref(db, `cto_clubs/${clubId + 1}/slots`));
-            const isNextFull = Object.keys(nextClubSlotsSnap.val() || {}).length >= nextClubCfg.slotsMax;
-            if (isNextFull) {
-              return; // Protected state: Next club is full, hold slot!
-            }
-          }
-
-          const timeElapsed = now - slot.freezeTimerStart;
-          if (timeElapsed >= twentyFourHoursMs) {
-            await remove(ref(db, `cto_clubs/${clubId}/slots/${slotKey}`));
-            
-            await push(ref(db, `cto_flushed_history`), {
-              phone: slot.phone,
-              clubId: clubId,
-              flushedAt: now,
-              reason: "24-Hour Upgrade Window Expired"
-            });
-
-            // Automatically promote next waiting member from queue
-            await promoteNextInQueue(clubId);
-          }
-        }
-      });
-    });
-  } catch (err) {
-    console.error("Vacancy supervisor error:", err);
-  }
-}
-setInterval(checkSlotVacanciesAnd24hTimers, 60000);
-
-// Promote FIFO Waiting Member to Club 1
 async function promoteNextWaitingQueueMemberToClub1() {
   const queueSnap = await get(ref(db, "cto_waiting_queue"));
   if (!queueSnap.exists()) return;
 
   let queue = [];
-  queueSnap.forEach(child => {
-    queue.push({ key: child.key, ...child.val() });
-  });
-
+  queueSnap.forEach(child => { queue.push({ key: child.key, ...child.val() }); });
   queue.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
   if (queue.length === 0) return;
 
@@ -1183,32 +1053,21 @@ async function promoteNextWaitingQueueMemberToClub1() {
 
   if (currentSlotsCount < 300) {
     await remove(ref(db, `cto_waiting_queue/${eligibleCandidate.key}`));
-
     const slotRef = push(ref(db, "cto_clubs/1/slots"));
     await set(slotRef, {
-      phone: eligibleCandidate.phone,
-      userName: eligibleCandidate.userName,
-      earnedUSDT: 0,
-      capUSDT: 75,
-      status: "active",
-      joinedAt: Date.now()
+      phone: eligibleCandidate.phone, userName: eligibleCandidate.userName,
+      earnedUSDT: 0, capUSDT: 75, status: "active", joinedAt: Date.now()
     });
-
     await update(ref(db, "users/" + eligibleCandidate.phone), {
-      ctoActiveClub: 1,
-      inWaitingQueue: false
+      ctoActiveClub: 1, inWaitingQueue: false
     });
   }
 }
 
-// -------------------------------------------------------------
-// ORIGINAL VESTING & LIFETIME STAKING CHECK (5% Monthly Release)
-// -------------------------------------------------------------
 async function backgroundGlobalVestingCheck() {
   try {
     const usersSnap = await get(ref(db, "users"));
     if (!usersSnap.exists()) return;
-
     const now = Date.now();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     let updates = {};
@@ -1216,70 +1075,34 @@ async function backgroundGlobalVestingCheck() {
     usersSnap.forEach(child => {
       const phone = child.key;
       const u = child.val();
-
       if (u.locked && u.locked > 0 && u.lockDate) {
-        const timeElapsed = now - u.lockDate;
-
-        if (timeElapsed >= thirtyDaysMs) {
+        if ((now - u.lockDate) >= thirtyDaysMs) {
           const releaseAmount = u.locked * 0.05;
-          const currentBalance = u.balance || 0;
-          
-          const newBalance = Number((currentBalance + releaseAmount).toFixed(2));
-          const newLocked = Number((u.locked - releaseAmount).toFixed(2));
-
-          updates[`users/${phone}/balance`] = newBalance;
-          updates[`users/${phone}/locked`] = newLocked;
+          updates[`users/${phone}/balance`] = Number(((u.balance || 0) + releaseAmount).toFixed(2));
+          updates[`users/${phone}/locked`] = Number((u.locked - releaseAmount).toFixed(2));
           updates[`users/${phone}/lockDate`] = now;
         }
       }
     });
-
-    if (Object.keys(updates).length > 0) {
-      await update(ref(db), updates);
-    }
-  } catch (err) {
-    console.error("Background Vesting Error: ", err);
-  }
+    if (Object.keys(updates).length > 0) await update(ref(db), updates);
+  } catch (err) {}
 }
-
 backgroundGlobalVestingCheck();
 
 window.claimDailyReward = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first!");
-
   const userRef = ref(db, "users/" + phone);
   const snap = await get(userRef);
   if (!snap.exists()) return;
-  
   const u = snap.val();
   const now = new Date();
   const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  if (u.lastLoginDate === todayDateStr) {
-    return customAlert("You have already claimed your reward today!");
-  }
-
-  const currentPoints = Number(u.points || 0);
-  const newPoints = currentPoints + 10;
-
-  await update(userRef, {
-    points: newPoints,
-    lastLoginDate: todayDateStr
-  });
-
-  await push(ref(db, `points_history/${phone}`), {
-    source: "Daily Login",
-    points: 10,
-    timestamp: Date.now()
-  });
-
-  window.showModalPopup(
-    "Daily Reward Claimed!", 
-    `Awesome work, <b>${u.name || 'Member'}</b>!`, 
-    "+10 XP Points", 
-    "Keep it up!"
-  );
+  if (u.lastLoginDate === todayDateStr) return customAlert("You have already claimed your reward today!");
+  await update(userRef, { points: Number(u.points || 0) + 10, lastLoginDate: todayDateStr });
+  await push(ref(db, `points_history/${phone}`), { source: "Daily Login", points: 10, timestamp: Date.now() });
+  window.showModalPopup("Daily Reward Claimed!", `Awesome work, <b>${u.name || 'Member'}</b>!`, "+10 XP Points", "Keep it up!");
 };
 
 function maskPhone(phone) {
@@ -1295,11 +1118,7 @@ function getPackageDurationMs(tier) {
 function checkAndHandlePackageExpiry(phone, u) {
   if (!u.tier || u.tier === "none" || !u.packageExpiresAt) return u.tier || "none";
   if (Date.now() > u.packageExpiresAt) {
-    update(ref(db, "users/" + phone), {
-      tier: "none",
-      packagePriceUSDT: 0,
-      packageExpired: true
-    });
+    update(ref(db, "users/" + phone), { tier: "none", packagePriceUSDT: 0, packageExpired: true });
     return "none";
   }
   return u.tier;
@@ -1311,14 +1130,8 @@ window.toggleAccordion = (id) => {
 };
 
 const routes = {
-  "#": landing,
-  "#login": loginPage,
-  "#register": registerPage,
-  "#user": userDashboard,
-  "#admin": adminDashboard,
-  "#feed": feedPage,
-  "#packages": packagesPage,
-  "#ctoclub": ctoClubsPage
+  "#": landing, "#login": loginPage, "#register": registerPage, "#user": userDashboard,
+  "#admin": adminDashboard, "#feed": feedPage, "#packages": packagesPage, "#ctoclub": ctoClubsPage
 };
 
 window.addEventListener("hashchange", router);
@@ -1327,13 +1140,7 @@ router();
 function router() {
   const hash = location.hash.split("?")[0] || "#";
   const navBar = document.getElementById("mainNavbar");
-  
-  if (hash === "#feed") {
-    if (navBar) navBar.style.display = "none";
-  } else {
-    if (navBar) navBar.style.display = "flex";
-  }
-
+  if (hash === "#feed") { if (navBar) navBar.style.display = "none"; } else { if (navBar) navBar.style.display = "flex"; }
   (routes[hash] || landing)();
 }
 
@@ -1346,7 +1153,6 @@ async function getLivePriceData() {
       if (livePrice > 0) return livePrice;
     }
   } catch (err) {}
-
   try {
     const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
     const fallbackData = await fallbackRes.json();
@@ -1354,7 +1160,6 @@ async function getLivePriceData() {
       return parseFloat(fallbackData["0x50be31caab627ee8F98374d33b0454a8269A79e1"].usd);
     }
   } catch (err) {}
-  
   return 0.0002;
 }
 
@@ -1412,7 +1217,7 @@ async function landing() {
   <div class="grid">
     <div class="card">
         <h3>10% Global CTO</h3>
-        <p class="small">10 progressive clubs, 1,000 slots, 24h rotation, and FIFO waiting room 2X payout protection.</p>
+        <p class="small">10 progressive clubs, 1,000 slots, instant auto-upgrades, and FIFO waiting room 2X payout protection.</p>
     </div>
     <div class="card">
         <h3>Showcase & Earn</h3>
@@ -1454,10 +1259,7 @@ async function landing() {
     if (diff <= 0) {
       diff = Math.abs(diff);
       const label = document.getElementById("timer-label");
-      if (label) {
-        label.innerText = "🚀 WE ARE LIVE SINCE:";
-        label.style.color = "#00ff88";
-      }
+      if (label) { label.innerText = "🚀 WE ARE LIVE SINCE:"; label.style.color = "#00ff88"; }
     }
 
     document.getElementById("d").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
@@ -1468,11 +1270,7 @@ async function landing() {
 }
 
 window.connectWalletAndAutoLogin = async () => {
-  if (typeof window.ethereum === 'undefined') {
-    showWeb3NotDetectedModal();
-    return;
-  }
-
+  if (typeof window.ethereum === 'undefined') { showWeb3NotDetectedModal(); return; }
   try {
     showWeb3Toast("Connecting wallet...");
     await ensureBscNetwork();
@@ -1483,12 +1281,9 @@ window.connectWalletAndAutoLogin = async () => {
 
     const usersSnap = await get(ref(db, "users"));
     let foundPhone = null;
-
     usersSnap.forEach(child => {
       const uData = child.val();
-      if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) {
-        foundPhone = child.key;
-      }
+      if (uData.wallet && uData.wallet.toLowerCase() === walletAddress.toLowerCase()) { foundPhone = child.key; }
     });
 
     if (foundPhone) {
@@ -1497,10 +1292,7 @@ window.connectWalletAndAutoLogin = async () => {
     } else {
       customAlert("⚠️ No account registered with this wallet address. Please register first!");
       location.hash = "#register";
-      setTimeout(() => {
-        const wInput = document.getElementById("wallet");
-        if (wInput) wInput.value = walletAddress;
-      }, 500);
+      setTimeout(() => { const wInput = document.getElementById("wallet"); if (wInput) wInput.value = walletAddress; }, 500);
     }
   } catch (error) {
     hideWeb3Toast();
@@ -1511,24 +1303,19 @@ window.connectWalletAndAutoLogin = async () => {
 function registerPage() {
   const urlParams = new URLSearchParams(location.hash.split("?")[1]);
   const refPhone = urlParams.get("ref") || "";
-
   appDiv().innerHTML = `
   <div class="card">
   <h2>Create Account</h2>
-
   <div style="background: rgba(223, 183, 44, 0.1); border: 1px solid #dfb72c; padding: 14px; border-radius: 10px; margin-bottom: 18px; text-align: center;">
       <p style="color: #dfb72c; font-weight: bold; font-size: 15px; margin-bottom: 6px;">🎉 Welcome to Temple_DA!</p>
       <p style="font-size: 13px; color: #fff;">Get started today and claim your <strong>6 Temple_DA</strong> welcome reward instantly upon registration.</p>
   </div>
-
   <input id="name" placeholder="Full Name">
   <input id="phone" placeholder="Phone Number">
-  
   <div style="display:flex; gap:10px; align-items:center;">
     <input id="wallet" placeholder="BEP20 Wallet Address" readonly style="margin:0;">
     <button type="button" onclick="connectWeb3Wallet()" style="width:150px; margin:0; padding:12px 10px; font-size:11px; background:#dfb72c; color:#000;">Connect Wallet</button>
   </div>
-
   <input id="password" type="password" placeholder="Password" style="margin-top:14px;">
   <input id="ref" placeholder="Referral Phone" value="${refPhone}">
   <button onclick="registerUser()">Register</button>
@@ -1547,32 +1334,18 @@ window.connectWeb3Wallet = async () => {
         document.getElementById("wallet").value = walletAddress;
         customAlert("Wallet successfully connected: " + walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4));
       }
-    } catch (error) {
-      hideWeb3Toast();
-      customAlert("Wallet connection failed: " + formatWeb3Error(error));
-    }
-  } else {
-    showWeb3NotDetectedModal();
-  }
+    } catch (error) { hideWeb3Toast(); customAlert("Wallet connection failed: " + formatWeb3Error(error)); }
+  } else { showWeb3NotDetectedModal(); }
 };
 
 window.registerUser = async () => {
-  const name = v("name");
-  const phone = v("phone");
-  const wallet = v("wallet");
-  const password = v("password");
-  const referrer = v("ref");
-
+  const name = v("name"), phone = v("phone"), wallet = v("wallet"), password = v("password"), referrer = v("ref");
   if (!name || !phone || !password) return customAlert("Please fill in all required fields!");
   if (!walletRegex.test(wallet)) return customAlert("Invalid BEP20 wallet address. Please connect your Web3 wallet!");
   
   const usersSnap = await get(ref(db, "users"));
   let walletExists = false;
-
-  usersSnap.forEach(s => {
-    if (s.val().wallet && s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true;
-  });
-
+  usersSnap.forEach(s => { if (s.val().wallet && s.val().wallet.toLowerCase() === wallet.toLowerCase()) walletExists = true; });
   if (walletExists) return customAlert("This wallet is already registered to another account!");
 
   const userSnap = await get(ref(db, "users/" + phone));
@@ -1582,73 +1355,27 @@ window.registerUser = async () => {
   const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   await set(ref(db, "users/" + phone), {
-    name,
-    wallet,
-    password: btoa(password),
-    balance: 6,
-    activationWallet: 0,
-    ctoActiveClub: 0,
-    ctoEarnedUSDT: 0,
-    referralEarnedUSDT: 0,
-    inWaitingQueue: false,
-    inHoldingQueueForClub: null,
-    holdingQueueJoinedAt: 0,
-    investment: 0,
-    locked: 0,
-    lockDate: 0,
-    referrer: referrer || "",
-    createdAt: Date.now(),
-    tier: "none",
-    packagePriceUSDT: 0,
-    packageActivatedAt: 0,
-    packageExpiresAt: 0,
-    packageExpired: false,
-    points: 10,
-    subscribersCount: 0,
-    monthlyBusiness: 0,
-    lastLoginDate: todayDateStr,
-    todayWithdrawnAmount: 0,
-    lastWithdrawDate: ""
+    name, wallet, password: btoa(password), balance: 6, activationWallet: 0,
+    ctoActiveClub: 0, isCrownAmbassador: false, ctoEarnedUSDT: 0, referralEarnedUSDT: 0,
+    inWaitingQueue: false, inHoldingQueueForClub: null, holdingQueueJoinedAt: 0,
+    investment: 0, locked: 0, lockDate: 0, referrer: referrer || "", createdAt: Date.now(),
+    tier: "none", packagePriceUSDT: 0, packageActivatedAt: 0, packageExpiresAt: 0, packageExpired: false,
+    points: 10, subscribersCount: 0, monthlyBusiness: 0, lastLoginDate: todayDateStr, todayWithdrawnAmount: 0, lastWithdrawDate: ""
   });
 
-  await push(ref(db, `points_history/${phone}`), {
-    source: "Welcome Bonus",
-    points: 10,
-    timestamp: Date.now()
-  });
+  await push(ref(db, `points_history/${phone}`), { source: "Welcome Bonus", points: 10, timestamp: Date.now() });
 
   if (referrer) {
     const referrerSnap = await get(ref(db, "users/" + referrer));
     if (referrerSnap.exists()) {
       const referrerData = referrerSnap.val();
-      const currentPoints = Number(referrerData.points || 0);
-      const newPoints = currentPoints + 20;
-
-      await update(ref(db, "users/" + referrer), {
-        points: newPoints
-      });
-
-      await push(ref(db, `points_history/${referrer}`), {
-        source: "Referral Bonus",
-        points: 20,
-        timestamp: Date.now()
-      });
-
-      await push(ref(db, `referral_points_history/${referrer}`), {
-        fromUser: phone,
-        pointsAwarded: 20,
-        timestamp: Date.now()
-      });
+      await update(ref(db, "users/" + referrer), { points: Number(referrerData.points || 0) + 20 });
+      await push(ref(db, `points_history/${referrer}`), { source: "Referral Bonus", points: 20, timestamp: Date.now() });
+      await push(ref(db, `referral_points_history/${referrer}`), { fromUser: phone, pointsAwarded: 20, timestamp: Date.now() });
     }
   }
 
-  window.showModalPopup(
-    "Welcome Bonus Unlocked!", 
-    `Hello <b>${name}</b>, welcome to Temple_DA!`, 
-    "+6 Temple_DA & +10 XP", 
-    "🚀 Start Exploring"
-  );
-
+  window.showModalPopup("Welcome Bonus Unlocked!", `Hello <b>${name}</b>, welcome to Temple_DA!`, "+6 Temple_DA & +10 XP", "🚀 Start Exploring");
   localStorage.setItem("user", phone);
   setTimeout(() => { location.hash = "#user"; }, 2000);
 };
@@ -1676,23 +1403,17 @@ window.login = async () => {
       const userCredential = await signInWithEmailAndPassword(auth, phone, pass);
       const user = userCredential.user;
       const adminSnap = await get(ref(db, "admins/" + user.uid));
-      
       if (adminSnap.exists()) {
         localStorage.setItem("admin", "1");
         location.hash = "#admin";
         customAlert("Admin Login Successful!");
-      } else {
-        customAlert("You are authenticated but not registered as an admin.");
-      }
-    } catch (error) {
-      customAlert("Admin Login Failed: " + error.message);
-    }
+      } else { customAlert("You are authenticated but not registered as an admin."); }
+    } catch (error) { customAlert("Admin Login Failed: " + error.message); }
     return;
   }
 
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return customAlert("User not found");
-
   const user = snap.val();
   if (atob(user.password) !== pass) return customAlert("Wrong password");
 
@@ -1715,18 +1436,15 @@ async function ctoClubsPage() {
 
   const masterSnap = await get(ref(db, "cto_master"));
   const master = masterSnap.exists() ? masterSnap.val() : {
-    totalInflowUSDT: 0, lpPoolUSDT: 0, adminReserveUSDT: 0, cto8PoolUSDT: 0, cto2WaitingPoolUSDT: 0
+    totalInflowUSDT: 0, lpPoolUSDT: 0, adminReserveUSDT: 0, ambassadorPoolUSDT: 0, cto8PoolUSDT: 0, cto2WaitingPoolUSDT: 0
   };
 
   const clubsSnap = await get(ref(db, "cto_clubs"));
   const clubsData = clubsSnap.exists() ? clubsSnap.val() : {};
 
-  // Check FIFO Waiting queue (Club 1)
   const queueSnap = await get(ref(db, "cto_waiting_queue"));
   let waitingList = [];
-  if (queueSnap.exists()) {
-    queueSnap.forEach(c => waitingList.push({ key: c.key, ...c.val() }));
-  }
+  if (queueSnap.exists()) { queueSnap.forEach(c => waitingList.push({ key: c.key, ...c.val() })); }
   waitingList.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
 
   let myQueuePosition = -1;
@@ -1736,7 +1454,6 @@ async function ctoClubsPage() {
     if (myQueuePosition !== -1) myQueueData = waitingList[myQueuePosition];
   }
 
-  // Check Priority Upgrade Queue (Club 2 to 10)
   let myHoldingQueueRank = 0;
   let holdingClubTarget = u.inHoldingQueueForClub || 0;
   if (holdingClubTarget > 1) {
@@ -1774,29 +1491,21 @@ async function ctoClubsPage() {
     let cardClass = "cto-club-card";
 
     if (mySlot) {
-      if (mySlot.status === "frozen") {
-        cardClass += " frozen-slot";
-        const remainingMs = Math.max(0, (mySlot.freezeTimerStart + (24 * 3600 * 1000)) - Date.now());
-        const hrs = Math.floor(remainingMs / (3600 * 1000));
-        const mins = Math.floor((remainingMs % (3600 * 1000)) / 60000);
-        statusBadge = `<span class="badge-tag" style="background:#550000; border-color:#ff4444; color:#ff4444;">FROZEN: ${hrs}h ${mins}m LEFT</span>`;
-        slotActionBtn = `<button onclick="upgradeCtoSlot(${cfg.id})" class="btn-green" style="margin-top:10px;">⚡ Upgrade to Club ${cfg.id + 1} ($${cfg.upgradeCost})</button>`;
-      } else {
-        cardClass += " active-slot";
-        const progressPct = Math.min(100, ((mySlot.earnedUSDT || 0) / cfg.grossCap) * 100);
-        statusBadge = `<span class="badge-tag" style="background:rgba(0,255,136,0.2); border-color:#00ff88; color:#00ff88;">YOUR ACTIVE SLOT</span>`;
-        slotActionBtn = `
-          <div style="margin-top:8px;">
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-              <span>Earning Cap (${cfg.capMultiplier}X)</span>
-              <span class="number">$${(mySlot.earnedUSDT || 0).toFixed(2)} / $${cfg.grossCap}</span>
-            </div>
-            <div style="background:#222; border-radius:6px; height:8px; overflow:hidden;">
-              <div style="background:linear-gradient(90deg, #dfb72c, #00ff88); width:${progressPct}%; height:100%;"></div>
-            </div>
-          </div>`;
-      }
-    } else if (cfg.id === 1 && (!phone || (!userActiveSlotFound && !myQueueData && !u.inHoldingQueueForClub))) {
+      cardClass += " active-slot";
+      const progressPct = Math.min(100, ((mySlot.earnedUSDT || 0) / cfg.grossCap) * 100);
+      statusBadge = `<span class="badge-tag" style="background:rgba(0,255,136,0.2); border-color:#00ff88; color:#00ff88;">YOUR ACTIVE SLOT</span>`;
+      slotActionBtn = `
+        <div style="margin-top:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+            <span>Earning Cap (${cfg.capMultiplier}X)</span>
+            <span class="number">$${(mySlot.earnedUSDT || 0).toFixed(2)} / $${cfg.grossCap}</span>
+          </div>
+          <div style="background:#222; border-radius:6px; height:8px; overflow:hidden;">
+            <div style="background:linear-gradient(90deg, #dfb72c, #00ff88); width:${progressPct}%; height:100%;"></div>
+          </div>
+          <p class="small" style="color:#00ff88; font-weight:bold; margin-top:8px;">⚡ Instant Auto-Upgrade Active</p>
+        </div>`;
+    } else if (cfg.id === 1 && (!phone || (!userActiveSlotFound && !myQueueData && !u.inHoldingQueueForClub && !u.isCrownAmbassador))) {
       slotActionBtn = isFull 
         ? `<button onclick="joinCtoClub1()" class="btn-secondary" style="margin-top:10px;">Join FIFO Waiting Queue ($25)</button>`
         : `<button onclick="joinCtoClub1()" class="btn-green" style="margin-top:10px;">⚡ Activate Club 1 ($25 USDT)</button>`;
@@ -1815,7 +1524,7 @@ async function ctoClubsPage() {
             <tr><td>8% CTO Share</td><td style="color:#00ff88; font-weight:bold;">${cfg.ctoSharePct}%</td></tr>
             <tr><td>Gross Cap (${cfg.capMultiplier}X)</td><td class="number">$${cfg.grossCap}</td></tr>
             <tr><td>Net User Payout</td><td style="color:#ffd700; font-weight:bold;">$${cfg.netUserWithdrawal} USDT (Auto-Credited)</td></tr>
-            <tr><td>Next Upgrade</td><td>${cfg.upgradeCost > 0 ? `$${cfg.upgradeCost}` : 'Cycle Finish'}</td></tr>
+            <tr><td>Next Upgrade</td><td>${cfg.upgradeCost > 0 ? `$${cfg.upgradeCost} (Auto)` : 'Cycle Finish'}</td></tr>
           </table>
         </div>
         ${slotActionBtn}
@@ -1844,13 +1553,13 @@ async function ctoClubsPage() {
           <h3 style="font-size:11px;">10% Global CTO</h3>
           <span style="color:#00ff88; font-size:15px; font-weight:bold;">8% Clubs + 2% Queue</span>
         </div>
-        <div class="card" style="padding:14px;">
-          <h3 style="font-size:11px;">50% Core LP Reserve</h3>
-          <span style="color:#3399ff; font-size:15px; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</span>
+        <div class="card" style="padding:14px; border-color:#9933ff;">
+          <h3 style="font-size:11px; color:#cc66ff;">1% Crown Royalty</h3>
+          <span style="color:#cc66ff; font-size:15px; font-weight:bold;">Lifetime Ambassador Pool</span>
         </div>
         <div class="card" style="padding:14px;">
-          <h3 style="font-size:11px;">15% Admin & System</h3>
-          <span style="color:#ff66cc; font-size:15px; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</span>
+          <h3 style="font-size:11px;">14% Admin / 50% LP</h3>
+          <span style="color:#3399ff; font-size:15px; font-weight:bold;">Core Reserve Funds</span>
         </div>
       </div>
     </div>
@@ -1863,6 +1572,7 @@ async function ctoClubsPage() {
           <p class="small">
             ${phone ? `Logged In: <strong>${maskPhone(phone)}</strong> | Access Mode: <strong style="color:#00ff88;">Universal & Non-Conditional (No Direct Referrals Required)</strong>` : 'Please login to track or activate your slot.'}
           </p>
+          ${u.isCrownAmbassador ? `<div style="margin-top:8px;"><span class="badge-tag" style="background:#330066; color:#cc66ff; border-color:#9933ff; font-size:14px; padding:6px 12px;">👑 CROWN AMBASSADOR (LIFETIME ROYALTY ACTIVE)</span></div>` : ''}
         </div>
         <div style="text-align:right;">
           <span class="small" style="color:#aaa; display:block;">10% Activation / Gift Wallet</span>
@@ -1875,7 +1585,7 @@ async function ctoClubsPage() {
         <div style="margin-top:14px; padding:12px; background:rgba(0,255,136,0.1); border-radius:10px; border:1px solid #00ff88;">
           <b style="color:#00ff88;">🛡️ Status: Stored in Club ${u.inHoldingQueueForClub} Priority Upgrade Queue (Rank #${myHoldingQueueRank || 1})</b>
           <p class="small" style="color:#eee; margin-top:4px;">
-            Target club is currently at full capacity. Your 24-hour timer is <strong>PAUSED & PROTECTED</strong>. Your net earnings from previous club are already secured in your Main Balance. You will automatically occupy the next opening slot!
+            Target club is currently at full capacity. Your net earnings from the previous club are already secured in your Main Balance. You will automatically occupy the next opening slot in Club ${u.inHoldingQueueForClub}!
           </p>
         </div>
       ` : ''}
@@ -1912,23 +1622,23 @@ async function ctoClubsPage() {
       ${clubsCardsHtml}
     </div>
 
-    <!-- Club 10 Mega Perpetual Loop -->
+    <!-- Club 10 Endgame: Crown Ambassador Retirement -->
     <div class="card" style="border: 2px solid #9933ff; background: rgba(153, 51, 255, 0.05); margin-top:20px;">
-      <h3 style="color:#cc66ff; margin-bottom:8px;">🔄 Club 10 Mega Perpetual Loop ($60,000 Exit)</h3>
+      <h3 style="color:#cc66ff; margin-bottom:8px;">👑 The Endgame: Crown Ambassador Retirement</h3>
       <p class="small" style="line-height:1.6; color:#eee;">
-        When a leader finishes Club 10 (5.0X on $12,000 = $60,000 gross payout), the automated perpetual loop triggers:
+        When a leader finishes Club 10 (5.0X on $12,000 = $60,000 gross payout), they graduate from the matrix forever and trigger a massive community boost:
       </p>
       <table>
-        <tr><td>User Net Cash Payout</td><td style="color:#00ff88; font-weight:bold; font-size:16px;">$50,000 USDT (Direct to Withdrawable Balance)</td></tr>
-        <tr><td>200 New Club 1 Re-Entries ($5,000)</td><td class="number">200 Fresh IDs placed at the bottom of Club 1 (Boosts new users)</td></tr>
-        <tr><td>Company Admin Mega Royalty</td><td style="color:#ffd700; font-weight:bold;">$3,000 USDT</td></tr>
-        <tr><td>Core Liquidity Pool (LP) Injection</td><td style="color:#3399ff; font-weight:bold;">$2,000 USDT</td></tr>
+        <tr><td>User Net Cash Payout</td><td style="color:#00ff88; font-weight:bold; font-size:16px;">$50,000 USDT (Instantly Auto-Credited)</td></tr>
+        <tr><td>Lifetime Royal Pension</td><td class="number">Leader retires from matrix and receives an equal share of the Global 1% Ambassador Pool forever.</td></tr>
+        <tr><td>Tsunami Community Drop (70%)</td><td style="color:#00ff88; font-weight:bold;">$7,000 USDT</td></tr>
+        <tr><td>Tsunami Impact</td><td class="small" style="color:#aaa;">$5,600 to 8% Active Pools & $1,400 to Waiting Queue. Hundreds of real users auto-upgrade instantly!</td></tr>
+        <tr><td>Company Admin Reserve (30%)</td><td style="color:#3399ff; font-weight:bold;">$3,000 USDT</td></tr>
       </table>
     </div>
   `;
 }
 
-// Join Club 1 ($25 Entry via Web3 or Activation Wallet)
 window.joinCtoClub1 = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first to enter Club 1!");
@@ -1937,8 +1647,8 @@ window.joinCtoClub1 = async () => {
   if (!userSnap.exists()) return customAlert("User account not found!");
   const u = userSnap.val();
 
-  if (u.ctoActiveClub > 0 || u.inWaitingQueue || u.inHoldingQueueForClub) {
-    return customAlert("You already have an active CTO Club slot or are in the waiting queue!");
+  if (u.ctoActiveClub > 0 || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador) {
+    return customAlert("You already have an active CTO Club slot, are in queue, or are a Crown Ambassador!");
   }
 
   const hasActivationBal = (u.activationWallet || 0) >= 25;
@@ -1954,25 +1664,15 @@ window.joinCtoClub1 = async () => {
     customConfirm("Deposit 25 USDT via Web3 Wallet to activate Club 1 & receive 25 USDT worth of Temple_DA tokens (5% monthly vesting)?", async () => {
       try {
         const { tx } = await executeUsdtTransfer(25, "Club 1 CTO Entry ($25)");
-        
-        // Also credit tokens to locked vault so user gets full asset backing
         const currentPrice = await getPrice();
         const newTokens = Number((25 / currentPrice).toFixed(2));
         const newLocked = Number(u.locked || 0) + newTokens;
         const newInvestment = Number(u.investment || 0) + 25;
 
         await update(ref(db, "users/" + phone), {
-          locked: newLocked,
-          investment: newInvestment,
-          lockDate: u.lockDate || Date.now()
+          locked: newLocked, investment: newInvestment, lockDate: u.lockDate || Date.now()
         });
-
-        await push(ref(db, "investments/history/" + phone), {
-          amountUSDT: 25,
-          txHash: tx.hash,
-          timestamp: Date.now()
-        });
-
+        await push(ref(db, "investments/history/" + phone), { amountUSDT: 25, txHash: tx.hash, timestamp: Date.now() });
         await processClub1Allocation(phone, u.name || "Member", "Web3 USDT");
       } catch (err) {
         customAlert("Deposit failed: " + formatWeb3Error(err));
@@ -1981,134 +1681,6 @@ window.joinCtoClub1 = async () => {
   }
 };
 
-async function processClub1Allocation(phone, userName, source) {
-  await recordMasterInflowAndDistribute(phone, 25, `Club 1 Entry (${source})`);
-
-  const c1Snap = await get(ref(db, "cto_clubs/1/slots"));
-  const slotsMap = c1Snap.exists() ? c1Snap.val() : {};
-  const currentSlotsCount = Object.keys(slotsMap).length;
-
-  if (currentSlotsCount < 300) {
-    const newSlotRef = push(ref(db, "cto_clubs/1/slots"));
-    await set(newSlotRef, {
-      phone: phone,
-      userName: userName,
-      earnedUSDT: 0,
-      capUSDT: 75,
-      status: "active",
-      joinedAt: Date.now()
-    });
-
-    await update(ref(db, "users/" + phone), {
-      ctoActiveClub: 1,
-      inWaitingQueue: false,
-      inHoldingQueueForClub: null
-    });
-
-    window.showModalPopup("Club 1 Activated! 🏛️", "You secured an active slot in Club 1 • Bronze Pillar.", "Cap: $75 USDT (3.0X)", "View Matrix");
-  } else {
-    const queueRef = push(ref(db, "cto_waiting_queue"));
-    await set(queueRef, {
-      phone: phone,
-      userName: userName,
-      paidAmount: 25,
-      earned2x: 0,
-      cap: 50,
-      joinedAt: Date.now()
-    });
-
-    await update(ref(db, "users/" + phone), {
-      ctoActiveClub: 0,
-      inWaitingQueue: true
-    });
-
-    customAlert("Club 1 is currently full (300/300 Slots).\nYou are placed in the FIFO Waiting Queue! You will earn up to 2X ($50) from the 2% CTO pool and automatically receive the next opening slot in Club 1.");
-  }
-
-  ctoClubsPage();
-}
-
-// Upgrade to Next Club with Capacity Check & Priority Queue
-window.upgradeCtoSlot = async (currentClubId) => {
-  const phone = localStorage.getItem("user");
-  if (!phone) return customAlert("Please login first!");
-
-  const nextClubId = currentClubId + 1;
-  const currentCfg = CTO_CLUBS_CONFIG.find(c => c.id === currentClubId);
-  const nextCfg = CTO_CLUBS_CONFIG.find(c => c.id === nextClubId);
-
-  if (!nextCfg) return customAlert("You have reached Club 10 cycle finish!");
-
-  const upgradeCost = currentCfg.upgradeCost;
-
-  customConfirm(`Upgrade to ${nextCfg.name} for ${upgradeCost} USDT?\nThis will vacate your slot in ${currentCfg.name} to the waiting queue.`, async () => {
-    try {
-      await executeUsdtTransfer(upgradeCost, `Upgrade to ${nextCfg.name}`);
-      await recordMasterInflowAndDistribute(phone, upgradeCost, `Upgrade to ${nextCfg.name}`);
-
-      // 1. Vacate current club slot
-      const curClubSlotsSnap = await get(ref(db, `cto_clubs/${currentClubId}/slots`));
-      if (curClubSlotsSnap.exists()) {
-        curClubSlotsSnap.forEach(async child => {
-          if (child.val().phone === phone) {
-            await remove(ref(db, `cto_clubs/${currentClubId}/slots/${child.key}`));
-          }
-        });
-      }
-
-      // 2. Trigger domino promotion for the slot just vacated in currentClubId
-      await promoteNextInQueue(currentClubId);
-
-      // 3. Check if target next club has room
-      const nextClubSlotsSnap = await get(ref(db, `cto_clubs/${nextClubId}/slots`));
-      const nextCurrentSlots = Object.keys(nextClubSlotsSnap.val() || {}).length;
-
-      if (nextCurrentSlots < nextCfg.slotsMax) {
-        // Space available: allocate immediately!
-        const nextSlotRef = push(ref(db, `cto_clubs/${nextClubId}/slots`));
-        await set(nextSlotRef, {
-          phone: phone,
-          userName: localStorage.getItem("userName") || "Leader",
-          earnedUSDT: 0,
-          capUSDT: nextCfg.grossCap,
-          status: "active",
-          joinedAt: Date.now()
-        });
-
-        await update(ref(db, "users/" + phone), {
-          ctoActiveClub: nextClubId,
-          inHoldingQueueForClub: null,
-          holdingQueueJoinedAt: 0
-        });
-
-        window.showModalPopup(`Upgraded to ${nextCfg.name}! 🎉`, `Your new earning cap is $${nextCfg.grossCap} USDT (${nextCfg.capMultiplier}X).`, `${nextCfg.name} Active`, "Awesome!");
-      } else {
-        // Next club is full: place in priority holding queue!
-        await push(ref(db, `cto_upgrade_queues/${nextClubId}`), {
-          phone: phone,
-          userName: localStorage.getItem("userName") || "Leader",
-          paidAmount: upgradeCost,
-          targetClubId: nextClubId,
-          timestamp: Date.now()
-        });
-
-        await update(ref(db, "users/" + phone), {
-          ctoActiveClub: 0,
-          inHoldingQueueForClub: nextClubId,
-          holdingQueueJoinedAt: Date.now()
-        });
-
-        customAlert(`Notice: ${nextCfg.name} is currently full (${nextCfg.slotsMax}/${nextCfg.slotsMax} Slots).\nYour ID has been placed in the Club ${nextClubId} Priority Upgrade Queue! Your timer is paused and your slot will be assigned the instant a vacancy occurs.`);
-      }
-
-      ctoClubsPage();
-    } catch (err) {
-      customAlert("Upgrade failed: " + formatWeb3Error(err));
-    }
-  });
-};
-
-// P2P Activation Modal for 10% Activation Wallet
 window.openP2PActivationModal = () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first!");
@@ -2118,37 +1690,29 @@ window.openP2PActivationModal = () => {
 
   get(ref(db, "users/" + phone)).then(async callerSnap => {
     const callerData = callerSnap.val() || {};
-
     if ((callerData.activationWallet || 0) < 25) {
       return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(callerData.activationWallet || 0).toFixed(2)}, but 25 USDT is required.`);
     }
 
     const targetSnap = await get(ref(db, "users/" + targetPhone));
-    if (!targetSnap.exists()) {
-      return customAlert("Target member phone is not registered yet. Please tell them to register first!");
-    }
+    if (!targetSnap.exists()) return customAlert("Target member phone is not registered yet. Please tell them to register first!");
     const targetData = targetSnap.val();
 
     if (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub) {
       return customAlert("Target member already has an active CTO Club slot!");
     }
 
-    await update(ref(db, "users/" + phone), {
-      activationWallet: Number(((callerData.activationWallet || 0) - 25).toFixed(2))
-    });
-
+    await update(ref(db, "users/" + phone), { activationWallet: Number(((callerData.activationWallet || 0) - 25).toFixed(2)) });
     await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
     customAlert(`✅ Successfully activated Club 1 for member ${targetPhone} using 25 USDT from your Activation Wallet!`);
   });
 };
 
-// Claim Waiting Room 2X Engine ($25 Cash + Club 1 Slot)
 window.claimWaitingRoom2X = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return;
 
   const currentPrice = await getPrice();
-
   const userSnap = await get(ref(db, "users/" + phone));
   if (!userSnap.exists()) return customAlert("User account not found!");
   const u = userSnap.val();
@@ -2156,33 +1720,18 @@ window.claimWaitingRoom2X = async () => {
   const cashTokens = Number((25 / currentPrice).toFixed(2));
   const newBal = Number(((u.balance || 0) + cashTokens).toFixed(2));
 
-  await update(ref(db, "users/" + phone), {
-    balance: newBal,
-    inWaitingQueue: false
-  });
+  await update(ref(db, "users/" + phone), { balance: newBal, inWaitingQueue: false });
 
   const qSnap = await get(ref(db, "cto_waiting_queue"));
   if (qSnap.exists()) {
     qSnap.forEach(async child => {
-      if (child.val().phone === phone) {
-        await remove(ref(db, `cto_waiting_queue/${child.key}`));
-      }
+      if (child.val().phone === phone) await remove(ref(db, `cto_waiting_queue/${child.key}`));
     });
   }
 
   const slotRef = push(ref(db, "cto_clubs/1/slots"));
-  await set(slotRef, {
-    phone: phone,
-    userName: u.name || "Member",
-    earnedUSDT: 0,
-    capUSDT: 75,
-    status: "active",
-    joinedAt: Date.now()
-  });
-
-  await update(ref(db, "users/" + phone), {
-    ctoActiveClub: 1
-  });
+  await set(slotRef, { phone: phone, userName: u.name || "Member", earnedUSDT: 0, capUSDT: 75, status: "active", joinedAt: Date.now() });
+  await update(ref(db, "users/" + phone), { ctoActiveClub: 1 });
 
   window.showModalPopup("2X Reward Claimed! 🚀", "$25 credited to Main Balance in Temple_DA & Club 1 Slot confirmed!", "+$25 Cash + Club 1", "Proceed");
   ctoClubsPage();
@@ -2199,7 +1748,6 @@ function feedPage() {
         <a href="#"><button class="btn-secondary" style="width:auto; padding:6px 14px; margin:0; font-size:12px;">← Back to Home</button></a>
         ${currentUser ? '<a href="#user"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">+ Post Reel</button></a>' : '<a href="#login"><button style="width:auto; padding:6px 16px; margin:0; font-size:12px;">Login</button></a>'}
       </div>
-      
       <div class="reels-viewport" id="reelsViewport">Loading reels...</div>
     </div>
   `;
@@ -2207,20 +1755,14 @@ function feedPage() {
   onValue(ref(db, "posts"), snap => {
     const listEl = document.getElementById("reelsViewport");
     if (!listEl) return;
-
     if (!snap.exists()) {
       listEl.innerHTML = `<div class="reel-item"><p class="center small" style="color:#fff;">No reels yet. Be a creator and post your first reel!</p></div>`;
       return;
     }
-
     get(ref(db, "subscriptions")).then(subSnap => {
       const allSubs = subSnap.exists() ? subSnap.val() : {};
-
       let posts = [];
-      snap.forEach(child => {
-        posts.push({ id: child.key, ...child.val() });
-      });
-
+      snap.forEach(child => { posts.push({ id: child.key, ...child.val() }); });
       posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
       let html = "";
@@ -2228,7 +1770,6 @@ function feedPage() {
         const isMyPost = currentUser && currentUser === p.authorPhone;
         const isSubscribed = currentUser && allSubs[p.authorPhone] && allSubs[p.authorPhone][currentUser];
         let mediaContent = "";
-
         if (p.type === "video") {
           if (p.mediaUrl && (p.mediaUrl.includes("youtube.com") || p.mediaUrl.includes("youtu.be"))) {
             let embed = p.mediaUrl.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
@@ -2238,23 +1779,17 @@ function feedPage() {
               <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:linear-gradient(135deg, #405de6, #5851db, #833ab4, #c13584, #fd1d1d, #fcb045); padding:20px; text-align:center;">
                 <span style="font-size:50px; margin-bottom:12px;">📸</span>
                 <h3 style="color:#fff; font-size:18px; margin-bottom:8px;">Instagram Reel / Post</h3>
-                <p class="small" style="color:#f0f0f0; margin-bottom:20px;">Click below to watch this content directly on Instagram.</p>
-                <a href="${p.mediaUrl}" target="_blank" style="background:#fff; color:#000; padding:12px 24px; border-radius:10px; font-weight:bold; font-family:'Orbitron',sans-serif; text-decoration:none; font-size:13px; box-shadow:0 5px 15px rgba(0,0,0,0.5);">
-                  🔗 Watch on Instagram
-                </a>
-              </div>
-            `;
+                <a href="${p.mediaUrl}" target="_blank" style="background:#fff; color:#000; padding:12px 24px; border-radius:10px; font-weight:bold; font-family:'Orbitron',sans-serif; text-decoration:none; font-size:13px; box-shadow:0 5px 15px rgba(0,0,0,0.5);">🔗 Watch on Instagram</a>
+              </div>`;
           } else {
             mediaContent = `<video class="reel-video-element" loop playsinline autoplay src="${p.mediaUrl}" onclick="toggleVideoPlayback(this)"></video>`;
           }
         } else {
           mediaContent = `<img src="${p.mediaUrl || 'temple_logo.png.png'}" alt="Reel Media">`;
         }
-
         html += `
           <div class="reel-item" data-id="${p.id}">
             ${mediaContent}
-
             <div class="reel-overlay-bottom">
               <div style="display:flex; align-items:center; gap:10px;">
                 <strong style="color:#dfb72c; font-size:16px;">@${p.authorName || 'Creator'}</strong>
@@ -2268,43 +1803,16 @@ function feedPage() {
               <p style="font-weight:bold; font-size:14px; margin-top:6px; color:#fff;">${p.title}</p>
               ${p.description ? `<p class="small" style="color:#ddd; margin-top:3px;">${p.description}</p>` : ''}
             </div>
-
             <div class="reel-actions-bar">
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="toggleVideoSound(this)">🔊</button>
-                <div class="reel-circle-label">Sound</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button>
-                <div class="reel-circle-label">${p.likesCount || 0}</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="openGiftModal('${p.authorPhone}', '${p.authorName || 'Creator'}')">🎁</button>
-                <div class="reel-circle-label">Gift</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button>
-                <div class="reel-circle-label">Msg</div>
-              </div>
-
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button>
-                <div class="reel-circle-label">Share</div>
-              </div>
-
-              ${isMyPost ? `
-              <div style="text-align:center;">
-                <button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button>
-                <div class="reel-circle-label" style="color:#ff4444;">Del</div>
-              </div>` : ''}
+              <div style="text-align:center;"><button class="reel-circle-btn" onclick="toggleVideoSound(this)">🔊</button><div class="reel-circle-label">Sound</div></div>
+              <div style="text-align:center;"><button class="reel-circle-btn" onclick="likePost('${p.id}')">❤️</button><div class="reel-circle-label">${p.likesCount || 0}</div></div>
+              <div style="text-align:center;"><button class="reel-circle-btn" onclick="openGiftModal('${p.authorPhone}', '${p.authorName || 'Creator'}')">🎁</button><div class="reel-circle-label">Gift</div></div>
+              <div style="text-align:center;"><button class="reel-circle-btn" onclick="openCommentsModal('${p.id}', '${encodeURIComponent(p.title)}')">💬</button><div class="reel-circle-label">Msg</div></div>
+              <div style="text-align:center;"><button class="reel-circle-btn" onclick="shareReel('${p.id}')">🔗</button><div class="reel-circle-label">Share</div></div>
+              ${isMyPost ? `<div style="text-align:center;"><button class="reel-circle-btn" style="border-color:#ff4444;" onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')">🗑️</button><div class="reel-circle-label" style="color:#ff4444;">Del</div></div>` : ''}
             </div>
-          </div>
-        `;
+          </div>`;
       });
-
       listEl.innerHTML = html;
       setupIntersectionAutoplay();
     });
@@ -2316,42 +1824,24 @@ window.toggleVideoSound = (btnEl) => {
   if (!itemEl) return;
   const vid = itemEl.querySelector('video');
   if (!vid) return;
-
   vid.muted = !vid.muted;
   btnEl.innerText = vid.muted ? "🔇" : "🔊";
   btnEl.style.borderColor = vid.muted ? "rgba(223, 183, 44, 0.6)" : "#00ff88";
-  
-  if (vid.paused) {
-    vid.play().catch(() => {});
-  }
+  if (vid.paused) vid.play().catch(() => {});
 };
-
-window.toggleVideoPlayback = (videoEl) => {
-  if (videoEl.paused) {
-    videoEl.play().catch(() => {});
-  } else {
-    videoEl.pause();
-  }
-};
-
+window.toggleVideoPlayback = (videoEl) => { if (videoEl.paused) { videoEl.play().catch(() => {}); } else { videoEl.pause(); } };
 function setupIntersectionAutoplay() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const vid = entry.target.querySelector('video');
       if (vid) {
-        if (entry.isIntersecting) {
-          vid.muted = false;
-          vid.play().catch(() => {});
-        } else {
-          vid.pause();
-        }
+        if (entry.isIntersecting) { vid.muted = false; vid.play().catch(() => {}); } 
+        else { vid.pause(); }
       }
     });
   }, { threshold: 0.5 });
-
   document.querySelectorAll('.reel-item').forEach(el => observer.observe(el));
 }
-
 window.openGiftModal = async (creatorPhone, creatorName) => {
   const senderPhone = localStorage.getItem("user");
   if (!senderPhone) return customAlert("Please login to send gifts!");
@@ -2360,63 +1850,35 @@ window.openGiftModal = async (creatorPhone, creatorName) => {
   const giftAmountStr = prompt(`Send Temple_DA gift to @${creatorName}:\nEnter amount of Temple_DA to transfer from your wallet:`);
   if (!giftAmountStr) return;
   const giftAmount = parseFloat(giftAmountStr);
-
   if (isNaN(giftAmount) || giftAmount <= 0) return customAlert("Invalid gift amount!");
 
   const senderSnap = await get(ref(db, "users/" + senderPhone));
   if (!senderSnap.exists()) return customAlert("Sender account not found!");
   const senderData = senderSnap.val();
-
-  if ((senderData.balance || 0) < giftAmount) {
-    return customAlert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
-  }
+  if ((senderData.balance || 0) < giftAmount) return customAlert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
 
   const creatorSnap = await get(ref(db, "users/" + creatorPhone));
   if (!creatorSnap.exists()) return customAlert("Creator account not found!");
   const creatorData = creatorSnap.val();
 
-  const newSenderBal = Number(((senderData.balance || 0) - giftAmount).toFixed(2));
-  const newCreatorBal = Number(((creatorData.balance || 0) + giftAmount).toFixed(2));
+  await update(ref(db, "users/" + senderPhone), { balance: Number(((senderData.balance || 0) - giftAmount).toFixed(2)) });
+  await update(ref(db, "users/" + creatorPhone), { balance: Number(((creatorData.balance || 0) + giftAmount).toFixed(2)) });
 
-  await update(ref(db, "users/" + senderPhone), { balance: newSenderBal });
-  await update(ref(db, "users/" + creatorPhone), { balance: newCreatorBal });
-
-  const giftData = {
-    amount: giftAmount,
-    timestamp: Date.now(),
-    senderPhone: senderPhone,
-    senderName: senderData.name || "Member",
-    recipientPhone: creatorPhone,
-    recipientName: creatorName
-  };
-
+  const giftData = { amount: giftAmount, timestamp: Date.now(), senderPhone: senderPhone, senderName: senderData.name || "Member", recipientPhone: creatorPhone, recipientName: creatorName };
   await push(ref(db, `gift_history/${senderPhone}/sent`), giftData);
   await push(ref(db, `gift_history/${creatorPhone}/received`), giftData);
-
   customAlert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
 };
-
-window.shareReel = (id) => {
-  const shareLink = `${location.origin}${location.pathname}#feed`;
-  copyToClipboard(shareLink);
-  customAlert("Reel link successfully copied to clipboard!");
-};
-
+window.shareReel = (id) => { copyToClipboard(`${location.origin}${location.pathname}#feed`); customAlert("Reel link successfully copied to clipboard!"); };
 window.openCommentsModal = (postId, encodedTitle) => {
   activePostIdForComments = postId;
   const modal = document.getElementById("commentModal");
   document.getElementById("chatReelTitle").innerText = decodeURIComponent(encodedTitle);
   modal.classList.add("open");
-
   onValue(ref(db, `post_comments/${postId}`), snap => {
     const list = document.getElementById("commentsList");
     if (!list) return;
-
-    if (!snap.exists()) {
-      list.innerHTML = `<p class="small center">No messages yet. Send a message to creator!</p>`;
-      return;
-    }
-
+    if (!snap.exists()) { list.innerHTML = `<p class="small center">No messages yet. Send a message to creator!</p>`; return; }
     let html = "";
     snap.forEach(c => {
       const m = c.val();
@@ -2427,39 +1889,23 @@ window.openCommentsModal = (postId, encodedTitle) => {
             <span class="small" style="font-size:10px;">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
           </div>
           <p style="font-size:14px; margin-top:4px; color:#fff;">${m.message}</p>
-        </div>
-      `;
+        </div>`;
     });
     list.innerHTML = html;
     list.scrollTop = list.scrollHeight;
   });
 };
-
-window.closeCommentsModal = () => {
-  const modal = document.getElementById("commentModal");
-  modal.classList.remove("open");
-  activePostIdForComments = null;
-};
-
+window.closeCommentsModal = () => { document.getElementById("commentModal").classList.remove("open"); activePostIdForComments = null; };
 window.submitReelComment = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login to message");
   if (!activePostIdForComments) return;
-
   const input = document.getElementById("chatInput");
   const message = input.value.trim();
   if (!message) return;
-
   const userSnap = await get(ref(db, "users/" + phone));
   const u = userSnap.exists() ? userSnap.val() : {};
-
-  await push(ref(db, `post_comments/${activePostIdForComments}`), {
-    senderPhone: phone,
-    senderName: u.name || "Community Member",
-    message: message,
-    time: Date.now()
-  });
-
+  await push(ref(db, `post_comments/${activePostIdForComments}`), { senderPhone: phone, senderName: u.name || "Community Member", message: message, time: Date.now() });
   input.value = "";
 };
 
@@ -2469,27 +1915,19 @@ window.submitReelComment = async () => {
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
-
   const priceUsd = await getPrice();
 
   onValue(ref(db, "users/" + phone), async snap => {
     const u = snap.val() || {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
-
     let expiryNotice = "";
     if (activeTier !== "none" && u.packageExpiresAt) {
       const msLeft = u.packageExpiresAt - Date.now();
       const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
       const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
-
-      if (daysLeft > 0) {
-        expiryNotice = `<span style="color:#00ff88; font-size:13px; font-weight:bold;">Active: ${daysLeft} days left (Valid till ${expDate})</span>`;
-      } else {
-        expiryNotice = `<span class="badge-expired">EXPIRED</span>`;
-      }
-    } else {
-      expiryNotice = `<span style="color:#aaa; font-size:13px;">No active package subscription</span>`;
-    }
+      if (daysLeft > 0) { expiryNotice = `<span style="color:#00ff88; font-size:13px; font-weight:bold;">Active: ${daysLeft} days left (Valid till ${expDate})</span>`; } 
+      else { expiryNotice = `<span class="badge-expired">EXPIRED</span>`; }
+    } else { expiryNotice = `<span style="color:#aaa; font-size:13px;">No active package subscription</span>`; }
 
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
@@ -2502,7 +1940,7 @@ async function userDashboard() {
 
     const maxDailyAllowed = getEffectiveTierLimit(u);
     const todayWithdrawn = (u.lastWithdrawDate === todayDateStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
-    const isCtoMember = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub;
+    const isCtoMember = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador;
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
@@ -2535,12 +1973,10 @@ async function userDashboard() {
             Qualify with a <strong>Strict Single-Shot $25+ Deposit</strong> to unlock Club 1 and climb 10 progressive clubs for up to <strong>$77,255 USDT</strong> cumulative net profit!
           </p>
           <p class="small" style="margin-top:6px;">
-            Status: <strong style="color:#dfb72c;">${u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Open Micro Staking (< $25)'))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
+            Status: <strong style="color:#dfb72c;">${u.isCrownAmbassador ? '👑 CROWN AMBASSADOR' : (u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Open Micro Staking (< $25)')))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
           </p>
         </div>
-        <div>
-          <a href="#ctoclub"><button class="btn-green" style="width:auto; padding:12px 24px; font-size:13px;">⚡ Open 10 CTO Clubs</button></a>
-        </div>
+        <div><a href="#ctoclub"><button class="btn-green" style="width:auto; padding:12px 24px; font-size:13px;">⚡ Open 10 CTO Clubs</button></a></div>
       </div>
       ${!isCtoMember ? `
         <div style="margin-top:14px; padding:10px 14px; background:rgba(223,183,44,0.12); border-radius:8px; border:1px dashed #dfb72c;">
@@ -2558,33 +1994,15 @@ async function userDashboard() {
         ${balTda.toFixed(2)} Temple_DA<br>
         <span class="small" style="color:#dfb72c;">$${balUsd} USDT</span>
       </div>
-
       <div class="card" style="border:1px solid #00ff88;">
         <h3>10% Activation Wallet</h3>
         <span class="number" style="color:#00ff88;">$${actWalletUSDT.toFixed(2)}</span> USDT<br>
         <span class="small">Credited on Admin Approval</span>
       </div>
-
-      <div class="card">
-        <h3>Talent Points</h3>
-        <span class="number">${Number(u.points || 0)}</span> Pts
-      </div>
-
-      <div class="card">
-        <h3>Referral Points Earned</h3>
-        <span class="number" id="totalRefPointsDisplay">0</span> Pts
-      </div>
-
-      <div class="card">
-        <h3>Subscribers</h3>
-        <span class="number">${Number(u.subscribersCount || 0)}</span>
-      </div>
-
-      <div class="card">
-        <h3>Total USDT Invested</h3>
-        ${u.investment || 0} USDT
-      </div>
-
+      <div class="card"><h3>Talent Points</h3><span class="number">${Number(u.points || 0)}</span> Pts</div>
+      <div class="card"><h3>Referral Points Earned</h3><span class="number" id="totalRefPointsDisplay">0</span> Pts</div>
+      <div class="card"><h3>Subscribers</h3><span class="number">${Number(u.subscribersCount || 0)}</span></div>
+      <div class="card"><h3>Total USDT Invested</h3>${u.investment || 0} USDT</div>
       <div class="card">
         <h3>Locked Yield</h3>
         ${Number(u.locked || 0).toFixed(2)} Temple_DA<br>
@@ -2593,11 +2011,7 @@ async function userDashboard() {
           <span class="number" id="nextReleaseCountdown" style="font-size: 12px; color: #00ff88;">Calculating...</span>
         </div>
       </div>
-
-      <div class="card">
-        <h3>Package</h3>
-        <span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span>
-      </div>
+      <div class="card"><h3>Package</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
     </div>
 
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
@@ -2606,9 +2020,7 @@ async function userDashboard() {
           <h3 style="color:#00ff88; margin-bottom:6px;">Creator Subscription Status</h3>
           <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
         </div>
-        <div>
-          <a href="#packages"><button style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a>
-        </div>
+        <div><a href="#packages"><button style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a></div>
       </div>
     </div>
 
@@ -2619,54 +2031,40 @@ async function userDashboard() {
         <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
         <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
       </select>
-
       <input id="talentTitle" placeholder="Title / Caption for Reel">
-      
       <div style="margin: 10px 0; padding: 12px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
-        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">
-          📁 Select Video/Image File from Device (Optional):
-        </label>
+        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📁 Select Video/Image File from Device (Optional):</label>
         <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 6px;">
         <p class="small" style="color:#888; margin-top:6px;">MP4, WebM, Images (Max 25MB)</p>
       </div>
-
       <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
       <input id="talentMedia" placeholder="Direct Video MP4 URL, Instagram or YouTube Shorts link">
       <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
-
       <div id="uploadProgressContainer" style="display:none; margin: 12px 0;">
         <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Processing File: 0%</p>
         <div style="background:#222; border-radius:6px; height:8px; overflow:hidden; margin-top:6px;">
           <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
         </div>
       </div>
-
       <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
     </div>
 
     <div class="card">
       <h3>Points to Temple_DA Converter</h3>
       <p class="small">200 Points = 1 Temple_DA (Min. 1000 Points required to convert. Requires Active Package or at least 1 Direct Referral).</p>
-      <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
-        Convert Points To Temple_DA
-      </button>
+      <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">Convert Points To Temple_DA</button>
     </div>
 
-    <!-- DIRECT WEB3 WALLET DEPOSIT CARD (HYBRID STAKING & SINGLE-SHOT CTO CHECK) -->
     <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
       <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
       <p class="small">
         • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
-        • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 ($75 Cap) Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
+        • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
       </p>
       <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:12px;">
-      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
-        ⚡ Deposit USDT via Web3 Wallet
-      </button>
-      <p class="small" style="color:#aaa;">* Ensure your connected wallet has BNB Smart Chain selected with a small amount of BNB for gas fees.</p>
+      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit USDT via Web3 Wallet</button>
     </div>
 
-    <!-- WITHDRAWAL CENTER: EFFECTIVE TIERS & ADMIN-DEFERRED ACTIVATION WALLET -->
     <div class="card" style="border: 2px solid #dfb72c;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <h3 style="margin:0;">Withdraw Temple_DA (90/10 Split & 0% Fee)</h3>
@@ -2675,7 +2073,6 @@ async function userDashboard() {
       <p class="small" style="color:#ccc; margin-bottom:12px;">
         Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP-20 address. The remaining <strong>10%</strong> converts to USDT and will be credited to your Activation Wallet immediately upon <strong>Admin Approval</strong>.
       </p>
-
       <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:12px 16px; margin-bottom:14px;">
         <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📊 Daily Withdrawal Tier Limits:</span>
         <div style="font-size:13px; color:#eee; line-height:1.6;">
@@ -2683,15 +2080,10 @@ async function userDashboard() {
           • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
           • <strong>High-Tier Staking ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
         </div>
-        <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">
-          Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)
-        </p>
+        <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)</p>
       </div>
-
       <input id="withdraw" placeholder="Enter Temple_DA amount to withdraw" type="number" step="any">
-      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">
-        ⚡ Request Withdrawal (90% Temple_DA to Wallet / 10% to Activation upon Approval)
-      </button>
+      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (90% Temple_DA to Wallet / 10% to Activation upon Approval)</button>
     </div>
 
     <div class="card">
@@ -2700,137 +2092,51 @@ async function userDashboard() {
     </div>
 
     <h3 style="margin-top:28px;">Account Histories & Records (Click To View)</h3>
-
-    <div class="accordion-wrapper" id="accReferrals">
-      <div class="accordion-header" onclick="toggleAccordion('accReferrals')">
-        <span>👥 15-Level Referral Income (25% Total Pool)</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="referralHistory">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accRefPointsHistory">
-      <div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')">
-        <span>🌟 Referral Points History (+20 Pts Earnings)</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="refPointsHistoryList">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accMasterPoints">
-      <div class="accordion-header" onclick="toggleAccordion('accMasterPoints')">
-        <span>📊 Master Points & Daily Login History</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="masterPointsHistoryList">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accMyPosts">
-      <div class="accordion-header" onclick="toggleAccordion('accMyPosts')">
-        <span>🎬 My Uploaded Reels & Posts</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="myUploadedPosts">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accGifts">
-      <div class="accordion-header" onclick="toggleAccordion('accGifts')">
-        <span>🎁 Gift History (Sent & Received)</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="giftHistory">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accPackages">
-      <div class="accordion-header" onclick="toggleAccordion('accPackages')">
-        <span>📦 Package Activation History</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="packageHistory">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accInvest">
-      <div class="accordion-header" onclick="toggleAccordion('accInvest')">
-        <span>💰 Investment History</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="investHistory">Loading...</div>
-    </div>
-
-    <div class="accordion-wrapper" id="accWithdraw">
-      <div class="accordion-header" onclick="toggleAccordion('accWithdraw')">
-        <span>📤 Withdrawal History (90% Tokens, 10% Activation USDT)</span>
-        <span>▼</span>
-      </div>
-      <div class="accordion-content" id="withdrawHistory">Loading...</div>
-    </div>
-
-    <div class="card center" style="margin-top:22px;">
-      <button onclick="logout()">Logout</button>
-    </div>
+    <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 15-Level Referral Income (25% Total Pool)</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accRefPointsHistory"><div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')"><span>🌟 Referral Points History (+20 Pts Earnings)</span><span>▼</span></div><div class="accordion-content" id="refPointsHistoryList">Loading...</div></div>
+    <div class="accordion-wrapper" id="accMasterPoints"><div class="accordion-header" onclick="toggleAccordion('accMasterPoints')"><span>📊 Master Points & Daily Login History</span><span>▼</span></div><div class="accordion-content" id="masterPointsHistoryList">Loading...</div></div>
+    <div class="accordion-wrapper" id="accMyPosts"><div class="accordion-header" onclick="toggleAccordion('accMyPosts')"><span>🎬 My Uploaded Reels & Posts</span><span>▼</span></div><div class="accordion-content" id="myUploadedPosts">Loading...</div></div>
+    <div class="accordion-wrapper" id="accGifts"><div class="accordion-header" onclick="toggleAccordion('accGifts')"><span>🎁 Gift History (Sent & Received)</span><span>▼</span></div><div class="accordion-content" id="giftHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accPackages"><div class="accordion-header" onclick="toggleAccordion('accPackages')"><span>📦 Package Activation History</span><span>▼</span></div><div class="accordion-content" id="packageHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accInvest"><div class="accordion-header" onclick="toggleAccordion('accInvest')"><span>💰 Investment History</span><span>▼</span></div><div class="accordion-content" id="investHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accWithdraw"><div class="accordion-header" onclick="toggleAccordion('accWithdraw')"><span>📤 Withdrawal History (90% Tokens, 10% Activation USDT)</span><span>▼</span></div><div class="accordion-content" id="withdrawHistory">Loading...</div></div>
+    <div class="card center" style="margin-top:22px;"><button onclick="logout()">Logout</button></div>
     `;
 
     startReleaseCountdown(u.lockDate, u.locked);
-    loadReferralHistory(phone);
-    loadReferralPointsHistory(phone);
-    loadMasterPointsHistory(phone);
-    loadInvestHistory(phone);
-    loadWithdrawHistory(phone);
-    loadPackageHistory(phone);
-    loadMyPosts(phone);
-    loadGiftHistory(phone);
+    loadReferralHistory(phone); loadReferralPointsHistory(phone); loadMasterPointsHistory(phone);
+    loadInvestHistory(phone); loadWithdrawHistory(phone); loadPackageHistory(phone);
+    loadMyPosts(phone); loadGiftHistory(phone);
   });
 }
 
 function startReleaseCountdown(lockDate, lockedAmount) {
   const countdownEl = document.getElementById("nextReleaseCountdown");
   if (!countdownEl) return;
-
-  if (!lockedAmount || lockedAmount <= 0 || !lockDate) {
-    countdownEl.innerText = "No locked tokens";
-    return;
-  }
-
+  if (!lockedAmount || lockedAmount <= 0 || !lockDate) { countdownEl.innerText = "No locked tokens"; return; }
   const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
   const nextReleaseTime = lockDate + thirtyDaysMs;
-
   const interval = setInterval(() => {
     const now = Date.now();
     const timeLeft = nextReleaseTime - now;
-
-    if (!document.getElementById("nextReleaseCountdown")) {
-      clearInterval(interval);
-      return;
-    }
-
-    if (timeLeft <= 0) {
-      countdownEl.innerText = "Ready! Refresh page";
-      clearInterval(interval);
-      return;
-    }
-
+    if (!document.getElementById("nextReleaseCountdown")) { clearInterval(interval); return; }
+    if (timeLeft <= 0) { countdownEl.innerText = "Ready! Refresh page"; clearInterval(interval); return; }
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((timeLeft % (1000 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
     const formattedDate = new Date(nextReleaseTime).toLocaleDateString();
     countdownEl.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s (${formattedDate})`;
   }, 1000);
 }
 
-// -------------------------------------------------------------
-// WITHDRAWAL: IMMEDIATE BALANCE DEDUCTION & DEFERRED ACTIVATION WALLET
-// -------------------------------------------------------------
 window.withdraw = async () => {
   const phone = localStorage.getItem("user");
   const withdrawInput = document.getElementById("withdraw");
   const amount = parseFloat(withdrawInput ? withdrawInput.value.trim() : "0");
   const priceUsd = await getPrice();
   
-  if (!amount || amount <= 0) {
-    return customAlert("Please enter a valid Temple_DA withdrawal amount!");
-  }
+  if (!amount || amount <= 0) return customAlert("Please enter a valid Temple_DA withdrawal amount!");
 
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return customAlert("User session not found!");
@@ -2839,7 +2145,7 @@ window.withdraw = async () => {
   const investment = Number(u.investment || 0);
   const activeTier = checkAndHandlePackageExpiry(phone, u);
   const hasValidActivePackage = activeTier !== "none" && u.packageExpiresAt && Date.now() <= u.packageExpiresAt;
-  const isCtoActive = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub;
+  const isCtoActive = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador;
 
   if (investment <= 0 && !hasValidActivePackage && !isCtoActive) {
     return customAlert("An active account status (Investment, Active Creator Package, or Active CTO Club Membership) is required before making withdrawals!");
@@ -2847,78 +2153,36 @@ window.withdraw = async () => {
 
   const now = new Date();
   const todayDateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  
   let lastWithdrawDate = u.lastWithdrawDate || "";
   let todayWithdrawnAmount = Number(u.todayWithdrawnAmount || 0);
-
-  if (lastWithdrawDate !== todayDateString) {
-    todayWithdrawnAmount = 0;
-  }
+  if (lastWithdrawDate !== todayDateString) todayWithdrawnAmount = 0;
 
   const maxDailyAllowed = getEffectiveTierLimit(u);
-
-  if (todayWithdrawnAmount >= maxDailyAllowed) {
-    return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account tier allows a maximum of ${maxDailyAllowed} Temple_DA per day. You have already withdrawn ${todayWithdrawnAmount} Temple_DA today.`);
-  }
-
-  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
-    const remainingLimit = maxDailyAllowed - todayWithdrawnAmount;
-    return customAlert(`⚠️ Daily Limit Exceeded!\nYou can withdraw a maximum of ${remainingLimit} Temple_DA more today.`);
-  }
-
-  if (amount > (u.balance || 0)) {
-    return customAlert("Insufficient Temple_DA balance!");
-  }
+  if (todayWithdrawnAmount >= maxDailyAllowed) return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account tier allows a maximum of ${maxDailyAllowed} Temple_DA per day. You have already withdrawn ${todayWithdrawnAmount} Temple_DA today.`);
+  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) return customAlert(`⚠️ Daily Limit Exceeded!\nYou can withdraw a maximum of ${maxDailyAllowed - todayWithdrawnAmount} Temple_DA more today.`);
+  if (amount > (u.balance || 0)) return customAlert("Insufficient Temple_DA balance!");
   
   const userWallet = u.wallet;
-  if (!userWallet || !walletRegex.test(userWallet)) {
-    return customAlert("No valid BEP20 wallet linked to your account!");
-  }
+  if (!userWallet || !walletRegex.test(userWallet)) return customAlert("No valid BEP20 wallet linked to your account!");
 
-  // 90% Net Temple_DA tokens and 10% USDT calculated
   const ninetyPercentTokens = Number((amount * 0.90).toFixed(2));
   const tenPercentTokens = Number((amount * 0.10).toFixed(2));
   const tenPercentUSDT = Number((tenPercentTokens * priceUsd).toFixed(2));
 
-  // Deduct balance immediately:
-  // Activation wallet is NOT credited yet. It is held pending until admin approves.
   const newBalance = Number((u.balance - amount).toFixed(2));
   const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
 
-  await update(ref(db, "users/" + phone), {
-    balance: newBalance,
-    lastWithdrawDate: todayDateString,
-    todayWithdrawnAmount: newTodayWithdrawn
-  });
+  await update(ref(db, "users/" + phone), { balance: newBalance, lastWithdrawDate: todayDateString, todayWithdrawnAmount: newTodayWithdrawn });
 
   const reqRef = push(ref(db, "withdrawals/pending"));
   const reqKey = reqRef.key;
-
-  await set(reqRef, {
-    phone: phone,
-    amount: ninetyPercentTokens,
-    totalRequested: amount,
-    tenPercentActivationUSDT: tenPercentUSDT,
-    wallet: userWallet,
-    timestamp: Date.now()
-  });
-
-  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
-    amount: ninetyPercentTokens,
-    totalRequested: amount,
-    tenPercentActivationUSDT: tenPercentUSDT,
-    wallet: userWallet,
-    timestamp: Date.now(),
-    status: "Pending Admin Approval (10% Activation USDT will credit upon approval)"
-  });
+  await set(reqRef, { phone: phone, amount: ninetyPercentTokens, totalRequested: amount, tenPercentActivationUSDT: tenPercentUSDT, wallet: userWallet, timestamp: Date.now() });
+  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { amount: ninetyPercentTokens, totalRequested: amount, tenPercentActivationUSDT: tenPercentUSDT, wallet: userWallet, timestamp: Date.now(), status: "Pending Admin Approval (10% Activation USDT will credit upon approval)" });
 
   if (withdrawInput) withdrawInput.value = "";
   customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• ${amount} Temple_DA deducted from balance immediately.\n• 90% (${ninetyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) will be credited to your Activation Wallet once approved by admin.\n• Today's Withdrawn: ${newTodayWithdrawn} / ${maxDailyAllowed} Temple_DA.`);
 };
 
-// -------------------------------------------------------------
-// STRICT SINGLE-SHOT $25+ HYBRID DEPOSIT & CTO ALLOCATION
-// -------------------------------------------------------------
 window.makeDirectUSDTDeposit = async () => {
   const phone = localStorage.getItem("user");
   const investInput = document.getElementById("invest");
@@ -2931,150 +2195,77 @@ window.makeDirectUSDTDeposit = async () => {
   const u = userSnap.val();
 
   const currentInvestment = Number(u.investment || 0);
-  if (currentInvestment + amount > 500) {
-    return customAlert(`Maximum total investment limit is 500 USDT!\nYour current investment is ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
-  }
+  if (currentInvestment + amount > 500) return customAlert(`Maximum total investment limit is 500 USDT!\nYour current investment is ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
 
   try {
     const { tx } = await executeUsdtTransfer(amount, `${amount} USDT Investment Deposit`);
-
     const currentPrice = await getPrice();
     const temple_DA = Number((amount / currentPrice).toFixed(2));
     
-    const newInvestment = currentInvestment + amount;
-    const newLocked = Number(u.locked || 0) + temple_DA;
-    const newMonthlyBiz = Number(u.monthlyBusiness || 0) + amount;
-
     await update(ref(db, "users/" + phone), {
-      investment: newInvestment,
-      locked: newLocked,
-      monthlyBiz: newMonthlyBiz,
-      lockDate: u.lockDate || Date.now()
+      investment: currentInvestment + amount, locked: Number(u.locked || 0) + temple_DA,
+      monthlyBusiness: Number(u.monthlyBusiness || 0) + amount, lockDate: u.lockDate || Date.now()
     });
+    await push(ref(db, "investments/history/" + phone), { amountUSDT: amount, txHash: tx.hash, timestamp: Date.now() });
 
-    await push(ref(db, "investments/history/" + phone), {
-      amountUSDT: amount,
-      txHash: tx.hash,
-      timestamp: Date.now()
-    });
-
-    // STRICT SINGLE-SHOT $25+ QUALIFICATION CHECK
     const isSingleShotEligible = (amount >= 25);
-    const notInAnyClubYet = (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub;
+    const notInAnyClubYet = (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador;
 
     if (isSingleShotEligible && notInAnyClubYet) {
-      // 100% Inflow Master Breakup (25% Referral, 10% CTO, 50% LP, 15% Admin)
       await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
-      
-      // Auto-assign Club 1 Slot or FIFO Waiting List
       await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
     } else {
-      // Pure Micro-Staking (< $25) or additional top-up: distribute standard 15-level staking commission
-      if (u.referrer) {
-        await distribute15LevelCommission(u.referrer, amount, phone, `Staking Investment ($${amount})`);
-      }
+      if (u.referrer) await distribute15LevelCommission(u.referrer, amount, phone, `Staking Investment ($${amount})`);
     }
 
     if (investInput) investInput.value = "";
-
     let qualificationNote = "";
-    if (isSingleShotEligible && notInAnyClubYet) {
-      qualificationNote = `\n\n👑 Single-shot deposit of $${amount} qualified you for Club 1 • Bronze Pillar ($75 Cap) & Daily withdrawal limit raised to 1,000 Temple_DA!`;
-    } else if (amount < 25 && notInAnyClubYet) {
-      qualificationNote = `\n\n💡 Note: Micro-staking (< $25) provides 5% monthly vesting. To unlock Club 1 and 1,000 TDA daily withdrawal limit, deposit a single-shot of $25+ anytime!`;
-    }
+    if (isSingleShotEligible && notInAnyClubYet) qualificationNote = `\n\n👑 Single-shot deposit of $${amount} qualified you for Club 1 • Bronze Pillar ($75 Cap) & Daily withdrawal limit raised to 1,000 Temple_DA!`;
+    else if (amount < 25 && notInAnyClubYet) qualificationNote = `\n\n💡 Note: Micro-staking (< $25) provides 5% monthly vesting. To unlock Club 1 and 1,000 TDA daily withdrawal limit, deposit a single-shot of $25+ anytime!`;
 
     customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield (5% monthly release)!${qualificationNote}`);
-  } catch (error) {
-    console.error("Direct deposit error:", error);
-    customAlert("Deposit Failed: " + formatWeb3Error(error));
-  }
+  } catch (error) { customAlert("Deposit Failed: " + formatWeb3Error(error)); }
 };
 
 function loadMyPosts(phone) {
   onValue(ref(db, "posts"), snap => {
     const container = document.getElementById("myUploadedPosts");
     if (!container) return;
-
-    if (!snap.exists()) {
-      container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`;
-      return;
-    }
-
+    if (!snap.exists()) { container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`; return; }
     let myPosts = [];
-    snap.forEach(child => {
-      const p = child.val();
-      if (p.authorPhone === phone) {
-        myPosts.push({ id: child.key, ...p });
-      }
-    });
-
-    if (myPosts.length === 0) {
-      container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`;
-      return;
-    }
-
+    snap.forEach(child => { const p = child.val(); if (p.authorPhone === phone) myPosts.push({ id: child.key, ...p }); });
+    if (myPosts.length === 0) { container.innerHTML = `<p class="small">You haven't uploaded any reels yet.</p>`; return; }
     myPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-    let html = `<table>
-      <tr>
-        <th>Type</th>
-        <th>Title</th>
-        <th>Likes</th>
-        <th>Action</th>
-      </tr>`;
-
+    let html = `<table><tr><th>Type</th><th>Title</th><th>Likes</th><th>Action</th></tr>`;
     myPosts.forEach(p => {
-      html += `
-        <tr>
-          <td><span class="badge-tag">${p.type}</span></td>
-          <td><b>${p.title}</b></td>
-          <td><span class="number">${p.likesCount || 0}</span></td>
-          <td>
-            <button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `;
+      html += `<tr><td><span class="badge-tag">${p.type}</span></td><td><b>${p.title}</b></td><td><span class="number">${p.likesCount || 0}</span></td>
+      <td><button onclick="deleteMyPost('${p.id}', '${p.storagePath || ''}')" class="btn-danger" style="width:auto; padding:5px 12px; font-size:11px;">Delete</button></td></tr>`;
     });
-
-    html += `</table>`;
-    container.innerHTML = html;
+    container.innerHTML = html + `</table>`;
   });
 }
 
 async function checkDailyVideoLimit(phone, userTier) {
   if (userTier === "yearly") return true;
-
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
   try {
     const postsSnap = await get(ref(db, "posts"));
     let todayVideoCount = 0;
-
     if (postsSnap.exists()) {
       postsSnap.forEach(s => {
         const p = s.val();
-        if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) {
-          todayVideoCount++;
-        }
+        if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) todayVideoCount++;
       });
     }
-
-    let maxAllowed = 2;
-    if (userTier === "monthly") maxAllowed = 5;
-
+    let maxAllowed = userTier === "monthly" ? 5 : 2;
     if (todayVideoCount >= maxAllowed) {
       customAlert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
       return false;
     }
     return true;
-  } catch (err) {
-    console.error("Limit check error:", err);
-    return false;
-  }
+  } catch (err) { return false; }
 }
 
 window.publishTalent = async () => {
@@ -3082,57 +2273,33 @@ window.publishTalent = async () => {
   try {
     const phone = localStorage.getItem("user");
     if (!phone) return customAlert("Please login first");
-
     const userSnap = await get(ref(db, "users/" + phone));
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    if (activeTier === "none") {
-      return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package (Starter, Pro, or Elite Yearly) before publishing reels and videos.");
-    }
+    if (activeTier === "none") return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package before publishing reels and videos.");
 
-    const typeEl = document.getElementById("talentType");
-    const titleEl = document.getElementById("talentTitle");
-    const mediaEl = document.getElementById("talentMedia");
-    const descEl = document.getElementById("talentText");
-    const fileInput = document.getElementById("talentFile");
-
-    const type = typeEl ? typeEl.value : "video";
-    const title = titleEl ? titleEl.value.trim() : "";
+    const typeEl = document.getElementById("talentType"), titleEl = document.getElementById("talentTitle"), mediaEl = document.getElementById("talentMedia"), descEl = document.getElementById("talentText"), fileInput = document.getElementById("talentFile");
+    const type = typeEl ? typeEl.value : "video", title = titleEl ? titleEl.value.trim() : "";
     let mediaUrl = mediaEl ? mediaEl.value.trim() : "";
-    const description = descEl ? descEl.value.trim() : "";
-    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    const description = descEl ? descEl.value.trim() : "", file = fileInput && fileInput.files ? fileInput.files[0] : null;
 
     if (!title) return customAlert("Please enter title/caption!");
-
     if (type === "video") {
       const isAllowed = await checkDailyVideoLimit(phone, activeTier);
-      if (!isAllowed) {
-        if (publishBtn) publishBtn.disabled = false;
-        return; 
-      }
+      if (!isAllowed) { if (publishBtn) publishBtn.disabled = false; return; }
     }
 
     let storagePath = "";
-    const progressContainer = document.getElementById("uploadProgressContainer");
-    const progressBar = document.getElementById("uploadProgressBar");
-    const statusText = document.getElementById("uploadStatusText");
+    const progressContainer = document.getElementById("uploadProgressContainer"), progressBar = document.getElementById("uploadProgressBar"), statusText = document.getElementById("uploadStatusText");
 
     if (file) {
       if (file.size > 25 * 1024 * 1024) return customAlert("File size must be less than 25MB for direct upload!");
-
       if (publishBtn) publishBtn.disabled = true;
       if (progressContainer) progressContainer.style.display = "block";
       if (statusText) statusText.innerText = "Processing & Converting file...";
-
       try {
-        mediaUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.onerror = (e) => reject(e);
-          reader.readAsDataURL(file);
-        });
-
+        mediaUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.onerror = (e) => reject(e); reader.readAsDataURL(file); });
         if (progressBar) progressBar.style.width = "100%";
       } catch (fileErr) {
         if (publishBtn) publishBtn.disabled = false;
@@ -3148,34 +2315,13 @@ window.publishTalent = async () => {
     }
 
     const newPostRef = push(ref(db, "posts"));
-    await set(newPostRef, {
-      authorPhone: phone,
-      authorName: u.name || "Creator",
-      type: type || "video",
-      title: title,
-      mediaUrl: mediaUrl || "",
-      storagePath: storagePath || "",
-      description: description || "",
-      likesCount: 0,
-      createdAt: Date.now()
-    });
+    await set(newPostRef, { authorPhone: phone, authorName: u.name || "Creator", type: type || "video", title: title, mediaUrl: mediaUrl || "", storagePath: storagePath || "", description: description || "", likesCount: 0, createdAt: Date.now() });
 
     let earnPts = type === "video" ? 3 : 1;
     await update(ref(db, "users/" + phone), { points: Number(u.points || 0) + earnPts });
-    
-    await push(ref(db, `points_history/${phone}`), {
-      source: "Post Upload",
-      points: earnPts,
-      timestamp: Date.now()
-    });
+    await push(ref(db, `points_history/${phone}`), { source: "Post Upload", points: earnPts, timestamp: Date.now() });
 
-    window.showModalPopup(
-      "Post Published! 🎉", 
-      "You earned points for sharing your talent.", 
-      `+${earnPts} XP Points`, 
-      "Awesome!"
-    );
-
+    window.showModalPopup("Post Published! 🎉", "You earned points for sharing your talent.", `+${earnPts} XP Points`, "Awesome!");
     location.hash = "#feed";
   } catch (error) {
     if (publishBtn) publishBtn.disabled = false;
@@ -3184,24 +2330,15 @@ window.publishTalent = async () => {
 };
 
 window.deleteMyPost = async (postId, storagePath) => {
-  const phone = localStorage.getItem("user");
-  const isAdmin = localStorage.getItem("admin");
-
+  const phone = localStorage.getItem("user"), isAdmin = localStorage.getItem("admin");
   if (!phone && !isAdmin) return customAlert("Please login first");
-  
   customConfirm("Are you sure you want to delete this reel?", async () => {
     try {
       const postSnap = await get(ref(db, "posts/" + postId));
-      if (postSnap.exists() && storagePath) {
-        try { await deleteObject(sRef(storage, storagePath)); } catch (e) {}
-      }
-      await remove(ref(db, "posts/" + postId));
-      await remove(ref(db, "likes/" + postId));
-      await remove(ref(db, "post_comments/" + postId));
+      if (postSnap.exists() && storagePath) { try { await deleteObject(sRef(storage, storagePath)); } catch (e) {} }
+      await remove(ref(db, "posts/" + postId)); await remove(ref(db, "likes/" + postId)); await remove(ref(db, "post_comments/" + postId));
       customAlert("Reel successfully deleted!");
-    } catch (err) {
-      customAlert("Delete error: " + err.message);
-    }
+    } catch (err) { customAlert("Delete error: " + err.message); }
   });
 };
 
@@ -3230,38 +2367,19 @@ window.likePost = async (postId) => {
     const authorSnap = await get(ref(db, "users/" + authorPhone));
     if (authorSnap.exists()) {
       await update(ref(db, "users/" + authorPhone), { points: Number(authorSnap.val().points || 0) + creatorPts });
-      await push(ref(db, `points_history/${authorPhone}`), {
-        source: "Reel Like / View",
-        points: creatorPts,
-        timestamp: Date.now()
-      });
+      await push(ref(db, `points_history/${authorPhone}`), { source: "Reel Like / View", points: creatorPts, timestamp: Date.now() });
     }
 
     if (viewerPts > 0) {
       const viewerSnap = await get(ref(db, "users/" + userPhone));
       if (viewerSnap.exists()) {
         await update(ref(db, "users/" + userPhone), { points: Number(viewerSnap.val().points || 0) + viewerPts });
-        await push(ref(db, `points_history/${userPhone}`), {
-          source: "Reel Like / View",
-          points: viewerPts,
-          timestamp: Date.now()
-        });
-        
-        window.showModalPopup(
-          "Points Earned! ⭐", 
-          "You liked a reel.", 
-          `+${viewerPts} XP Points`, 
-          "Awesome!"
-        );
+        await push(ref(db, `points_history/${userPhone}`), { source: "Reel Like / View", points: viewerPts, timestamp: Date.now() });
+        window.showModalPopup("Points Earned! ⭐", "You liked a reel.", `+${viewerPts} XP Points`, "Awesome!");
       }
-    } else {
-      customAlert("Liked successfully!");
-    }
-    
+    } else { customAlert("Liked successfully!"); }
     feedPage();
-  } catch (err) {
-    customAlert("Like error: " + err.message);
-  }
+  } catch (err) { customAlert("Like error: " + err.message); }
 };
 
 window.subscribeCreator = async (creatorPhone) => {
@@ -3271,56 +2389,30 @@ window.subscribeCreator = async (creatorPhone) => {
     if (subscriberPhone === creatorPhone) return customAlert("You cannot follow yourself");
 
     await set(ref(db, `subscriptions/${creatorPhone}/${subscriberPhone}`), true);
-
     const creatorSnap = await get(ref(db, "users/" + creatorPhone));
     if (creatorSnap.exists()) {
-      await update(ref(db, "users/" + creatorPhone), {
-        subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1,
-        points: Number(creatorSnap.val().points || 0) + 35
-      });
-      await push(ref(db, `points_history/${creatorPhone}`), {
-        source: "Creator Subscription",
-        points: 35,
-        timestamp: Date.now()
-      });
+      await update(ref(db, "users/" + creatorPhone), { subscribersCount: Number(creatorSnap.val().subscribersCount || 0) + 1, points: Number(creatorSnap.val().points || 0) + 35 });
+      await push(ref(db, `points_history/${creatorPhone}`), { source: "Creator Subscription", points: 35, timestamp: Date.now() });
     }
-
     const subSnap = await get(ref(db, "users/" + subscriberPhone));
     if (subSnap.exists()) {
-      await update(ref(db, "users/" + subscriberPhone), {
-        points: Number(subSnap.val().points || 0) + 15
-      });
-      await push(ref(db, `points_history/${subscriberPhone}`), {
-        source: "Creator Subscription",
-        points: 15,
-        timestamp: Date.now()
-      });
-      
-      window.showModalPopup(
-        "Subscribed! 🌟", 
-        "You followed a creator.", 
-        "+15 XP Points", 
-        "Keep Exploring!"
-      );
+      await update(ref(db, "users/" + subscriberPhone), { points: Number(subSnap.val().points || 0) + 15 });
+      await push(ref(db, `points_history/${subscriberPhone}`), { source: "Creator Subscription", points: 15, timestamp: Date.now() });
+      window.showModalPopup("Subscribed! 🌟", "You followed a creator.", "+15 XP Points", "Keep Exploring!");
     }
     feedPage();
-  } catch (err) {
-    customAlert("Subscribe error: " + err.message);
-  }
+  } catch (err) { customAlert("Subscribe error: " + err.message); }
 };
 
 window.convertPointsToToken = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login");
-
   const snap = await get(ref(db, "users/" + phone));
   if (!snap.exists()) return customAlert("User not found");
   const u = snap.val();
 
   const currentPoints = Number(u.points || 0);
-  if (currentPoints < 1000) {
-    return customAlert("Minimum 1000 points required to convert to Temple_DA.");
-  }
+  if (currentPoints < 1000) return customAlert("Minimum 1000 points required to convert to Temple_DA.");
 
   const activeTier = checkAndHandlePackageExpiry(phone, u);
   const hasActivePackage = activeTier !== "none";
@@ -3328,17 +2420,10 @@ window.convertPointsToToken = async () => {
   let directReferralsCount = 0;
   const allUsersSnap = await get(ref(db, "users"));
   if (allUsersSnap.exists()) {
-    allUsersSnap.forEach(child => {
-      const childData = child.val();
-      if (childData.referrer === phone) {
-        directReferralsCount++;
-      }
-    });
+    allUsersSnap.forEach(child => { if (child.val().referrer === phone) directReferralsCount++; });
   }
 
-  if (!hasActivePackage && directReferralsCount < 1) {
-    return customAlert("⚠️ Conversion Restricted!\nTo convert your points to Temple_DA, you must either have an Active Package or at least 1 Direct Referral.");
-  }
+  if (!hasActivePackage && directReferralsCount < 1) return customAlert("⚠️ Conversion Restricted!\nTo convert your points to Temple_DA, you must either have an Active Package or at least 1 Direct Referral.");
 
   const convertiblePoints = Math.floor(currentPoints / 200) * 200;
   const remainingPoints = currentPoints - convertiblePoints;
@@ -3351,19 +2436,14 @@ window.convertPointsToToken = async () => {
 
 async function packagesPage() {
   const phone = localStorage.getItem("user");
-  let currentTier = "none";
-  let expiryDateString = "";
-  let userBalance = 0;
-
+  let currentTier = "none", expiryDateString = "", userBalance = 0;
   if (phone) {
     const userSnap = await get(ref(db, "users/" + phone));
     if (userSnap.exists()) {
       const u = userSnap.val();
       currentTier = checkAndHandlePackageExpiry(phone, u);
       userBalance = u.balance || 0;
-      if (currentTier !== "none" && u.packageExpiresAt) {
-        expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
-      }
+      if (currentTier !== "none" && u.packageExpiresAt) expiryDateString = new Date(u.packageExpiresAt).toLocaleDateString();
     }
   }
 
@@ -3423,44 +2503,24 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
 
   try {
     const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Package Upgrade`);
-
-    const activatedAt = Date.now();
-    const expiresAt = activatedAt + getPackageDurationMs(tierName);
-
+    const activatedAt = Date.now(), expiresAt = activatedAt + getPackageDurationMs(tierName);
     const userSnap = await get(ref(db, "users/" + phone));
     const u = userSnap.exists() ? userSnap.val() : {};
 
     await update(ref(db, "users/" + phone), {
-      tier: tierName,
-      packagePriceUSDT: usdtAmount,
-      packageActivatedAt: activatedAt,
-      packageExpiresAt: expiresAt,
-      packageExpired: false,
-      monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
+      tier: tierName, packagePriceUSDT: usdtAmount, packageActivatedAt: activatedAt,
+      packageExpiresAt: expiresAt, packageExpired: false, monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
     });
+    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, txHash: tx.hash, timestamp: Date.now() });
 
-    await push(ref(db, "packages/history/" + phone), {
-      tier: tierName,
-      amountUSDT: usdtAmount,
-      txHash: tx.hash,
-      timestamp: Date.now()
-    });
-
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package`);
-    }
-
+    if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package`);
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
-  } catch (error) {
-    console.error("Package upgrade error:", error);
-    customAlert("Package activation failed: " + formatWeb3Error(error));
-  }
+  } catch (error) { customAlert("Package activation failed: " + formatWeb3Error(error)); }
 };
 
 window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
-
   const userSnap = await get(ref(db, "users/" + phone));
   if (!userSnap.exists()) return customAlert("User not found");
   const u = userSnap.val();
@@ -3469,35 +2529,20 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
   const requiredTokens = Number((usdtAmount / currentPrice).toFixed(2));
   const currentBalance = Number(u.balance || 0);
 
-  if (currentBalance < requiredTokens) {
-    return customAlert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
-  }
+  if (currentBalance < requiredTokens) return customAlert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
 
   customConfirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} package?`, async () => {
-    const activatedAt = Date.now();
-    const expiresAt = activatedAt + getPackageDurationMs(tierName);
+    const activatedAt = Date.now(), expiresAt = activatedAt + getPackageDurationMs(tierName);
     const newBalance = Number((currentBalance - requiredTokens).toFixed(2));
 
     await update(ref(db, "users/" + phone), {
-      balance: newBalance,
-      tier: tierName,
-      packagePriceUSDT: usdtAmount,
-      packageActivatedAt: activatedAt,
-      packageExpiresAt: expiresAt,
-      packageExpired: false,
+      balance: newBalance, tier: tierName, packagePriceUSDT: usdtAmount,
+      packageActivatedAt: activatedAt, packageExpiresAt: expiresAt, packageExpired: false,
       monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
     });
+    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
 
-    await push(ref(db, "packages/history/" + phone), {
-      tier: tierName,
-      amountUSDT: usdtAmount,
-      timestamp: Date.now()
-    });
-
-    if (u.referrer) {
-      await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package (Balance)`);
-    }
-
+    if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package (Balance)`);
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
   });
 };
@@ -3511,28 +2556,23 @@ async function adminDashboard() {
   const priceUsd = await getPrice();
   const masterSnap = await get(ref(db, "cto_master"));
   const master = masterSnap.exists() ? masterSnap.val() : {
-    totalInflowUSDT: 0, lpPoolUSDT: 0, adminReserveUSDT: 0, cto8PoolUSDT: 0, cto2WaitingPoolUSDT: 0
+    totalInflowUSDT: 0, lpPoolUSDT: 0, adminReserveUSDT: 0, ambassadorPoolUSDT: 0, cto8PoolUSDT: 0, cto2WaitingPoolUSDT: 0
   };
 
   const queueSnap = await get(ref(db, "cto_waiting_queue"));
   let queueCount = 0;
-  if (queueSnap.exists()) {
-    queueCount = Object.keys(queueSnap.val()).length;
-  }
+  if (queueSnap.exists()) queueCount = Object.keys(queueSnap.val()).length;
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
     snap.forEach(s => {
-      const p = s.key;
-      const u = s.val();
-      const balTda = Number(u.balance || 0);
-
+      const p = s.key, u = s.val(), balTda = Number(u.balance || 0);
       rows += `
       <tr>
       <td>${p}</td>
       <td>${u.name || 'Member'}</td>
       <td style="font-family:monospace; font-size:11px; color:#00ff88;">${u.wallet || 'N/A'}</td>
-      <td><span class="badge-tag">${u.ctoActiveClub > 0 ? `Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `Queue C${u.inHoldingQueueForClub}` : (u.inWaitingQueue ? 'In Queue' : 'Micro'))}</span></td>
+      <td><span class="badge-tag">${u.isCrownAmbassador ? '👑 CROWN' : (u.ctoActiveClub > 0 ? `Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `Queue C${u.inHoldingQueueForClub}` : (u.inWaitingQueue ? 'In Queue' : 'Micro')))}</span></td>
       <td>${balTda.toFixed(2)} Temple_DA</td>
       <td style="color:#00ff88; font-weight:bold;">$${(u.activationWallet || 0).toFixed(2)}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
@@ -3557,14 +2597,14 @@ async function adminDashboard() {
         <tr><td>Total System Inflow:</td><td class="number">$${(master.totalInflowUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>8% CTO Active Club Pool:</td><td style="color:#00ff88; font-weight:bold;">$${(master.cto8PoolUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>2% FIFO Waiting Pool:</td><td style="color:#dfb72c; font-weight:bold;">$${(master.cto2WaitingPoolUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>1% Crown Ambassador Royalty:</td><td style="color:#cc66ff; font-weight:bold;">$${(master.ambassadorPoolUSDT || 0).toFixed(2)} USDT (0 If No Ambassadors)</td></tr>
         <tr><td>50% Core Liquidity Pool (LP):</td><td style="color:#3399ff; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>15% Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>14% Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>Members in FIFO Waiting Queue:</td><td class="number">${queueCount} Users</td></tr>
       </table>
-
       <div style="display:flex; gap:12px; margin-top:14px; flex-wrap:wrap;">
         <button onclick="runCtoGlobalDistribution()" class="btn-green" style="flex:1;">
-          ⚡ Execute 8% Club & 2% Waiting Pool Distribution
+          ⚡ Execute Instant Auto-Upgrade Distribution & 1% Royalty
         </button>
         <button onclick="runFairInvestorMigration()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; flex:1;">
           🏛️ Run Fair Legacy Migration (Single-Shot >= $25)
@@ -3576,35 +2616,25 @@ async function adminDashboard() {
       <h2>Admin Controls & Settings</h2>
       <input id="price" placeholder="Override Temple_DA USD price">
       <button onclick="updatePrice()">Update Price Override</button>
-
       <div style="margin-top:18px; border-top:1px solid rgba(223,183,44,0.3); padding-top:14px;">
         <label class="small" style="color:#dfb72c; font-weight:bold;">Temple_DA Contract Address (Configured):</label>
         <input id="adminTokenAddress" value="${TEMPLE_DA_CONTRACT}" readonly style="color:#00ff88; font-family:monospace;">
       </div>
-
       <button onclick="adminLogout()" style="margin-top:12px;">Admin Logout</button>
     </div>
 
     <div class="card">
     <h3>Users & Business Overview</h3>
     <div style="overflow-x: auto;">
-      <table>
-      <tr><th>Phone</th><th>Name</th><th>Wallet Address</th><th>CTO Status</th><th>Balance</th><th>Activation W.</th><th>Locked</th><th>Action</th></tr>
-      ${rows}
-      </table>
+      <table><tr><th>Phone</th><th>Name</th><th>Wallet Address</th><th>CTO Status</th><th>Balance</th><th>Activation W.</th><th>Locked</th><th>Action</th></tr>${rows}</table>
     </div>
     </div>
-
     <div class="card"><h3>Pending Withdrawals (Approval credits 10% Activation USDT & sends 90% Tokens)</h3><div id="pendingWithdraw"></div></div>
     `;
-
     loadPendingWithdraw();
   });
 }
 
-// -------------------------------------------------------------
-// FAIR MIGRATION ENGINE FOR EXISTING INVESTORS (>= $25 USDT)
-// -------------------------------------------------------------
 window.runFairInvestorMigration = async () => {
   customConfirm("क्या आप सभी योग्य पुराने निवेशकों (कम से कम $25 कुल निवेश) को वरिष्ठता (Timestamp) के अनुसार Club 1 में माइग्रेट करना चाहते हैं?", async () => {
     try {
@@ -3612,93 +2642,41 @@ window.runFairInvestorMigration = async () => {
       if (!usersSnap.exists()) return customAlert("कोई यूज़र डेटा नहीं मिला।");
 
       let eligibleInvestors = [];
-
       usersSnap.forEach(child => {
-        const phone = child.key;
-        const u = child.val();
-        const totalInvested = Number(u.investment || 0);
-
-        if (totalInvested >= 25 && (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub) {
-          eligibleInvestors.push({
-            phone: phone,
-            name: u.name || "Investor",
-            investment: totalInvested,
-            joinedTimestamp: u.lockDate || u.createdAt || 0
-          });
+        const phone = child.key, u = child.val(), totalInvested = Number(u.investment || 0);
+        if (totalInvested >= 25 && (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador) {
+          eligibleInvestors.push({ phone: phone, name: u.name || "Investor", investment: totalInvested, joinedTimestamp: u.lockDate || u.createdAt || 0 });
         }
       });
 
-      if (eligibleInvestors.length === 0) {
-        return customAlert("कोई भी अन-माइग्रेटेड योग्य निवेशक (>= $25) शेष नहीं है।");
-      }
+      if (eligibleInvestors.length === 0) return customAlert("कोई भी अन-माइग्रेटेड योग्य निवेशक (>= $25) शेष नहीं है।");
 
-      // वरिष्ठता (Seniority/Timestamp) के आधार पर सॉर्ट करें
       eligibleInvestors.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
-
       const c1Snap = await get(ref(db, "cto_clubs/1/slots"));
       const currentSlots = c1Snap.exists() ? c1Snap.val() : {};
-      let filledCount = Object.keys(currentSlots).length;
-
-      let migratedToClub1 = 0;
-      let queuedCount = 0;
+      let filledCount = Object.keys(currentSlots).length, migratedToClub1 = 0, queuedCount = 0;
 
       for (const inv of eligibleInvestors) {
         if (filledCount < 300) {
           const slotRef = push(ref(db, "cto_clubs/1/slots"));
-          await set(slotRef, {
-            phone: inv.phone,
-            userName: inv.name,
-            earnedUSDT: 0,
-            capUSDT: 75,
-            status: "active",
-            joinedAt: inv.joinedTimestamp || Date.now(),
-            migratedFromLegacy: true
-          });
-
-          await update(ref(db, `users/${inv.phone}`), {
-            ctoActiveClub: 1,
-            inWaitingQueue: false
-          });
-
-          filledCount++;
-          migratedToClub1++;
+          await set(slotRef, { phone: inv.phone, userName: inv.name, earnedUSDT: 0, capUSDT: 75, status: "active", joinedAt: inv.joinedTimestamp || Date.now(), migratedFromLegacy: true });
+          await update(ref(db, `users/${inv.phone}`), { ctoActiveClub: 1, inWaitingQueue: false });
+          filledCount++; migratedToClub1++;
         } else {
           const qRef = push(ref(db, "cto_waiting_queue"));
-          await set(qRef, {
-            phone: inv.phone,
-            userName: inv.name,
-            paidAmount: 25,
-            earned2x: 0,
-            cap: 50,
-            joinedAt: inv.joinedTimestamp || Date.now(),
-            migratedFromLegacy: true
-          });
-
-          await update(ref(db, `users/${inv.phone}`), {
-            ctoActiveClub: 0,
-            inWaitingQueue: true
-          });
-
+          await set(qRef, { phone: inv.phone, userName: inv.name, paidAmount: 25, earned2x: 0, cap: 50, joinedAt: inv.joinedTimestamp || Date.now(), migratedFromLegacy: true });
+          await update(ref(db, `users/${inv.phone}`), { ctoActiveClub: 0, inWaitingQueue: true });
           queuedCount++;
         }
       }
-
-      customAlert(
-        `🎉 निष्पक्ष माइग्रेशन पूर्ण!\n\n` +
-        `• कुल योग्य निवेशक (>= $25): ${eligibleInvestors.length}\n` +
-        `• Club 1 में सक्रिय स्लॉट मिले: ${migratedToClub1}\n` +
-        `• FIFO वेटिंग रूम में गए: ${queuedCount}\n\n` +
-        `सभी पुराने निवेशकों को वरिष्ठता (Timestamp) के आधार पर स्थान दिया गया है!`
-      );
+      customAlert(`🎉 निष्पक्ष माइग्रेशन पूर्ण!\n\n• कुल योग्य निवेशक (>= $25): ${eligibleInvestors.length}\n• Club 1 में सक्रिय स्लॉट मिले: ${migratedToClub1}\n• FIFO वेटिंग रूम में गए: ${queuedCount}\n\nसभी पुराने निवेशकों को वरिष्ठता (Timestamp) के आधार पर स्थान दिया गया है!`);
       adminDashboard();
-    } catch (err) {
-      customAlert("माइग्रेशन त्रुटि: " + err.message);
-    }
+    } catch (err) { customAlert("माइग्रेशन त्रुटि: " + err.message); }
   });
 };
 
 // -------------------------------------------------------------
-// EXECUTE CTO DIVIDENDS & AUTO-CREDIT NET PROFIT TO BALANCE
+// EXECUTE CTO DIVIDENDS, INSTANT AUTO-UPGRADE & AMBASSADOR LOGIC
 // -------------------------------------------------------------
 window.runCtoGlobalDistribution = async () => {
   try {
@@ -3708,8 +2686,9 @@ window.runCtoGlobalDistribution = async () => {
 
     const cto8Available = master.cto8PoolUSDT || 0;
     const cto2Available = master.cto2WaitingPoolUSDT || 0;
+    const ambassadorAvail = master.ambassadorPoolUSDT || 0;
 
-    if (cto8Available <= 0 && cto2Available <= 0) {
+    if (cto8Available <= 0 && cto2Available <= 0 && ambassadorAvail <= 0) {
       return customAlert("Available CTO pools are 0 USDT. No new inflow to distribute.");
     }
 
@@ -3718,8 +2697,15 @@ window.runCtoGlobalDistribution = async () => {
     const clubsData = clubsSnap.exists() ? clubsSnap.val() : {};
 
     let totalSlotsRewarded = 0;
-    let netProfitsCreditedCount = 0;
+    let autoUpgradesCount = 0;
+    let newAmbassadorsCount = 0;
     let updates = {};
+    let vacatedClubsToPromote = [];
+
+    // Tsunami Drop Variables (Triggered if anyone completes Club 10)
+    let tsunamiCto8 = 0;
+    let tsunamiCto2 = 0;
+    let tsunamiAdmin = 0;
 
     for (const cfg of CTO_CLUBS_CONFIG) {
       const cSlots = (clubsData[cfg.id] && clubsData[cfg.id].slots) ? clubsData[cfg.id].slots : {};
@@ -3734,22 +2720,55 @@ window.runCtoGlobalDistribution = async () => {
           const newEarned = Number(((s.earnedUSDT || 0) + payoutPerSlotUSDT).toFixed(2));
           
           if (newEarned >= cfg.grossCap) {
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}/earnedUSDT`] = cfg.grossCap;
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}/status`] = "frozen";
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}/freezeTimerStart`] = Date.now();
-
-            // Auto-Credit Net Profit ($25, $50, $120...) in Temple_DA to User Main Balance
+            // 1. INSTANT AUTO-CREDIT NET PROFIT
             if (!s.netProfitCredited) {
               const netProfitUSDT = cfg.netUserWithdrawal;
               const netTokens = Number((netProfitUSDT / currentPrice).toFixed(2));
+              const snapBal = await get(ref(db, `users/${s.phone}/balance`));
+              const currentBal = Number(snapBal.val() || 0);
+              const activeBalToUpdate = updates[`users/${s.phone}/balance`] !== undefined ? updates[`users/${s.phone}/balance`] : currentBal;
+              updates[`users/${s.phone}/balance`] = Number((activeBalToUpdate + netTokens).toFixed(2));
+              updates[`cto_clubs/${cfg.id}/slots/${slotKey}/netProfitCredited`] = true;
+            }
 
-              const uSnap = await get(ref(db, "users/" + s.phone));
-              if (uSnap.exists()) {
-                const curBal = Number(uSnap.val().balance || 0);
-                updates[`users/${s.phone}/balance`] = Number((curBal + netTokens).toFixed(2));
-                updates[`cto_clubs/${cfg.id}/slots/${slotKey}/netProfitCredited`] = true;
-                netProfitsCreditedCount++;
+            // 2. REMOVE FROM CURRENT CLUB (INSTANT UPGRADE LOGIC)
+            updates[`cto_clubs/${cfg.id}/slots/${slotKey}`] = null; 
+            vacatedClubsToPromote.push(cfg.id);
+
+            if (cfg.id < 10) {
+              const nextClubId = cfg.id + 1;
+              const nextClubCfg = CTO_CLUBS_CONFIG.find(c => c.id === nextClubId);
+              const nextClubSlotsSnap = await get(ref(db, `cto_clubs/${nextClubId}/slots`));
+              const nextCurrentSlots = Object.keys(nextClubSlotsSnap.val() || {}).length;
+
+              if (nextCurrentSlots < nextClubCfg.slotsMax) {
+                const nextSlotKey = push(ref(db)).key;
+                updates[`cto_clubs/${nextClubId}/slots/${nextSlotKey}`] = {
+                  phone: s.phone, userName: s.userName, earnedUSDT: 0, capUSDT: nextClubCfg.grossCap, status: "active", joinedAt: Date.now()
+                };
+                updates[`users/${s.phone}/ctoActiveClub`] = nextClubId;
+                updates[`users/${s.phone}/inHoldingQueueForClub`] = null;
+              } else {
+                const qKey = push(ref(db)).key;
+                updates[`cto_upgrade_queues/${nextClubId}/${qKey}`] = {
+                  phone: s.phone, userName: s.userName, paidAmount: cfg.upgradeCost, targetClubId: nextClubId, timestamp: Date.now()
+                };
+                updates[`users/${s.phone}/ctoActiveClub`] = 0;
+                updates[`users/${s.phone}/inHoldingQueueForClub`] = nextClubId;
+                updates[`users/${s.phone}/holdingQueueJoinedAt`] = Date.now();
               }
+              autoUpgradesCount++;
+            } else {
+              // 3. THE ENDGAME: CLUB 10 COMPLETION (CROWN AMBASSADOR)
+              updates[`users/${s.phone}/ctoActiveClub`] = 0;
+              updates[`users/${s.phone}/isCrownAmbassador`] = true;
+              
+              // Tsunami Drop - $10,000 Remaining (70% Community, 30% Admin)
+              tsunamiCto8 += 5600;  // 80% of $7,000
+              tsunamiCto2 += 1400;  // 20% of $7,000
+              tsunamiAdmin += 3000; // 30% of $10,000
+              
+              newAmbassadorsCount++;
             }
           } else {
             updates[`cto_clubs/${cfg.id}/slots/${slotKey}/earnedUSDT`] = newEarned;
@@ -3775,12 +2794,61 @@ window.runCtoGlobalDistribution = async () => {
       }
     }
 
-    updates[`cto_master/cto8PoolUSDT`] = 0;
-    updates[`cto_master/cto2WaitingPoolUSDT`] = 0;
+    // 1% CROWN AMBASSADOR ZERO-RESET LOGIC
+    let royaltyPaidCount = 0;
+    if (ambassadorAvail > 0) {
+        const usersGlobalSnap = await get(ref(db, "users"));
+        let ambassadorPhones = [];
+        if (usersGlobalSnap.exists()) {
+            usersGlobalSnap.forEach(ch => {
+                if(ch.val().isCrownAmbassador) ambassadorPhones.push(ch.key);
+            });
+        }
+        
+        if (ambassadorPhones.length > 0) {
+            // Distribute to Ambassadors
+            const perAmbassadorUSDT = ambassadorAvail / ambassadorPhones.length;
+            const perAmbTokens = Number((perAmbassadorUSDT / currentPrice).toFixed(2));
+            for(const ambPhone of ambassadorPhones) {
+                const snapBal = await get(ref(db, `users/${ambPhone}/balance`));
+                const currentBal = Number(snapBal.val() || 0);
+                const activeBalToUpdate = updates[`users/${ambPhone}/balance`] !== undefined ? updates[`users/${ambPhone}/balance`] : currentBal;
+                updates[`users/${ambPhone}/balance`] = Number((activeBalToUpdate + perAmbTokens).toFixed(2));
+                royaltyPaidCount++;
+            }
+        } else {
+            // No Ambassadors yet -> Send to Admin Reserve (Company Turnover)
+            const curAdmin = master.adminReserveUSDT || 0;
+            const activeAdminToUpdate = updates[`cto_master/adminReserveUSDT`] !== undefined ? updates[`cto_master/adminReserveUSDT`] : curAdmin;
+            updates[`cto_master/adminReserveUSDT`] = Number((activeAdminToUpdate + ambassadorAvail).toFixed(2));
+        }
+        updates[`cto_master/ambassadorPoolUSDT`] = 0;
+    }
+
+    updates[`cto_master/cto8PoolUSDT`] = Number((tsunamiCto8).toFixed(2));
+    updates[`cto_master/cto2WaitingPoolUSDT`] = Number((tsunamiCto2).toFixed(2));
+    
+    if (tsunamiAdmin > 0) {
+        const curAdmin = master.adminReserveUSDT || 0;
+        const activeAdminToUpdate = updates[`cto_master/adminReserveUSDT`] !== undefined ? updates[`cto_master/adminReserveUSDT`] : curAdmin;
+        updates[`cto_master/adminReserveUSDT`] = Number((activeAdminToUpdate + tsunamiAdmin).toFixed(2));
+    }
     updates[`cto_master/lastDistributedAt`] = Date.now();
 
     await update(ref(db), updates);
-    customAlert(`✅ CTO Distribution Complete!\n\n• 8% CTO paid across ${totalSlotsRewarded} active club slots.\n• ${netProfitsCreditedCount} slots achieved Cap & Net Profits auto-credited to Main Balance in Temple_DA!\n• 2% CTO paid to ${waitingRewardedCount} waiting queue members.`);
+
+    // Trigger Domino Reaction for vacated seats
+    for (const vClub of vacatedClubsToPromote) {
+        await promoteNextInQueue(vClub);
+    }
+
+    let alertMsg = `✅ CTO Distribution Complete!\n\n• 8% Pool processed across ${totalSlotsRewarded} active slots.\n• ${autoUpgradesCount} users Instantly Auto-Upgraded!\n• 2% Pool processed for ${waitingRewardedCount} waiting members.\n• 1% Royalty logic processed (Paid to ${royaltyPaidCount} Ambassadors).`;
+    
+    if (newAmbassadorsCount > 0) {
+        alertMsg += `\n\n🚨 TSUNAMI DROP TRIGGERED! 🚨\n${newAmbassadorsCount} Leader(s) graduated Club 10! $${tsunamiCto8 + tsunamiCto2} injected into CTO pools, $${tsunamiAdmin} to Company!`;
+    }
+
+    customAlert(alertMsg);
   } catch (err) {
     customAlert("Distribution Error: " + err.message);
   }
@@ -3790,9 +2858,7 @@ function loadPendingWithdraw() {
   onValue(ref(db, "withdrawals/pending"), snap => {
     let html = "";
     snap.forEach(child => {
-      const key = child.key;
-      const d = child.val();
-      const date = new Date(d.timestamp).toLocaleString();
+      const key = child.key, d = child.val(), date = new Date(d.timestamp).toLocaleString();
       html += `
         <div class="card" style="border: 1px solid #00ff88;">
           <b>User Phone:</b> ${d.phone} | <b>Total Requested:</b> ${d.totalRequested || d.amount} Temple_DA<br>
@@ -3809,14 +2875,8 @@ function loadPendingWithdraw() {
   });
 }
 
-// -------------------------------------------------------------
-// ADMIN APPROVAL: DISPATCHES 90% TOKENS & CREDITS 10% ACTIVATION USDT
-// -------------------------------------------------------------
 window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount, activationUSDT) => {
-  if (typeof window.ethereum === 'undefined') {
-    return customAlert("Admin Web3 Wallet (MetaMask) not detected!");
-  }
-
+  if (typeof window.ethereum === 'undefined') return customAlert("Admin Web3 Wallet (MetaMask) not detected!");
   try {
     showWeb3Toast("Preparing token transfer on BSC...");
     await ensureBscNetwork();
@@ -3827,49 +2887,27 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount, acti
     const contract = new ethers.Contract(TEMPLE_DA_CONTRACT, BEP20_ABI, signer);
     let decimals = 18;
     try { decimals = await contract.decimals(); } catch (e) { decimals = 18; }
-    
     const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
 
     showWeb3Toast(`Sending ${amount} Temple_DA... Confirm in wallet!`);
-    
-    const tx = await contract.transfer(userWallet, parsedAmount, {
-      gasLimit: ethers.BigNumber.from("120000")
-    });
+    const tx = await contract.transfer(userWallet, parsedAmount, { gasLimit: ethers.BigNumber.from("120000") });
     hideWeb3Toast();
     customAlert("Transaction broadcasted! Hash: " + tx.hash);
     await tx.wait(1);
 
-    // 1. Remove pending request
     await remove(ref(db, "withdrawals/pending/" + reqKey));
     
-    // 2. NOW credit the 10% USDT to user's activation wallet!
     const userSnap = await get(ref(db, "users/" + phone));
     if (userSnap.exists()) {
       const uData = userSnap.val();
-      const newActivationWallet = Number(((uData.activationWallet || 0) + activationUSDT).toFixed(2));
-      await update(ref(db, "users/" + phone), {
-        activationWallet: newActivationWallet
-      });
+      await update(ref(db, "users/" + phone), { activationWallet: Number(((uData.activationWallet || 0) + activationUSDT).toFixed(2)) });
     }
 
-    // 3. Update History
-    await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
-      status: `Approved & Sent (90% Tokens Dispatched, $${activationUSDT} USDT Added to Activation Wallet)`,
-      txHash: tx.hash,
-      processedAt: Date.now()
-    });
-
+    await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { status: `Approved & Sent (90% Tokens Dispatched, $${activationUSDT} USDT Added to Activation Wallet)`, txHash: tx.hash, processedAt: Date.now() });
     customAlert(`✅ Withdrawal successfully approved!\n• 90% (${amount} Temple_DA) sent to user BEP-20 wallet.\n• 10% ($${activationUSDT} USDT) credited to user's Activation Wallet!`);
-  } catch (error) {
-    hideWeb3Toast();
-    console.error("Withdrawal payout error:", error);
-    customAlert("Payout failed: " + formatWeb3Error(error));
-  }
+  } catch (error) { hideWeb3Toast(); customAlert("Payout failed: " + formatWeb3Error(error)); }
 };
 
-// -------------------------------------------------------------
-// REJECT & REFUND FULL BALANCE (DOES NOT TOUCH ACTIVATION WALLET)
-// -------------------------------------------------------------
 window.rejectWithdrawal = async (reqKey, phone) => {
   const snap = await get(ref(db, "withdrawals/pending/" + reqKey));
   if (snap.exists()) {
@@ -3880,20 +2918,11 @@ window.rejectWithdrawal = async (reqKey, phone) => {
       const refundAmount = Number((d.totalRequested || d.amount));
       const newBal = Number(((u.balance || 0) + refundAmount).toFixed(2));
       const rolledBackToday = Math.max(0, Number(((u.todayWithdrawnAmount || 0) - refundAmount).toFixed(2)));
-
-      await update(ref(db, "users/" + phone), { 
-        balance: newBal,
-        todayWithdrawnAmount: rolledBackToday
-      });
+      await update(ref(db, "users/" + phone), { balance: newBal, todayWithdrawnAmount: rolledBackToday });
     }
   }
   await remove(ref(db, "withdrawals/pending/" + reqKey));
-  
-  await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), {
-    status: "Rejected & Full Balance Refunded",
-    processedAt: Date.now()
-  });
-
+  await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { status: "Rejected & Full Balance Refunded", processedAt: Date.now() });
   customAlert("Withdrawal rejected. Deducted balance has been fully refunded back to user's Main Balance.");
 };
 
@@ -3902,16 +2931,11 @@ window.releaseLocked = async phone => {
   if (!snap.exists()) return customAlert("User not found");
   const u = snap.val();
   if (!u.locked || u.locked <= 0) return customAlert("No locked tokens");
-
   await update(ref(db, "users/" + phone), { balance: (u.balance || 0) + u.locked, locked: 0, lockDate: 0, investment: 0 });
   customAlert("Tokens released!");
 };
 
-window.updatePrice = async () => {
-  await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price")));
-  customAlert("Price updated! System will now prioritize this over Dexscreener.");
-};
-
+window.updatePrice = async () => { await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price"))); customAlert("Price updated! System will now prioritize this over Dexscreener."); };
 window.editUser = async oldId => {
   const newId = prompt("Enter new user ID");
   if (!newId) return;
@@ -3921,30 +2945,17 @@ window.editUser = async oldId => {
   await remove(ref(db, "users/" + oldId));
   customAlert("User ID updated");
 };
-
-window.deleteUser = async id => { 
-  customConfirm("Are you sure you want to delete this user?", async () => {
-    await remove(ref(db, "users/" + id)); 
-    customAlert("User deleted.");
-  });
-};
+window.deleteUser = async id => { customConfirm("Are you sure you want to delete this user?", async () => { await remove(ref(db, "users/" + id)); customAlert("User deleted."); }); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
 
 function loadReferralHistory(phone) {
   onValue(ref(db, "referral_history/" + phone), snap => {
-    let html = "";
-    let totalTDA = 0;
-    let totalUSDT = 0;
+    let html = "", totalTDA = 0, totalUSDT = 0;
     snap.forEach(s => { 
-      const d = s.val(); 
-      const date = new Date(d.timestamp).toLocaleString();
-      totalTDA += (d.amountTokens || 0);
-      totalUSDT += (d.amountUSDT || 0);
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        <b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br>
-        <span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span>
-      </div>`; 
+      const d = s.val(), date = new Date(d.timestamp).toLocaleString();
+      totalTDA += (d.amountTokens || 0); totalUSDT += (d.amountUSDT || 0);
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;"><b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br><span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span></div>`; 
     });
     const headerHtml = html ? `<div style="margin-bottom:10px; color:#00ff88; font-weight:bold;">Total 15-Level Team Income: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("referralHistory");
@@ -3954,51 +2965,21 @@ function loadReferralHistory(phone) {
 
 function loadReferralPointsHistory(phone) {
   onValue(ref(db, `referral_points_history/${phone}`), snap => {
-    const container = document.getElementById("refPointsHistoryList");
-    const totalDisplay = document.getElementById("totalRefPointsDisplay");
+    const container = document.getElementById("refPointsHistoryList"), totalDisplay = document.getElementById("totalRefPointsDisplay");
     if (!container) return;
+    if (!snap.exists()) { container.innerHTML = `<p class="small">No referral points earned yet. Share your link!</p>`; if (totalDisplay) totalDisplay.innerText = "0"; return; }
 
-    if (!snap.exists()) {
-      container.innerHTML = `<p class="small">No referral points earned yet. Share your link!</p>`;
-      if (totalDisplay) totalDisplay.innerText = "0";
-      return;
-    }
-
-    let html = `<table>
-      <tr>
-        <th>Joined User</th>
-        <th>Points Awarded</th>
-        <th>Time</th>
-      </tr>`;
-    
-    let totalPointsEarned = 0;
-    let historyArr = [];
-
-    snap.forEach(child => {
-      historyArr.push(child.val());
-    });
-    
+    let html = `<table><tr><th>Joined User</th><th>Points Awarded</th><th>Time</th></tr>`, totalPointsEarned = 0, historyArr = [];
+    snap.forEach(child => { historyArr.push(child.val()); });
     historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     historyArr.forEach(d => {
       totalPointsEarned += (d.pointsAwarded || 20);
       const date = new Date(d.timestamp).toLocaleString();
-
-      html += `
-        <tr>
-          <td><b>${maskPhone(d.fromUser)}</b></td>
-          <td><span class="number" style="color:#00ff88;">+${d.pointsAwarded || 20} Pts</span></td>
-          <td class="small">${date}</td>
-        </tr>
-      `;
+      html += `<tr><td><b>${maskPhone(d.fromUser)}</b></td><td><span class="number" style="color:#00ff88;">+${d.pointsAwarded || 20} Pts</span></td><td class="small">${date}</td></tr>`;
     });
-
-    html += `</table>`;
-    container.innerHTML = html;
-
-    if (totalDisplay) {
-      totalDisplay.innerText = totalPointsEarned;
-    }
+    container.innerHTML = html + `</table>`;
+    if (totalDisplay) totalDisplay.innerText = totalPointsEarned;
   });
 }
 
@@ -4006,48 +2987,20 @@ function loadMasterPointsHistory(phone) {
   onValue(ref(db, `points_history/${phone}`), snap => {
     const container = document.getElementById("masterPointsHistoryList");
     if (!container) return;
-
-    if (!snap.exists()) {
-      container.innerHTML = `<p class="small">No points activity yet. Start logging in, posting reels, or referring friends!</p>`;
-      return;
-    }
+    if (!snap.exists()) { container.innerHTML = `<p class="small">No points activity yet.</p>`; return; }
 
     let pointsArr = [];
-    snap.forEach(child => {
-      pointsArr.push(child.val());
-    });
-    
+    snap.forEach(child => { pointsArr.push(child.val()); });
     pointsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-    let html = `<table>
-      <tr>
-        <th>Source / Activity</th>
-        <th>Points</th>
-        <th>Time</th>
-      </tr>`;
-
+    let html = `<table><tr><th>Source / Activity</th><th>Points</th><th>Time</th></tr>`;
     pointsArr.forEach(d => {
       const date = d.timestamp ? new Date(d.timestamp).toLocaleString() : "Unknown Time";
-      
       let badgeColor = "#dfb72c";
-      if (d.source === "Daily Login") badgeColor = "#00ff88";
-      else if (d.source === "Referral Bonus") badgeColor = "#3498db";
-      else if (d.source === "Reel Like / View") badgeColor = "#e67e22";
-      else if (d.source === "Creator Subscription") badgeColor = "#9b59b6";
-      else if (d.source === "Post Upload") badgeColor = "#ff4444";
-      else if (d.source === "Welcome Bonus") badgeColor = "#f1c40f";
-
-      html += `
-        <tr>
-          <td><span class="badge-tag" style="background:${badgeColor}22; color:${badgeColor}; border-color:${badgeColor};">${d.source || 'Activity'}</span></td>
-          <td><span class="number" style="color:${badgeColor};">+${d.points} Pts</span></td>
-          <td class="small">${date}</td>
-        </tr>
-      `;
+      if (d.source === "Daily Login") badgeColor = "#00ff88"; else if (d.source === "Referral Bonus") badgeColor = "#3498db"; else if (d.source === "Reel Like / View") badgeColor = "#e67e22"; else if (d.source === "Creator Subscription") badgeColor = "#9b59b6"; else if (d.source === "Post Upload") badgeColor = "#ff4444"; else if (d.source === "Welcome Bonus") badgeColor = "#f1c40f";
+      html += `<tr><td><span class="badge-tag" style="background:${badgeColor}22; color:${badgeColor}; border-color:${badgeColor};">${d.source || 'Activity'}</span></td><td><span class="number" style="color:${badgeColor};">+${d.points} Pts</span></td><td class="small">${date}</td></tr>`;
     });
-
-    html += `</table>`;
-    container.innerHTML = html;
+    container.innerHTML = html + `</table>`;
   });
 }
 
@@ -4056,14 +3009,10 @@ function loadPackageHistory(phone) {
     let historyArr = [];
     snap.forEach(s => historyArr.push(s.val()));
     historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     let html = "";
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        <span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT<br>
-        <span style="color:#888;">${date}</span>
-      </div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;"><span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT<br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("packageHistory");
     if (el) el.innerHTML = html || "No history";
@@ -4075,14 +3024,10 @@ function loadInvestHistory(phone) {
     let historyArr = [];
     snap.forEach(s => historyArr.push(s.val()));
     historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     let html = "";
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        Invested: <span class="number">${d.amountUSDT} USDT</span><br>
-        <span style="color:#888;">${date}</span>
-      </div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Invested: <span class="number">${d.amountUSDT} USDT</span><br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("investHistory");
     if (el) el.innerHTML = html || "No investment history";
@@ -4094,17 +3039,11 @@ function loadWithdrawHistory(phone) {
     let historyArr = [];
     snap.forEach(s => historyArr.push(s.val()));
     historyArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
     let html = "";
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
       let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected" ) ? "#ff4444" : "#00ff88");
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">
-        Amount: <span class="number">${d.amount} Temple_DA</span> (90% Net)<br>
-        Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>
-        ${d.tenPercentActivationUSDT ? `<span style="color:#00ff88;">• 10% Activation: $${d.tenPercentActivationUSDT} USDT</span><br>` : ''}
-        <span style="color:#888;">${date}</span>
-      </div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Amount: <span class="number">${d.amount} Temple_DA</span> (90% Net)<br>Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>${d.tenPercentActivationUSDT ? `<span style="color:#00ff88;">• 10% Activation: $${d.tenPercentActivationUSDT} USDT</span><br>` : ''}<span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawals";
@@ -4115,44 +3054,26 @@ function loadGiftHistory(phone) {
   onValue(ref(db, "gift_history/" + phone), snap => {
     const el = document.getElementById("giftHistory");
     if (!el) return;
-
-    if (!snap.exists()) {
-      el.innerHTML = `<p class="small">No gift history yet.</p>`;
-      return;
-    }
-
-    const data = snap.val();
-    const sentGifts = data.sent ? Object.values(data.sent) : [];
-    const receivedGifts = data.received ? Object.values(data.received) : [];
+    if (!snap.exists()) { el.innerHTML = `<p class="small">No gift history yet.</p>`; return; }
+    const data = snap.val(), sentGifts = data.sent ? Object.values(data.sent) : [], receivedGifts = data.received ? Object.values(data.received) : [];
 
     let html = `<h4 style="color:#dfb72c; margin-bottom:8px; font-size:13px;">🎁 Received Gifts</h4>`;
     if (receivedGifts.length > 0) {
       receivedGifts.sort((a, b) => b.timestamp - a.timestamp);
       receivedGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
-        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
-          Received <span class="number">+${g.amount} Temple_DA</span> from <b>@${g.senderName}</b> (${maskPhone(g.senderPhone)})<br>
-          <span style="color:#888;">${date}</span>
-        </div>`;
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">Received <span class="number">+${g.amount} Temple_DA</span> from <b>@${g.senderName}</b> (${maskPhone(g.senderPhone)})<br><span style="color:#888;">${date}</span></div>`;
       });
-    } else {
-      html += `<p class="small" style="margin-bottom:10px;">No gifts received yet.</p>`;
-    }
+    } else { html += `<p class="small" style="margin-bottom:10px;">No gifts received yet.</p>`; }
 
     html += `<h4 style="color:#dfb72c; margin:14px 0 8px 0; font-size:13px;">📤 Sent Gifts</h4>`;
     if (sentGifts.length > 0) {
       sentGifts.sort((a, b) => b.timestamp - a.timestamp);
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
-        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">
-          Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br>
-          <span style="color:#888;">${date}</span>
-        </div>`;
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br><span style="color:#888;">${date}</span></div>`;
       });
-    } else {
-      html += `<p class="small">No gifts sent yet.</p>`;
-    }
-
+    } else { html += `<p class="small">No gifts sent yet.</p>`; }
     el.innerHTML = html;
   });
 }
