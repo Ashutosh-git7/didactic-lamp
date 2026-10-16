@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temple_DA Ultimate Web3 Ecosystem & 10% CTO Clubs</title>
+<title>Temple_DA Ultimate Web3 Ecosystem & Single-Line Auto-Reinvestment Engine</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 <!-- Ethers.js Library for Direct Web3 Wallet & Contract Interactions -->
@@ -672,6 +672,15 @@ const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 let activePostIdForComments = null;
 
 // ========================================================
+// SINGLE-LINE PACKAGE TIERS CONFIGURATION ($15:30d, $50:180d, $120:365d)
+// ========================================================
+const SINGLE_LINE_PACKAGES = {
+  tier15: { name: "Starter Single-Line", price: 15, durationDays: 30, dailyLimit: 5 },
+  tier50: { name: "Pro Single-Line", price: 50, durationDays: 180, dailyLimit: 15 },
+  tier120: { name: "Elite Single-Line", price: 120, durationDays: 365, dailyLimit: 999 }
+};
+
+// ========================================================
 // 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION (PRESTIGE TITLES)
 // ========================================================
 const CTO_CLUBS_CONFIG = [
@@ -704,7 +713,7 @@ function getEffectiveTierLimit(u) {
   }
 
   if (u.tier && u.tier !== "none" && !u.packageExpired) {
-    if (u.tier === "yearly") return 2500;
+    if (u.tier === "tier120") return 2500;
     return 1000;
   }
 
@@ -966,102 +975,138 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
   }
 }
 
-// -------------------------------------------------------------
-// MASTER FUND INFLOW ENGINE (100% BREAKUP WITH AMBASSADOR & ADMIN)
-// -------------------------------------------------------------
-async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel) {
-  const direct25Total = amountUSDT * 0.25;
-  const cto8 = amountUSDT * 0.08;
-  const cto2Waiting = amountUSDT * 0.02;
-  const lp50 = amountUSDT * 0.50;
-  const ambassador1 = amountUSDT * 0.01;
-  const admin14 = amountUSDT * 0.14; 
+// =============================================================
+// SINGLE-LINE AUTO-REINVESTMENT ENGINE (70:30 & TIER UPGRADE)
+// =============================================================
+async function processSingleLinePackagePurchase(userPhone, packageKey) {
+  const pkg = SINGLE_LINE_PACKAGES[packageKey];
+  if (!pkg) return;
+  const amountUSDT = pkg.price;
+  const currentPrice = await getPrice();
 
+  const initialTokens = Number((amountUSDT / currentPrice).toFixed(2));
   const uSnap = await get(ref(db, "users/" + userPhone));
   const userData = uSnap.exists() ? uSnap.val() : {};
-  const sponsorPhone = userData.referrer || "";
 
-  if (sponsorPhone) {
-    await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
-  }
+  const newLocked = Number(userData.locked || 0) + initialTokens;
+  const newInvestment = Number(userData.investment || 0) + amountUSDT;
+  const durationMs = pkg.durationDays * 24 * 60 * 60 * 1000;
+  const now = Date.now();
 
-  const masterRef = ref(db, "cto_master");
-  const mSnap = await get(masterRef);
-  const mData = mSnap.exists() ? mSnap.val() : {};
-
-  await update(masterRef, {
-    totalInflowUSDT: Number(((mData.totalInflowUSDT || 0) + amountUSDT).toFixed(2)),
-    lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + lp50).toFixed(2)),
-    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + admin14).toFixed(2)),
-    ambassadorPoolUSDT: Number(((mData.ambassadorPoolUSDT || 0) + ambassador1).toFixed(2)),
-    cto8PoolUSDT: Number(((mData.cto8PoolUSDT || 0) + cto8).toFixed(2)),
-    cto2WaitingPoolUSDT: Number(((mData.cto2WaitingPoolUSDT || 0) + cto2Waiting).toFixed(2)),
-    lastUpdated: Date.now()
+  await update(ref(db, "users/" + userPhone), {
+    locked: newLocked,
+    investment: newInvestment,
+    lockDate: userData.lockDate || now,
+    tier: packageKey,
+    packagePriceUSDT: amountUSDT,
+    packageActivatedAt: now,
+    packageExpiresAt: now + durationMs,
+    packageExpired: false
   });
 
-  return { direct25Total, cto8, cto2Waiting, lp50, admin14, ambassador1 };
-}
+  await push(ref(db, "investments/history/" + userPhone), {
+    amountUSDT: amountUSDT, package: pkg.name, timestamp: now
+  });
 
-// -------------------------------------------------------------
-// DOMINO CHAIN REACTION AUTO-PROMOTION ENGINE
-// -------------------------------------------------------------
-async function promoteNextInQueue(clubId) {
-  if (clubId === 1) {
-    return await promoteNextWaitingQueueMemberToClub1();
+  const communityPool = amountUSDT * 0.80;
+  const companyReserve = amountUSDT * 0.20;
+
+  if (userData.referrer) {
+    await distribute15LevelCommission(userData.referrer, amountUSDT, userPhone, `Single-Line Package (${pkg.name})`);
   }
 
-  const qSnap = await get(ref(db, `cto_upgrade_queues/${clubId}`));
+  const queueRef = push(ref(db, "single_line_queue"));
+  await set(queueRef, {
+    phone: userPhone,
+    userName: userData.name || "Member",
+    packageKey: packageKey,
+    amountUSDT: amountUSDT,
+    earnedUSDT: 0,
+    maxCapUSDT: amountUSDT * 3.0,
+    joinedAt: now
+  });
+
+  const masterRef = ref(db, "single_line_master");
+  const mSnap = await get(masterRef);
+  const mData = mSnap.exists() ? mSnap.val() : {};
+  await update(masterRef, {
+    totalInflowUSDT: Number(((mData.totalInflowUSDT || 0) + amountUSDT).toFixed(2)),
+    communityPoolUSDT: Number(((mData.communityPoolUSDT || 0) + communityPool).toFixed(2)),
+    companyReserveUSDT: Number(((mData.companyReserveUSDT || 0) + companyReserve).toFixed(2)),
+    lastUpdated: now
+  });
+}
+
+async function runSingleLineGlobalPayout(payoutPoolUSDT) {
+  if (payoutPoolUSDT <= 0) return;
+  const qSnap = await get(ref(db, "single_line_queue"));
   if (!qSnap.exists()) return;
 
   let queueList = [];
-  qSnap.forEach(child => { queueList.push({ key: child.key, ...child.val() }); });
-  queueList.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  qSnap.forEach(ch => { queueList.push({ key: ch.key, ...ch.val() }); });
   if (queueList.length === 0) return;
 
-  const candidate = queueList[0];
-  const targetClubCfg = CTO_CLUBS_CONFIG.find(c => c.id === clubId);
-  const slotsSnap = await get(ref(db, `cto_clubs/${clubId}/slots`));
-  const currentSlots = Object.keys(slotsSnap.val() || {}).length;
+  const currentPrice = await getPrice();
+  const perUserShare = payoutPoolUSDT / queueList.length;
+  let updates = {};
 
-  if (currentSlots < targetClubCfg.slotsMax) {
-    await remove(ref(db, `cto_upgrade_queues/${clubId}/${candidate.key}`));
+  for (const item of queueList) {
+    const currentEarned = Number(item.earnedUSDT || 0);
+    const potentialEarned = currentEarned + perUserShare;
+    const maxCap = item.maxCapUSDT || (item.amountUSDT * 3.0);
 
-    const newSlotRef = push(ref(db, `cto_clubs/${clubId}/slots`));
-    await set(newSlotRef, {
-      phone: candidate.phone, userName: candidate.userName || "Leader",
-      earnedUSDT: 0, capUSDT: targetClubCfg.grossCap, status: "active", joinedAt: Date.now()
-    });
+    const userSnap = await get(ref(db, "users/" + item.phone));
+    if (!userSnap.exists()) continue;
+    const uData = userSnap.val();
 
-    await update(ref(db, "users/" + candidate.phone), {
-      ctoActiveClub: clubId, inHoldingQueueForClub: null, holdingQueueJoinedAt: 0
-    });
+    if (potentialEarned >= maxCap) {
+      const netEffectiveEarned = maxCap - currentEarned;
+      const distributable = netEffectiveEarned > 0 ? netEffectiveEarned : perUserShare;
+
+      const withdrawableUSDT = distributable * 0.70;
+      const reinvestUSDT = distributable * 0.30; // 30% Reinvestment (NO NEW TOKENS)
+
+      const withdrawableTokens = Number((withdrawableUSDT / currentPrice).toFixed(2));
+      const newBal = Number(((uData.balance || 0) + withdrawableTokens).toFixed(2));
+
+      updates[`single_line_queue/${item.key}/earnedUSDT`] = maxCap;
+      updates[`users/${item.phone}/balance`] = newBal;
+
+      // AUTOMATIC TIER ELEVATION UPGRADE ($15 ➔ $50 ➔ $120)
+      let currentPkgKey = item.packageKey || uData.tier || "tier15";
+      let nextPkgKey = currentPkgKey;
+      if (currentPkgKey === "tier15") nextPkgKey = "tier50";
+      else if (currentPkgKey === "tier50") nextPkgKey = "tier120";
+      else nextPkgKey = "tier120";
+
+      const nextPkgCfg = SINGLE_LINE_PACKAGES[nextPkgKey];
+      const now = Date.now();
+      const newExpiry = now + (nextPkgCfg.durationDays * 24 * 60 * 60 * 1000);
+
+      updates[`users/${item.phone}/tier`] = nextPkgKey;
+      updates[`users/${item.phone}/packagePriceUSDT`] = nextPkgCfg.price;
+      updates[`users/${item.phone}/packageActivatedAt`] = now;
+      updates[`users/${item.phone}/packageExpiresAt`] = newExpiry;
+      updates[`users/${item.phone}/packageExpired`] = false;
+
+      const newCloneRef = push(ref(db, "single_line_queue"));
+      await set(newCloneRef, {
+        phone: item.phone,
+        userName: item.userName,
+        packageKey: nextPkgKey,
+        amountUSDT: reinvestUSDT,
+        earnedUSDT: 0,
+        maxCapUSDT: reinvestUSDT * 3.0,
+        isClone: true,
+        joinedAt: now
+      });
+
+    } else {
+      updates[`single_line_queue/${item.key}/earnedUSDT`] = Number(potentialEarned.toFixed(2));
+    }
   }
-}
 
-async function promoteNextWaitingQueueMemberToClub1() {
-  const queueSnap = await get(ref(db, "cto_waiting_queue"));
-  if (!queueSnap.exists()) return;
-
-  let queue = [];
-  queueSnap.forEach(child => { queue.push({ key: child.key, ...child.val() }); });
-  queue.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-  if (queue.length === 0) return;
-
-  const eligibleCandidate = queue[0];
-  const c1Snap = await get(ref(db, "cto_clubs/1/slots"));
-  const currentSlotsCount = c1Snap.exists() ? Object.keys(c1Snap.val()).length : 0;
-
-  if (currentSlotsCount < 300) {
-    await remove(ref(db, `cto_waiting_queue/${eligibleCandidate.key}`));
-    const slotRef = push(ref(db, "cto_clubs/1/slots"));
-    await set(slotRef, {
-      phone: eligibleCandidate.phone, userName: eligibleCandidate.userName,
-      earnedUSDT: 0, capUSDT: 75, status: "active", joinedAt: Date.now()
-    });
-    await update(ref(db, "users/" + eligibleCandidate.phone), {
-      ctoActiveClub: 1, inWaitingQueue: false
-    });
-  }
+  await update(ref(db), updates);
 }
 
 async function backgroundGlobalVestingCheck() {
@@ -1109,10 +1154,6 @@ function maskPhone(phone) {
   if (!phone || typeof phone !== 'string') return "Creator";
   if (phone.length <= 4) return phone;
   return "******" + phone.slice(-4);
-}
-
-function getPackageDurationMs(tier) {
-  return tier === "yearly" ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
 }
 
 function checkAndHandlePackageExpiry(phone, u) {
@@ -1176,7 +1217,7 @@ async function landing() {
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 26px;">Temple_DA</h2>
-    <p>The Future of Decentralized Finance, Reels Showcase & 10% Global CTO Ecosystem</p>
+    <p>Decentralized Web3 Ecosystem, Single-Line Auto-Reinvestment Queue, Reels Showcase & 10% Global CTO</p>
     
     <div style="margin: 22px 0;">
         <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 15px; padding: 15px 24px;">
@@ -1197,17 +1238,17 @@ async function landing() {
         </div>
     </div>
     <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <a href="#ctoclub"><button style="width: 220px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">👑 10 CTO Clubs ($25+)</button></a>
-      <a href="#feed"><button style="width: 200px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">⚡ Watch Reels</button></a>
+      <a href="#packages"><button style="width: 220px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Single-Line Packages</button></a>
+      <a href="#ctoclub"><button style="width: 200px; background: transparent; border: 2px solid #dfb72c; color: #dfb72c;">👑 10 CTO Clubs</button></a>
     </div>
   </div>
 
   <div class="card">
-    <h3>About Temple_DA Ecosystem</h3>
+    <h3>About Temple_DA Single-Line & Ecosystem</h3>
     <p style="color: #ccc; line-height: 1.7;">
-        Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
-        Showcase your reels, videos, art, and writing, interact with members, and earn real 
-        Temple_DA tokens. Holders also benefit from our revolutionary <strong>Single-Shot $25+ 10-Club 10% CTO Progression Engine</strong> ($25 to $77,255 USDT net profit), 100% token vesting asset backing (5% monthly release), and a 15-level referral system.
+        Temple_DA integrates financial growth with community monetization. Our **Single-Line Auto-Reinvestment Package Model** ($15 for 30d, $50 for 180d, $120 for 365d) 
+        operates on a global FIFO queue where first-time package purchases grant vesting tokens (5% monthly release), while automatic 30% reinvestment clones 
+        feed the bottom of the queue and automatically upgrade your package tier ($15 ➔ $50 ➔ $120) to ensure perpetual momentum.
     </p>
   </div>
 
@@ -1215,6 +1256,10 @@ async function landing() {
   <div id="dexscreener-embed"><iframe src="https://dexscreener.com/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"></iframe></div>
   
   <div class="grid">
+    <div class="card">
+        <h3>Single-Line Queue</h3>
+        <p class="small">Perpetual global single-line queue with 70:30 withdrawal-to-reinvestment split, clone generation & package tier upgrading.</p>
+    </div>
     <div class="card">
         <h3>10% Global CTO</h3>
         <p class="small">10 progressive clubs, 1,000 slots, instant auto-upgrades, and FIFO waiting room 2X payout protection.</p>
@@ -1225,11 +1270,7 @@ async function landing() {
     </div>
     <div class="card">
         <h3>15-Level Referral</h3>
-        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions (25% total pool) on community activations.</p>
-    </div>
-    <div class="card">
-        <h3>90/10 Split & 0% Fee</h3>
-        <p class="small">Zero admin withdrawal charges. 90% direct to your wallet in Temple_DA tokens, 10% to Activation Wallet upon admin approval.</p>
+        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions.</p>
     </div>
   </div>
 
@@ -1238,8 +1279,8 @@ async function landing() {
     <table>
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
-        <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit</td></tr>
-        <tr><td>Referral Levels</td><td class="number">15 Levels Deep (25% Pool)</td></tr>
+        <tr><td>Single-Line Split</td><td class="number">70% Withdrawal / 30% Auto-Reinvestment</td></tr>
+        <tr><td>Referral Levels</td><td class="number">15 Levels Deep</td></tr>
     </table>
   </div>
   <div class="card center">
@@ -1910,7 +1951,7 @@ window.submitReelComment = async () => {
 };
 
 // =============================================================
-// USER DASHBOARD (WITH STRICT SINGLE-SHOT & HYBRID WITHDRAWAL TIERS)
+// USER DASHBOARD (WITH SINGLE-LINE & 15-LEVEL REFERRALS)
 // =============================================================
 async function userDashboard() {
   const phone = localStorage.getItem("user");
@@ -1940,7 +1981,6 @@ async function userDashboard() {
 
     const maxDailyAllowed = getEffectiveTierLimit(u);
     const todayWithdrawn = (u.lastWithdrawDate === todayDateStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
-    const isCtoMember = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador;
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 18px; text-align: center;">
@@ -1963,29 +2003,21 @@ async function userDashboard() {
       }
     </div>
 
-    <!-- 10 CTO CLUBS HERO PROMOTION CARD -->
+    <!-- SINGLE-LINE PACKAGE & AUTO-REINVESTMENT SYSTEM HERO CARD -->
     <div class="card" style="border: 2px solid #00ff88; background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(223,183,44,0.06));">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">10% CTO PROGRESSION SYSTEM</span>
-          <h3 style="color:#00ff88; margin-bottom:6px; font-size:18px;">👑 10-Club 1,000-Slot Ecosystem</h3>
+          <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">SINGLE-LINE AUTO-REINVESTMENT MODEL</span>
+          <h3 style="color:#00ff88; margin-bottom:6px; font-size:18px;">⚡ Perpetual Global Single-Line Queue</h3>
           <p class="small" style="max-width:650px;">
-            Qualify with a <strong>Strict Single-Shot $25+ Deposit</strong> to unlock Club 1 and climb 10 progressive clubs for up to <strong>$77,255 USDT</strong> cumulative net profit!
+            Join packages ($15/30d, $50/180d, $120/365d). First-time purchases grant vesting tokens (5% monthly release). Earnings use a <strong>70% Withdrawal / 30% Auto-Reinvestment</strong> split, where reinvestment clones upgrade your package tier ($15 ➔ $50 ➔ $120) and feed the bottom of the queue!
           </p>
           <p class="small" style="margin-top:6px;">
-            Status: <strong style="color:#dfb72c;">${u.isCrownAmbassador ? '👑 CROWN AMBASSADOR' : (u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Open Micro Staking (< $25)')))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
+            Active Package: <strong style="color:#dfb72c;">${activeTier !== 'none' ? activeTier.toUpperCase() : 'NONE'}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
           </p>
         </div>
-        <div><a href="#ctoclub"><button class="btn-green" style="width:auto; padding:12px 24px; font-size:13px;">⚡ Open 10 CTO Clubs</button></a></div>
+        <div><a href="#packages"><button class="btn-green" style="width:auto; padding:12px 24px; font-size:13px;">⚡ View Packages ($15/$50/$120)</button></a></div>
       </div>
-      ${!isCtoMember ? `
-        <div style="margin-top:14px; padding:10px 14px; background:rgba(223,183,44,0.12); border-radius:8px; border:1px dashed #dfb72c;">
-          <span class="small" style="color:#dfb72c; font-weight:bold;">💡 CTO Qualification Rule:</span>
-          <span class="small" style="color:#fff; display:block; margin-top:2px;">
-            Cumulative micro-staking ($5+$10+$10) gives token yield but does not unlock CTO clubs. Deposit a <strong>single-shot of $25 USDT or more</strong> anytime to unlock Club 1 and raise your daily withdrawal limit to 1,000 Temple_DA!
-          </span>
-        </div>
-      ` : ''}
     </div>
 
     <div class="grid">
@@ -2011,16 +2043,17 @@ async function userDashboard() {
           <span class="number" id="nextReleaseCountdown" style="font-size: 12px; color: #00ff88;">Calculating...</span>
         </div>
       </div>
-      <div class="card"><h3>Package</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
+      <div class="card"><h3>Package Status</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
     </div>
 
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
+    <!-- 10 CTO Clubs Banner -->
+    <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
-          <h3 style="color:#00ff88; margin-bottom:6px;">Creator Subscription Status</h3>
-          <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
+          <h3 style="color:#dfb72c; margin-bottom:6px;">👑 10% Global CTO Clubs ($25+ Single-Shot)</h3>
+          <p class="small">Advance through 10 progressive clubs for up to $77,255 USDT net profit with zero direct referrals required!</p>
         </div>
-        <div><a href="#packages"><button style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package</button></a></div>
+        <div><a href="#ctoclub"><button style="width:auto; padding:12px 20px; font-size:12px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">👑 Open 10 CTO Clubs</button></a></div>
       </div>
     </div>
 
@@ -2055,16 +2088,6 @@ async function userDashboard() {
       <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">Convert Points To Temple_DA</button>
     </div>
 
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
-      <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
-      <p class="small">
-        • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
-        • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
-      </p>
-      <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:12px;">
-      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit USDT via Web3 Wallet</button>
-    </div>
-
     <div class="card" style="border: 2px solid #dfb72c;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <h3 style="margin:0;">Withdraw Temple_DA (90/10 Split & 0% Fee)</h3>
@@ -2076,9 +2099,9 @@ async function userDashboard() {
       <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:12px 16px; margin-bottom:14px;">
         <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:6px;">📊 Daily Withdrawal Tier Limits:</span>
         <div style="font-size:13px; color:#eee; line-height:1.6;">
-          • <strong>Open Micro-Staking (< $25 single-shot):</strong> Max 60 Temple_DA / day<br>
-          • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
-          • <strong>High-Tier Staking ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
+          • <strong>Open Micro-Staking (< $25):</strong> Max 60 Temple_DA / day<br>
+          • <strong>Single-Line / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
+          • <strong>High-Tier ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
         </div>
         <p class="small" style="color:#00ff88; margin-top:8px; font-weight:bold;">Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)</p>
       </div>
@@ -2097,7 +2120,7 @@ async function userDashboard() {
     <div class="accordion-wrapper" id="accMasterPoints"><div class="accordion-header" onclick="toggleAccordion('accMasterPoints')"><span>📊 Master Points & Daily Login History</span><span>▼</span></div><div class="accordion-content" id="masterPointsHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accMyPosts"><div class="accordion-header" onclick="toggleAccordion('accMyPosts')"><span>🎬 My Uploaded Reels & Posts</span><span>▼</span></div><div class="accordion-content" id="myUploadedPosts">Loading...</div></div>
     <div class="accordion-wrapper" id="accGifts"><div class="accordion-header" onclick="toggleAccordion('accGifts')"><span>🎁 Gift History (Sent & Received)</span><span>▼</span></div><div class="accordion-content" id="giftHistory">Loading...</div></div>
-    <div class="accordion-wrapper" id="accPackages"><div class="accordion-header" onclick="toggleAccordion('accPackages')"><span>📦 Package Activation History</span><span>▼</span></div><div class="accordion-content" id="packageHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accPackages"><div class="accordion-header" onclick="toggleAccordion('accPackages')"><span>📦 Package & Single-Line History</span><span>▼</span></div><div class="accordion-content" id="packageHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accInvest"><div class="accordion-header" onclick="toggleAccordion('accInvest')"><span>💰 Investment History</span><span>▼</span></div><div class="accordion-content" id="investHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accWithdraw"><div class="accordion-header" onclick="toggleAccordion('accWithdraw')"><span>📤 Withdrawal History (90% Tokens, 10% Activation USDT)</span><span>▼</span></div><div class="accordion-content" id="withdrawHistory">Loading...</div></div>
     <div class="card center" style="margin-top:22px;"><button onclick="logout()">Logout</button></div>
@@ -2105,7 +2128,6 @@ async function userDashboard() {
 
     startReleaseCountdown(u.lockDate, u.locked);
     
-    // Safely loading all histories with .get() to prevent UI freezing
     loadReferralHistory(phone); 
     loadReferralPointsHistory(phone); 
     loadMasterPointsHistory(phone);
@@ -2130,7 +2152,7 @@ function startReleaseCountdown(lockDate, lockedAmount) {
     if (timeLeft <= 0) { countdownEl.innerText = "Ready! Refresh page"; clearInterval(interval); return; }
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
     const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeLeft % (1000 * 60)) / (1000 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
     const formattedDate = new Date(nextReleaseTime).toLocaleDateString();
     countdownEl.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s (${formattedDate})`;
@@ -2190,52 +2212,8 @@ window.withdraw = async () => {
   customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• ${amount} Temple_DA deducted from balance immediately.\n• 90% (${ninetyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) will be credited to your Activation Wallet once approved by admin.\n• Today's Withdrawn: ${newTodayWithdrawn} / ${maxDailyAllowed} Temple_DA.`);
 };
 
-window.makeDirectUSDTDeposit = async () => {
-  const phone = localStorage.getItem("user");
-  const investInput = document.getElementById("invest");
-  const amount = parseFloat(investInput ? investInput.value.trim() : "0");
-
-  if (!amount || amount < 1) return customAlert("Investment amount must be at least 1 USDT");
-
-  const userSnap = await get(ref(db, "users/" + phone));
-  if (!userSnap.exists()) return customAlert("User session not found!");
-  const u = userSnap.val();
-
-  const currentInvestment = Number(u.investment || 0);
-  if (currentInvestment + amount > 500) return customAlert(`Maximum total investment limit is 500 USDT!\nYour current investment is ${currentInvestment} USDT. You can invest up to ${500 - currentInvestment} USDT more.`);
-
-  try {
-    const { tx } = await executeUsdtTransfer(amount, `${amount} USDT Investment Deposit`);
-    const currentPrice = await getPrice();
-    const temple_DA = Number((amount / currentPrice).toFixed(2));
-    
-    await update(ref(db, "users/" + phone), {
-      investment: currentInvestment + amount, locked: Number(u.locked || 0) + temple_DA,
-      monthlyBusiness: Number(u.monthlyBusiness || 0) + amount, lockDate: u.lockDate || Date.now()
-    });
-    await push(ref(db, "investments/history/" + phone), { amountUSDT: amount, txHash: tx.hash, timestamp: Date.now() });
-
-    const isSingleShotEligible = (amount >= 25);
-    const notInAnyClubYet = (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador;
-
-    if (isSingleShotEligible && notInAnyClubYet) {
-      await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
-      await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
-    } else {
-      if (u.referrer) await distribute15LevelCommission(u.referrer, amount, phone, `Staking Investment ($${amount})`);
-    }
-
-    if (investInput) investInput.value = "";
-    let qualificationNote = "";
-    if (isSingleShotEligible && notInAnyClubYet) qualificationNote = `\n\n👑 Single-shot deposit of $${amount} qualified you for Club 1 • Bronze Pillar ($75 Cap) & Daily withdrawal limit raised to 1,000 Temple_DA!`;
-    else if (amount < 25 && notInAnyClubYet) qualificationNote = `\n\n💡 Note: Micro-staking (< $25) provides 5% monthly vesting. To unlock Club 1 and 1,000 TDA daily withdrawal limit, deposit a single-shot of $25+ anytime!`;
-
-    customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield (5% monthly release)!${qualificationNote}`);
-  } catch (error) { customAlert("Deposit Failed: " + formatWeb3Error(error)); }
-};
-
 async function checkDailyVideoLimit(phone, userTier) {
-  if (userTier === "yearly") return true;
+  if (userTier === "tier120") return true;
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   try {
@@ -2247,9 +2225,9 @@ async function checkDailyVideoLimit(phone, userTier) {
         if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) todayVideoCount++;
       });
     }
-    let maxAllowed = userTier === "monthly" ? 5 : 2;
+    let maxAllowed = userTier === "tier50" ? 15 : 5;
     if (todayVideoCount >= maxAllowed) {
-      customAlert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached. You have already posted ${todayVideoCount} videos today.`);
+      customAlert(`⚠️ Daily Video Limit Reached!\nYour current (${userTier.toUpperCase()}) package daily limit of ${maxAllowed} videos has been reached.`);
       return false;
     }
     return true;
@@ -2265,7 +2243,7 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    if (activeTier === "none") return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package before publishing reels and videos.");
+    if (activeTier === "none") return customAlert("⚠️ Package Required!\nYou must purchase an active Single-Line Package before publishing reels and videos.");
 
     const typeEl = document.getElementById("talentType"), titleEl = document.getElementById("talentTitle"), mediaEl = document.getElementById("talentMedia"), descEl = document.getElementById("talentText"), fileInput = document.getElementById("talentFile");
     const type = typeEl ? typeEl.value : "video", title = titleEl ? titleEl.value.trim() : "";
@@ -2436,77 +2414,67 @@ async function packagesPage() {
   }
 
   const currentPrice = await getPrice();
-  const starterTokens = Number((5 / currentPrice).toFixed(2));
-  const proTokens = Number((15 / currentPrice).toFixed(2));
-  const eliteTokens = Number((120 / currentPrice).toFixed(2));
+  const t15Tokens = Number((15 / currentPrice).toFixed(2));
+  const t50Tokens = Number((50 / currentPrice).toFixed(2));
+  const t120Tokens = Number((120 / currentPrice).toFixed(2));
 
   appDiv().innerHTML = `
     <div class="card center">
-      <h2>Creator Packages & Durations</h2>
-      <p>Activate your package instantly via Direct Web3 Wallet (USDT BEP20) or your Temple_DA Balance.</p>
+      <h2>Single-Line Auto-Reinvestment Packages</h2>
+      <p>Join the perpetual global single-line queue ($15/30d, $50/180d, $120/365d). First-time purchases grant vesting tokens (5% monthly release). Automatic reinvestment clones upgrade your package tier dynamically!</p>
       ${phone ? `<p style="color:#00ff88; margin-top:10px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Balance: ${userBalance.toFixed(2)} Temple_DA</p>` : ''}
     </div>
 
     <div class="grid">
       <div class="card center">
-        <h3 style="color:#fff;">Starter Pack</h3>
-        <p class="number" style="font-size:28px; margin: 6px 0;">5 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${starterTokens} Temple_DA</p>
+        <h3 style="color:#fff;">Starter Single-Line</h3>
+        <p class="number" style="font-size:28px; margin: 6px 0;">15 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${t15Tokens} Temple_DA (Vesting)</p>
         <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:10px;">Duration: 30 Days</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:14px 0;">
-        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 2 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithBalance('starter', 5)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${starterTokens} Temple_DA)</button>
+        <p class="small" style="color:#dfb72c; font-weight:bold;">✓ 5 Videos Daily Limit</p>
+        <button onclick="purchaseSingleLinePackageWeb3('tier15', 15)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="purchaseSingleLinePackageBalance('tier15', 15)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${t15Tokens} TDA)</button>
       </div>
 
       <div class="card center" style="border: 2px solid #dfb72c;">
         <div class="badge-tag" style="margin-bottom:8px;">Most Popular</div>
-        <h3 style="color:#dfb72c;">Pro Creator</h3>
-        <p class="number" style="font-size:28px; margin: 6px 0;">15 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${proTokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:10px;">Duration: 30 Days</p>
+        <h3 style="color:#dfb72c;">Pro Single-Line</h3>
+        <p class="number" style="font-size:28px; margin: 6px 0;">50 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${t50Tokens} Temple_DA (Vesting)</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:10px;">Duration: 6 Months (180d)</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:14px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithBalance('monthly', 15)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${proTokens} Temple_DA)</button>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 15 Videos Daily Limit</p>
+        <button onclick="purchaseSingleLinePackageWeb3('tier50', 50)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="purchaseSingleLinePackageBalance('tier50', 50)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${t50Tokens} TDA)</button>
       </div>
 
       <div class="card center">
-        <h3 style="color:#fff;">Elite Yearly</h3>
+        <h3 style="color:#fff;">Elite Single-Line</h3>
         <p class="number" style="font-size:28px; margin: 6px 0;">120 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${eliteTokens} Temple_DA</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:6px;">≈ ${t120Tokens} Temple_DA (Vesting)</p>
         <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:10px;">Duration: 365 Days</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:14px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
-        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithBalance('yearly', 120)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${eliteTokens} Temple_DA)</button>
+        <button onclick="purchaseSingleLinePackageWeb3('tier120', 120)" style="margin-top:12px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
+        <button onclick="purchaseSingleLinePackageBalance('tier120', 120)" style="margin-top:8px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">💎 Pay via Balance (${t120Tokens} TDA)</button>
       </div>
     </div>
   `;
 }
 
-window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
+window.purchaseSingleLinePackageWeb3 = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
 
   try {
-    const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Package Upgrade`);
-    const activatedAt = Date.now(), expiresAt = activatedAt + getPackageDurationMs(tierName);
-    const userSnap = await get(ref(db, "users/" + phone));
-    const u = userSnap.exists() ? userSnap.val() : {};
-
-    await update(ref(db, "users/" + phone), {
-      tier: tierName, packagePriceUSDT: usdtAmount, packageActivatedAt: activatedAt,
-      packageExpiresAt: expiresAt, packageExpired: false, monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
-    });
-    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, txHash: tx.hash, timestamp: Date.now() });
-
-    if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package`);
-    customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
-  } catch (error) { customAlert("Package activation failed: " + formatWeb3Error(error)); }
+    const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Single-Line Package`);
+    await processSingleLinePackagePurchase(phone, tierName);
+    customAlert(`🎉 Single-Line Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
+  } catch (error) { customAlert("Package purchase failed: " + formatWeb3Error(error)); }
 };
 
-window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
+window.purchaseSingleLinePackageBalance = async (tierName, usdtAmount) => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first");
   const userSnap = await get(ref(db, "users/" + phone));
@@ -2519,37 +2487,27 @@ window.upgradePackageWithBalance = async (tierName, usdtAmount) => {
 
   if (currentBalance < requiredTokens) return customAlert(`Insufficient Balance! You have ${currentBalance.toFixed(2)} Temple_DA, but this package requires ${requiredTokens} Temple_DA.`);
 
-  customConfirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} package?`, async () => {
-    const activatedAt = Date.now(), expiresAt = activatedAt + getPackageDurationMs(tierName);
+  customConfirm(`Deduct ${requiredTokens} Temple_DA from your balance to activate ${tierName.toUpperCase()} Single-Line package?`, async () => {
     const newBalance = Number((currentBalance - requiredTokens).toFixed(2));
-
-    await update(ref(db, "users/" + phone), {
-      balance: newBalance, tier: tierName, packagePriceUSDT: usdtAmount,
-      packageActivatedAt: activatedAt, packageExpiresAt: expiresAt, packageExpired: false,
-      monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
-    });
-    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
-
-    if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package (Balance)`);
-    customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
+    await update(ref(db, "users/" + phone), { balance: newBalance });
+    await processSingleLinePackagePurchase(phone, tierName);
+    customAlert(`🎉 Single-Line Package ${tierName.toUpperCase()} activated successfully using Temple_DA balance!`);
   });
 };
 
 // =============================================================
-// ADMIN DASHBOARD (CTO MASTER VAULT & FAIR INVESTOR MIGRATION)
+// ADMIN DASHBOARD
 // =============================================================
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
   const priceUsd = await getPrice();
-  const masterSnap = await get(ref(db, "cto_master"));
-  const master = masterSnap.exists() ? masterSnap.val() : {
-    totalInflowUSDT: 0, lpPoolUSDT: 0, adminReserveUSDT: 0, ambassadorPoolUSDT: 0, cto8PoolUSDT: 0, cto2WaitingPoolUSDT: 0
-  };
+  const slMasterSnap = await get(ref(db, "single_line_master"));
+  const slMaster = slMasterSnap.exists() ? slMasterSnap.val() : { totalInflowUSDT: 0, communityPoolUSDT: 0, companyReserveUSDT: 0 };
 
-  const queueSnap = await get(ref(db, "cto_waiting_queue"));
-  let queueCount = 0;
-  if (queueSnap.exists()) queueCount = Object.keys(queueSnap.val()).length;
+  const slQueueSnap = await get(ref(db, "single_line_queue"));
+  let slQueueCount = 0;
+  if (slQueueSnap.exists()) slQueueCount = Object.keys(slQueueSnap.val()).length;
 
   onValue(ref(db, "users"), snap => {
     let rows = "";
@@ -2560,7 +2518,7 @@ async function adminDashboard() {
       <td>${p}</td>
       <td>${u.name || 'Member'}</td>
       <td style="font-family:monospace; font-size:11px; color:#00ff88;">${u.wallet || 'N/A'}</td>
-      <td><span class="badge-tag">${u.isCrownAmbassador ? '👑 CROWN' : (u.ctoActiveClub > 0 ? `Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `Queue C${u.inHoldingQueueForClub}` : (u.inWaitingQueue ? 'In Queue' : 'Micro')))}</span></td>
+      <td><span class="badge-tag">${u.tier !== 'none' ? u.tier.toUpperCase() : 'FREE'}</span></td>
       <td>${balTda.toFixed(2)} Temple_DA</td>
       <td style="color:#00ff88; font-weight:bold;">$${(u.activationWallet || 0).toFixed(2)}</td>
       <td>${Number(u.locked || 0).toFixed(2)}</td>
@@ -2578,25 +2536,18 @@ async function adminDashboard() {
         <span style="color:#00ff88;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
-    <!-- 10% CTO Master Pools Vault Card -->
+    <!-- Single-Line Master Vault Card -->
     <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05);">
-      <h3 style="color:#00ff88; margin-bottom:8px;">👑 Global 10% CTO Engine Master Vaults</h3>
+      <h3 style="color:#00ff88; margin-bottom:8px;">⚡ Single-Line Queue Master Vault</h3>
       <table>
-        <tr><td>Total System Inflow:</td><td class="number">$${(master.totalInflowUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>8% CTO Active Club Pool:</td><td style="color:#00ff88; font-weight:bold;">$${(master.cto8PoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>2% FIFO Waiting Pool:</td><td style="color:#dfb72c; font-weight:bold;">$${(master.cto2WaitingPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>1% Crown Ambassador Royalty:</td><td style="color:#cc66ff; font-weight:bold;">$${(master.ambassadorPoolUSDT || 0).toFixed(2)} USDT (0 If No Ambassadors)</td></tr>
-        <tr><td>50% Core Liquidity Pool (LP):</td><td style="color:#3399ff; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>14% Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>Members in FIFO Waiting Queue:</td><td class="number">${queueCount} Users</td></tr>
+        <tr><td>Total Single-Line Inflow:</td><td class="number">$${(slMaster.totalInflowUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Community Pool (Payout Pool):</td><td style="color:#00ff88; font-weight:bold;">$${(slMaster.communityPoolUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Company Reserve (20%):</td><td style="color:#3399ff; font-weight:bold;">$${(slMaster.companyReserveUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Members in Single-Line Queue:</td><td class="number">${slQueueCount} IDs / Clones</td></tr>
       </table>
-      <div style="display:flex; gap:12px; margin-top:14px; flex-wrap:wrap;">
-        <button onclick="runCtoGlobalDistribution()" class="btn-green" style="flex:1;">
-          ⚡ Execute Distribution (Instant Auto-Upgrade, Admin Flush-Out & Royalty)
-        </button>
-        <button onclick="runFairInvestorMigration()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; flex:1;">
-          🏛️ Run Fair Legacy Migration (Single-Shot >= $25)
-        </button>
+      <div style="margin-top:14px;">
+        <input id="slDistributeAmount" placeholder="Enter USDT amount to distribute to Single-Line Queue" type="number" step="any">
+        <button onclick="executeSingleLineDistribution()" class="btn-green">⚡ Run Single-Line Global Queue Distribution (70:30 & Package Upgrades)</button>
       </div>
     </div>
 
@@ -2614,7 +2565,7 @@ async function adminDashboard() {
     <div class="card">
     <h3>Users & Business Overview</h3>
     <div style="overflow-x: auto;">
-      <table><tr><th>Phone</th><th>Name</th><th>Wallet Address</th><th>CTO Status</th><th>Balance</th><th>Activation W.</th><th>Locked</th><th>Action</th></tr>${rows}</table>
+      <table><tr><th>Phone</th><th>Name</th><th>Wallet Address</th><th>Package</th><th>Balance</th><th>Activation W.</th><th>Locked</th><th>Action</th></tr>${rows}</table>
     </div>
     </div>
     <div class="card"><h3>Pending Withdrawals (Approval credits 10% Activation USDT & sends 90% Tokens)</h3><div id="pendingWithdraw"></div></div>
@@ -2623,262 +2574,26 @@ async function adminDashboard() {
   });
 }
 
-window.runFairInvestorMigration = async () => {
-  customConfirm("क्या आप सभी योग्य पुराने निवेशकों (कम से कम $25 कुल निवेश) को वरिष्ठता (Timestamp) के अनुसार Club 1 में माइग्रेट करना चाहते हैं?", async () => {
-    try {
-      const usersSnap = await get(ref(db, "users"));
-      if (!usersSnap.exists()) return customAlert("कोई यूज़र डेटा नहीं मिला।");
+window.executeSingleLineDistribution = async () => {
+  const amtStr = v("slDistributeAmount");
+  const amt = parseFloat(amtStr);
+  if (isNaN(amt) || amt <= 0) return customAlert("Please enter a valid USDT amount to distribute to the Single-Line Queue!");
 
-      let eligibleInvestors = [];
-      usersSnap.forEach(child => {
-        const phone = child.key, u = child.val(), totalInvested = Number(u.investment || 0);
-        if (totalInvested >= 25 && (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador) {
-          eligibleInvestors.push({ phone: phone, name: u.name || "Investor", investment: totalInvested, joinedTimestamp: u.lockDate || u.createdAt || 0 });
-        }
-      });
+  const slMasterRef = ref(db, "single_line_master");
+  const mSnap = await get(slMasterRef);
+  const mData = mSnap.exists() ? mSnap.val() : {};
+  const currentCommunityPool = mData.communityPoolUSDT || 0;
 
-      if (eligibleInvestors.length === 0) return customAlert("कोई भी अन-माइग्रेटेड योग्य निवेशक (>= $25) शेष नहीं है।");
-
-      eligibleInvestors.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
-      const c1Snap = await get(ref(db, "cto_clubs/1/slots"));
-      const currentSlots = c1Snap.exists() ? c1Snap.val() : {};
-      let filledCount = Object.keys(currentSlots).length, migratedToClub1 = 0, queuedCount = 0;
-
-      for (const inv of eligibleInvestors) {
-        if (filledCount < 300) {
-          const slotRef = push(ref(db, "cto_clubs/1/slots"));
-          await set(slotRef, { phone: inv.phone, userName: inv.name, earnedUSDT: 0, capUSDT: 75, status: "active", joinedAt: inv.joinedTimestamp || Date.now(), migratedFromLegacy: true });
-          await update(ref(db, `users/${inv.phone}`), { ctoActiveClub: 1, inWaitingQueue: false });
-          filledCount++; migratedToClub1++;
-        } else {
-          const qRef = push(ref(db, "cto_waiting_queue"));
-          await set(qRef, { phone: inv.phone, userName: inv.name, paidAmount: 25, earned2x: 0, cap: 50, joinedAt: inv.joinedTimestamp || Date.now(), migratedFromLegacy: true });
-          await update(ref(db, `users/${inv.phone}`), { ctoActiveClub: 0, inWaitingQueue: true });
-          queuedCount++;
-        }
-      }
-      customAlert(`🎉 निष्पक्ष माइग्रेशन पूर्ण!\n\n• कुल योग्य निवेशक (>= $25): ${eligibleInvestors.length}\n• Club 1 में सक्रिय स्लॉट मिले: ${migratedToClub1}\n• FIFO वेटिंग रूम में गए: ${queuedCount}\n\nसभी पुराने निवेशकों को वरिष्ठता (Timestamp) के आधार पर स्थान दिया गया है!`);
-      adminDashboard();
-    } catch (err) { customAlert("माइग्रेशन त्रुटि: " + err.message); }
-  });
-};
-
-// -------------------------------------------------------------
-// 🔥 EXECUTE CTO DIVIDENDS, INSTANT AUTO-UPGRADE & FLUSH-OUT LOGIC 🔥
-// -------------------------------------------------------------
-window.runCtoGlobalDistribution = async () => {
-  try {
-    const masterSnap = await get(ref(db, "cto_master"));
-    if (!masterSnap.exists()) return customAlert("No master pool data found.");
-    const master = masterSnap.val();
-
-    const cto8Available = master.cto8PoolUSDT || 0;
-    const cto2Available = master.cto2WaitingPoolUSDT || 0;
-    const ambassadorAvail = master.ambassadorPoolUSDT || 0;
-
-    if (cto8Available <= 0 && cto2Available <= 0 && ambassadorAvail <= 0) {
-      return customAlert("Available CTO pools are 0 USDT. No new inflow to distribute.");
-    }
-
-    const currentPrice = await getPrice();
-    const clubsSnap = await get(ref(db, "cto_clubs"));
-    const clubsData = clubsSnap.exists() ? clubsSnap.val() : {};
-
-    let totalSlotsRewarded = 0;
-    let autoUpgradesCount = 0;
-    let newAmbassadorsCount = 0;
-    let updates = {};
-    let vacatedClubsToPromote = [];
-
-    // Zero-Liability variables
-    let unallocatedToAdmin = 0; // The total funds from completely EMPTY clubs
-    let excessFlushOutToAdmin = 0; // Funds that exceed a user's Gross Cap (Flush out)
-
-    // Tsunami Drop Variables
-    let tsunamiCto8 = 0;
-    let tsunamiCto2 = 0;
-    let tsunamiAdmin = 0;
-
-    for (const cfg of CTO_CLUBS_CONFIG) {
-      const cSlots = (clubsData[cfg.id] && clubsData[cfg.id].slots) ? clubsData[cfg.id].slots : {};
-      const activeKeys = Object.keys(cSlots).filter(k => cSlots[k].status === "active");
-      const clubShareUSDT = (cto8Available * (cfg.ctoSharePct / 8.00));
-      
-      if (activeKeys.length > 0) {
-        const payoutPerSlotUSDT = clubShareUSDT / activeKeys.length;
-
-        for (const slotKey of activeKeys) {
-          const s = cSlots[slotKey];
-          const currentEarned = Number(s.earnedUSDT || 0);
-          const potentialEarned = currentEarned + payoutPerSlotUSDT;
-          
-          if (potentialEarned >= cfg.grossCap) {
-            
-            // 🚨 FLUSH OUT CALCULATION 🚨
-            const excess = potentialEarned - cfg.grossCap;
-            if (excess > 0) {
-                excessFlushOutToAdmin += excess; // Add excess amount to Admin Reserve
-            }
-
-            // Set new earned to exact cap
-            const newEarned = cfg.grossCap;
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}/earnedUSDT`] = newEarned;
-
-            // 1. INSTANT AUTO-CREDIT NET PROFIT
-            if (!s.netProfitCredited) {
-              const netProfitUSDT = cfg.netUserWithdrawal;
-              const netTokens = Number((netProfitUSDT / currentPrice).toFixed(2));
-              const snapBal = await get(ref(db, `users/${s.phone}/balance`));
-              const currentBal = Number(snapBal.val() || 0);
-              const activeBalToUpdate = updates[`users/${s.phone}/balance`] !== undefined ? updates[`users/${s.phone}/balance`] : currentBal;
-              updates[`users/${s.phone}/balance`] = Number((activeBalToUpdate + netTokens).toFixed(2));
-              updates[`cto_clubs/${cfg.id}/slots/${slotKey}/netProfitCredited`] = true;
-            }
-
-            // 2. REMOVE FROM CURRENT CLUB (INSTANT UPGRADE LOGIC)
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}`] = null; 
-            vacatedClubsToPromote.push(cfg.id);
-
-            if (cfg.id < 10) {
-              const nextClubId = cfg.id + 1;
-              const nextClubCfg = CTO_CLUBS_CONFIG.find(c => c.id === nextClubId);
-              const nextClubSlotsSnap = await get(ref(db, `cto_clubs/${nextClubId}/slots`));
-              const nextCurrentSlots = Object.keys(nextClubSlotsSnap.val() || {}).length;
-
-              if (nextCurrentSlots < nextClubCfg.slotsMax) {
-                const nextSlotKey = push(ref(db)).key;
-                updates[`cto_clubs/${nextClubId}/slots/${nextSlotKey}`] = {
-                  phone: s.phone, userName: s.userName, earnedUSDT: 0, capUSDT: nextClubCfg.grossCap, status: "active", joinedAt: Date.now()
-                };
-                updates[`users/${s.phone}/ctoActiveClub`] = nextClubId;
-                updates[`users/${s.phone}/inHoldingQueueForClub`] = null;
-              } else {
-                const qKey = push(ref(db)).key;
-                updates[`cto_upgrade_queues/${nextClubId}/${qKey}`] = {
-                  phone: s.phone, userName: s.userName, paidAmount: cfg.upgradeCost, targetClubId: nextClubId, timestamp: Date.now()
-                };
-                updates[`users/${s.phone}/ctoActiveClub`] = 0;
-                updates[`users/${s.phone}/inHoldingQueueForClub`] = nextClubId;
-                updates[`users/${s.phone}/holdingQueueJoinedAt`] = Date.now();
-              }
-              autoUpgradesCount++;
-            } else {
-              // 3. THE ENDGAME: CLUB 10 COMPLETION (CROWN AMBASSADOR)
-              updates[`users/${s.phone}/ctoActiveClub`] = 0;
-              updates[`users/${s.phone}/isCrownAmbassador`] = true;
-              
-              // Tsunami Drop - $10,000 Remaining (70% Community, 30% Admin)
-              tsunamiCto8 += 5600;  // 80% of $7,000
-              tsunamiCto2 += 1400;  // 20% of $7,000
-              tsunamiAdmin += 3000; // 30% of $10,000
-              
-              newAmbassadorsCount++;
-            }
-          } else {
-            updates[`cto_clubs/${cfg.id}/slots/${slotKey}/earnedUSDT`] = Number(potentialEarned.toFixed(2));
-          }
-          totalSlotsRewarded++;
-        }
-      } else {
-          // If club is completely empty, the whole club share goes to Admin Reserve
-          unallocatedToAdmin += clubShareUSDT;
-      }
-    }
-
-    const queueSnap = await get(ref(db, "cto_waiting_queue"));
-    let waitingRewardedCount = 0;
-    if (cto2Available > 0) {
-      if (queueSnap.exists()) {
-          const qData = queueSnap.val();
-          const qKeys = Object.keys(qData);
-          if (qKeys.length > 0) {
-            const perMemberUSDT = cto2Available / qKeys.length;
-            qKeys.forEach(k => {
-              const cur2x = Number(qData[k].earned2x || 0);
-              const potential2x = cur2x + perMemberUSDT;
-              if (potential2x >= 50) {
-                // FLUSH OUT FOR WAITING QUEUE
-                const excess = potential2x - 50;
-                if(excess > 0) excessFlushOutToAdmin += excess;
-                updates[`cto_waiting_queue/${k}/earned2x`] = 50;
-              } else {
-                updates[`cto_waiting_queue/${k}/earned2x`] = Number(potential2x.toFixed(2));
-              }
-              waitingRewardedCount++;
-            });
-          } else {
-            unallocatedToAdmin += cto2Available;
-          }
-      } else {
-          unallocatedToAdmin += cto2Available;
-      }
-    }
-
-    // 1% CROWN AMBASSADOR ZERO-RESET LOGIC
-    let royaltyPaidCount = 0;
-    if (ambassadorAvail > 0) {
-        const usersGlobalSnap = await get(ref(db, "users"));
-        let ambassadorPhones = [];
-        if (usersGlobalSnap.exists()) {
-            usersGlobalSnap.forEach(ch => {
-                if(ch.val().isCrownAmbassador) ambassadorPhones.push(ch.key);
-            });
-        }
-        
-        if (ambassadorPhones.length > 0) {
-            // Distribute to Ambassadors
-            const perAmbassadorUSDT = ambassadorAvail / ambassadorPhones.length;
-            const perAmbTokens = Number((perAmbassadorUSDT / currentPrice).toFixed(2));
-            for(const ambPhone of ambassadorPhones) {
-                const snapBal = await get(ref(db, `users/${ambPhone}/balance`));
-                const currentBal = Number(snapBal.val() || 0);
-                const activeBalToUpdate = updates[`users/${ambPhone}/balance`] !== undefined ? updates[`users/${ambPhone}/balance`] : currentBal;
-                updates[`users/${ambPhone}/balance`] = Number((activeBalToUpdate + perAmbTokens).toFixed(2));
-                royaltyPaidCount++;
-            }
-        } else {
-            // No Ambassadors yet -> Send to Admin Reserve (Company Turnover)
-            unallocatedToAdmin += ambassadorAvail;
-        }
-    }
-
-    // FINAL MASTER POOL UPDATES (ZERO-LIABILITY SECURED)
-    const curAdmin = master.adminReserveUSDT || 0;
-    const newAdminTotal = curAdmin + unallocatedToAdmin + excessFlushOutToAdmin + tsunamiAdmin;
-
-    updates[`cto_master/cto8PoolUSDT`] = Number((tsunamiCto8).toFixed(2));
-    updates[`cto_master/cto2WaitingPoolUSDT`] = Number((tsunamiCto2).toFixed(2));
-    updates[`cto_master/ambassadorPoolUSDT`] = 0;
-    updates[`cto_master/adminReserveUSDT`] = Number((newAdminTotal).toFixed(2));
-    updates[`cto_master/lastDistributedAt`] = Date.now();
-
-    await update(ref(db), updates);
-
-    // Trigger Domino Reaction for vacated seats
-    for (const vClub of vacatedClubsToPromote) {
-        await promoteNextInQueue(vClub);
-    }
-
-    let alertMsg = `✅ CTO Distribution Complete (Zero-Liability Executed)!\n\n`;
-    alertMsg += `• ${totalSlotsRewarded} Active Members received their exact club share.\n`;
-    alertMsg += `• ${waitingRewardedCount} Waiting Members received queue funds.\n`;
-    alertMsg += `• ${royaltyPaidCount} Crown Ambassadors received their 1% royalty.\n`;
-    alertMsg += `• $${unallocatedToAdmin.toFixed(2)} USDT from Empty Clubs saved to Admin Reserve.\n`;
-    
-    if (excessFlushOutToAdmin > 0) {
-        alertMsg += `• $${excessFlushOutToAdmin.toFixed(2)} USDT (Excess/Flush Out) transferred to Admin Reserve.\n`;
-    }
-    
-    alertMsg += `• All Master Pools successfully reset to $0.`;
-    
-    if (newAmbassadorsCount > 0) {
-        alertMsg += `\n\n🚨 TSUNAMI DROP TRIGGERED! 🚨\n${newAmbassadorsCount} Leader(s) graduated Club 10! $${tsunamiCto8 + tsunamiCto2} injected into CTO pools, $${tsunamiAdmin} to Company!`;
-    }
-
-    customAlert(alertMsg);
-  } catch (err) {
-    customAlert("Distribution Error: " + err.message);
+  if (amt > currentCommunityPool) {
+    return customAlert(`Amount exceeds available Community Pool ($${currentCommunityPool.toFixed(2)} USDT)!`);
   }
+
+  await update(slMasterRef, {
+    communityPoolUSDT: Number((currentCommunityPool - amt).toFixed(2))
+  });
+
+  await runSingleLineGlobalPayout(amt);
+  customAlert(`✅ Single-Line Global Queue Distribution of $${amt} executed successfully!\n70% credited to user balances, 30% reinvested, and user package tiers automatically upgraded ($15 ➔ $50 ➔ $120).`);
 };
 
 function loadPendingWithdraw() {
@@ -2976,10 +2691,6 @@ window.deleteUser = async id => { customConfirm("Are you sure you want to delete
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
 
-// ---------------------------------------------------------------------------------
-// 🔥 REFACTORED HISTORIES: ALL CHANGED TO get() TO PREVENT INFINITE RE-RENDERING 🔥
-// ---------------------------------------------------------------------------------
-
 async function loadReferralHistory(phone) {
   try {
     const snap = await get(ref(db, "referral_history/" + phone));
@@ -3069,7 +2780,7 @@ async function loadInvestHistory(phone) {
     let html = "";
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Invested: <span class="number">${d.amountUSDT} USDT</span><br><span style="color:#888;">${date}</span></div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:8px 0;">Invested: <span class="number">${d.amountUSDT} USDT</span> (${d.package || 'Staking'})<br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("investHistory");
     if (el) el.innerHTML = html || "No investment history found.";
@@ -3117,7 +2828,7 @@ async function loadGiftHistory(phone) {
       sentGifts.sort((a, b) => b.timestamp - a.timestamp);
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
-        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br><span style="color:#888;">${date}</span></div>`;
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:6px 0;">Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientName)})<br><span style="color:#888;">${date}</span></div>`;
       });
     } else { html += `<p class="small">No gifts sent yet.</p>`; }
     el.innerHTML = html;
