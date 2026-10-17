@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temple_DA Ultimate Web3 Ecosystem & 10% CTO Clubs</title>
+<title>Temple_DA Ultimate Web3 Ecosystem & Auto-Mode Reinvestment Wheel</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 <!-- Ethers.js Library for Direct Web3 Wallet & Contract Interactions -->
@@ -26,13 +26,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Streamlined & Compact Sticky Tech Navigation */
+/* Compact & Clean Sticky Navigation Bar */
 nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
-  background: rgba(12, 12, 12, 0.95);
+  padding: 12px 24px;
+  background: rgba(12, 12, 12, 0.96);
   backdrop-filter: blur(16px);
   border-bottom: 2px solid #dfb72c;
   box-shadow: 0 4px 25px rgba(223, 183, 44, 0.2);
@@ -40,7 +40,7 @@ nav {
   top: 0;
   z-index: 1000;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 nav div:first-child {
@@ -54,7 +54,7 @@ nav div:first-child {
 nav .nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -92,7 +92,7 @@ nav a:hover {
 
 /* Glassmorphism Cards */
 .card {
-  background: rgba(22, 22, 22, 0.7);
+  background: rgba(22, 22, 22, 0.75);
   border: 1px solid rgba(223, 183, 44, 0.3);
   padding: 24px;
   border-radius: 16px;
@@ -154,7 +154,7 @@ button {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 13px;
+  padding: 12px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
@@ -267,6 +267,29 @@ td {
   background: rgba(255, 68, 68, 0.2);
   color: #ff4444;
   border: 1px solid #ff4444;
+}
+
+/* Auto-Mode Reinvestment Wheel Animation */
+.wheel-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 12px;
+  background: rgba(0, 255, 136, 0.06);
+  border: 1px solid #00ff88;
+  border-radius: 12px;
+  margin: 10px 0;
+}
+
+.spinning-wheel {
+  font-size: 28px;
+  animation: spinWheel 3s linear infinite;
+}
+
+@keyframes spinWheel {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Non-blocking Web3 Status Toast */
@@ -680,7 +703,7 @@ const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 let activePostIdForComments = null;
 
 // ========================================================
-// 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION (PRESTIGE TITLES)
+// 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION
 // ========================================================
 const CTO_CLUBS_CONFIG = [
   { id: 1, name: "Club 1 • Bronze Pillar", icon: "🏛️", slotsMax: 300, slotPrice: 25, ctoSharePct: 2.00, capMultiplier: 3.0, grossCap: 75, upgradeCost: 50, netUserWithdrawal: 25 },
@@ -941,6 +964,9 @@ window.closeModalPopup = () => {
   if (container) container.innerHTML = "";
 };
 
+// ========================================================
+// 15-LEVEL STAKING REFERRAL COMMISSION ENGINE
+// ========================================================
 async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, sourceUserPhone = "", purposeLabel = "15-Level Referral") {
   const levelPercentages = [10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.5, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2];
   let currentRefPhone = startReferrerPhone;
@@ -974,8 +1000,100 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
   }
 }
 
-async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel) {
-  const direct25Total = amountUSDT * 0.25;
+// ========================================================
+// CUSTOMIZED PACKAGE UPLINE & DOWNLINE DISTRIBUTION ENGINE
+// ========================================================
+async function distributeCustomPackageCommission(startReferrerPhone, userPhone, packageTier, totalAmountUSDT, purposeLabel, isReinvestment = false) {
+  let depth = 5;
+  let uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10% for $5
+  let downlinePercentages = [1.5, 1.0, 0.8, 0.4, 0.3];
+
+  if (packageTier === "starter" || packageTier === "5") {
+    depth = 5;
+    uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10%
+    downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3];
+  } else if (packageTier === "monthly" || packageTier === "15") {
+    depth = 10;
+    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4]; // Total 10.5%
+    downlinePercentages = [1.0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1]; // Total 4.5% (Total 15%)
+  } else if (packageTier === "50" || packageTier === "advanced") {
+    depth = 15;
+    uplinePercentages = [2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2]; // Total 18.0%
+    downlinePercentages = [0.5, 0.4, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]; // Total 2.0% (Total 20%)
+  } else if (packageTier === "yearly" || packageTier === "120") {
+    depth = 20;
+    uplinePercentages = [3.0, 2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1]; // Total 22.0%
+    downlinePercentages = [0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01]; // Total 3.0% (Total 25%)
+  }
+
+  let poolMultiplier = isReinvestment ? 2.0 : 1.0; // 50% distribution on reinvestment
+  let currentRefPhone = startReferrerPhone;
+  const currentPrice = await getPrice();
+
+  // 1. Upline Distribution
+  for (let i = 0; i < depth; i++) {
+    if (!currentRefPhone || i >= uplinePercentages.length) break;
+    const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
+    if (!refUserSnap.exists()) break;
+
+    const refUserData = refUserSnap.val();
+    const percentage = uplinePercentages[i] * poolMultiplier;
+    const commissionUSDT = Number(((totalAmountUSDT * percentage) / 100).toFixed(4));
+    const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
+
+    const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
+    await update(ref(db, "users/" + currentRefPhone), { balance: newBalance });
+
+    await push(ref(db, `referral_history/${currentRefPhone}`), {
+      fromUser: userPhone,
+      level: i + 1, percentage: percentage, amountUSDT: commissionUSDT, amountTokens: commissionTokens,
+      source: `${purposeLabel} (${isReinvestment ? 'Auto-Mode Reinvestment Cycle 50%' : 'Upline'} L${i + 1} - ${percentage}%)`, timestamp: Date.now()
+    });
+
+    currentRefPhone = refUserData.referrer || "";
+  }
+
+  // 2. Downline Spillover Distribution
+  let currentDownlinePhones = [userPhone];
+  const allUsersSnap = await get(ref(db, "users"));
+  if (!allUsersSnap.exists()) return;
+  let allUsers = {};
+  allUsersSnap.forEach(ch => { allUsers[ch.key] = ch.val(); });
+
+  for (let i = 0; i < depth; i++) {
+    if (currentDownlinePhones.length === 0 || i >= downlinePercentages.length) break;
+    let nextLevelDownlines = [];
+    const percentage = downlinePercentages[i] * poolMultiplier;
+
+    currentDownlinePhones.forEach(parentPhone => {
+      Object.keys(allUsers).forEach(uPhone => {
+        if (allUsers[uPhone].referrer === parentPhone) {
+          nextLevelDownlines.push(uPhone);
+        }
+      });
+    });
+
+    if (nextLevelDownlines.length > 0) {
+      const sharePerDownlineUSDT = Number(((totalAmountUSDT * percentage) / 100 / nextLevelDownlines.length).toFixed(4));
+      const shareTokens = Number((sharePerDownlineUSDT / currentPrice).toFixed(2));
+
+      for (const dPhone of nextLevelDownlines) {
+        const dUser = allUsers[dPhone];
+        const newBal = Number(((dUser.balance || 0) + shareTokens).toFixed(2));
+        await update(ref(db, "users/" + dPhone), { balance: newBal });
+
+        await push(ref(db, `referral_history/${dPhone}`), {
+          fromUser: userPhone,
+          level: i + 1, percentage: percentage, amountUSDT: sharePerDownlineUSDT, amountTokens: shareTokens,
+          source: `${purposeLabel} (${isReinvestment ? 'Auto-Mode Reinvestment 50%' : 'Downline'} L${i + 1})`, timestamp: Date.now()
+        });
+      }
+    }
+    currentDownlinePhones = nextLevelDownlines;
+  }
+}
+
+async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel, packageTier = null, isReinvestment = false) {
   const cto8 = amountUSDT * 0.08;
   const cto2Waiting = amountUSDT * 0.02;
   const lp50 = amountUSDT * 0.50;
@@ -987,24 +1105,62 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   const sponsorPhone = userData.referrer || "";
 
   if (sponsorPhone) {
-    await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
+    if (packageTier) {
+      await distributeCustomPackageCommission(sponsorPhone, userPhone, packageTier, amountUSDT, purposeLabel, isReinvestment);
+    } else {
+      await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
+    }
   }
 
   const masterRef = ref(db, "cto_master");
   const mSnap = await get(masterRef);
   const mData = mSnap.exists() ? mSnap.val() : {};
 
+  let finalLp = isReinvestment ? (amountUSDT * 0.25) : lp50;
+  let finalAdmin = isReinvestment ? (admin14 + (amountUSDT * 0.25)) : admin14;
+
   await update(masterRef, {
     totalInflowUSDT: Number(((mData.totalInflowUSDT || 0) + amountUSDT).toFixed(2)),
-    lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + lp50).toFixed(2)),
-    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + admin14).toFixed(2)),
+    lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + finalLp).toFixed(2)),
+    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + finalAdmin).toFixed(2)),
     ambassadorPoolUSDT: Number(((mData.ambassadorPoolUSDT || 0) + ambassador1).toFixed(2)),
     cto8PoolUSDT: Number(((mData.cto8PoolUSDT || 0) + cto8).toFixed(2)),
     cto2WaitingPoolUSDT: Number(((mData.cto2WaitingPoolUSDT || 0) + cto2Waiting).toFixed(2)),
     lastUpdated: Date.now()
   });
 
-  return { direct25Total, cto8, cto2Waiting, lp50, admin14, ambassador1 };
+  return { cto8, cto2Waiting, lp50, admin14, ambassador1 };
+}
+
+// ========================================================
+// AUTOMATED AUTO-MODE REINVESTMENT WHEEL CHECKER
+// ========================================================
+async function checkAndTriggerAutoModeReinvestment(phone, u) {
+  if (!u.tier || u.tier === "none" || u.packageExpired) return;
+  const packagePrice = Number(u.packagePriceUSDT || 15);
+  const earningsAccumulated = Number(u.packageEarningsAccumulated || 0);
+  const threshold = packagePrice * 2.0; // 2X earnings triggers auto reinvestment cycle
+
+  if (earningsAccumulated >= threshold) {
+    // Trigger Auto-Mode Reinvestment Wheel
+    const newActivatedAt = Date.now();
+    const newExpiresAt = newActivatedAt + getPackageDurationMs(u.tier);
+
+    await update(ref(db, "users/" + phone), {
+      packageEarningsAccumulated: 0,
+      packageActivatedAt: newActivatedAt,
+      packageExpiresAt: newExpiresAt,
+      lastReinvestmentAt: newActivatedAt
+    });
+
+    await push(ref(db, "reinvestment_cycles/" + phone), {
+      tier: u.tier, amountUSDT: packagePrice, timestamp: newActivatedAt, status: "Auto-Mode Reinvestment Triggered"
+    });
+
+    if (u.referrer) {
+      await recordMasterInflowAndDistribute(phone, packagePrice, `${u.tier.toUpperCase()} Auto-Mode Reinvestment Wheel`, u.tier, true);
+    }
+  }
 }
 
 async function promoteNextInQueue(clubId) {
@@ -1193,7 +1349,7 @@ async function landing() {
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 24px;">Temple_DA</h2>
-    <p>The Future of Decentralized Finance, Reels Showcase & 10% Global CTO Ecosystem</p>
+    <p>The Future of Decentralized Finance, Reels Showcase & Auto-Mode Reinvestment Wheel</p>
     
     <div style="margin: 20px 0;">
         <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px; padding: 14px 22px;">
@@ -1220,11 +1376,9 @@ async function landing() {
   </div>
 
   <div class="card">
-    <h3>About Temple_DA Ecosystem</h3>
+    <h3>About Temple_DA Auto-Mode Ecosystem</h3>
     <p style="color: #ccc; line-height: 1.6; font-size: 15px;">
-        Temple_DA is a decentralized ecosystem combining financial growth with talent monetization. 
-        Showcase your reels, videos, art, and writing, interact with members, and earn real 
-        Temple_DA tokens. Holders also benefit from our revolutionary <strong>Single-Shot $25+ 10-Club 10% CTO Progression Engine</strong> ($25 to $77,255 USDT net profit), 100% token vesting asset backing (5% monthly release), and a 15-level referral system.
+        Temple_DA integrates high-velocity short-form reels monetization with the revolutionary <strong>Auto-Mode Reinvestment Wheel</strong>. Packages automatically cycle upon reaching accumulation thresholds, triggering 50% high-velocity team distributions and strengthening core DEX liquidity without manual intervention.
     </p>
   </div>
 
@@ -1233,16 +1387,16 @@ async function landing() {
   
   <div class="grid">
     <div class="card">
-        <h3>10% Global CTO</h3>
-        <p class="small">10 progressive clubs, 1,000 slots, instant auto-upgrades, and FIFO waiting room 2X payout protection.</p>
+        <h3>Auto-Mode Reinvestment</h3>
+        <p class="small">Perpetual cycle wheel automatically triggers package reinvestment, driving continuous single-leg payouts.</p>
     </div>
     <div class="card">
         <h3>Showcase & Earn</h3>
-        <p class="small">Upload reels and videos. Earn points on every like, subscriber & conversation.</p>
+        <p class="small">Upload reels with tier-based daily limits (2, 5, 25, or Unlimited). Earn points on every like, subscriber & conversation.</p>
     </div>
     <div class="card">
-        <h3>15-Level Referral</h3>
-        <p class="small">Build a long-term network. Unlock up to 15 tiers of referral commissions (25% total pool) on community activations.</p>
+        <h3>Customized Tiers</h3>
+        <p class="small">Starter $5 (10%), Pro $15 (15%), Advanced $50 (20%), and Elite Yearly $120 (25%) tiered generation spreads.</p>
     </div>
     <div class="card">
         <h3>Activation Wallet Desk</h3>
@@ -1256,7 +1410,7 @@ async function landing() {
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
         <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit</td></tr>
-        <tr><td>Referral Levels</td><td class="number">15 Levels Deep (25% Pool)</td></tr>
+        <tr><td>Reinvestment Wheel</td><td class="number">50% High-Velocity Distribution</td></tr>
     </table>
   </div>
   <div class="card center">
@@ -1374,6 +1528,7 @@ window.registerUser = async () => {
     inWaitingQueue: false, inHoldingQueueForClub: null, holdingQueueJoinedAt: 0,
     investment: 0, locked: 0, lockDate: 0, referrer: referrer || "", createdAt: Date.now(),
     tier: "none", packagePriceUSDT: 0, packageActivatedAt: 0, packageExpiresAt: 0, packageExpired: false,
+    packageEarningsAccumulated: 0, lastReinvestmentAt: 0,
     points: 10, subscribersCount: 0, monthlyBusiness: 0, lastClaimTimestamp: 0, todayWithdrawnAmount: 0, lastWithdrawDate: ""
   });
 
@@ -1560,8 +1715,8 @@ async function ctoClubsPage() {
       <!-- 100% Inflow Master Breakup -->
       <div class="grid" style="margin-top:16px;">
         <div class="card" style="padding:12px;">
-          <h3 style="font-size:10px;">25% 15-Level Referral</h3>
-          <span style="color:#dfb72c; font-size:14px; font-weight:bold;">15 Tiers Team Income</span>
+          <h3 style="font-size:10px;">Customized Referral</h3>
+          <span style="color:#dfb72c; font-size:14px; font-weight:bold;">5 to 20 Deep Tiers</span>
         </div>
         <div class="card" style="padding:12px; border-color:#00ff88;">
           <h3 style="font-size:10px;">10% Global CTO</h3>
@@ -1624,7 +1779,7 @@ async function ctoClubsPage() {
       <!-- Activation Wallet Quick Link -->
       <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(223,183,44,0.25); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <span class="small" style="max-width:620px;">
-          💡 <strong>Activation Wallet Utility:</strong> Fund your Activation Wallet via direct USDT deposit to perform P2P ID activations or self-package upgrades instantly!
+          💡 <strong>Activation Wallet Utility:</strong> Fund your Activation Wallet via direct USDT deposit to perform P2P member ID activations or self-package upgrades instantly!
         </span>
         <a href="#activationwallet"><button style="width:auto; padding:8px 16px; margin:0; font-size:11px;" class="btn-green">🛡️ Open Activation Wallet Desk</button></a>
       </div>
@@ -1687,7 +1842,7 @@ async function activationWalletPage() {
       <p class="small" style="margin-bottom:10px;">
         Transfer USDT directly from your Web3 wallet (MetaMask / Trust Wallet) to fund your Activation Wallet instantly.
       </p>
-      <input id="depositActivationAmount" placeholder="Enter USDT amount to deposit (e.g. 25, 50, 120)" type="number" step="any">
+      <input id="depositActivationAmount" placeholder="Enter USDT amount to deposit (e.g. 15, 50, 120)" type="number" step="any">
       <button onclick="depositToActivationWalletViaWeb3()" class="btn-green">⚡ Deposit USDT via Web3 Wallet</button>
     </div>
 
@@ -1708,9 +1863,10 @@ async function activationWalletPage() {
         Use your Activation Wallet balance to upgrade your own creator packages or club positions instantly without external wallet transactions.
       </p>
       <select id="selfUpgradeSelect">
-        <option value="15">Pro Creator Package ($15 USDT / 30 Days)</option>
-        <option value="50">Advanced Creator Package ($50 USDT / Club 2 Ready)</option>
-        <option value="120">Elite Yearly Package ($120 USDT / 365 Days)</option>
+        <option value="5">Starter Pack ($5 USDT / 5 Levels / 2 Videos Daily)</option>
+        <option value="15">Pro Creator Package ($15 USDT / 10 Levels / 5 Videos Daily)</option>
+        <option value="50">Advanced Creator Package ($50 USDT / 15 Levels / 25 Videos Daily)</option>
+        <option value="120">Elite Yearly Package ($120 USDT / 20 Levels / Unlimited Videos)</option>
         <option value="25">Club 1 • Bronze Pillar ($25 USDT)</option>
       </select>
       <button onclick="executeSelfUpgradeFromActivation()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">⚡ Upgrade Selected Item Using Activation Wallet</button>
@@ -1802,7 +1958,9 @@ window.executeSelfUpgradeFromActivation = async () => {
       activationWallet: Number(((u.activationWallet || 0) - amount).toFixed(2))
     });
 
-    if (amount === 15) {
+    if (amount === 5) {
+      await upgradePackageDirectInternal(phone, "starter", 5, "Activation Wallet");
+    } else if (amount === 15) {
       await upgradePackageDirectInternal(phone, "monthly", 15, "Activation Wallet");
     } else if (amount === 50) {
       await upgradePackageDirectInternal(phone, "50", 50, "Activation Wallet");
@@ -1887,11 +2045,12 @@ async function upgradePackageDirectInternal(phone, tierName, usdtAmount, sourceL
 
   await update(ref(db, "users/" + phone), {
     tier: tierName, packagePriceUSDT: usdtAmount, packageActivatedAt: activatedAt,
-    packageExpiresAt: expiresAt, packageExpired: false, monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
+    packageExpiresAt: expiresAt, packageExpired: false, monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount,
+    packageEarningsAccumulated: 0, lastReinvestmentAt: activatedAt
   });
   await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
 
-  if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package (${sourceLabel})`);
+  if (u.referrer) await recordMasterInflowAndDistribute(phone, usdtAmount, `${tierName.toUpperCase()} Package (${sourceLabel})`, tierName, false);
 }
 
 window.claimWaitingRoom2X = async () => {
@@ -2105,6 +2264,8 @@ async function userDashboard() {
 
   onValue(ref(db, "users/" + phone), async snap => {
     const u = snap.val() || {};
+    await checkAndTriggerAutoModeReinvestment(phone, u);
+
     const activeTier = checkAndHandlePackageExpiry(phone, u);
     let expiryNotice = "";
     if (activeTier !== "none" && u.packageExpiresAt) {
@@ -2120,15 +2281,14 @@ async function userDashboard() {
     const actWalletUSDT = Number(u.activationWallet || 0);
     const userWallet = u.wallet || "Not Linked";
 
-    // 24h Cooldown Check for UI
-    const nowMs = Date.now();
+    const now = Date.now();
     const twentyFourHoursMs = 24 * 60 * 60 * 1000;
     const lastClaim = Number(u.lastClaimTimestamp || 0);
-    const canClaimToday = lastClaim === 0 || (nowMs - lastClaim) >= twentyFourHoursMs;
+    const canClaimToday = lastClaim === 0 || (now - lastClaim) >= twentyFourHoursMs;
 
     const maxDailyAllowed = getEffectiveTierLimit(u);
-    const todayWithdrawn = (u.lastWithdrawDate === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`) ? Number(u.todayWithdrawnAmount || 0) : 0;
-    const isCtoMember = (u.ctoActiveClub && u.ctoActiveClub > 0) || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador;
+    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const todayWithdrawn = (u.lastWithdrawDate === todayStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
 
     appDiv().innerHTML = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 16px; text-align: center;">
@@ -2150,6 +2310,16 @@ async function userDashboard() {
         `<button onclick="claimDailyReward()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px; padding: 11px; margin-top: 10px; animation: pulseBtn 2s infinite;">⚡ Claim +10 XP Now</button>`
       }
     </div>
+
+    <!-- AUTO-MODE REINVESTMENT WHEEL VISUAL STATUS WIDGET -->
+    ${activeTier !== 'none' ? `
+    <div class="wheel-container">
+      <div class="spinning-wheel">⚙️</div>
+      <div>
+        <h3 style="color:#00ff88; font-size:14px; margin-bottom:2px;">🔄 Auto-Mode Reinvestment Wheel Active</h3>
+        <p class="small" style="color:#fff;">Your package (<b>${activeTier.toUpperCase()}</b>) is running on auto-mode. Accumulated earnings automatically trigger cycle reinvestments and 50% high-velocity team distributions.</p>
+      </div>
+    </div>` : ''}
 
     <!-- 10 CTO CLUBS HERO PROMOTION CARD -->
     <div class="card" style="border: 2px solid #00ff88; background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(223,183,44,0.06));">
@@ -2194,13 +2364,13 @@ async function userDashboard() {
       <div class="card"><h3>Package</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
     </div>
 
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
           <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
         </div>
-        <div><a href="#packages"><button style="width:auto; padding:11px 18px; font-size:11px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package (15, 50, 120 USDT)</button></a></div>
+        <div><a href="#packages"><button style="width:auto; padding:11px 18px; font-size:11px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package ($5, $15, $50, $120)</button></a></div>
       </div>
     </div>
 
@@ -2235,7 +2405,7 @@ async function userDashboard() {
       <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">Convert Points To Temple_DA</button>
     </div>
 
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0,255,136,0.03);">
+    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
       <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
       <p class="small">
         • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
@@ -2251,10 +2421,10 @@ async function userDashboard() {
         <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">0% ADMIN CHARGES</span>
       </div>
       <p class="small" style="color:#ccc; margin-bottom:10px;">
-        Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP-20 address. The remaining <strong>10%</strong> converts to USDT and is credited to your <strong>Activation Wallet</strong> immediately upon approval!
+        Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP20 wallet. The remaining <strong>10%</strong> converts to USDT and credits automatically to your Activation Wallet upon admin approval for team building.
       </p>
       <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:10px 14px; margin-bottom:12px;">
-        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📊 Daily Withdrawal Tier Limits:</span>
+        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📊 Daily Withdrawal Tier Limits (Strictly Enforced):</span>
         <div style="font-size:12px; color:#eee; line-height:1.5;">
           • <strong>Open Micro-Staking (< $25 single-shot):</strong> Max 60 Temple_DA / day<br>
           • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
@@ -2272,7 +2442,7 @@ async function userDashboard() {
     </div>
 
     <h3 style="margin-top:24px;">Account Histories & Records (Click To View)</h3>
-    <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 15-Level Referral Income (25% Total Pool)</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 Customized Package Upline/Downline & Staking Income</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accRefPointsHistory"><div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')"><span>🌟 Referral Points History (+20 Pts Earnings)</span><span>▼</span></div><div class="accordion-content" id="refPointsHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accMasterPoints"><div class="accordion-header" onclick="toggleAccordion('accMasterPoints')"><span>📊 Master Points & Daily Login History</span><span>▼</span></div><div class="accordion-content" id="masterPointsHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accMyPosts"><div class="accordion-header" onclick="toggleAccordion('accMyPosts')"><span>🎬 My Uploaded Reels & Posts</span><span>▼</span></div><div class="accordion-content" id="myUploadedPosts">Loading...</div></div>
@@ -2340,11 +2510,17 @@ window.withdraw = async () => {
   const todayDateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   let lastWithdrawDate = u.lastWithdrawDate || "";
   let todayWithdrawnAmount = Number(u.todayWithdrawnAmount || 0);
-  if (lastWithdrawDate !== todayDateString) todayWithdrawnAmount = 0;
+  if (lastWithdrawDate !== todayDateString) {
+    todayWithdrawnAmount = 0;
+  }
 
   const maxDailyAllowed = getEffectiveTierLimit(u);
-  if (todayWithdrawnAmount >= maxDailyAllowed) return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account tier allows a maximum of ${maxDailyAllowed} Temple_DA per day. You have already withdrawn ${todayWithdrawnAmount} Temple_DA today.`);
-  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) return customAlert(`⚠️ Daily Limit Exceeded!\nYou can withdraw a maximum of ${maxDailyAllowed - todayWithdrawnAmount} Temple_DA more today.`);
+  if (todayWithdrawnAmount >= maxDailyAllowed) {
+    return customAlert(`⚠️ Daily Withdrawal Limit Reached!\nYour current account tier allows a maximum of ${maxDailyAllowed} Temple_DA per day. You have already withdrawn ${todayWithdrawnAmount} Temple_DA today. Please try again tomorrow.`);
+  }
+  if ((todayWithdrawnAmount + amount) > maxDailyAllowed) {
+    return customAlert(`⚠️ Daily Limit Exceeded!\nYou can withdraw a maximum of ${maxDailyAllowed - todayWithdrawnAmount} Temple_DA more today.`);
+  }
   if (amount > (u.balance || 0)) return customAlert("Insufficient Temple_DA balance!");
   
   const userWallet = u.wallet;
@@ -2357,7 +2533,11 @@ window.withdraw = async () => {
   const newBalance = Number((u.balance - amount).toFixed(2));
   const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
 
-  await update(ref(db, "users/" + phone), { balance: newBalance, lastWithdrawDate: todayDateString, todayWithdrawnAmount: newTodayWithdrawn });
+  await update(ref(db, "users/" + phone), { 
+    balance: newBalance, 
+    lastWithdrawDate: todayDateString, 
+    todayWithdrawnAmount: newTodayWithdrawn 
+  });
 
   const reqRef = push(ref(db, "withdrawals/pending"));
   const reqKey = reqRef.key;
@@ -2400,7 +2580,7 @@ window.makeDirectUSDTDeposit = async () => {
       await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
       await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
     } else {
-      if (u.referrer) await distribute15LevelCommission(u.referrer, amount, phone, `Staking Investment ($${amount})`);
+      if (u.referrer) await recordMasterInflowAndDistribute(phone, amount, `Staking Investment ($${amount})`);
     }
 
     if (investInput) investInput.value = "";
@@ -2409,7 +2589,7 @@ window.makeDirectUSDTDeposit = async () => {
 };
 
 async function checkDailyVideoLimit(phone, userTier) {
-  if (userTier === "yearly" || userTier === "120") return true;
+  if (userTier === "yearly" || userTier === "120") return true; // Unlimited
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   try {
@@ -2421,7 +2601,10 @@ async function checkDailyVideoLimit(phone, userTier) {
         if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) todayVideoCount++;
       });
     }
-    let maxAllowed = (userTier === "monthly" || userTier === "50") ? 5 : 2;
+    let maxAllowed = 2; // Starter $5
+    if (userTier === "monthly" || userTier === "15") maxAllowed = 5;
+    else if (userTier === "50" || userTier === "advanced") maxAllowed = 25;
+
     if (todayVideoCount >= maxAllowed) {
       customAlert(`⚠️ Daily Video Limit Reached!\nYour current package daily limit of ${maxAllowed} videos has been reached.`);
       return false;
@@ -2439,7 +2622,7 @@ window.publishTalent = async () => {
     const u = userSnap.exists() ? userSnap.val() : {};
     const activeTier = checkAndHandlePackageExpiry(phone, u);
 
-    if (activeTier === "none") return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package (15, 50, or 120 USDT) before publishing reels and videos.");
+    if (activeTier === "none") return customAlert("⚠️ Package Required!\nYou must purchase an active Creator Package ($5, $15, $50, or $120) before publishing reels and videos.");
 
     const typeEl = document.getElementById("talentType"), titleEl = document.getElementById("talentTitle"), mediaEl = document.getElementById("talentMedia"), descEl = document.getElementById("talentText"), fileInput = document.getElementById("talentFile");
     const type = typeEl ? typeEl.value : "video", title = titleEl ? titleEl.value.trim() : "";
@@ -2597,7 +2780,7 @@ window.convertPointsToToken = async () => {
 };
 
 // =============================================================
-// PACKAGES PAGE (15 USDT, 50 USDT, 120 USDT TIERS)
+// PACKAGES PAGE
 // =============================================================
 async function packagesPage() {
   const phone = localStorage.getItem("user");
@@ -2613,53 +2796,66 @@ async function packagesPage() {
   }
 
   const currentPrice = await getPrice();
+  const p5Tokens = Number((5 / currentPrice).toFixed(2));
   const p15Tokens = Number((15 / currentPrice).toFixed(2));
   const p50Tokens = Number((50 / currentPrice).toFixed(2));
   const p120Tokens = Number((120 / currentPrice).toFixed(2));
 
   appDiv().innerHTML = `
     <div class="card center">
-      <h2>Creator Packages (15, 50 & 120 USDT)</h2>
+      <h2>Creator Packages & Auto-Mode Reinvestment Wheel</h2>
       <p>Activate your package instantly via Direct Web3 Wallet (USDT) or your Activation Wallet balance!</p>
       ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Activation Wallet: <span style="color:#dfb72c;">$${activationWallet.toFixed(2)}</span></p>` : ''}
     </div>
 
     <div class="grid">
+      <!-- 5 USDT Package -->
+      <div class="card center">
+        <h3 style="color:#fff;">Starter Pack</h3>
+        <p class="number" style="font-size:24px; margin: 4px 0;">5 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p5Tokens} Temple_DA</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 5 Levels • 10% Dist.</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 2 Videos Daily Limit</p>
+        <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
+        <button onclick="upgradePackageWithActivationWallet('starter', 5)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($5)</button>
+      </div>
+
       <!-- 15 USDT Package -->
       <div class="card center">
         <h3 style="color:#fff;">Pro Creator Pack</h3>
-        <p class="number" style="font-size:26px; margin: 4px 0;">15 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${p15Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:12px 0;">
+        <p class="number" style="font-size:24px; margin: 4px 0;">15 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p15Tokens} Temple_DA</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 10 Levels • 15% Dist.</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
-        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithActivationWallet('monthly', 15)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">🛡️ Pay via Activation W. ($15)</button>
+        <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
+        <button onclick="upgradePackageWithActivationWallet('monthly', 15)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($15)</button>
       </div>
 
       <!-- 50 USDT Package -->
       <div class="card center" style="border: 2px solid #dfb72c;">
-        <div class="badge-tag" style="margin-bottom:6px;">Popular / Club 2</div>
+        <div class="badge-tag" style="margin-bottom:4px;">Advanced / 15 Levels / 20%</div>
         <h3 style="color:#dfb72c;">Advanced Creator</h3>
-        <p class="number" style="font-size:26px; margin: 4px 0;">50 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${p50Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:8px;">Duration: 30 Days</p>
-        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:12px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ High Limit + Club 2 Ready</p>
-        <button onclick="upgradePackageWithWeb3('50', 50)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithActivationWallet('50', 50)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">🛡️ Pay via Activation W. ($50)</button>
+        <p class="number" style="font-size:24px; margin: 4px 0;">50 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p50Tokens} Temple_DA</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 15 Levels • 20% Dist.</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 25 Videos Daily Limit + Club 2 Ready</p>
+        <button onclick="upgradePackageWithWeb3('50', 50)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
+        <button onclick="upgradePackageWithActivationWallet('50', 50)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($50)</button>
       </div>
 
       <!-- 120 USDT Package -->
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
-        <p class="number" style="font-size:26px; margin: 4px 0;">120 USDT</p>
-        <p class="small" style="color:#dfb72c; margin-bottom:5px;">≈ ${p120Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:8px;">Duration: 365 Days</p>
-        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:12px 0;">
+        <p class="number" style="font-size:24px; margin: 4px 0;">120 USDT</p>
+        <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p120Tokens} Temple_DA</p>
+        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">365 Days • 20 Levels • 25% Dist.</p>
+        <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
         <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
-        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:10px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Pay via Web3 Wallet</button>
-        <button onclick="upgradePackageWithActivationWallet('yearly', 120)" style="margin-top:6px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">🛡️ Pay via Activation W. ($120)</button>
+        <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
+        <button onclick="upgradePackageWithActivationWallet('yearly', 120)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($120)</button>
       </div>
     </div>
   `;
@@ -2671,17 +2867,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
 
   try {
     const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Package Upgrade`);
-    const activatedAt = Date.now(), expiresAt = activatedAt + getPackageDurationMs(tierName);
-    const userSnap = await get(ref(db, "users/" + phone));
-    const u = userSnap.exists() ? userSnap.val() : {};
-
-    await update(ref(db, "users/" + phone), {
-      tier: tierName, packagePriceUSDT: usdtAmount, packageActivatedAt: activatedAt,
-      packageExpiresAt: expiresAt, packageExpired: false, monthlyBusiness: Number(u.monthlyBusiness || 0) + usdtAmount
-    });
-    await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, txHash: tx.hash, timestamp: Date.now() });
-
-    if (u.referrer) await distribute15LevelCommission(u.referrer, usdtAmount, phone, `${tierName.toUpperCase()} Package`);
+    await upgradePackageDirectInternal(phone, tierName, usdtAmount, "Web3 USDT");
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
   } catch (error) { customAlert("Package activation failed: " + formatWeb3Error(error)); }
 };
@@ -2756,8 +2942,8 @@ async function adminDashboard() {
         <tr><td>8% CTO Active Club Pool:</td><td style="color:#00ff88; font-weight:bold;">$${(master.cto8PoolUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>2% FIFO Waiting Pool:</td><td style="color:#dfb72c; font-weight:bold;">$${(master.cto2WaitingPoolUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>1% Crown Ambassador Royalty:</td><td style="color:#cc66ff; font-weight:bold;">$${(master.ambassadorPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>50% Core Liquidity Pool (LP):</td><td style="color:#3399ff; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>14% Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Core Liquidity Pool (LP):</td><td style="color:#3399ff; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>Members in FIFO Waiting Queue:</td><td class="number">${queueCount} Users</td></tr>
       </table>
       <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
@@ -3118,9 +3304,9 @@ async function loadReferralHistory(phone) {
         html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;"><b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br><span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span></div>`; 
       });
     }
-    const headerHtml = html ? `<div style="margin-bottom:8px; color:#00ff88; font-weight:bold;">Total 15-Level Team Income: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
+    const headerHtml = html ? `<div style="margin-bottom:8px; color:#00ff88; font-weight:bold;">Total Network & Package Income: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
     const el = document.getElementById("referralHistory");
-    if (el) el.innerHTML = headerHtml + (html || "No referral income yet.");
+    if (el) el.innerHTML = headerHtml + (html || "No network income yet.");
   } catch(e) {}
 }
 
@@ -3178,7 +3364,7 @@ async function loadPackageHistory(phone) {
     let html = "";
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;"><span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT<br><span style="color:#888;">${date}</span></div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;"><span class="badge-tag">${d.tier.toUpperCase()}</span> - ${d.amountUSDT} USDT <br><span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("packageHistory");
     if (el) el.innerHTML = html || "No package history found.";
@@ -3244,7 +3430,7 @@ async function loadGiftHistory(phone) {
       sentGifts.sort((a, b) => b.timestamp - a.timestamp);
       sentGifts.forEach(g => {
         const date = new Date(g.timestamp).toLocaleString();
-        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:5px 0;">Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientPhone)})<br><span style="color:#888;">${date}</span></div>`;
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:5px 0;">Sent <span class="number">-${g.amount} Temple_DA</span> to <b>@${g.recipientName}</b> (${maskPhone(g.recipientName)})<br><span style="color:#888;">${date}</span></div>`;
       });
     } else { html += `<p class="small">No gifts sent yet.</p>`; }
     el.innerHTML = html;
