@@ -545,8 +545,25 @@ td {
   border-radius: 8px;
   margin-bottom: 8px;
 }
+
+.cto-club-card {
+  background: rgba(15, 15, 20, 0.85);
+  border: 1px solid rgba(223, 183, 44, 0.35);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+}
+.cto-club-card.active-slot {
+  border-color: #00ff88;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
+}
 </style>
 </head>
+
 <body>
 
 <nav id="mainNavbar">
@@ -554,16 +571,17 @@ td {
     <img src="temple_logo.png.png" alt="Temple Logo" style="width: 36px; height: auto; margin-right: 8px;" onerror="this.style.display='none'">
     <span style="color: #ffd700; font-size: 17px; font-weight: bold;">Temple_DA</span>
 </div>
-  <div class="nav-links">
-    <a href="#">Home</a>
-    <a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.18);">⚡ Reels</a>
-    <a href="#ctoclub" class="nav-cto-btn">👑 10 CTO Clubs</a>
-    <a href="#packages">Packages</a>
-    <a href="#activationwallet" style="color: #00ff88; background: rgba(0, 255, 136, 0.12);">🛡️ Activation Wallet</a>
-    <a href="#user">Dashboard</a>
-    <a href="#login">Login</a>
-    <a href="#register">Register</a>
-  </div>
+
+<div class="nav-links">
+<a href="#">Home</a>
+<a href="#feed" style="color: #dfb72c; background: rgba(223, 183, 44, 0.18);">⚡ Reels</a>
+<a href="#ctoclub" class="nav-cto-btn">👑 10 CTO Clubs</a>
+<a href="#packages">Packages</a>
+<a href="#activationwallet" style="color: #00ff88; background: rgba(0, 255, 136, 0.12);">🛡️ Activation Wallet</a>
+<a href="#user">Dashboard</a>
+<a href="#login">Login</a>
+<a href="#register">Register</a>
+</div>
 </nav>
 
 <!-- Non-blocking toast message for Wallet activity -->
@@ -987,31 +1005,32 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
 // ========================================================
 async function distributeCustomPackageCommission(startReferrerPhone, userPhone, packageTier, totalAmountUSDT, purposeLabel, isReinvestment = false) {
   let depth = 5;
-  let uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; 
+  let uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10% for $5
   let downlinePercentages = [1.5, 1.0, 0.8, 0.4, 0.3];
 
   if (packageTier === "starter" || packageTier === "5") {
     depth = 5;
-    uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; 
+    uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10%
     downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3];
   } else if (packageTier === "monthly" || packageTier === "15") {
     depth = 10;
-    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4]; 
-    downlinePercentages = [1.0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1]; 
+    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4]; // Total 10.5%
+    downlinePercentages = [1.0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1]; // Total 4.5% (Total 15%)
   } else if (packageTier === "50" || packageTier === "advanced") {
     depth = 15;
-    uplinePercentages = [2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2]; 
-    downlinePercentages = [0.5, 0.4, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]; 
+    uplinePercentages = [2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2]; // Total 18.0%
+    downlinePercentages = [0.5, 0.4, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]; // Total 2.0% (Total 20%)
   } else if (packageTier === "yearly" || packageTier === "120") {
     depth = 20;
-    uplinePercentages = [3.0, 2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1]; 
-    downlinePercentages = [0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01]; 
+    uplinePercentages = [3.0, 2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1]; // Total 22.0%
+    downlinePercentages = [0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01]; // Total 3.0% (Total 25%)
   }
 
-  let poolMultiplier = isReinvestment ? 2.0 : 1.0; 
+  let poolMultiplier = isReinvestment ? 2.0 : 1.0; // 50% distribution on reinvestment
   let currentRefPhone = startReferrerPhone;
   const currentPrice = await getPrice();
 
+  // 1. Upline Distribution
   for (let i = 0; i < depth; i++) {
     if (!currentRefPhone || i >= uplinePercentages.length) break;
     const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
@@ -1034,6 +1053,7 @@ async function distributeCustomPackageCommission(startReferrerPhone, userPhone, 
     currentRefPhone = refUserData.referrer || "";
   }
 
+  // 2. Downline Spillover Distribution
   let currentDownlinePhones = [userPhone];
   const allUsersSnap = await get(ref(db, "users"));
   if (!allUsersSnap.exists()) return;
@@ -1112,13 +1132,17 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   return { cto8, cto2Waiting, lp50, admin14, ambassador1 };
 }
 
+// ========================================================
+// AUTOMATED AUTO-MODE REINVESTMENT WHEEL CHECKER
+// ========================================================
 async function checkAndTriggerAutoModeReinvestment(phone, u) {
   if (!u.tier || u.tier === "none" || u.packageExpired) return;
   const packagePrice = Number(u.packagePriceUSDT || 15);
   const earningsAccumulated = Number(u.packageEarningsAccumulated || 0);
-  const threshold = packagePrice * 2.0; 
+  const threshold = packagePrice * 2.0; // 2X earnings triggers auto reinvestment cycle
 
   if (earningsAccumulated >= threshold) {
+    // Trigger Auto-Mode Reinvestment Wheel
     const newActivatedAt = Date.now();
     const newExpiresAt = newActivatedAt + getPackageDurationMs(u.tier);
 
@@ -1223,6 +1247,9 @@ async function backgroundGlobalVestingCheck() {
 }
 backgroundGlobalVestingCheck();
 
+// ========================================================
+// ⏱️ STRICT 24-HOUR COOLDOWN DAILY LOGIN REWARD LOGIC ⏱️
+// ========================================================
 window.claimDailyReward = async () => {
   const phone = localStorage.getItem("user");
   if (!phone) return customAlert("Please login first!");
@@ -1563,6 +1590,9 @@ window.login = async () => {
   setTimeout(() => { location.hash = "#user"; }, 500);
 };
 
+// =============================================================
+// DEDICATED PAGE: 10-CLUB 1,000-SLOT 10% GLOBAL CTO SYSTEM
+// =============================================================
 async function ctoClubsPage() {
   const phone = localStorage.getItem("user");
   const priceUsd = await getPrice();
@@ -1672,6 +1702,7 @@ async function ctoClubsPage() {
   });
 
   appDiv().innerHTML = `
+    <!-- Top Header -->
     <div class="card center" style="border: 2px solid #dfb72c;">
       <span class="badge-tag" style="margin-bottom:6px; color:#00ff88; border-color:#00ff88;">OFFICIAL 10-CLUB 1,000-SLOT ENGINE</span>
       <h2 style="font-size:24px;">10% GLOBAL CTO SYSTEM</h2>
@@ -1681,6 +1712,7 @@ async function ctoClubsPage() {
         <strong style="color:#00ff88;">Zero direct referrals required</strong> to receive passive club dividends!
       </p>
 
+      <!-- 100% Inflow Master Breakup -->
       <div class="grid" style="margin-top:16px;">
         <div class="card" style="padding:12px;">
           <h3 style="font-size:10px;">Customized Referral</h3>
@@ -1701,6 +1733,7 @@ async function ctoClubsPage() {
       </div>
     </div>
 
+    <!-- User Status & Holding Queue Desk -->
     <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
@@ -1716,6 +1749,7 @@ async function ctoClubsPage() {
         </div>
       </div>
 
+      <!-- Live Priority Upgrade Queue Notice -->
       ${u.inHoldingQueueForClub ? `
         <div style="margin-top:12px; padding:10px; background:rgba(0,255,136,0.1); border-radius:8px; border:1px solid #00ff88;">
           <b style="color:#00ff88;">🛡️ Status: Stored in Club ${u.inHoldingQueueForClub} Priority Upgrade Queue (Rank #${myHoldingQueueRank || 1})</b>
@@ -1725,6 +1759,7 @@ async function ctoClubsPage() {
         </div>
       ` : ''}
 
+      <!-- FIFO Waiting Room 2X Tracker -->
       ${myQueueData ? `
         <div style="margin-top:12px; padding:10px; background:rgba(223,183,44,0.1); border-radius:8px; border:1px solid #dfb72c;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
@@ -1741,6 +1776,7 @@ async function ctoClubsPage() {
         </div>
       ` : ''}
 
+      <!-- Activation Wallet Quick Link -->
       <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(223,183,44,0.25); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <span class="small" style="max-width:620px;">
           💡 <strong>Activation Wallet Utility:</strong> Fund your Activation Wallet via direct USDT deposit to perform P2P member ID activations or self-package upgrades instantly!
@@ -1749,11 +1785,13 @@ async function ctoClubsPage() {
       </div>
     </div>
 
+    <!-- 10 Clubs Visual Grid (1,000 Slots) -->
     <h3 style="margin: 20px 0 10px 0;">10-Club Progression Ladder (1,000 Slots Total)</h3>
     <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
       ${clubsCardsHtml}
     </div>
 
+    <!-- Club 10 Endgame: Crown Ambassador Retirement -->
     <div class="card" style="border: 2px solid #9933ff; background: rgba(153, 51, 255, 0.05); margin-top:18px;">
       <h3 style="color:#cc66ff; margin-bottom:6px;">👑 The Endgame: Crown Ambassador Retirement</h3>
       <p class="small" style="line-height:1.5; color:#eee;">
@@ -1770,6 +1808,9 @@ async function ctoClubsPage() {
   `;
 }
 
+// =============================================================
+// DEDICATED ACTIVATION WALLET PAGE (P2P, DEPOSIT & SELF-UPGRADE)
+// =============================================================
 async function activationWalletPage() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
@@ -1805,24 +1846,14 @@ async function activationWalletPage() {
       <button onclick="depositToActivationWalletViaWeb3()" class="btn-green">⚡ Deposit USDT via Web3 Wallet</button>
     </div>
 
-    <!-- 2. P2P MEMBER ID ACTIVATION (ANY PACKAGE OR CLUB 1) -->
+    <!-- 2. P2P MEMBER ID ACTIVATION -->
     <div class="card">
-      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation (Any Package or Club 1)</h3>
+      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation (Club 1 • $25)</h3>
       <p class="small" style="margin-bottom:10px;">
-        Activate any registered member's package or Club 1 position instantly using your Activation Wallet balance. Select the desired item and enter their phone number.
+        Activate any registered member's Club 1 position instantly using your Activation Wallet balance. Perfect for cash/UPI offline settlement with your team.
       </p>
       <input id="p2pTargetPhone" placeholder="Enter Member Phone Number (e.g. 9876543210)">
-      
-      <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-top:8px;">Select Package or Club to Activate:</label>
-      <select id="p2pItemSelect" style="margin-bottom:8px;">
-        <option value="package_5">Starter Package ($5 USDT)</option>
-        <option value="package_15">Pro Creator Package ($15 USDT)</option>
-        <option value="package_50">Advanced Creator Package ($50 USDT)</option>
-        <option value="package_120">Elite Yearly Package ($120 USDT)</option>
-        <option value="club_1">Club 1 • Bronze Pillar ($25 USDT)</option>
-      </select>
-
-      <button onclick="executeP2PMemberActivation()" class="btn-green">⚡ Execute P2P Activation Using Activation Wallet</button>
+      <button onclick="executeP2PMemberActivation()" class="btn-green">⚡ Activate Member Club 1 ($25 USDT)</button>
     </div>
 
     <!-- 3. SELF-PACKAGE OR CLUB UPGRADE -->
@@ -1877,65 +1908,35 @@ window.executeP2PMemberActivation = async () => {
   const phone = localStorage.getItem("user");
   const targetInput = document.getElementById("p2pTargetPhone");
   const targetPhone = targetInput ? targetInput.value.trim() : "";
-  const selectEl = document.getElementById("p2pItemSelect");
-  const selectedVal = selectEl ? selectEl.value : "club_1";
 
   if (!targetPhone) return customAlert("Please enter target member's phone number!");
   if (targetPhone === phone) return customAlert("You cannot activate your own account via P2P. Use self-upgrade instead!");
-
-  let itemCost = 25;
-  let itemName = "Club 1";
-  let isClub = true;
-  let clubIdNum = 1;
-  let pkgTier = "";
-
-  if (selectedVal.startsWith("package_")) {
-    isClub = false;
-    pkgTier = selectedVal.replace("package_", "");
-    if (pkgTier === "5") { itemCost = 5; itemName = "Starter Package ($5)"; }
-    else if (pkgTier === "15") { itemCost = 15; itemName = "Pro Creator Package ($15)"; }
-    else if (pkgTier === "50") { itemCost = 50; itemName = "Advanced Creator Package ($50)"; }
-    else if (pkgTier === "120") { itemCost = 120; itemName = "Elite Yearly Package ($120)"; }
-  } else if (selectedVal.startsWith("club_")) {
-    isClub = true;
-    clubIdNum = 1;
-    itemCost = 25;
-    itemName = "Club 1 • Bronze Pillar";
-  }
 
   const callerSnap = await get(ref(db, "users/" + phone));
   if (!callerSnap.exists()) return customAlert("Caller session not found!");
   const callerData = callerSnap.val();
 
-  if ((callerData.activationWallet || 0) < itemCost) {
-    return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(callerData.activationWallet || 0).toFixed(2)} USDT, but activating ${itemName} requires $${itemCost} USDT.`);
+  if ((callerData.activationWallet || 0) < 25) {
+    return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(callerData.activationWallet || 0).toFixed(2)} USDT, but P2P Club 1 activation requires 25 USDT.`);
   }
 
   const targetSnap = await get(ref(db, "users/" + targetPhone));
   if (!targetSnap.exists()) return customAlert(`Target member phone (${targetPhone}) is not registered yet! Please ask them to register first.`);
   const targetData = targetSnap.val();
 
-  if (isClub) {
-    if (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub) {
-      return customAlert(`Member ${targetPhone} already has an active CTO Club slot or is in queue!`);
-    }
+  if (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub) {
+    return customAlert(`Member ${targetPhone} already has an active CTO Club slot or is in queue!`);
   }
 
-  customConfirm(`Confirm activating ${itemName} for member ${targetPhone} using $${itemCost} from your Activation Wallet?`, async () => {
+  customConfirm(`Confirm activating Club 1 for member ${targetPhone} using 25 USDT from your Activation Wallet?`, async () => {
     await update(ref(db, "users/" + phone), {
-      activationWallet: Number(((callerData.activationWallet || 0) - itemCost).toFixed(2))
+      activationWallet: Number(((callerData.activationWallet || 0) - 25).toFixed(2))
     });
 
-    if (isClub) {
-      await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
-    } else {
-      let tierNameDb = pkgTier === "5" ? "starter" : (pkgTier === "15" ? "monthly" : (pkgTier === "50" ? "50" : "yearly"));
-      await upgradePackageDirectInternal(targetPhone, tierNameDb, itemCost, `P2P Activated by ${phone}`);
-    }
-
+    await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
     if (targetInput) targetInput.value = "";
-    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated into ${itemName} using $${itemCost} from your Activation Wallet.`);
-    if (typeof activationWalletPage === "function") activationWalletPage();
+    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated into Club 1 using 25 USDT from your Activation Wallet.`);
+    activationWalletPage();
   });
 };
 
@@ -2081,6 +2082,9 @@ window.claimWaitingRoom2X = async () => {
   ctoClubsPage();
 };
 
+// =============================================================
+// ORIGINAL REELS FEED PAGE
+// =============================================================
 function feedPage() {
   const currentUser = localStorage.getItem("user") || "";
   appDiv().innerHTML = `
@@ -2250,6 +2254,9 @@ window.submitReelComment = async () => {
   input.value = "";
 };
 
+// =============================================================
+// USER DASHBOARD
+// =============================================================
 async function userDashboard() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
@@ -2294,6 +2301,7 @@ async function userDashboard() {
         <span style="color:#00ff88; font-size:13px;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
+    <!-- DAILY REWARD CLAIM CARD (STRICT 24H COOLDOWN) -->
     <div class="card center" style="border: 2px solid ${canClaimToday ? '#00ff88' : '#444'}; background: ${canClaimToday ? 'rgba(0, 255, 136, 0.05)' : 'rgba(255,255,255,0.02)'}; padding: 18px;">
       <h3 style="color:${canClaimToday ? '#00ff88' : '#888'}; margin-bottom: 4px;">🎁 Daily Login Reward (24h Cooldown)</h3>
       <p class="small" style="color: ${canClaimToday ? '#fff' : '#666'};">Claim your free 10 XP points once every 24 hours!</p>
@@ -2303,6 +2311,7 @@ async function userDashboard() {
       }
     </div>
 
+    <!-- AUTO-MODE REINVESTMENT WHEEL VISUAL STATUS WIDGET -->
     ${activeTier !== 'none' ? `
     <div class="wheel-container">
       <div class="spinning-wheel">⚙️</div>
@@ -2312,6 +2321,7 @@ async function userDashboard() {
       </div>
     </div>` : ''}
 
+    <!-- 10 CTO CLUBS HERO PROMOTION CARD -->
     <div class="card" style="border: 2px solid #00ff88; background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(223,183,44,0.06));">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
@@ -2579,7 +2589,7 @@ window.makeDirectUSDTDeposit = async () => {
 };
 
 async function checkDailyVideoLimit(phone, userTier) {
-  if (userTier === "yearly" || userTier === "120") return true; 
+  if (userTier === "yearly" || userTier === "120") return true; // Unlimited
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   try {
@@ -2591,7 +2601,7 @@ async function checkDailyVideoLimit(phone, userTier) {
         if (p.authorPhone === phone && p.type === "video" && Number(p.createdAt || 0) >= startOfDay) todayVideoCount++;
       });
     }
-    let maxAllowed = 2; 
+    let maxAllowed = 2; // Starter $5
     if (userTier === "monthly" || userTier === "15") maxAllowed = 5;
     else if (userTier === "50" || userTier === "advanced") maxAllowed = 25;
 
@@ -2769,6 +2779,9 @@ window.convertPointsToToken = async () => {
   customAlert(`🎉 Congratulations! ${convertiblePoints} Points successfully converted to ${tokensToCredit} Temple_DA! Remaining points: ${remainingPoints}`);
 };
 
+// =============================================================
+// PACKAGES PAGE
+// =============================================================
 async function packagesPage() {
   const phone = localStorage.getItem("user");
   let currentTier = "none", expiryDateString = "", activationWallet = 0;
@@ -2796,6 +2809,7 @@ async function packagesPage() {
     </div>
 
     <div class="grid">
+      <!-- 5 USDT Package -->
       <div class="card center">
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">5 USDT</p>
@@ -2807,6 +2821,7 @@ async function packagesPage() {
         <button onclick="upgradePackageWithActivationWallet('starter', 5)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($5)</button>
       </div>
 
+      <!-- 15 USDT Package -->
       <div class="card center">
         <h3 style="color:#fff;">Pro Creator Pack</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">15 USDT</p>
@@ -2818,6 +2833,7 @@ async function packagesPage() {
         <button onclick="upgradePackageWithActivationWallet('monthly', 15)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($15)</button>
       </div>
 
+      <!-- 50 USDT Package -->
       <div class="card center" style="border: 2px solid #dfb72c;">
         <div class="badge-tag" style="margin-bottom:4px;">Advanced / 15 Levels / 20%</div>
         <h3 style="color:#dfb72c;">Advanced Creator</h3>
@@ -2830,6 +2846,7 @@ async function packagesPage() {
         <button onclick="upgradePackageWithActivationWallet('50', 50)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($50)</button>
       </div>
 
+      <!-- 120 USDT Package -->
       <div class="card center">
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">120 USDT</p>
@@ -2874,6 +2891,9 @@ window.upgradePackageWithActivationWallet = async (tierName, usdtAmount) => {
   });
 };
 
+// =============================================================
+// ADMIN DASHBOARD
+// =============================================================
 async function adminDashboard() {
   if (!localStorage.getItem("admin")) return location.hash = "#login";
 
@@ -2914,6 +2934,7 @@ async function adminDashboard() {
         <span style="color:#00ff88; font-size:13px;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
+    <!-- 10% CTO Master Pools Vault Card -->
     <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05);">
       <h3 style="color:#00ff88; margin-bottom:6px;">👑 Global 10% CTO Engine Master Vaults</h3>
       <table>
