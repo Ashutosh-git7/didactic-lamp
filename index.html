@@ -272,18 +272,23 @@ td {
 /* Auto-Mode Reinvestment Wheel Animation */
 .wheel-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  padding: 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
   background: rgba(0, 255, 136, 0.06);
   border: 1px solid #00ff88;
-  border-radius: 12px;
-  margin: 10px 0;
+  border-radius: 14px;
+  margin: 12px 0;
+}
+
+.wheel-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .spinning-wheel {
-  font-size: 28px;
+  font-size: 32px;
   animation: spinWheel 3s linear infinite;
 }
 
@@ -739,6 +744,31 @@ const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
 let activePostIdForComments = null;
 
 // ========================================================
+// PACKAGE FIXED PRICE & CONFIGURATION HELPER
+// ========================================================
+const PACKAGE_PRICES_MAP = {
+  "starter": 5,
+  "5": 5,
+  "monthly": 15,
+  "15": 15,
+  "50": 50,
+  "advanced": 50,
+  "yearly": 120,
+  "120": 120,
+  "club1": 25
+};
+
+function getPackagePriceByTier(tier) {
+  return PACKAGE_PRICES_MAP[tier] || 15;
+}
+
+function isUserPackageActive(u) {
+  if (!u || !u.tier || u.tier === "none" || u.packageExpired) return false;
+  if (u.packageExpiresAt && Date.now() > u.packageExpiresAt) return false;
+  return true;
+}
+
+// ========================================================
 // 10-CLUB 1,000-SLOT 10% CTO CONFIGURATION
 // ========================================================
 const CTO_CLUBS_CONFIG = [
@@ -770,7 +800,7 @@ function getEffectiveTierLimit(u) {
     return 1000;
   }
 
-  if (u.tier && u.tier !== "none" && !u.packageExpired) {
+  if (isUserPackageActive(u)) {
     if (u.tier === "yearly" || u.tier === "120") return 2500;
     return 1000;
   }
@@ -1037,59 +1067,112 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
 }
 
 // ========================================================
+// 2X SMART SPLIT & AUTO-REJOINING WHEEL HELPER FOR RECIPIENTS
+// ========================================================
+async function creditPackageIncomeWith2XSmartSplit(recipientPhone, recipientData, grossUSDT, currentPrice, fromUserPhone, level, percentage, sourceLabel, recursionDepth = 0) {
+  // 1. Check Active Package Eligibility (No Free Riding - Flush-out to Admin Reserve)
+  if (!isUserPackageActive(recipientData)) {
+    const masterRef = ref(db, "cto_master");
+    const mSnap = await get(masterRef);
+    const mData = mSnap.exists() ? mSnap.val() : {};
+    await update(masterRef, {
+      adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + grossUSDT).toFixed(4))
+    });
+    return;
+  }
+
+  // 2. 50% / 50% Smart Split:
+  // - 50% credited immediately to Main Balance (Withdrawable Temple_DA tokens)
+  // - 50% held in Auto-Rejoin Wheel Reserve (Tracked via packageEarningsAccumulated towards 2X Gross Cap)
+  const netWithdrawableUSDT = Number((grossUSDT * 0.50).toFixed(4));
+  const netWithdrawableTokens = Number((netWithdrawableUSDT / currentPrice).toFixed(2));
+
+  const newBalance = Number(((recipientData.balance || 0) + netWithdrawableTokens).toFixed(2));
+  const newAccumulatedGrossUSDT = Number(((recipientData.packageEarningsAccumulated || 0) + grossUSDT).toFixed(4));
+  const newRefEarnedUSDT = Number(((recipientData.referralEarnedUSDT || 0) + grossUSDT).toFixed(2));
+
+  await update(ref(db, "users/" + recipientPhone), {
+    balance: newBalance,
+    packageEarningsAccumulated: newAccumulatedGrossUSDT,
+    referralEarnedUSDT: newRefEarnedUSDT
+  });
+
+  await push(ref(db, `referral_history/${recipientPhone}`), {
+    fromUser: fromUserPhone,
+    level: level,
+    percentage: percentage,
+    amountUSDT: grossUSDT,
+    netBalanceUSDT: netWithdrawableUSDT,
+    rejoinReserveUSDT: netWithdrawableUSDT,
+    amountTokens: netWithdrawableTokens,
+    source: `${sourceLabel} [50% Balance + 50% Rejoin Wheel]`,
+    timestamp: Date.now()
+  });
+
+  // 3. Check if 2X Auto-Rejoin Threshold is reached
+  if (recursionDepth < 2) {
+    const updatedSnap = await get(ref(db, "users/" + recipientPhone));
+    if (updatedSnap.exists()) {
+      await checkAndTriggerAutoModeReinvestment(recipientPhone, updatedSnap.val(), recursionDepth + 1);
+    }
+  }
+}
+
+// ========================================================
 // CUSTOMIZED PACKAGE UPLINE & DOWNLINE DISTRIBUTION ENGINE
 // ========================================================
-async function distributeCustomPackageCommission(startReferrerPhone, userPhone, packageTier, totalAmountUSDT, purposeLabel, isReinvestment = false) {
+async function distributeCustomPackageCommission(startReferrerPhone, userPhone, packageTier, totalAmountUSDT, purposeLabel, isReinvestment = false, recursionDepth = 0) {
   let depth = 5;
-  let uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10% for $5
-  let downlinePercentages = [1.5, 1.0, 0.8, 0.4, 0.3];
+  let uplinePercentages = [2.2, 1.8, 1.4, 1.0, 0.6]; // Total 7.0% for $5 Starter
+  let downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3]; // Total 3.0% (10% Total)
 
   if (packageTier === "starter" || packageTier === "5") {
     depth = 5;
-    uplinePercentages = [3.0, 2.5, 2.0, 1.5, 1.0]; // Total 10%
-    downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3];
+    uplinePercentages = [2.2, 1.8, 1.4, 1.0, 0.6]; // 7.0% Upline
+    downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3]; // 3.0% Downline (10% Total)
   } else if (packageTier === "monthly" || packageTier === "15") {
     depth = 10;
-    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4]; // Total 10.5%
-    downlinePercentages = [1.0, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1]; // Total 4.5% (Total 15%)
+    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.5, 0.3, 0.2]; // 10.0% Upline
+    downlinePercentages = [1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2]; // 5.0% Downline (15% Total)
   } else if (packageTier === "50" || packageTier === "advanced") {
     depth = 15;
-    uplinePercentages = [2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2]; // Total 18.0%
-    downlinePercentages = [0.5, 0.4, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]; // Total 2.0% (Total 20%)
+    uplinePercentages = [2.5, 2.0, 1.6, 1.3, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.4, 0.3, 0.2, 0.2]; // 14.0% Upline
+    downlinePercentages = [1.2, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1]; // 6.0% Downline (20% Total)
   } else if (packageTier === "yearly" || packageTier === "120") {
     depth = 20;
-    uplinePercentages = [3.0, 2.5, 2.2, 2.0, 1.8, 1.5, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1]; // Total 22.0%
-    downlinePercentages = [0.5, 0.4, 0.3, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05, 0.02, 0.02, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01]; // Total 3.0% (Total 25%)
+    uplinePercentages = [3.0, 2.4, 2.0, 1.6, 1.4, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.1]; // 18.0% Upline
+    downlinePercentages = [1.4, 1.1, 0.9, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]; // 7.0% Downline (25% Total)
   }
 
-  let poolMultiplier = isReinvestment ? 2.0 : 1.0; // 50% distribution on reinvestment
   let currentRefPhone = startReferrerPhone;
   const currentPrice = await getPrice();
 
-  // 1. Upline Distribution
+  // 1. Upline Distribution (with Active Package Check & 50/50 Rejoin Split)
   for (let i = 0; i < depth; i++) {
     if (!currentRefPhone || i >= uplinePercentages.length) break;
     const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
     if (!refUserSnap.exists()) break;
 
     const refUserData = refUserSnap.val();
-    const percentage = uplinePercentages[i] * poolMultiplier;
+    const percentage = uplinePercentages[i];
     const commissionUSDT = Number(((totalAmountUSDT * percentage) / 100).toFixed(4));
-    const commissionTokens = Number((commissionUSDT / currentPrice).toFixed(2));
 
-    const newBalance = Number(((refUserData.balance || 0) + commissionTokens).toFixed(2));
-    await update(ref(db, "users/" + currentRefPhone), { balance: newBalance });
-
-    await push(ref(db, `referral_history/${currentRefPhone}`), {
-      fromUser: userPhone,
-      level: i + 1, percentage: percentage, amountUSDT: commissionUSDT, amountTokens: commissionTokens,
-      source: `${purposeLabel} (${isReinvestment ? 'Auto-Mode Reinvestment Cycle 50%' : 'Upline'} L${i + 1} - ${percentage}%)`, timestamp: Date.now()
-    });
+    await creditPackageIncomeWith2XSmartSplit(
+      currentRefPhone,
+      refUserData,
+      commissionUSDT,
+      currentPrice,
+      userPhone,
+      i + 1,
+      percentage,
+      `${purposeLabel} (${isReinvestment ? 'Auto-Rejoin Cycle' : 'Upline'} L${i + 1} - ${percentage}%)`,
+      recursionDepth
+    );
 
     currentRefPhone = refUserData.referrer || "";
   }
 
-  // 2. Downline Spillover Distribution
+  // 2. Downline Spillover Distribution (with Active Package Check & 50/50 Rejoin Split)
   let currentDownlinePhones = [userPhone];
   const allUsersSnap = await get(ref(db, "users"));
   if (!allUsersSnap.exists()) return;
@@ -1099,7 +1182,7 @@ async function distributeCustomPackageCommission(startReferrerPhone, userPhone, 
   for (let i = 0; i < depth; i++) {
     if (currentDownlinePhones.length === 0 || i >= downlinePercentages.length) break;
     let nextLevelDownlines = [];
-    const percentage = downlinePercentages[i] * poolMultiplier;
+    const percentage = downlinePercentages[i];
 
     currentDownlinePhones.forEach(parentPhone => {
       Object.keys(allUsers).forEach(uPhone => {
@@ -1111,25 +1194,28 @@ async function distributeCustomPackageCommission(startReferrerPhone, userPhone, 
 
     if (nextLevelDownlines.length > 0) {
       const sharePerDownlineUSDT = Number(((totalAmountUSDT * percentage) / 100 / nextLevelDownlines.length).toFixed(4));
-      const shareTokens = Number((sharePerDownlineUSDT / currentPrice).toFixed(2));
 
       for (const dPhone of nextLevelDownlines) {
-        const dUser = allUsers[dPhone];
-        const newBal = Number(((dUser.balance || 0) + shareTokens).toFixed(2));
-        await update(ref(db, "users/" + dPhone), { balance: newBal });
-
-        await push(ref(db, `referral_history/${dPhone}`), {
-          fromUser: userPhone,
-          level: i + 1, percentage: percentage, amountUSDT: sharePerDownlineUSDT, amountTokens: shareTokens,
-          source: `${purposeLabel} (${isReinvestment ? 'Auto-Mode Reinvestment 50%' : 'Downline'} L${i + 1})`, timestamp: Date.now()
-        });
+        const dUserSnap = await get(ref(db, "users/" + dPhone));
+        const dUser = dUserSnap.exists() ? dUserSnap.val() : allUsers[dPhone];
+        await creditPackageIncomeWith2XSmartSplit(
+          dPhone,
+          dUser,
+          sharePerDownlineUSDT,
+          currentPrice,
+          userPhone,
+          i + 1,
+          percentage,
+          `${purposeLabel} (${isReinvestment ? 'Auto-Rejoin Cycle' : 'Downline Spillover'} L${i + 1})`,
+          recursionDepth
+        );
       }
     }
     currentDownlinePhones = nextLevelDownlines;
   }
 }
 
-async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel, packageTier = null, isReinvestment = false) {
+async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLabel, packageTier = null, isReinvestment = false, recursionDepth = 0) {
   const cto8 = amountUSDT * 0.08;
   const cto2Waiting = amountUSDT * 0.02;
   const lp50 = amountUSDT * 0.50;
@@ -1140,25 +1226,20 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
   const userData = uSnap.exists() ? uSnap.val() : {};
   const sponsorPhone = userData.referrer || "";
 
-  if (sponsorPhone) {
-    if (packageTier) {
-      await distributeCustomPackageCommission(sponsorPhone, userPhone, packageTier, amountUSDT, purposeLabel, isReinvestment);
-    } else {
-      await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
-    }
+  if (packageTier) {
+    await distributeCustomPackageCommission(sponsorPhone, userPhone, packageTier, amountUSDT, purposeLabel, isReinvestment, recursionDepth);
+  } else if (sponsorPhone) {
+    await distribute15LevelCommission(sponsorPhone, amountUSDT, userPhone, purposeLabel);
   }
 
   const masterRef = ref(db, "cto_master");
   const mSnap = await get(masterRef);
   const mData = mSnap.exists() ? mSnap.val() : {};
 
-  let finalLp = isReinvestment ? (amountUSDT * 0.25) : lp50;
-  let finalAdmin = isReinvestment ? (admin14 + (amountUSDT * 0.25)) : admin14;
-
   await update(masterRef, {
     totalInflowUSDT: Number(((mData.totalInflowUSDT || 0) + amountUSDT).toFixed(2)),
-    lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + finalLp).toFixed(2)),
-    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + finalAdmin).toFixed(2)),
+    lpPoolUSDT: Number(((mData.lpPoolUSDT || 0) + lp50).toFixed(2)),
+    adminReserveUSDT: Number(((mData.adminReserveUSDT || 0) + admin14).toFixed(2)),
     ambassadorPoolUSDT: Number(((mData.ambassadorPoolUSDT || 0) + ambassador1).toFixed(2)),
     cto8PoolUSDT: Number(((mData.cto8PoolUSDT || 0) + cto8).toFixed(2)),
     cto2WaitingPoolUSDT: Number(((mData.cto2WaitingPoolUSDT || 0) + cto2Waiting).toFixed(2)),
@@ -1169,33 +1250,52 @@ async function recordMasterInflowAndDistribute(userPhone, amountUSDT, purposeLab
 }
 
 // ========================================================
-// AUTOMATED AUTO-MODE REINVESTMENT WHEEL CHECKER
+// AUTOMATED 2X SMART SPLIT & AUTO-REJOINING WHEEL CHECKER
 // ========================================================
-async function checkAndTriggerAutoModeReinvestment(phone, u) {
-  if (!u.tier || u.tier === "none" || u.packageExpired) return;
-  const packagePrice = Number(u.packagePriceUSDT || 15);
+async function checkAndTriggerAutoModeReinvestment(phone, u, recursionDepth = 0) {
+  if (!u || !u.tier || u.tier === "none" || u.packageExpired) return;
+  const packagePrice = Number(u.packagePriceUSDT || getPackagePriceByTier(u.tier));
   const earningsAccumulated = Number(u.packageEarningsAccumulated || 0);
-  const threshold = packagePrice * 2.0; // 2X earnings triggers auto reinvestment cycle
+  const threshold = packagePrice * 2.0; // 2X Gross Cap ($50% paid to balance + 50% = 1X Package Price reserved for Auto-Rejoin!)
 
   if (earningsAccumulated >= threshold) {
-    // Trigger Auto-Mode Reinvestment Wheel
+    const carryOver = Number(Math.max(0, earningsAccumulated - threshold).toFixed(4));
     const newActivatedAt = Date.now();
     const newExpiresAt = newActivatedAt + getPackageDurationMs(u.tier);
+    const newCyclesCount = Number(u.rejoinCyclesCount || 0) + 1;
 
     await update(ref(db, "users/" + phone), {
-      packageEarningsAccumulated: 0,
+      packageEarningsAccumulated: carryOver,
       packageActivatedAt: newActivatedAt,
       packageExpiresAt: newExpiresAt,
-      lastReinvestmentAt: newActivatedAt
+      packageExpired: false,
+      lastReinvestmentAt: newActivatedAt,
+      rejoinCyclesCount: newCyclesCount
     });
 
     await push(ref(db, "reinvestment_cycles/" + phone), {
-      tier: u.tier, amountUSDT: packagePrice, timestamp: newActivatedAt, status: "Auto-Mode Reinvestment Triggered"
+      tier: u.tier,
+      amountUSDT: packagePrice,
+      cycleNumber: newCyclesCount,
+      timestamp: newActivatedAt,
+      status: `Auto-Rejoined via 2X Wheel Reserve ($${packagePrice} Reinvested)`
     });
 
-    if (u.referrer) {
-      await recordMasterInflowAndDistribute(phone, packagePrice, `${u.tier.toUpperCase()} Auto-Mode Reinvestment Wheel`, u.tier, true);
-    }
+    await push(ref(db, "packages/history/" + phone), {
+      tier: `${u.tier} (Auto-Rejoin #${newCyclesCount})`,
+      amountUSDT: packagePrice,
+      timestamp: newActivatedAt
+    });
+
+    // Trigger fresh Upline, Downline & CTO distribution backed 100% by the user's 50% Rejoin Reserve!
+    await recordMasterInflowAndDistribute(
+      phone,
+      packagePrice,
+      `${u.tier.toUpperCase()} Auto-Rejoin Cycle #${newCyclesCount}`,
+      u.tier,
+      true,
+      recursionDepth
+    );
   }
 }
 
@@ -1385,7 +1485,7 @@ async function landing() {
   appDiv().innerHTML = `
   <div class="card center">
     <h2 style="font-size: 24px;">Temple_DA</h2>
-    <p>The Future of Decentralized Finance, Reels Showcase & Auto-Mode Reinvestment Wheel</p>
+    <p>The Future of Decentralized Finance, Reels Showcase & 2X Smart Auto-Rejoining Wheel</p>
     
     <div style="margin: 20px 0;">
         <button onclick="connectWalletAndAutoLogin()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-size: 14px; padding: 14px 22px;">
@@ -1412,9 +1512,9 @@ async function landing() {
   </div>
 
   <div class="card">
-    <h3>About Temple_DA Auto-Mode Ecosystem</h3>
+    <h3>About Temple_DA 2X Smart Auto-Rejoining Wheel</h3>
     <p style="color: #ccc; line-height: 1.6; font-size: 15px;">
-        Temple_DA integrates high-velocity short-form reels monetization with the revolutionary <strong>Auto-Mode Reinvestment Wheel</strong>. Packages automatically cycle upon reaching accumulation thresholds, triggering 50% high-velocity team distributions and strengthening core DEX liquidity without manual intervention.
+        Temple_DA integrates short-form reels monetization with the sustainable <strong>2X Smart Split & Auto-Rejoining Wheel</strong>. Every package Upline & Downline reward splits <strong>50% directly to your withdrawable Main Balance</strong> and <strong>50% into your Auto-Rejoin Wheel Reserve</strong>. Once your gross package earnings hit 2X, your accumulated 1X reserve automatically re-activates your package and distributes fresh commissions across your Upline, Downline, and CTO pools!
     </p>
   </div>
 
@@ -1423,20 +1523,20 @@ async function landing() {
   
   <div class="grid">
     <div class="card">
-        <h3>Auto-Mode Reinvestment</h3>
-        <p class="small">Perpetual cycle wheel automatically triggers package reinvestment, driving continuous single-leg payouts.</p>
+        <h3>2X Smart Rejoin Wheel</h3>
+        <p class="small">50% instant withdrawable payout + 50% Auto-Rejoin reserve triggers perpetual package renewals at 2X cap.</p>
     </div>
     <div class="card">
         <h3>Showcase & Earn</h3>
         <p class="small">Upload reels with tier-based daily limits (2, 5, 25, or Unlimited). Earn points on every like, subscriber & conversation.</p>
     </div>
     <div class="card">
-        <h3>Customized Tiers</h3>
-        <p class="small">Starter $5 (10%), Pro $15 (15%), Advanced $50 (20%), and Elite Yearly $120 (25%) tiered generation spreads.</p>
+        <h3>Upline + Downline Tiers</h3>
+        <p class="small">Starter $5 (7%+3%), Pro $15 (10%+5%), Advanced $50 (14%+6%), and Elite Yearly $120 (18%+7%) active-only distributions.</p>
     </div>
     <div class="card">
         <h3>Activation Wallet Desk</h3>
-        <p class="small">Deposit USDT to fund your Activation Wallet to perform instant P2P member ID activations and self-package upgrades.</p>
+        <p class="small">Deposit USDT to fund your Activation Wallet to perform instant fixed-price P2P member ID activations and self-upgrades.</p>
     </div>
   </div>
 
@@ -1446,7 +1546,7 @@ async function landing() {
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
         <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit</td></tr>
-        <tr><td>Reinvestment Wheel</td><td class="number">50% High-Velocity Distribution</td></tr>
+        <tr><td>2X Rejoining Wheel</td><td class="number">50% Main Balance / 50% Auto-Rejoin Reserve</td></tr>
     </table>
   </div>
   <div class="card center">
@@ -1564,7 +1664,7 @@ window.registerUser = async () => {
     inWaitingQueue: false, inHoldingQueueForClub: null, holdingQueueJoinedAt: 0,
     investment: 0, locked: 0, lockDate: 0, referrer: referrer || "", createdAt: Date.now(),
     tier: "none", packagePriceUSDT: 0, packageActivatedAt: 0, packageExpiresAt: 0, packageExpired: false,
-    packageEarningsAccumulated: 0, lastReinvestmentAt: 0,
+    packageEarningsAccumulated: 0, lastReinvestmentAt: 0, rejoinCyclesCount: 0,
     points: 10, subscribersCount: 0, monthlyBusiness: 0, lastClaimTimestamp: 0, todayWithdrawnAmount: 0, lastWithdrawDate: ""
   });
 
@@ -1845,8 +1945,16 @@ async function ctoClubsPage() {
 }
 
 // =============================================================
-// DEDICATED ACTIVATION WALLET PAGE (P2P, DEPOSIT & SELF-UPGRADE)
+// DEDICATED ACTIVATION WALLET PAGE (FIXED PRICE P2P & UPGRADES)
 // =============================================================
+window.updateP2PFixedPrice = () => {
+  const selectEl = document.getElementById("p2pUpgradeSelect");
+  const amountEl = document.getElementById("p2pAmount");
+  if (!selectEl || !amountEl) return;
+  const val = selectEl.value;
+  amountEl.value = getPackagePriceByTier(val);
+};
+
 async function activationWalletPage() {
   const phone = localStorage.getItem("user");
   if (!phone) return location.hash = "#login";
@@ -1882,23 +1990,23 @@ async function activationWalletPage() {
       <button onclick="depositToActivationWalletViaWeb3()" class="btn-green">⚡ Deposit USDT via Web3 Wallet</button>
     </div>
 
-    <!-- 2. P2P MEMBER ID ACTIVATION -->
+    <!-- 2. P2P MEMBER ID ACTIVATION (FIXED PACKAGE PRICE LOCK) -->
     <div class="card">
-      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation</h3>
+      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation (Fixed Price Locked)</h3>
       <p class="small" style="margin-bottom:10px;">
-        Activate any registered member's package or Club 1 instantly using your Activation Wallet balance. Select the package and enter the custom amount.
+        Activate any registered member's package or Club 1 instantly using your Activation Wallet balance. Package price is strictly locked to prevent underpayment.
       </p>
       <input id="p2pTargetPhone" placeholder="Enter Member Phone Number (e.g. 9876543210)">
       
-      <select id="p2pUpgradeSelect">
-        <option value="starter">Starter Pack (e.g., $5)</option>
-        <option value="monthly">Pro Creator Package (e.g., $15)</option>
-        <option value="50">Advanced Creator Package (e.g., $50)</option>
-        <option value="yearly">Elite Yearly Package (e.g., $120)</option>
-        <option value="club1">Club 1 • Bronze Pillar (e.g., $25)</option>
+      <select id="p2pUpgradeSelect" onchange="updateP2PFixedPrice()">
+        <option value="starter">Starter Pack ($5 USDT - 5 Levels / 2 Videos Daily)</option>
+        <option value="monthly">Pro Creator Package ($15 USDT - 10 Levels / 5 Videos Daily)</option>
+        <option value="50">Advanced Creator Package ($50 USDT - 15 Levels / 25 Videos Daily)</option>
+        <option value="yearly">Elite Yearly Package ($120 USDT - 20 Levels / Unlimited Videos)</option>
+        <option value="club1">Club 1 • Bronze Pillar ($25 USDT - 10% CTO Club)</option>
       </select>
 
-      <input id="p2pAmount" type="number" step="any" placeholder="Enter custom USDT Amount">
+      <input id="p2pAmount" type="number" value="5" readonly style="background:#181818; color:#00ff88; font-weight:bold; cursor:not-allowed;" title="Package price is automatically locked based on selected tier">
       
       <button onclick="executeP2PMemberActivation()" class="btn-green">⚡ Activate Member ID</button>
     </div>
@@ -1959,12 +2067,11 @@ window.executeP2PMemberActivation = async () => {
   const selectEl = document.getElementById("p2pUpgradeSelect");
   const packageType = selectEl ? selectEl.value : "starter";
   
-  const amountInput = document.getElementById("p2pAmount");
-  const amount = parseFloat(amountInput ? amountInput.value : "0");
+  // Strictly enforce exact package price from PACKAGE_PRICES_MAP
+  const amount = getPackagePriceByTier(packageType);
 
   if (!targetPhone) return customAlert("Please enter target member's phone number!");
   if (targetPhone === phone) return customAlert("You cannot activate your own account via P2P. Use self-upgrade instead!");
-  if (!amount || amount <= 0) return customAlert("Please enter a valid amount!");
 
   const callerSnap = await get(ref(db, "users/" + phone));
   if (!callerSnap.exists()) return customAlert("Caller session not found!");
@@ -1983,26 +2090,26 @@ window.executeP2PMemberActivation = async () => {
   }
 
   let packageName = "";
-  if (packageType === "starter") packageName = "Starter Pack";
-  else if (packageType === "monthly") packageName = "Pro Creator Package";
-  else if (packageType === "50") packageName = "Advanced Creator Package";
-  else if (packageType === "yearly") packageName = "Elite Yearly Package";
-  else packageName = "Club 1";
+  if (packageType === "starter") packageName = "Starter Pack ($5)";
+  else if (packageType === "monthly") packageName = "Pro Creator Package ($15)";
+  else if (packageType === "50") packageName = "Advanced Creator Package ($50)";
+  else if (packageType === "yearly") packageName = "Elite Yearly Package ($120)";
+  else packageName = "Club 1 ($25)";
 
-  customConfirm(`Confirm activating ${packageName} for member ${targetPhone} using ${amount} USDT from your Activation Wallet?`, async () => {
+  customConfirm(`Confirm activating ${packageName} for member ${targetPhone} using $${amount} USDT from your Activation Wallet?`, async () => {
     await update(ref(db, "users/" + phone), {
       activationWallet: Number(((callerData.activationWallet || 0) - amount).toFixed(2))
     });
 
     if (packageType === "club1") {
+        await recordMasterInflowAndDistribute(targetPhone, 25, `P2P Club 1 Activated by ${phone}`);
         await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
     } else {
         await upgradePackageDirectInternal(targetPhone, packageType, amount, `P2P Activated by ${phone}`);
     }
 
     if (targetInput) targetInput.value = "";
-    if (amountInput) amountInput.value = "";
-    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated with ${packageName} using ${amount} USDT from your Activation Wallet.`);
+    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated with ${packageName} using $${amount} USDT from your Activation Wallet.`);
     activationWalletPage();
   });
 };
@@ -2034,6 +2141,7 @@ window.executeSelfUpgradeFromActivation = async () => {
     } else if (amount === 120) {
       await upgradePackageDirectInternal(phone, "yearly", 120, "Activation Wallet");
     } else {
+      await recordMasterInflowAndDistribute(phone, 25, "Club 1 Activation Wallet Entry");
       await processClub1Allocation(phone, u.name || "Member", "Activation Wallet");
     }
     customAlert(`✅ Self-upgrade of $${amount} completed successfully using your Activation Wallet!`);
@@ -2060,6 +2168,7 @@ window.joinCtoClub1 = async () => {
       await update(ref(db, "users/" + phone), {
         activationWallet: Number(((u.activationWallet || 0) - 25).toFixed(2))
       });
+      await recordMasterInflowAndDistribute(phone, 25, "Club 1 Activation Wallet Entry");
       await processClub1Allocation(phone, u.name || "Member", "Activation Wallet");
     });
   } else {
@@ -2075,6 +2184,7 @@ window.joinCtoClub1 = async () => {
           locked: newLocked, investment: newInvestment, lockDate: u.lockDate || Date.now()
         });
         await push(ref(db, "investments/history/" + phone), { amountUSDT: 25, txHash: tx.hash, timestamp: Date.now() });
+        await recordMasterInflowAndDistribute(phone, 25, "Club 1 Web3 USDT Entry");
         await processClub1Allocation(phone, u.name || "Member", "Web3 USDT");
       } catch (err) {
         customAlert("Deposit failed: " + formatWeb3Error(err));
@@ -2117,7 +2227,7 @@ async function upgradePackageDirectInternal(phone, tierName, usdtAmount, sourceL
   });
   await push(ref(db, "packages/history/" + phone), { tier: tierName, amountUSDT: usdtAmount, timestamp: Date.now() });
 
-  if (u.referrer) await recordMasterInflowAndDistribute(phone, usdtAmount, `${tierName.toUpperCase()} Package (${sourceLabel})`, tierName, false);
+  await recordMasterInflowAndDistribute(phone, usdtAmount, `${tierName.toUpperCase()} Package (${sourceLabel})`, tierName, false);
 }
 
 window.claimWaitingRoom2X = async () => {
@@ -2342,12 +2452,19 @@ async function userDashboard() {
       const expDate = new Date(u.packageExpiresAt).toLocaleDateString();
       if (daysLeft > 0) { expiryNotice = `<span style="color:#00ff88; font-size:12px; font-weight:bold;">Active: ${daysLeft} days left (Valid till ${expDate})</span>`; } 
       else { expiryNotice = `<span class="badge-expired">EXPIRED</span>`; }
-    } else { expiryNotice = `<span style="color:#aaa; font-size:12px;">No active package subscription</span>`; }
+    } else { expiryNotice = `<span style="color:#aaa; font-size:12px;">No active package subscription (Upline/Downline income requires active package)</span>`; }
 
     const balTda = Number(u.balance || 0);
     const balUsd = (balTda * priceUsd).toFixed(2);
     const actWalletUSDT = Number(u.activationWallet || 0);
     const userWallet = u.wallet || "Not Linked";
+
+    const pkgPrice = Number(u.packagePriceUSDT || getPackagePriceByTier(activeTier));
+    const grossCap2X = pkgPrice * 2.0;
+    const currentGrossAccum = Number(u.packageEarningsAccumulated || 0);
+    const currentRejoinReserve = Number((currentGrossAccum * 0.50).toFixed(2));
+    const wheelProgressPct = grossCap2X > 0 ? Math.min(100, (currentGrossAccum / grossCap2X) * 100) : 0;
+    const rejoinCyclesCount = Number(u.rejoinCyclesCount || 0);
 
     const now = Date.now();
     const twentyFourHoursMs = 24 * 60 * 60 * 1000;
@@ -2379,15 +2496,37 @@ async function userDashboard() {
       }
     </div>
 
-    <!-- AUTO-MODE REINVESTMENT WHEEL VISUAL STATUS WIDGET -->
+    <!-- 2X SMART SPLIT & AUTO-REJOINING WHEEL VISUAL PROGRESS WIDGET -->
     ${activeTier !== 'none' ? `
     <div class="wheel-container">
-      <div class="spinning-wheel">⚙️</div>
-      <div>
-        <h3 style="color:#00ff88; font-size:14px; margin-bottom:2px;">🔄 Auto-Mode Reinvestment Wheel Active</h3>
-        <p class="small" style="color:#fff;">Your package (<b>${activeTier.toUpperCase()}</b>) is running on auto-mode. Accumulated earnings automatically trigger cycle reinvestments and 50% high-velocity team distributions.</p>
+      <div class="wheel-header">
+        <div class="spinning-wheel">⚙️</div>
+        <div style="flex:1;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <h3 style="color:#00ff88; font-size:15px; margin:0;">🔄 2X Smart Split & Auto-Rejoining Wheel (${activeTier.toUpperCase()} - $${pkgPrice})</h3>
+            <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">Cycles Completed: ${rejoinCyclesCount}</span>
+          </div>
+          <p class="small" style="color:#eee; margin-top:4px;">
+            Every Upline & Downline package commission splits <b>50% directly to your Main Balance</b> (withdrawable) and <b>50% to your Auto-Rejoin Reserve</b>. At $${grossCap2X.toFixed(2)} (2X) gross earnings, your $${pkgPrice.toFixed(2)} reserve automatically re-activates your package!
+          </p>
+        </div>
       </div>
-    </div>` : ''}
+
+      <div style="background:rgba(0,0,0,0.5); padding:10px 14px; border-radius:10px; border:1px solid rgba(0,255,136,0.3);">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; flex-wrap:wrap; gap:6px;">
+          <span><b>2X Cycle Progress:</b> <span class="number">$${currentGrossAccum.toFixed(2)} / $${grossCap2X.toFixed(2)} USDT</span> (${wheelProgressPct.toFixed(1)}%)</span>
+          <span style="color:#00ff88; font-weight:bold;">Rejoin Reserve Filled: $${currentRejoinReserve.toFixed(2)} / $${pkgPrice.toFixed(2)} USDT</span>
+        </div>
+        <div style="background:#222; border-radius:8px; height:10px; overflow:hidden;">
+          <div style="background:linear-gradient(90deg, #dfb72c, #00ff88); width:${wheelProgressPct}%; height:100%; transition:width 0.4s ease;"></div>
+        </div>
+      </div>
+    </div>` : `
+    <div class="card" style="border:1px dashed #ff4444; background:rgba(255,68,68,0.05); padding:14px;">
+      <p class="small" style="color:#ff8888; margin:0; text-align:center;">
+        ⚠️ <b>Notice:</b> You currently do not have an active Creator Package. Any Upline or Downline package spillover from your team will flush out to the system reserve until you activate a package ($5, $15, $50, or $120).
+      </p>
+    </div>`}
 
     <!-- 10 CTO CLUBS HERO PROMOTION CARD -->
     <div class="card" style="border: 2px solid #00ff88; background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(223,183,44,0.06));">
@@ -2510,7 +2649,8 @@ async function userDashboard() {
     </div>
 
     <h3 style="margin-top:24px;">Account Histories & Records (Click To View)</h3>
-    <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 Customized Package Upline/Downline & Staking Income</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 Package Upline/Downline (50/50 Split) & Staking Income</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accReinvestCycles"><div class="accordion-header" onclick="toggleAccordion('accReinvestCycles')"><span>🔄 2X Auto-Rejoining Wheel Cycle History</span><span>▼</span></div><div class="accordion-content" id="reinvestHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accRefPointsHistory"><div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')"><span>🌟 Referral Points History (+20 Pts Earnings)</span><span>▼</span></div><div class="accordion-content" id="refPointsHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accMasterPoints"><div class="accordion-header" onclick="toggleAccordion('accMasterPoints')"><span>📊 Master Points & Daily Login History</span><span>▼</span></div><div class="accordion-content" id="masterPointsHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accMyPosts"><div class="accordion-header" onclick="toggleAccordion('accMyPosts')"><span>🎬 My Uploaded Reels & Posts</span><span>▼</span></div><div class="accordion-content" id="myUploadedPosts">Loading...</div></div>
@@ -2523,6 +2663,7 @@ async function userDashboard() {
 
     startReleaseCountdown(u.lockDate, u.locked);
     loadReferralHistory(phone); 
+    loadReinvestmentHistory(phone);
     loadReferralPointsHistory(phone); 
     loadMasterPointsHistory(phone);
     loadInvestHistory(phone); 
@@ -2648,7 +2789,7 @@ window.makeDirectUSDTDeposit = async () => {
       await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
       await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
     } else {
-      if (u.referrer) await recordMasterInflowAndDistribute(phone, amount, `Staking Investment ($${amount})`);
+      await recordMasterInflowAndDistribute(phone, amount, `Staking Investment ($${amount})`);
     }
 
     if (investInput) investInput.value = "";
@@ -2871,8 +3012,8 @@ async function packagesPage() {
 
   appDiv().innerHTML = `
     <div class="card center">
-      <h2>Creator Packages & Auto-Mode Reinvestment Wheel</h2>
-      <p>Activate your package instantly via Direct Web3 Wallet (USDT) or your Activation Wallet balance!</p>
+      <h2>Creator Packages & 2X Smart Auto-Rejoining Wheel</h2>
+      <p>Activate your package instantly via Direct Web3 Wallet (USDT) or your Activation Wallet balance! Upline & Downline rewards require an active package and automatically cycle via the 50/50 Smart Rejoin Wheel.</p>
       ${phone ? `<p style="color:#00ff88; margin-top:8px; font-weight:bold;">Active Package: <span class="badge-tag">${currentTier.toUpperCase()}</span>${expiryDateString ? ` (Valid till ${expiryDateString})` : ''} | Activation Wallet: <span style="color:#dfb72c;">$${activationWallet.toFixed(2)}</span></p>` : ''}
     </div>
 
@@ -2882,9 +3023,9 @@ async function packagesPage() {
         <h3 style="color:#fff;">Starter Pack</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">5 USDT</p>
         <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p5Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 5 Levels • 10% Dist.</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 5L (7% Up + 3% Down)</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 2 Videos Daily Limit</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 2 Videos/Day • $10 (2X) Auto-Rejoin</p>
         <button onclick="upgradePackageWithWeb3('starter', 5)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
         <button onclick="upgradePackageWithActivationWallet('starter', 5)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($5)</button>
       </div>
@@ -2894,9 +3035,9 @@ async function packagesPage() {
         <h3 style="color:#fff;">Pro Creator Pack</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">15 USDT</p>
         <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p15Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 10 Levels • 15% Dist.</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 10L (10% Up + 5% Down)</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos Daily Limit</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 5 Videos/Day • $30 (2X) Auto-Rejoin</p>
         <button onclick="upgradePackageWithWeb3('monthly', 15)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
         <button onclick="upgradePackageWithActivationWallet('monthly', 15)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($15)</button>
       </div>
@@ -2907,9 +3048,9 @@ async function packagesPage() {
         <h3 style="color:#dfb72c;">Advanced Creator</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">50 USDT</p>
         <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p50Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 15 Levels • 20% Dist.</p>
+        <p class="badge-tag" style="background:#222; color:#dfb72c; margin-bottom:6px;">30 Days • 15L (14% Up + 6% Down)</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 25 Videos Daily Limit + Club 2 Ready</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ 25 Videos/Day • $100 (2X) Auto-Rejoin</p>
         <button onclick="upgradePackageWithWeb3('50', 50)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
         <button onclick="upgradePackageWithActivationWallet('50', 50)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($50)</button>
       </div>
@@ -2919,9 +3060,9 @@ async function packagesPage() {
         <h3 style="color:#fff;">Elite Yearly</h3>
         <p class="number" style="font-size:24px; margin: 4px 0;">120 USDT</p>
         <p class="small" style="color:#dfb72c; margin-bottom:4px;">≈ ${p120Tokens} Temple_DA</p>
-        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">365 Days • 20 Levels • 25% Dist.</p>
+        <p class="badge-tag" style="background:#222; color:#00ff88; border-color:#00ff88; margin-bottom:6px;">365 Days • 20L (18% Up + 7% Down)</p>
         <hr style="border:0; border-top:1px solid rgba(223,183,44,0.25); margin:10px 0;">
-        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Daily Reels</p>
+        <p class="small" style="color:#00ff88; font-weight:bold;">✓ Unlimited Reels • $240 (2X) Auto-Rejoin</p>
         <button onclick="upgradePackageWithWeb3('yearly', 120)" style="margin-top:8px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Web3 USDT</button>
         <button onclick="upgradePackageWithActivationWallet('yearly', 120)" style="margin-top:4px; background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000; font-size:11px;">🛡️ Activation W. ($120)</button>
       </div>
@@ -2937,6 +3078,7 @@ window.upgradePackageWithWeb3 = async (tierName, usdtAmount) => {
     const { tx } = await executeUsdtTransfer(usdtAmount, `${tierName.toUpperCase()} Package Upgrade`);
     await upgradePackageDirectInternal(phone, tierName, usdtAmount, "Web3 USDT");
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully via Web3 Wallet!`);
+    packagesPage();
   } catch (error) { customAlert("Package activation failed: " + formatWeb3Error(error)); }
 };
 
@@ -2956,6 +3098,7 @@ window.upgradePackageWithActivationWallet = async (tierName, usdtAmount) => {
     await update(ref(db, "users/" + phone), { activationWallet: Number((activationBal - usdtAmount).toFixed(2)) });
     await upgradePackageDirectInternal(phone, tierName, usdtAmount, "Activation Wallet");
     customAlert(`🎉 Package ${tierName.toUpperCase()} activated successfully using Activation Wallet!`);
+    packagesPage();
   });
 };
 
@@ -3011,7 +3154,7 @@ async function adminDashboard() {
         <tr><td>2% FIFO Waiting Pool:</td><td style="color:#dfb72c; font-weight:bold;">$${(master.cto2WaitingPoolUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>1% Crown Ambassador Royalty:</td><td style="color:#cc66ff; font-weight:bold;">$${(master.ambassadorPoolUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>Core Liquidity Pool (LP):</td><td style="color:#3399ff; font-weight:bold;">$${(master.lpPoolUSDT || 0).toFixed(2)} USDT</td></tr>
-        <tr><td>Company Admin Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
+        <tr><td>Company Admin & Flush-Out Reserve:</td><td style="color:#ff66cc; font-weight:bold;">$${(master.adminReserveUSDT || 0).toFixed(2)} USDT</td></tr>
         <tr><td>Members in FIFO Waiting Queue:</td><td class="number">${queueCount} Users</td></tr>
       </table>
       <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
@@ -3367,15 +3510,39 @@ async function loadReferralHistory(phone) {
     const snap = await get(ref(db, "referral_history/" + phone));
     let html = "", totalTDA = 0, totalUSDT = 0;
     if (snap.exists()) {
-      snap.forEach(s => { 
-        const d = s.val(), date = new Date(d.timestamp).toLocaleString();
+      let arr = [];
+      snap.forEach(s => arr.push(s.val()));
+      arr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      arr.forEach(d => { 
+        const date = new Date(d.timestamp).toLocaleString();
         totalTDA += (d.amountTokens || 0); totalUSDT += (d.amountUSDT || 0);
-        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;"><b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> ($${d.amountUSDT.toFixed(2)}) <br><span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span></div>`; 
+        const splitInfo = d.rejoinReserveUSDT ? `<span style="color:#00ff88;"> (50% Main Bal: +$${(d.netBalanceUSDT || 0).toFixed(2)} | 50% Rejoin Wheel: +$${(d.rejoinReserveUSDT || 0).toFixed(2)})</span>` : "";
+        html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;"><b>${d.source || ('Level ' + d.level)}</b>: <span class="number">+${d.amountTokens} Temple_DA</span> (Gross: $${(d.amountUSDT || 0).toFixed(2)})${splitInfo} <br><span style="color:#888;">From: ${maskPhone(d.fromUser)} | ${date}</span></div>`; 
       });
     }
-    const headerHtml = html ? `<div style="margin-bottom:8px; color:#00ff88; font-weight:bold;">Total Network & Package Income: ${totalTDA.toFixed(2)} Temple_DA ($${totalUSDT.toFixed(2)})</div>` : "";
+    const headerHtml = html ? `<div style="margin-bottom:8px; color:#00ff88; font-weight:bold;">Total Network & Package Income: ${totalTDA.toFixed(2)} Temple_DA (Gross: $${totalUSDT.toFixed(2)} USDT)</div>` : "";
     const el = document.getElementById("referralHistory");
     if (el) el.innerHTML = headerHtml + (html || "No network income yet.");
+  } catch(e) {}
+}
+
+async function loadReinvestmentHistory(phone) {
+  try {
+    const snap = await get(ref(db, "reinvestment_cycles/" + phone));
+    const el = document.getElementById("reinvestHistoryList");
+    if (!el) return;
+    if (!snap.exists()) { el.innerHTML = `<p class="small">No auto-rejoining cycles completed yet. Once your package earnings reach 2X, your 50% reserve automatically re-activates your package here!</p>`; return; }
+
+    let arr = [];
+    snap.forEach(s => arr.push(s.val()));
+    arr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    let html = "";
+    arr.forEach(d => {
+      const date = new Date(d.timestamp).toLocaleString();
+      html += `<div class="small" style="border-bottom:1px solid rgba(0, 255, 136, 0.25); padding:7px 0;"><span class="badge-tag" style="color:#00ff88; border-color:#00ff88;">CYCLE #${d.cycleNumber || 1}</span> <b>${(d.tier || '').toUpperCase()}</b> ($${d.amountUSDT} USDT) — <span style="color:#00ff88;">${d.status}</span><br><span style="color:#888;">${date}</span></div>`;
+    });
+    el.innerHTML = html;
   } catch(e) {}
 }
 
