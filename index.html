@@ -629,6 +629,19 @@ td {
   </div>
 </div>
 
+<!-- Custom Prompt Modal (Replaces native prompt) -->
+<div id="customPromptOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:#181818; padding:26px; border:2px solid #dfb72c; border-radius:16px; max-width:400px; width: 90%; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+    <h3 style="color:#dfb72c; margin-bottom: 10px;">Enter Details</h3>
+    <p id="customPromptMessage" style="color:#fff; margin-bottom:12px; font-size: 14px; line-height: 1.5; white-space: pre-line;"></p>
+    <input id="customPromptInput" placeholder="Enter value..." style="margin-bottom:16px;">
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button onclick="executeCustomPrompt()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000; padding:11px 22px; width:auto; border-radius: 8px;">Submit</button>
+      <button onclick="closeCustomPrompt()" style="background: linear-gradient(135deg, #cc0000 0%, #ff4444 100%); color:#fff; padding:11px 22px; width:auto; border-radius: 8px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
   window.customAlert = (msg) => {
     const el = document.getElementById('customAlertMessage');
@@ -658,6 +671,29 @@ td {
     const overlay = document.getElementById('customConfirmOverlay');
     if (overlay) overlay.style.display = 'none';
     confirmCallback = null;
+  };
+
+  let promptCallback = null;
+  window.customPrompt = (msg, callback) => {
+    const el = document.getElementById('customPromptMessage');
+    const inp = document.getElementById('customPromptInput');
+    if (el) el.innerText = msg;
+    if (inp) inp.value = '';
+    promptCallback = callback;
+    const overlay = document.getElementById('customPromptOverlay');
+    if (overlay) overlay.style.display = 'flex';
+  };
+  window.executeCustomPrompt = () => {
+    const overlay = document.getElementById('customPromptOverlay');
+    const inp = document.getElementById('customPromptInput');
+    const val = inp ? inp.value.trim() : '';
+    if (overlay) overlay.style.display = 'none';
+    if (promptCallback) promptCallback(val);
+  };
+  window.closeCustomPrompt = () => {
+    const overlay = document.getElementById('customPromptOverlay');
+    if (overlay) overlay.style.display = 'none';
+    promptCallback = null;
   };
 
   window.showWeb3Toast = (text) => {
@@ -2223,27 +2259,28 @@ window.openGiftModal = async (creatorPhone, creatorName) => {
   if (!senderPhone) return customAlert("Please login to send gifts!");
   if (senderPhone === creatorPhone) return customAlert("You cannot send a gift to yourself!");
 
-  const giftAmountStr = prompt(`Send Temple_DA gift to @${creatorName}:\nEnter amount of Temple_DA to transfer from your wallet:`);
-  if (!giftAmountStr) return;
-  const giftAmount = parseFloat(giftAmountStr);
-  if (isNaN(giftAmount) || giftAmount <= 0) return customAlert("Invalid gift amount!");
+  customPrompt(`Send Temple_DA gift to @${creatorName}:\nEnter amount of Temple_DA to transfer from your wallet:`, async (giftAmountStr) => {
+    if (!giftAmountStr) return;
+    const giftAmount = parseFloat(giftAmountStr);
+    if (isNaN(giftAmount) || giftAmount <= 0) return customAlert("Invalid gift amount!");
 
-  const senderSnap = await get(ref(db, "users/" + senderPhone));
-  if (!senderSnap.exists()) return customAlert("Sender account not found!");
-  const senderData = senderSnap.val();
-  if ((senderData.balance || 0) < giftAmount) return customAlert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
+    const senderSnap = await get(ref(db, "users/" + senderPhone));
+    if (!senderSnap.exists()) return customAlert("Sender account not found!");
+    const senderData = senderSnap.val();
+    if ((senderData.balance || 0) < giftAmount) return customAlert(`Insufficient balance! You have ${(senderData.balance || 0).toFixed(2)} Temple_DA.`);
 
-  const creatorSnap = await get(ref(db, "users/" + creatorPhone));
-  if (!creatorSnap.exists()) return customAlert("Creator account not found!");
-  const creatorData = creatorSnap.val();
+    const creatorSnap = await get(ref(db, "users/" + creatorPhone));
+    if (!creatorSnap.exists()) return customAlert("Creator account not found!");
+    const creatorData = creatorSnap.val();
 
-  await update(ref(db, "users/" + senderPhone), { balance: Number(((senderData.balance || 0) - giftAmount).toFixed(2)) });
-  await update(ref(db, "users/" + creatorPhone), { balance: Number(((creatorData.balance || 0) + giftAmount).toFixed(2)) });
+    await update(ref(db, "users/" + senderPhone), { balance: Number(((senderData.balance || 0) - giftAmount).toFixed(2)) });
+    await update(ref(db, "users/" + creatorPhone), { balance: Number(((creatorData.balance || 0) + giftAmount).toFixed(2)) });
 
-  const giftData = { amount: giftAmount, timestamp: Date.now(), senderPhone: senderPhone, senderName: senderData.name || "Member", recipientPhone: creatorPhone, recipientName: creatorName };
-  await push(ref(db, `gift_history/${senderPhone}/sent`), giftData);
-  await push(ref(db, `gift_history/${creatorPhone}/received`), giftData);
-  customAlert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
+    const giftData = { amount: giftAmount, timestamp: Date.now(), senderPhone: senderPhone, senderName: senderData.name || "Member", recipientPhone: creatorPhone, recipientName: creatorName };
+    await push(ref(db, `gift_history/${senderPhone}/sent`), giftData);
+    await push(ref(db, `gift_history/${creatorPhone}/received`), giftData);
+    customAlert(`🎁 Successfully sent ${giftAmount} Temple_DA gift to @${creatorName}!`);
+  });
 };
 window.shareReel = (id) => { copyToClipboard(`${location.origin}${location.pathname}#feed`); customAlert("Reel link successfully copied to clipboard!"); };
 window.openCommentsModal = (postId, encodedTitle) => {
@@ -3312,13 +3349,14 @@ window.releaseLocked = async phone => {
 
 window.updatePrice = async () => { await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price"))); customAlert("Price updated!"); };
 window.editUser = async oldId => {
-  const newId = prompt("Enter new user ID");
-  if (!newId) return;
-  const snap = await get(ref(db, "users/" + oldId));
-  if (!snap.exists()) return customAlert("User not found");
-  await set(ref(db, "users/" + newId), snap.val());
-  await remove(ref(db, "users/" + oldId));
-  customAlert("User ID updated");
+  customPrompt("Enter new user ID:", async (newId) => {
+    if (!newId) return;
+    const snap = await get(ref(db, "users/" + oldId));
+    if (!snap.exists()) return customAlert("User not found");
+    await set(ref(db, "users/" + newId), snap.val());
+    await remove(ref(db, "users/" + oldId));
+    customAlert("User ID updated");
+  });
 };
 window.deleteUser = async id => { customConfirm("Are you sure?", async () => { await remove(ref(db, "users/" + id)); customAlert("User deleted."); }); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
