@@ -1848,12 +1848,23 @@ async function activationWalletPage() {
 
     <!-- 2. P2P MEMBER ID ACTIVATION -->
     <div class="card">
-      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation (Club 1 • $25)</h3>
+      <h3 style="color:#dfb72c;">👥 P2P Member ID Activation</h3>
       <p class="small" style="margin-bottom:10px;">
-        Activate any registered member's Club 1 position instantly using your Activation Wallet balance. Perfect for cash/UPI offline settlement with your team.
+        Activate any registered member's package or Club 1 instantly using your Activation Wallet balance. Select the package and enter the custom amount.
       </p>
       <input id="p2pTargetPhone" placeholder="Enter Member Phone Number (e.g. 9876543210)">
-      <button onclick="executeP2PMemberActivation()" class="btn-green">⚡ Activate Member Club 1 ($25 USDT)</button>
+      
+      <select id="p2pUpgradeSelect">
+        <option value="starter">Starter Pack (e.g., $5)</option>
+        <option value="monthly">Pro Creator Package (e.g., $15)</option>
+        <option value="50">Advanced Creator Package (e.g., $50)</option>
+        <option value="yearly">Elite Yearly Package (e.g., $120)</option>
+        <option value="club1">Club 1 • Bronze Pillar (e.g., $25)</option>
+      </select>
+
+      <input id="p2pAmount" type="number" step="any" placeholder="Enter custom USDT Amount">
+      
+      <button onclick="executeP2PMemberActivation()" class="btn-green">⚡ Activate Member ID</button>
     </div>
 
     <!-- 3. SELF-PACKAGE OR CLUB UPGRADE -->
@@ -1908,34 +1919,54 @@ window.executeP2PMemberActivation = async () => {
   const phone = localStorage.getItem("user");
   const targetInput = document.getElementById("p2pTargetPhone");
   const targetPhone = targetInput ? targetInput.value.trim() : "";
+  
+  const selectEl = document.getElementById("p2pUpgradeSelect");
+  const packageType = selectEl ? selectEl.value : "starter";
+  
+  const amountInput = document.getElementById("p2pAmount");
+  const amount = parseFloat(amountInput ? amountInput.value : "0");
 
   if (!targetPhone) return customAlert("Please enter target member's phone number!");
   if (targetPhone === phone) return customAlert("You cannot activate your own account via P2P. Use self-upgrade instead!");
+  if (!amount || amount <= 0) return customAlert("Please enter a valid amount!");
 
   const callerSnap = await get(ref(db, "users/" + phone));
   if (!callerSnap.exists()) return customAlert("Caller session not found!");
   const callerData = callerSnap.val();
 
-  if ((callerData.activationWallet || 0) < 25) {
-    return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(callerData.activationWallet || 0).toFixed(2)} USDT, but P2P Club 1 activation requires 25 USDT.`);
+  if ((callerData.activationWallet || 0) < amount) {
+    return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(callerData.activationWallet || 0).toFixed(2)} USDT, but selected activation requires $${amount} USDT.`);
   }
 
   const targetSnap = await get(ref(db, "users/" + targetPhone));
   if (!targetSnap.exists()) return customAlert(`Target member phone (${targetPhone}) is not registered yet! Please ask them to register first.`);
   const targetData = targetSnap.val();
 
-  if (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub) {
+  if (packageType === "club1" && (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub)) {
     return customAlert(`Member ${targetPhone} already has an active CTO Club slot or is in queue!`);
   }
 
-  customConfirm(`Confirm activating Club 1 for member ${targetPhone} using 25 USDT from your Activation Wallet?`, async () => {
+  let packageName = "";
+  if (packageType === "starter") packageName = "Starter Pack";
+  else if (packageType === "monthly") packageName = "Pro Creator Package";
+  else if (packageType === "50") packageName = "Advanced Creator Package";
+  else if (packageType === "yearly") packageName = "Elite Yearly Package";
+  else packageName = "Club 1";
+
+  customConfirm(`Confirm activating ${packageName} for member ${targetPhone} using ${amount} USDT from your Activation Wallet?`, async () => {
     await update(ref(db, "users/" + phone), {
-      activationWallet: Number(((callerData.activationWallet || 0) - 25).toFixed(2))
+      activationWallet: Number(((callerData.activationWallet || 0) - amount).toFixed(2))
     });
 
-    await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
+    if (packageType === "club1") {
+        await processClub1Allocation(targetPhone, targetData.name || "Member", `P2P Activated by ${phone}`);
+    } else {
+        await upgradePackageDirectInternal(targetPhone, packageType, amount, `P2P Activated by ${phone}`);
+    }
+
     if (targetInput) targetInput.value = "";
-    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated into Club 1 using 25 USDT from your Activation Wallet.`);
+    if (amountInput) amountInput.value = "";
+    customAlert(`✅ P2P Activation Successful!\nMember ${targetPhone} has been successfully activated with ${packageName} using ${amount} USDT from your Activation Wallet.`);
     activationWalletPage();
   });
 };
