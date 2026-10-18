@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempleDA Pay - Decentralized Payments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+</head>
+<body class="bg-gray-950 text-white font-sans antialiased min-h-screen flex flex-col items-center justify-between p-4">
+
+    <!-- Header / Live Price Box -->
+    <div class="w-full max-w-md bg-gray-900 border border-yellow-500/30 rounded-2xl p-4 shadow-lg text-center mt-2">
+        <h1 class="text-xs uppercase tracking-wider text-yellow-400 font-semibold">TempleDA Pay Gateway</h1>
+        <div class="mt-2 flex justify-between items-center bg-gray-950 p-3 rounded-xl border border-gray-800">
+            <span class="text-sm text-gray-400">Live TempleDA Price:</span>
+            <span id="livePrice" class="text-lg font-bold text-green-400">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Main Payment Container -->
+    <div class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl my-4">
+        
+        <!-- Wallet Connect Status -->
+        <div class="mb-4 text-center">
+            <button id="connectWalletBtn" onclick="connectWallet()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2.5 px-4 rounded-xl transition duration-200 text-sm">
+                Connect Wallet
+            </button>
+            <p id="walletAddress" class="text-xs text-gray-400 mt-2 truncate"></p>
+        </div>
+
+        <!-- QR Scanner Section -->
+        <div class="mb-4">
+            <label class="block text-xs font-medium text-gray-400 mb-1">Merchant QR Code / Address</label>
+            <div id="reader" class="w-full rounded-xl overflow-hidden border border-gray-800 bg-black mb-2"></div>
+            <button onclick="startScanner()" class="w-full bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs py-2 rounded-lg border border-yellow-500/20">
+                📷 Scan Merchant QR
+            </button>
+        </div>
+
+        <!-- Manual Address & Amount Form -->
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Merchant BSC Address</label>
+                <input type="text" id="merchantAddress" placeholder="0x..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-yellow-500">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Amount in INR (₹)</label>
+                <input type="number" id="inrAmount" placeholder="Enter amount" oninput="calculateToken()" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-yellow-500">
+            </div>
+
+            <!-- Calculated Output -->
+            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center">
+                <span class="text-xs text-gray-400">Payable TempleDA:</span>
+                <span id="tokenOutput" class="text-base font-bold text-yellow-400">0.00 TempleDA</span>
+            </div>
+        </div>
+
+        <!-- Pay Now Button -->
+        <button onclick="makePayment()" class="w-full mt-6 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-gray-950 font-extrabold py-3 px-4 rounded-xl shadow-lg transition duration-200">
+            Pay Now
+        </button>
+    </div>
+
+    <footer class="text-center text-xs text-gray-600 mb-2">
+        Secured by Binance Smart Chain (BSC) & TempleDA
+    </footer>
+
+    <script>
+        let provider, signer, userAddress;
+        const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
+        let templePriceInINR = 10; 
+
+        function fetchLivePrice() {
+            document.getElementById("livePrice").innerText = `₹${templePriceInINR} / TempleDA`;
+        }
+        fetchLivePrice();
+
+        function calculateToken() {
+            let inr = document.getElementById("inrAmount").value;
+            if(inr && templePriceInINR > 0) {
+                let tokens = (inr / templePriceInINR).toFixed(4);
+                document.getElementById("tokenOutput").innerText = `${tokens} TempleDA`;
+            } else {
+                document.getElementById("tokenOutput").innerText = `0.00 TempleDA`;
+            }
+        }
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    document.getElementById("walletAddress").innerText = `Connected: ${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
+                    document.getElementById("connectWalletBtn").innerText = "Wallet Connected";
+                } catch (error) {
+                    console.error("Wallet error", error);
+                }
+            } else {
+                alert("कृपया इस ऐप को अपने Web3 वॉलेट (Trust Wallet / MetaMask / SafePal) के ब्राउज़र में खोलें।");
+            }
+        }
+
+        function startScanner() {
+            const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            scanner.render((decodedText) => {
+                document.getElementById("merchantAddress").value = decodedText;
+                scanner.clear();
+            }, (error) => {});
+        }
+
+        async function makePayment() {
+            if(!signer) {
+                alert("कृपया पहले अपना वॉलेट कनेक्ट करें!");
+                return;
+            }
+            let recipient = document.getElementById("merchantAddress").value;
+            let inr = document.getElementById("inrAmount").value;
+            if(!recipient || !inr) {
+                alert("कृपया मर्चेंट का एड्रेस और राशि भरें!");
+                return;
+            }
+
+            let tokenAmount = (inr / templePriceInINR).toFixed(18);
+            let parsedAmount = ethers.utils.parseUnits(tokenAmount.toString(), 18);
+            const erc20Abi = ["function transfer(address to, uint amount) public returns (bool)"];
+
+            try {
+                const contract = new ethers.Contract(tokenAddress, erc20Abi, signer);
+                const tx = await contract.transfer(recipient, parsedAmount);
+                alert("ट्रांजैक्शन सबमिट हो गया है! कृपया पुष्टि का इंतज़ार करें...");
+                await tx.wait();
+                alert("पेमेंट सफल रहा!");
+            } catch (err) {
+                console.error(err);
+                alert("ट्रांजैक्शन विफल रहा: " + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
