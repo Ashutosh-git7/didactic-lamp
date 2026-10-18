@@ -52,7 +52,7 @@
             </span>
             <div class="mt-2">
                 <span id="userBalance" class="text-sm font-extrabold text-yellow-400">0.00 Temple_DA</span>
-                <span class="text-[9px] text-gray-500 block">Connected Wallet</span>
+                <span id="userBalanceINR" class="text-[10px] text-green-400 font-semibold block mt-0.5">₹0.00 INR</span>
             </div>
         </div>
     </div>
@@ -171,6 +171,7 @@
     <script>
         let provider, signer, userAddress;
         let html5QrCode = null;
+        let userTokenBalanceNum = 0;
         const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         let templePriceINR = 0.15; // fallback price
@@ -201,6 +202,7 @@
             
             document.getElementById("livePrice").innerText = `₹${templePriceINR.toFixed(4)} / Temple_DA`;
             calculateToken();
+            updateUserBalanceINRDisplay();
         }
         
         fetchTemplePrice();
@@ -265,6 +267,11 @@
             }
         }
 
+        function updateUserBalanceINRDisplay() {
+            let valINR = userTokenBalanceNum * templePriceINR;
+            document.getElementById("userBalanceINR").innerText = `₹${valINR.toFixed(2)} INR`;
+        }
+
         // Web3 Wallet Connection
         async function connectWallet() {
             if (window.ethereum) {
@@ -284,7 +291,7 @@
                     document.getElementById("connectWalletBtn").className = "bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3.5 rounded-xl transition text-xs shadow-md flex items-center space-x-1.5";
                     
                     fetchUserBalance();
-                    showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", false);
+                    showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", true);
                 } catch (error) {
                     showModal("Connection Cancelled", "Wallet connection was denied.", false);
                 }
@@ -301,7 +308,9 @@
                 const tokenContract = new ethers.Contract(tokenAddress, erc20BalanceAbi, provider);
                 const rawBalance = await tokenContract.balanceOf(userAddress);
                 const formatted = ethers.utils.formatUnits(rawBalance, 18);
-                document.getElementById("userBalance").innerText = `${parseFloat(formatted).toFixed(2)} Temple_DA`;
+                userTokenBalanceNum = parseFloat(formatted);
+                document.getElementById("userBalance").innerText = `${userTokenBalanceNum.toFixed(2)} Temple_DA`;
+                updateUserBalanceINRDisplay();
             } catch (err) {
                 console.error("Balance fetch error", err);
             }
@@ -358,7 +367,7 @@
                 document.getElementById("merchantAddress").value = cleanAddr.substring(0, 42);
                 stopQrScanner();
                 switchTab('pay');
-                showModal("QR Scanned", "Merchant address successfully captured!", false);
+                showModal("QR Scanned", "Merchant address successfully captured!", true);
             } else {
                 document.getElementById("merchantAddress").value = cleanAddr;
                 stopQrScanner();
@@ -409,7 +418,7 @@
             textarea.select();
             document.execCommand("copy");
             document.body.removeChild(textarea);
-            showModal("Copied!", "Your wallet address has been copied to clipboard.", false);
+            showModal("Copied!", "Your wallet address has been copied to clipboard.", true);
         }
 
         // Secure Smart Contract Transfer Execution with Success Checkmark
@@ -522,7 +531,6 @@
 
         function closeModal() {
             document.getElementById("customModal").classList.remove("flex");
-            document.getElementById("customModal.classList.add") // fallback fix
             document.getElementById("customModal").classList.add("hidden");
         }
     </script>
