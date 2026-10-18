@@ -6,8 +6,10 @@
     <title>Temple_DA Secure Pay Wallet</title>
     <!-- Tailwind CSS for modern Web3 UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Scanner Library -->
+    <!-- QR Scanner Library (html5-qrcode) -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- QR Code Generator Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- Ethers.js v5 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <!-- FontAwesome icons -->
@@ -32,7 +34,7 @@
     </header>
 
     <div class="w-full max-w-md grid grid-cols-2 gap-3 my-3">
-        <!-- Live Temple_DA Price Card -->
+        <!-- Live Pool Price Card -->
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-lg">
             <span class="text-[11px] text-gray-400 flex items-center justify-between">
                 <span>Temple_DA Price</span>
@@ -40,7 +42,7 @@
             </span>
             <div class="mt-2">
                 <span id="livePrice" class="text-sm font-extrabold text-green-400">Loading Pool...</span>
-                <span class="text-[9px] text-gray-500 block">PancakeSwap + ₹10 Margin</span>
+                <span class="text-[9px] text-gray-500 block">PancakeSwap Pool + ₹10 Margin</span>
             </div>
         </div>
         <!-- User Balance Card -->
@@ -62,6 +64,8 @@
         <div class="flex bg-gray-950 p-1 rounded-xl mb-4 border border-gray-800">
             <button onclick="switchTab('pay')" id="tabPay" class="flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow">Pay Merchant</button>
             <button onclick="switchTab('scan')" id="tabScan" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">Scan QR</button>
+            <button onclick="switchTab('merchant')" id="tabMerchant" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">My QR</button>
+            <button onclick="switchTab('history')" id="tabHistory" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">History</button>
         </div>
 
         <!-- Section 1: Pay / Transfer Form -->
@@ -105,24 +109,48 @@
         <div id="sectionScan" class="hidden space-y-3">
             <div class="text-center">
                 <p class="text-xs text-gray-400 mb-2">Align merchant QR code within the frame</p>
-                <div id="reader" class="w-full rounded-xl overflow-hidden border border-gray-800 bg-black min-h-[220px]"></div>
+                <!-- Scanner viewport element -->
+                <div id="reader" class="w-full rounded-xl overflow-hidden border border-gray-800 bg-black min-h-[250px]"></div>
             </div>
             <button onclick="stopScannerAndSwitch()" class="w-full bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs py-2.5 rounded-xl border border-yellow-500/20 font-semibold transition">
                 <i class="fa-solid fa-arrow-left mr-1"></i> Back to Payment Form
             </button>
         </div>
 
+        <!-- Section 3: Merchant My QR Code Generator -->
+        <div id="sectionMerchant" class="hidden space-y-3 text-center">
+            <p class="text-xs text-gray-400">Show this QR to receive Temple_DA payments directly to your connected wallet.</p>
+            <div class="bg-white p-4 rounded-2xl w-48 h-48 mx-auto flex items-center justify-center shadow-lg">
+                <canvas id="merchantCanvasQR" class="w-full h-full"></canvas>
+            </div>
+            <p id="merchantMyAddress" class="text-[11px] text-yellow-400 font-mono truncate bg-gray-950 p-2 rounded-xl border border-gray-800">Connect wallet to generate QR</p>
+            <button onclick="copyMyAddress()" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-xs py-2.5 rounded-xl border border-gray-700 font-semibold transition">
+                <i class="fa-solid fa-copy mr-1"></i> Copy Wallet Address
+            </button>
+        </div>
+
+        <!-- Section 4: Transaction History -->
+        <div id="sectionHistory" class="hidden space-y-3">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-gray-400">Recent Transactions</span>
+                <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:underline">Clear History</button>
+            </div>
+            <div id="historyList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                <div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>
+            </div>
+        </div>
+
     </main>
 
     <div id="customModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 max-w-sm w-full text-center shadow-2xl">
-            <div id="modalIcon" class="w-12 h-12 rounded-full bg-yellow-500/10 text-yellow-400 flex items-center justify-center mx-auto mb-3 text-xl">
-                <i class="fa-solid fa-circle-exclamation"></i>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
+            <div id="modalIconContainer" class="w-16 h-16 rounded-full bg-yellow-500/10 text-yellow-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                <i id="modalIcon" class="fa-solid fa-circle-exclamation"></i>
             </div>
-            <h3 id="modalTitle" class="text-sm font-bold text-white mb-1">Notice</h3>
-            <p id="modalDesc" class="text-xs text-gray-400 mb-4 leading-relaxed">Message here...</p>
-            <button onclick="closeModal()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-2.5 rounded-xl text-xs transition">
-                Understood
+            <h3 id="modalTitle" class="text-base font-bold text-white mb-1">Notice</h3>
+            <p id="modalDesc" class="text-xs text-gray-400 mb-5 leading-relaxed">Message here...</p>
+            <button onclick="closeModal()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-950 font-bold py-3 rounded-xl text-xs transition shadow-lg">
+                Okay / Understood
             </button>
         </div>
     </div>
@@ -135,34 +163,34 @@
         let provider, signer, userAddress, html5QrCode;
         const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
-        let templePriceINR = 0.15; // फॉलबैक बेस मूल्य
+        let templePriceINR = 0.15; // fallback price
 
+        // Fetch live pool price using DexScreener & USDT-INR + 10 INR margin formula
         async function fetchTemplePrice() {
             try {
-                // 1. DexScreener से सीधे आपके पूल का USD प्राइस फेच करना
-                const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
-                const data = await response.json();
+                // 1. Fetch Temple_DA token USD price directly from PancakeSwap liquidity pool via DexScreener
+                const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
+                const data = await res.json();
                 
-                let templeUsdPrice = 0.00156; // सुरक्षित फॉलबैक
+                let templeUsd = 0.00156;
                 if(data && data.pair && data.pair.priceUsd) {
-                    templeUsdPrice = parseFloat(data.pair.priceUsd);
+                    templeUsd = parseFloat(data.pair.priceUsd);
                 } else if(data && data.pairs && data.pairs.length > 0) {
-                    templeUsdPrice = parseFloat(data.pairs[0].priceUsd);
+                    templeUsd = parseFloat(data.pairs[0].priceUsd);
                 }
 
-                // 2. लाइव USDT to INR रेट फेच करना
+                // 2. Fetch live USDT to INR exchange rate from CoinGecko
                 const inrRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr");
                 const inrData = await inrRes.json();
                 let baseUsdtInr = (inrData && inrData.tether && inrData.tether.inr) ? inrData.tether.inr : 92.0;
 
-                // 3. आपके निर्देशानुसार: USDT रेट में ₹10 जोड़ना (जैसे 92 + 10 = 105)
+                // 3. Apply formula: USDT rate + ₹10 margin
                 let adjustedUsdtInr = baseUsdtInr + 10.0;
 
-                // 4. Temple_DA का INR मूल्य निकालना (टोकन USD प्राइस * एडजस्टेड INR-USDT रेट)
-                templePriceINR = templeUsdPrice * adjustedUsdtInr;
-
+                // 4. Calculate final Temple_DA price in INR based on USD token value and adjusted rate
+                templePriceINR = templeUsd * adjustedUsdtInr;
             } catch (e) {
-                console.warn("Using fallback calculation with +₹10 margin.");
+                console.warn("Using fallback pool price calculation with +₹10 margin.");
                 templePriceINR = (0.00156 * (92.0 + 10.0));
             }
             
@@ -177,21 +205,44 @@
         function switchTab(tab) {
             const paySec = document.getElementById("sectionPay");
             const scanSec = document.getElementById("sectionScan");
+            const merchantSec = document.getElementById("sectionMerchant");
+            const historySec = document.getElementById("sectionHistory");
+
             const tabPay = document.getElementById("tabPay");
             const tabScan = document.getElementById("tabScan");
+            const tabMerchant = document.getElementById("tabMerchant");
+            const tabHistory = document.getElementById("tabHistory");
+
+            // Stop scanner if leaving scan tab
+            if(tab !== 'scan' && html5QrCode) {
+                try { html5QrCode.stop().catch(e => {}); } catch(err){}
+            }
+
+            paySec.classList.add("hidden");
+            scanSec.classList.add("hidden");
+            merchantSec.classList.add("hidden");
+            historySec.classList.add("hidden");
+
+            tabPay.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
+            tabScan.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
+            tabMerchant.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
+            tabHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
 
             if(tab === 'pay') {
                 paySec.classList.remove("hidden");
-                scanSec.classList.add("hidden");
                 tabPay.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
-                tabScan.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
-                if(html5QrCode) { try { html5QrCode.stop(); } catch(err){} }
-            } else {
-                paySec.classList.add("hidden");
+            } else if(tab === 'scan') {
                 scanSec.classList.remove("hidden");
                 tabScan.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
-                tabPay.className = "flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition";
                 startQrScanner();
+            } else if(tab === 'merchant') {
+                merchantSec.classList.remove("hidden");
+                tabMerchant.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
+                renderMerchantQR();
+            } else if(tab === 'history') {
+                historySec.classList.remove("hidden");
+                tabHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
+                loadTransactionHistory();
             }
         }
 
@@ -217,7 +268,7 @@
                     const network = await provider.getNetwork();
                     
                     if (network.chainId !== 56) {
-                        showModal("Network Warning", "Please switch your wallet network to Binance Smart Chain (BSC Mainnet - Chain ID 56).");
+                        showModal("Network Warning", "Please switch your wallet network to Binance Smart Chain (BSC Mainnet - Chain ID 56).", false);
                     }
 
                     await provider.send("eth_requestAccounts", []);
@@ -228,11 +279,12 @@
                     document.getElementById("connectWalletBtn").className = "bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3.5 rounded-xl transition text-xs shadow-md flex items-center space-x-1.5";
                     
                     fetchUserBalance();
+                    showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", false);
                 } catch (error) {
-                    showModal("Connection Cancelled", "Wallet connection was denied.");
+                    showModal("Connection Cancelled", "Wallet connection was denied.", false);
                 }
             } else {
-                showModal("Wallet Not Found", "Please open this app inside Trust Wallet, MetaMask, or SafePal DApp browser.");
+                showModal("Wallet Not Found", "Please open this app inside Trust Wallet, MetaMask, or SafePal DApp browser.", false);
             }
         }
 
@@ -250,27 +302,35 @@
             }
         }
 
-        // Camera QR Scanner
+        // Camera QR Scanner Implementation
         function startQrScanner() {
+            if (html5QrCode) {
+                try { html5QrCode.clear(); } catch(e){}
+            }
             html5QrCode = new Html5Qrcode("reader");
+            const qrConfig = { fps: 15, qrbox: { width: 220, height: 220 } };
+            
             html5QrCode.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 220, height: 220 } },
+                qrConfig,
                 (decodedText) => {
                     let cleanAddr = decodedText.trim();
                     if(cleanAddr.startsWith("ethereum:")) cleanAddr = cleanAddr.replace("ethereum:", "");
                     if(ethers.utils.isAddress(cleanAddr.substring(0, 42))) {
                         document.getElementById("merchantAddress").value = cleanAddr.substring(0, 42);
                         switchTab('pay');
-                        showModal("QR Scanned", "Merchant address successfully captured!");
+                        showModal("QR Scanned", "Merchant address successfully captured!", false);
                     } else {
                         document.getElementById("merchantAddress").value = cleanAddr;
                         switchTab('pay');
                     }
+                    try { html5QrCode.stop(); } catch(e){}
                 },
-                (error) => {}
+                (errorMessage) => {
+                    // Scanning in progress silently
+                }
             ).catch(err => {
-                showModal("Camera Error", "Unable to access device camera.");
+                showModal("Camera Error", "Unable to access device camera. Please check camera permission.", false);
             });
         }
 
@@ -282,21 +342,51 @@
             }
         }
 
+        // Render My Merchant QR Code
+        function renderMerchantQR() {
+            const canvas = document.getElementById("merchantCanvasQR");
+            const addrEl = document.getElementById("merchantMyAddress");
+            if(!userAddress) {
+                addrEl.innerText = "Please connect wallet first";
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+            addrEl.innerText = userAddress;
+            QRCode.toCanvas(canvas, userAddress, { width: 192, margin: 1 }, function (error) {
+                if (error) console.error(error);
+            });
+        }
+
+        function copyMyAddress() {
+            if(!userAddress) {
+                showModal("Wallet Required", "Connect wallet to copy address.", false);
+                return;
+            }
+            const textarea = document.createElement("textarea");
+            textarea.value = userAddress;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            showModal("Copied!", "Your wallet address has been copied to clipboard.", false);
+        }
+
         // Secure Smart Contract Transfer Execution
         async function makeSecurePayment() {
             if(!signer) {
-                showModal("Wallet Required", "Please connect your Web3 wallet first.");
+                showModal("Wallet Required", "Please connect your Web3 wallet first.", false);
                 return;
             }
             let recipient = document.getElementById("merchantAddress").value.trim();
             let inr = document.getElementById("inrAmount").value;
 
             if(!ethers.utils.isAddress(recipient)) {
-                showModal("Invalid Address", "The merchant BSC address is incorrect.");
+                showModal("Invalid Address", "The merchant BSC address is incorrect.", false);
                 return;
             }
             if(!inr || inr <= 0) {
-                showModal("Invalid Amount", "Please enter a valid INR amount.");
+                showModal("Invalid Amount", "Please enter a valid INR amount.", false);
                 return;
             }
 
@@ -305,27 +395,87 @@
             const erc20TransferAbi = ["function transfer(address to, uint256 amount) public returns (bool)"];
 
             try {
-                showModal("Processing", "Please approve the transaction in your connected Web3 wallet...");
+                showModal("Processing", "Please approve the transaction in your connected Web3 wallet...", false);
                 const contract = new ethers.Contract(tokenAddress, erc20TransferAbi, signer);
                 
                 const tx = await contract.transfer(recipient, parsedAmount);
-                showModal("Broadcasted", "Transaction submitted to BSC network. Waiting for block confirmation...");
+                showModal("Broadcasted", "Transaction submitted to BSC network. Waiting for block confirmation...", false);
                 
                 await tx.wait();
-                showModal("Success", "Payment confirmed successfully! Funds transferred to merchant.");
+                
+                // Save transaction to local history
+                saveTransaction({
+                    recipient: recipient,
+                    inr: inr,
+                    tokens: tokenAmount.toFixed(4),
+                    hash: tx.hash,
+                    time: new Date().toLocaleString()
+                });
+
+                showModal("Success!", "Payment confirmed successfully! Funds transferred to merchant.", true);
                 fetchUserBalance();
                 document.getElementById("inrAmount").value = "";
                 document.getElementById("tokenOutput").innerText = "0.0000 Temple_DA";
             } catch (err) {
                 console.error(err);
-                showModal("Transaction Failed", err.reason || err.message || "User rejected transaction or insufficient balance.");
+                showModal("Transaction Failed", err.reason || err.message || "User rejected transaction or insufficient balance.", false);
             }
         }
 
-        // Custom Modal
-        function showModal(title, desc) {
+        // Transaction History Management
+        function saveTransaction(txData) {
+            let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+            history.unshift(txData);
+            if(history.length > 20) history.pop();
+            localStorage.setItem("temple_tx_history", JSON.stringify(history));
+        }
+
+        function loadTransactionHistory() {
+            let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+            const container = document.getElementById("historyList");
+            if(history.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>`;
+                return;
+            }
+            let html = "";
+            history.forEach(tx => {
+                html += `
+                    <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-yellow-400 font-bold block">${tx.tokens} Temple_DA (₹${tx.inr})</span>
+                            <span class="text-[10px] text-gray-500 font-mono">To: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}</span>
+                            <span class="text-[9px] text-gray-600 block">${tx.time}</span>
+                        </div>
+                        <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">
+                            View <i class="fa-solid fa-external-link-alt ml-0.5"></i>
+                        </a>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function clearHistory() {
+            localStorage.removeItem("temple_tx_history");
+            loadTransactionHistory();
+        }
+
+        // Custom Modal with Success Checkmark support
+        function showModal(title, desc, isSuccess = false) {
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalDesc").innerText = desc;
+            
+            const iconContainer = document.getElementById("modalIconContainer");
+            const icon = document.getElementById("modalIcon");
+            
+            if(isSuccess) {
+                iconContainer.className = "w-16 h-16 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-3 text-2xl border border-green-500/30";
+                icon.className = "fa-solid fa-circle-check";
+            } else {
+                iconContainer.className = "w-16 h-16 rounded-full bg-yellow-500/10 text-yellow-400 flex items-center justify-center mx-auto mb-3 text-2xl";
+                icon.className = "fa-solid fa-circle-exclamation";
+            }
+
             document.getElementById("customModal").classList.remove("hidden");
             document.getElementById("customModal").classList.add("flex");
         }
