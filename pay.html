@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Temple_DA Secure Pay Wallet</title>
-    <!-- Tailwind CSS for sleek Web3 UI -->
+    <!-- Tailwind CSS for modern Web3 UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <!-- Ethers.js v5 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <!-- FontAwesome for secure wallet icons -->
+    <!-- FontAwesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-950 text-white font-sans antialiased min-h-screen flex flex-col items-center justify-between p-4 selection:bg-yellow-500 selection:text-black">
@@ -32,16 +32,18 @@
     </header>
 
     <div class="w-full max-w-md grid grid-cols-2 gap-3 my-3">
+        <!-- Live Temple_DA Price Card -->
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-lg">
             <span class="text-[11px] text-gray-400 flex items-center justify-between">
                 <span>Temple_DA Price</span>
                 <i class="fa-solid fa-chart-line text-green-400"></i>
             </span>
             <div class="mt-2">
-                <span id="livePrice" class="text-sm font-extrabold text-green-400">Fetching DEX...</span>
+                <span id="livePrice" class="text-sm font-extrabold text-green-400">Loading Pool...</span>
                 <span class="text-[9px] text-gray-500 block">PancakeSwap + ₹10 Margin</span>
             </div>
         </div>
+        <!-- User Balance Card -->
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-3.5 flex flex-col justify-between shadow-lg">
             <span class="text-[11px] text-gray-400 flex items-center justify-between">
                 <span>Your Balance</span>
@@ -56,7 +58,7 @@
 
     <main class="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
         
-        <!-- Tab Switcher (Pay Merchant / Scan QR) -->
+        <!-- Tab Switcher -->
         <div class="flex bg-gray-950 p-1 rounded-xl mb-4 border border-gray-800">
             <button onclick="switchTab('pay')" id="tabPay" class="flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow">Pay Merchant</button>
             <button onclick="switchTab('scan')" id="tabScan" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">Scan QR</button>
@@ -125,46 +127,53 @@
         </div>
     </div>
 
-    <!-- Footer Security Notice -->
     <footer class="text-center text-[10px] text-gray-500 mt-2">
         <i class="fa-solid fa-lock text-yellow-500/70 mr-1"></i> End-to-End Decentralized Encrypted Gateway
     </footer>
 
     <script>
         let provider, signer, userAddress, html5QrCode;
-        // Temple_DA Token Contract Address on Binance Smart Chain (BSC)
-        const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
-        let liveTemplePriceINR = 115.0; // Dynamic DEX + Margin container
+        const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
+        const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
+        let templePriceINR = 0.15; // फॉलबैक बेस मूल्य
 
-        // Fetch Live USDT & Temple_DA Price from PancakeSwap / Dex Screener / Coingecko with +₹10 Margin
-        async function fetchLiveDexPrice() {
+        async function fetchTemplePrice() {
             try {
-                // Fetching real USDT inr price and crypto market metrics safely
-                const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether,templeda&vs_currencies=inr");
+                // 1. DexScreener से सीधे आपके पूल का USD प्राइस फेच करना
+                const response = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
                 const data = await response.json();
                 
-                let baseInr = 0;
-                if(data && data.tether && data.tether.inr) {
-                    baseInr = data.tether.inr; // Real USDT market price in INR (~95-105)
-                } else {
-                    baseInr = 100.0; // Standard fallback
+                let templeUsdPrice = 0.00156; // सुरक्षित फॉलबैक
+                if(data && data.pair && data.pair.priceUsd) {
+                    templeUsdPrice = parseFloat(data.pair.priceUsd);
+                } else if(data && data.pairs && data.pairs.length > 0) {
+                    templeUsdPrice = parseFloat(data.pairs[0].priceUsd);
                 }
 
-                // Applying user requirement: Live price + ₹10 margin
-                liveTemplePriceINR = baseInr + 10.0; 
+                // 2. लाइव USDT to INR रेट फेच करना
+                const inrRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr");
+                const inrData = await inrRes.json();
+                let baseUsdtInr = (inrData && inrData.tether && inrData.tether.inr) ? inrData.tether.inr : 92.0;
+
+                // 3. आपके निर्देशानुसार: USDT रेट में ₹10 जोड़ना (जैसे 92 + 10 = 105)
+                let adjustedUsdtInr = baseUsdtInr + 10.0;
+
+                // 4. Temple_DA का INR मूल्य निकालना (टोकन USD प्राइस * एडजस्टेड INR-USDT रेट)
+                templePriceINR = templeUsdPrice * adjustedUsdtInr;
+
             } catch (e) {
-                console.warn("DEX live price sync active via secure fallback mechanism.");
-                liveTemplePriceINR = 112.50; // Fallback with margin
+                console.warn("Using fallback calculation with +₹10 margin.");
+                templePriceINR = (0.00156 * (92.0 + 10.0));
             }
-            document.getElementById("livePrice").innerText = `₹${liveTemplePriceINR.toFixed(2)} / Temple_DA`;
+            
+            document.getElementById("livePrice").innerText = `₹${templePriceINR.toFixed(4)} / Temple_DA`;
             calculateToken();
         }
         
-        // Auto-sync price on startup and interval
-        fetchLiveDexPrice();
-        setInterval(fetchLiveDexPrice, 30000);
+        fetchTemplePrice();
+        setInterval(fetchTemplePrice, 30000);
 
-        // UI Tab Management
+        // UI Tabs Switcher
         function switchTab(tab) {
             const paySec = document.getElementById("sectionPay");
             const scanSec = document.getElementById("sectionScan");
@@ -192,24 +201,23 @@
 
         function calculateToken() {
             let inr = document.getElementById("inrAmount").value;
-            if(inr && liveTemplePriceINR > 0) {
-                let tokens = (inr / liveTemplePriceINR).toFixed(4);
+            if(inr && templePriceINR > 0) {
+                let tokens = (inr / templePriceINR).toFixed(4);
                 document.getElementById("tokenOutput").innerText = `${tokens} Temple_DA`;
             } else {
                 document.getElementById("tokenOutput").innerText = `0.0000 Temple_DA`;
             }
         }
 
-        // Web3 Wallet Connector with Chain Check
+        // Web3 Wallet Connection
         async function connectWallet() {
             if (window.ethereum) {
                 try {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     const network = await provider.getNetwork();
                     
-                    // Verify BSC Mainnet (Chain ID 56)
                     if (network.chainId !== 56) {
-                        showModal("Network Warning", "Please switch your wallet network to Binance Smart Chain (BSC Mainnet) to execute transactions.");
+                        showModal("Network Warning", "Please switch your wallet network to Binance Smart Chain (BSC Mainnet - Chain ID 56).");
                     }
 
                     await provider.send("eth_requestAccounts", []);
@@ -221,10 +229,10 @@
                     
                     fetchUserBalance();
                 } catch (error) {
-                    showModal("Connection Cancelled", "Wallet access was denied by user.");
+                    showModal("Connection Cancelled", "Wallet connection was denied.");
                 }
             } else {
-                showModal("Wallet Not Found", "Please open this secure app inside Trust Wallet, MetaMask, or SafePal browser.");
+                showModal("Wallet Not Found", "Please open this app inside Trust Wallet, MetaMask, or SafePal DApp browser.");
             }
         }
 
@@ -242,7 +250,7 @@
             }
         }
 
-        // QR Code Scanner Logic via html5-qrcode
+        // Camera QR Scanner
         function startQrScanner() {
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start(
@@ -262,7 +270,7 @@
                 },
                 (error) => {}
             ).catch(err => {
-                showModal("Camera Error", "Unable to access device camera. Please check permissions.");
+                showModal("Camera Error", "Unable to access device camera.");
             });
         }
 
@@ -277,22 +285,22 @@
         // Secure Smart Contract Transfer Execution
         async function makeSecurePayment() {
             if(!signer) {
-                showModal("Wallet Required", "Please connect your Web3 wallet before initiating payment.");
+                showModal("Wallet Required", "Please connect your Web3 wallet first.");
                 return;
             }
             let recipient = document.getElementById("merchantAddress").value.trim();
             let inr = document.getElementById("inrAmount").value;
 
             if(!ethers.utils.isAddress(recipient)) {
-                showModal("Invalid Address", "The merchant BSC address is incorrect or empty.");
+                showModal("Invalid Address", "The merchant BSC address is incorrect.");
                 return;
             }
             if(!inr || inr <= 0) {
-                showModal("Invalid Amount", "Please enter a valid amount to transfer.");
+                showModal("Invalid Amount", "Please enter a valid INR amount.");
                 return;
             }
 
-            let tokenAmount = (inr / liveTemplePriceINR);
+            let tokenAmount = (inr / templePriceINR);
             let parsedAmount = ethers.utils.parseUnits(tokenAmount.toFixed(18), 18);
             const erc20TransferAbi = ["function transfer(address to, uint256 amount) public returns (bool)"];
 
@@ -314,7 +322,7 @@
             }
         }
 
-        // Custom Modal Utility (Replaces unsafe alert)
+        // Custom Modal
         function showModal(title, desc) {
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalDesc").innerText = desc;
