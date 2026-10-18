@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Temple_DA Secure Pay Wallet</title>
-    <!-- Tailwind CSS for modern Web3 UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Scanner Library (html5-qrcode) -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- QR Scanner Library (html5-qrcode v2.3.8) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <!-- QR Code Generator Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- Ethers.js v5 -->
@@ -19,11 +18,11 @@
 
     <header class="w-full max-w-md flex justify-between items-center bg-gray-900 border border-yellow-500/20 rounded-2xl p-4 shadow-xl mt-2">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/20">
-                <i class="fa-solid fa-shield-halved text-gray-950 text-lg"></i>
+            <div class="w-10 h-10 rounded-xl bg-gray-950 border border-yellow-500/40 flex items-center justify-center shadow-lg shadow-yellow-500/10 overflow-hidden">
+                <img src="temple_logo.png.png" alt="Temple_DA Logo" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x50BE31cAAB627ee8F98374d33b0454a8269A79e1/logo.png'; this.onerror=function(){this.parentNode.innerHTML='<i class=\'fa-solid fa-shield-halved text-yellow-400 text-lg\'></i>';};">
             </div>
             <div>
-                <h1 class="text-xs uppercase tracking-wider text-yellow-400 font-bold">Temple_DA Wallet</h1>
+                <h1 class="text-xs uppercase tracking-wider text-yellow-400 font-bold">TEMPLE_DA WALLET</h1>
                 <p id="networkStatus" class="text-[10px] text-gray-400">BSC Mainnet (Chain ID: 56)</p>
             </div>
         </div>
@@ -62,7 +61,7 @@
         
         <!-- Tab Switcher -->
         <div class="flex bg-gray-950 p-1 rounded-xl mb-4 border border-gray-800">
-            <button onclick="switchTab('pay')" id="tabPay" class="flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow">Pay Merchant</button>
+            <button onclick="switchTab('pay')" id="tabPay" class="flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow">Pay</button>
             <button onclick="switchTab('scan')" id="tabScan" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">Scan QR</button>
             <button onclick="switchTab('merchant')" id="tabMerchant" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">My QR</button>
             <button onclick="switchTab('history')" id="tabHistory" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition">History</button>
@@ -105,21 +104,31 @@
             </button>
         </div>
 
-        <!-- Section 2: Camera QR Scanner -->
+        <!-- Section 2: Camera & Gallery QR Scanner -->
         <div id="sectionScan" class="hidden space-y-3">
             <div class="text-center">
-                <p class="text-xs text-gray-400 mb-2">Align merchant QR code within the frame</p>
+                <p class="text-xs text-gray-400 mb-2">Align merchant QR code within camera frame or upload from gallery</p>
                 <!-- Scanner viewport element -->
-                <div id="reader" class="w-full rounded-xl overflow-hidden border border-gray-800 bg-black min-h-[250px]"></div>
+                <div id="reader" class="w-full rounded-xl overflow-hidden border border-yellow-500/30 bg-black min-h-[240px]"></div>
             </div>
-            <button onclick="stopScannerAndSwitch()" class="w-full bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs py-2.5 rounded-xl border border-yellow-500/20 font-semibold transition">
+            
+            <!-- Gallery File Upload Button for QR Scanning -->
+            <div class="relative">
+                <input type="file" id="qrFileInput" accept="image/*" onchange="scanQrFromFile(event)" class="hidden">
+                <button onclick="document.getElementById('qrFileInput').click();" class="w-full bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs py-2.5 rounded-xl border border-yellow-500/30 font-semibold transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Upload QR from Gallery / Photos</span>
+                </button>
+            </div>
+
+            <button onclick="stopScannerAndSwitch()" class="w-full bg-gray-950 hover:bg-gray-800 text-gray-400 text-xs py-2.5 rounded-xl border border-gray-800 font-semibold transition">
                 <i class="fa-solid fa-arrow-left mr-1"></i> Back to Payment Form
             </button>
         </div>
 
         <!-- Section 3: Merchant My QR Code Generator -->
         <div id="sectionMerchant" class="hidden space-y-3 text-center">
-            <p class="text-xs text-gray-400">Show this QR to receive Temple_DA payments directly to your connected wallet.</p>
+            <p class="text-xs text-gray-400">Show this QR code to receive Temple_DA payments directly to your connected wallet.</p>
             <div class="bg-white p-4 rounded-2xl w-48 h-48 mx-auto flex items-center justify-center shadow-lg">
                 <canvas id="merchantCanvasQR" class="w-full h-full"></canvas>
             </div>
@@ -160,7 +169,8 @@
     </footer>
 
     <script>
-        let provider, signer, userAddress, html5QrCode;
+        let provider, signer, userAddress;
+        let html5QrCode = null;
         const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         let templePriceINR = 0.15; // fallback price
@@ -168,7 +178,6 @@
         // Fetch live pool price using DexScreener & USDT-INR + 10 INR margin formula
         async function fetchTemplePrice() {
             try {
-                // 1. Fetch Temple_DA token USD price directly from PancakeSwap liquidity pool via DexScreener
                 const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
                 const data = await res.json();
                 
@@ -179,15 +188,11 @@
                     templeUsd = parseFloat(data.pairs[0].priceUsd);
                 }
 
-                // 2. Fetch live USDT to INR exchange rate from CoinGecko
                 const inrRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr");
                 const inrData = await inrRes.json();
                 let baseUsdtInr = (inrData && inrData.tether && inrData.tether.inr) ? inrData.tether.inr : 92.0;
 
-                // 3. Apply formula: USDT rate + ₹10 margin
                 let adjustedUsdtInr = baseUsdtInr + 10.0;
-
-                // 4. Calculate final Temple_DA price in INR based on USD token value and adjusted rate
                 templePriceINR = templeUsd * adjustedUsdtInr;
             } catch (e) {
                 console.warn("Using fallback pool price calculation with +₹10 margin.");
@@ -214,8 +219,8 @@
             const tabHistory = document.getElementById("tabHistory");
 
             // Stop scanner if leaving scan tab
-            if(tab !== 'scan' && html5QrCode) {
-                try { html5QrCode.stop().catch(e => {}); } catch(err){}
+            if(tab !== 'scan') {
+                stopQrScanner();
             }
 
             paySec.classList.add("hidden");
@@ -302,11 +307,14 @@
             }
         }
 
-        // Camera QR Scanner Implementation
+        // Robust Camera QR Scanner Implementation
         function startQrScanner() {
             if (html5QrCode) {
-                try { html5QrCode.clear(); } catch(e){}
+                try {
+                    html5QrCode.stop().catch(e => {});
+                } catch(e) {}
             }
+            
             html5QrCode = new Html5Qrcode("reader");
             const qrConfig = { fps: 15, qrbox: { width: 220, height: 220 } };
             
@@ -314,32 +322,64 @@
                 { facingMode: "environment" },
                 qrConfig,
                 (decodedText) => {
-                    let cleanAddr = decodedText.trim();
-                    if(cleanAddr.startsWith("ethereum:")) cleanAddr = cleanAddr.replace("ethereum:", "");
-                    if(ethers.utils.isAddress(cleanAddr.substring(0, 42))) {
-                        document.getElementById("merchantAddress").value = cleanAddr.substring(0, 42);
-                        switchTab('pay');
-                        showModal("QR Scanned", "Merchant address successfully captured!", false);
-                    } else {
-                        document.getElementById("merchantAddress").value = cleanAddr;
-                        switchTab('pay');
-                    }
-                    try { html5QrCode.stop(); } catch(e){}
+                    handleScannedResult(decodedText);
                 },
                 (errorMessage) => {
-                    // Scanning in progress silently
+                    // Scanning active quietly
                 }
             ).catch(err => {
-                showModal("Camera Error", "Unable to access device camera. Please check camera permission.", false);
+                console.error("Camera start error:", err);
+                showModal("Camera Notice", "Camera preview unavailable or permission denied. You can also upload a QR code image from your gallery below.", false);
             });
         }
 
-        function stopScannerAndSwitch() {
-            if(html5QrCode) {
-                html5QrCode.stop().then(() => { switchTab('pay'); }).catch(err => { switchTab('pay'); });
+        // Scan QR from Image File Upload (Gallery Support)
+        function scanQrFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+
+            html5QrCode.scanFile(file, true)
+                .then(decodedText => {
+                    handleScannedResult(decodedText);
+                })
+                .catch(err => {
+                    showModal("Scan Failed", "Could not detect a valid QR code in the selected image. Please try another image.", false);
+                });
+        }
+
+        function handleScannedResult(decodedText) {
+            let cleanAddr = decodedText.trim();
+            if(cleanAddr.startsWith("ethereum:")) cleanAddr = cleanAddr.replace("ethereum:", "");
+            if(ethers.utils.isAddress(cleanAddr.substring(0, 42))) {
+                document.getElementById("merchantAddress").value = cleanAddr.substring(0, 42);
+                stopQrScanner();
+                switchTab('pay');
+                showModal("QR Scanned", "Merchant address successfully captured!", false);
             } else {
+                document.getElementById("merchantAddress").value = cleanAddr;
+                stopQrScanner();
                 switchTab('pay');
             }
+        }
+
+        function stopQrScanner() {
+            if(html5QrCode) {
+                try {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                    }).catch(err => {});
+                } catch(e) {}
+                html5QrCode = null;
+            }
+        }
+
+        function stopScannerAndSwitch() {
+            stopQrScanner();
+            switchTab('pay');
         }
 
         // Render My Merchant QR Code
@@ -372,7 +412,7 @@
             showModal("Copied!", "Your wallet address has been copied to clipboard.", false);
         }
 
-        // Secure Smart Contract Transfer Execution
+        // Secure Smart Contract Transfer Execution with Success Checkmark
         async function makeSecurePayment() {
             if(!signer) {
                 showModal("Wallet Required", "Please connect your Web3 wallet first.", false);
@@ -482,6 +522,7 @@
 
         function closeModal() {
             document.getElementById("customModal").classList.remove("flex");
+            document.getElementById("customModal.classList.add") // fallback fix
             document.getElementById("customModal").classList.add("hidden");
         }
     </script>
