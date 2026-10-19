@@ -151,8 +151,8 @@
                 <div class="absolute -right-16 -bottom-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-[11px] font-extrabold px-3.5 py-1.5 rounded-full bg-amber-500/20 text-eliteGold border border-amber-500/30">ELITE WEB3 ESPORTS ARCADE & TREASURY</span>
-                    <h2 class="text-2xl sm:text-3xl font-black text-white">Provably Fair Games & Secure Treasury (1.5% Fee Cut)</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">Deposit official Temple_DA tokens via MetaMask or Trust Wallet straight to Treasury (`0x2760...5De95`) with 1.5% platform maintenance fee automatically retained, fund your bankroll, play pro games, and withdraw safely!</p>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white">Provably Fair Games & Secure Treasury (1.5% Deposit / 2% Withdrawal Fee)</h2>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">Deposit official Temple_DA tokens via MetaMask or Trust Wallet straight to Treasury (`0x2760...5De95`) with 1.5% maintenance fee retained, play balanced pro games, and withdraw safely with 2% platform fee!</p>
                 </div>
                 <div class="bg-eliteInner border border-eliteBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner min-w-[180px]">
                     <div class="text-xs text-gray-400 font-medium">Live Token Price</div>
@@ -439,7 +439,7 @@
         </div>
     </div>
 
-    <!-- DEPOSIT & WITHDRAW MODAL WITH 1.5% PLATFORM CUT -->
+    <!-- DEPOSIT & WITHDRAW MODAL WITH 2% WITHDRAWAL FEE & STRICT VALIDATIONS -->
     <div id="depositModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-eliteCard border border-eliteBorder rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl">
             <div class="flex items-center justify-between border-b border-eliteBorder pb-3">
@@ -465,12 +465,12 @@
                     </div>
                 </div>
                 <div class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl leading-relaxed">
-                    <i class="fa-solid fa-info-circle mr-1"></i> Max Daily Withdrawal Limit: <strong>₹5,000 (~30,000 Temple_DA)</strong> per wallet. Subject to admin approval.
+                    <i class="fa-solid fa-info-circle mr-1"></i> Strict Rules: Zero or insufficient balance cannot be withdrawn. Minimum withdrawal is <strong>₹100 (~61 Temple_DA)</strong> with a <strong>2% platform withdrawal fee</strong>.
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3 pt-1">
                 <button onclick="executeDepositToTreasury()" class="btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Deposit via Web3</button>
-                <button onclick="requestWithdrawalToWallet()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Withdraw Request</button>
+                <button onclick="requestWithdrawalToWallet()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Withdraw (2% Fee)</button>
             </div>
             <div id="depositReceiptBox" class="hidden bg-[#020408] border border-emerald-500/30 rounded-xl p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
                 <div><i class="fa-solid fa-receipt mr-1"></i> TxHash: <span id="depositReceiptHash">0xf8a3...2c11</span></div>
@@ -742,12 +742,11 @@
             }
         }
 
-        // CALCULATE 1.5% PLATFORM CUT ON DEPOSIT PREVIEW
         function updateDepositPreview() {
             const depositInr = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const grossTokens = depositInr / APP.tokenPrice;
-            const platformFee = grossTokens * 0.015; // 1.5% Platform Fee Cut
-            const netGamingTokens = grossTokens * 0.985; // 98.5% Credited to User Gaming Wallet
+            const platformFee = grossTokens * 0.015; // 1.5% Deposit Fee Cut
+            const netGamingTokens = grossTokens * 0.985; // 98.5% Credited
 
             document.getElementById('depositTotalPreview').textContent = grossTokens.toFixed(2) + ' Temple_DA';
             document.getElementById('depositFeePreview').textContent = platformFee.toFixed(2) + ' Temple_DA';
@@ -799,13 +798,12 @@
             showToast('Treasury Address Copied!', 'success');
         }
 
-        // EXECUTE DEPOSIT WITH 1.5% PLATFORM FEE CUT RETAINED BY TREASURY
         async function executeDepositToTreasury() {
             if (APP.isDemo) { showToast('Demo accounts cannot make live Web3 deposits.', 'error'); return; }
 
             const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const grossTokens = inrVal / APP.tokenPrice;
-            const netGamingTokens = grossTokens * 0.985; // 98.5% to user, 1.5% retained by Treasury
+            const netGamingTokens = grossTokens * 0.985;
 
             try {
                 showToast('Please confirm BEP-20 transfer in your Web3 wallet...', 'info');
@@ -827,29 +825,46 @@
                 document.getElementById('depositReceiptBox').classList.remove('hidden');
 
                 addHistoryRecord(`On-Chain Deposit: ${grossTokens.toFixed(2)} Temple_DA (${netGamingTokens.toFixed(2)} added after 1.5% fee)`, 'success');
-                showToast(`Successfully deposited! Credited ${netGamingTokens.toFixed(2)} Temple_DA to gaming wallet (1.5% platform fee applied).`, 'success');
+                showToast(`Successfully deposited! Credited ${netGamingTokens.toFixed(2)} Temple_DA to gaming wallet.`, 'success');
             } catch(e) { showToast('Deposit transaction rejected or failed', 'error'); }
         }
 
+        // STRICT WITHDRAWAL VALIDATION: Zero/Insufficient Balance Check, Minimum 100 INR (~61 Temple_DA) & 2% Withdrawal Fee
         async function requestWithdrawalToWallet() {
             if (!APP.walletAddress) { showToast('Connect wallet to request withdrawal', 'error'); return; }
             if (APP.isDemo) { showToast('Demo accounts cannot request withdrawals!', 'error'); return; }
 
-            const maxDailyCap = 30000.0; // Max daily limit
-            if (APP.gamingBalance > maxDailyCap) {
-                showToast(`Withdrawal exceeds daily safety limit of 30,000 Temple_DA (~₹5,000).`, 'error'); return;
+            // 1. Zero Balance Check
+            if (APP.gamingBalance <= 0) {
+                showToast('Withdrawal denied: Your gaming wallet balance is 0.00 Temple_DA!', 'error');
+                return;
             }
 
-            const withdrawAmt = APP.gamingBalance;
+            // 2. Minimum ₹100 (~61 Temple_DA) Check
+            const minWithdrawTokens = 100.0 / APP.tokenPrice;
+            if (APP.gamingBalance < minWithdrawTokens) {
+                showToast(`Withdrawal denied: Minimum withdrawal limit is ₹100 (~${minWithdrawTokens.toFixed(0)} Temple_DA). Your balance is insufficient.`, 'error');
+                return;
+            }
+
+            const maxDailyCap = 30000.0;
+            if (APP.gamingBalance > maxDailyCap) {
+                showToast(`Withdrawal exceeds daily safety limit of 30,000 Temple_DA.`, 'error'); return;
+            }
+
+            const requestedAmt = APP.gamingBalance;
+            const withdrawalFee = requestedAmt * 0.02; // 2% Platform Withdrawal Fee
+            const finalPayoutAmt = requestedAmt * 0.98; // 98% sent to user
+
             APP.gamingBalance = 0; savePersistentState();
 
             let pendingList = getGlobalPendingWithdrawals();
-            pendingList.push({ id: Date.now(), wallet: APP.walletAddress, amount: withdrawAmt });
+            pendingList.push({ id: Date.now(), wallet: APP.walletAddress, amount: finalPayoutAmt, requested: requestedAmt, fee: withdrawalFee });
             saveGlobalPendingWithdrawals(pendingList);
 
             updateUI(); playSound('win');
-            addHistoryRecord(`Withdrawal Request: ${withdrawAmt.toFixed(2)} Temple_DA pending`, 'info');
-            showToast(`Withdrawal request for ${withdrawAmt.toFixed(2)} Temple_DA submitted!`, 'success');
+            addHistoryRecord(`Withdrawal Request: ${requestedAmt.toFixed(2)} Temple_DA (${finalPayoutAmt.toFixed(2)} net after 2% fee) pending`, 'info');
+            showToast(`Withdrawal submitted! ${finalPayoutAmt.toFixed(2)} Temple_DA (after 2% platform fee) queued for payout.`, 'success');
             closeDepositModal();
         }
 
@@ -875,7 +890,7 @@
                 html += `
                     <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder flex items-center justify-between text-xs shadow-sm">
                         <div>
-                            <span class="text-eliteGold font-mono font-bold block text-sm">${req.amount.toFixed(2)} Temple_DA</span>
+                            <span class="text-eliteGold font-mono font-bold block text-sm">${req.amount.toFixed(2)} Temple_DA <span class="text-[10px] text-gray-400">(Fee: ${req.fee ? req.fee.toFixed(2) : '0'} 2%)</span></span>
                             <span class="text-[10px] text-gray-400 font-mono">To: ${req.wallet.substring(0,6)}...${req.wallet.substring(38)}</span>
                         </div>
                         <div class="flex gap-2">
@@ -912,7 +927,7 @@
             const prefix = req.wallet.toLowerCase();
             try {
                 let bal = parseFloat(localStorage.getItem('temple_gaming_bal_' + prefix) || '0');
-                bal += req.amount;
+                bal += (req.requested || req.amount);
                 localStorage.setItem('temple_gaming_bal_' + prefix, bal.toString());
                 if (APP.walletAddress && !APP.isDemo && APP.walletAddress.toLowerCase() === prefix) {
                     APP.gamingBalance = bal; updateUI();
@@ -921,7 +936,7 @@
             pendingList.splice(idx, 1);
             saveGlobalPendingWithdrawals(pendingList);
             renderAdminWithdrawals(); playSound('loss');
-            showToast(`Rejected request. Refunded to user balance.`, 'info');
+            showToast(`Rejected request. Refunded full balance to user.`, 'info');
         }
 
         function openGame(gameType) {
@@ -994,7 +1009,7 @@
             updateUI();
         }
 
-        // 1. WHEEL (BALANCED HOUSE EDGE & MAX 5x CAP)
+        // 1. WHEEL
         const WHEEL_SEGS = [
             { label: '2.0x', mult: 2.0, color: '#f59e0b' }, { label: '0x', mult: 0.0, color: '#0f172a' },
             { label: '1.5x', mult: 1.5, color: '#10b981' }, { label: '0x', mult: 0.0, color: '#1e293b' },
@@ -1053,7 +1068,7 @@
                     isSpinning = false;
                     const winSeg = WHEEL_SEGS[winIdx];
                     const entryTokens = (APP.entryInr / APP.tokenPrice);
-                    const tokensWon = Math.min(entryTokens * 5.0, entryTokens * winSeg.mult); // Max cap 5x
+                    const tokensWon = Math.min(entryTokens * 5.0, entryTokens * winSeg.mult);
 
                     if (tokensWon > 0) {
                         APP.unclaimed += tokensWon; APP.stats.wins++; APP.stats.net += (tokensWon - entryTokens);
@@ -1146,7 +1161,7 @@
         }
         function takeVaultStep(idx) {
             if(!vaultActive || idx !== vaultStep) return;
-            const isTrap = Math.random() < 0.28; // Strict trap probability
+            const isTrap = Math.random() < 0.28;
             const entryTokens = (APP.entryInr / APP.tokenPrice);
 
             if(isTrap) {
