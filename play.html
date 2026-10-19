@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>play.templeda.com | TEMPLE_DA Web3 Gaming Arcade</title>
+    <title>play.templeda.com | Elite TEMPLE_DA Web3 Gaming Arcade & Treasury</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ethers.js v5 for BSC Mainnet Web3 Wallet & BEP-20 Integration -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts: Inter & Orbitron for Gaming Numbers -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -19,17 +19,17 @@
             theme: {
                 extend: {
                     colors: {
-                        templeBg: '#0b0e14',
-                        templeCard: '#131822',
-                        templeCardInner: '#0e131b',
-                        templeBorder: '#222b3a',
+                        arcadeBg: '#04060b',
+                        arcadeCard: '#0d1322',
+                        arcadeInner: '#070b14',
+                        arcadeBorder: '#1a233a',
                         templeGold: '#f59e0b',
-                        templeGoldBright: '#eab308',
-                        templeGreen: '#16a34a',
-                        templeEmerald: '#10b981'
+                        templeGoldBright: '#fbbf24',
+                        templeEmerald: '#10b981',
+                        templePurple: '#8b5cf6'
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['Outfit', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace']
                     }
                 }
@@ -39,1634 +39,1138 @@
 
     <style>
         body {
-            background-color: #0b0e14;
-            color: #f3f4f6;
-            font-family: 'Inter', sans-serif;
+            background-color: #04060b;
+            color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
+            background-image: radial-gradient(circle at 50% 0%, #111b33 0%, #04060b 75%);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0e14;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #222b3a;
-            border-radius: 9999px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #f59e0b;
-        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #04060b; }
+        ::-webkit-scrollbar-thumb { background: #1a233a; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
 
-        /* Gold Metallic Gradient matching screenshot button */
         .btn-gold {
-            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-            color: #090d16;
-            font-weight: 700;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #04060b;
+            font-weight: 800;
             box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.4);
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .btn-gold:hover:not(:disabled) {
-            background: linear-gradient(180deg, #fbbf24 0%, #ea580c 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 24px -2px rgba(245, 158, 11, 0.55);
+            background: linear-gradient(135deg, #fbbf24 0%, #ea580c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px -2px rgba(245, 158, 11, 0.6);
         }
-        .btn-gold:active:not(:disabled) {
-            transform: translateY(1px);
-        }
-        .btn-gold:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Active Game Tab Pill matching screenshot */
-        .tab-active {
-            background: linear-gradient(180deg, #f59e0b 0%, #eab308 100%);
-            color: #0b0e14 !important;
-            font-weight: 700;
-            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
-        }
-
-        /* Glowing Coin Badge */
         .coin-glow {
-            box-shadow: 0 0 18px rgba(245, 158, 11, 0.35), inset 0 0 8px rgba(251, 191, 36, 0.4);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
         }
 
-        /* Dice Roll Animation */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.5); }
+        }
+        .gaming-card-glow {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+
         @keyframes diceShake {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            20% { transform: rotate(-18deg) scale(1.08) translateY(-4px); }
-            40% { transform: rotate(18deg) scale(1.1) translateY(3px); }
-            60% { transform: rotate(-12deg) scale(1.06) translateY(-3px); }
-            80% { transform: rotate(12deg) scale(1.04) translateY(2px); }
+            0%, 100% { transform: rotate(0deg) scale(1) translateY(0); }
+            20% { transform: rotate(-22deg) scale(1.15) translateY(-8px); }
+            40% { transform: rotate(18deg) scale(1.1) translateY(5px); }
+            60% { transform: rotate(-12deg) scale(1.06) translateY(-4px); }
+            80% { transform: rotate(8deg) scale(1.03) translateY(2px); }
         }
-        .dice-rolling {
-            animation: diceShake 0.45s infinite ease-in-out;
-        }
+        .dice-rolling { animation: diceShake 0.4s infinite ease-in-out; }
 
-        /* Pulse Glow for Active Ticket */
-        @keyframes pulseGold {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-            50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        .ticket-ready {
-            animation: pulseGold 2s infinite;
-        }
+        .modal-pop { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-        canvas {
-            touch-action: none;
-            user-select: none;
-        }
+        canvas { touch-action: none; user-select: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between pb-10">
+<body class="min-h-screen flex flex-col justify-between pb-16 selection:bg-amber-500 selection:text-black">
 
-    <!-- ================= TOP DAPP BROWSER BAR (Matching Screenshot) ================= -->
-    <header class="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-md border-b border-templeBorder/60 px-3 py-2.5">
-        <div class="max-w-lg mx-auto flex items-center justify-between">
-            <!-- Back / Reload Button -->
-            <button onclick="resetToHomeView()" title="Reset View" class="w-10 h-10 rounded-full bg-templeCard border border-templeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-gray-500 transition">
-                <i class="fa-solid fa-chevron-left text-sm"></i>
-            </button>
-
-            <!-- Domain Badge -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-templeCard/70 border border-templeBorder/80">
-                <i class="fa-solid fa-lock text-xs text-gray-400"></i>
-                <span class="text-sm font-semibold tracking-wide text-gray-100">play.templeda.com</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="BSC Mainnet Active"></span>
+    <!-- STICKY TOP HEADER (Compact, engineered to never hide or overflow) -->
+    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2.5 shadow-2xl transition-all">
+        <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
+            <!-- Left: Logo & Lobby Trigger -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="returnToLobby()" title="Arcade Lobby" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-amber-500/50 transition shadow shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-gamepad text-sm text-templeGold"></i>
+                </button>
+                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-arcadeCard border border-arcadeBorder">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center coin-glow shrink-0 overflow-hidden p-0.5">
+                        <svg viewBox="0 0 64 64" class="w-full h-full">
+                            <defs>
+                                <radialGradient id="goldGrad" cx="50%" cy="35%" r="60%">
+                                    <stop offset="0%" stop-color="#fde047"/>
+                                    <stop offset="55%" stop-color="#f59e0b"/>
+                                    <stop offset="100%" stop-color="#92400e"/>
+                                </radialGradient>
+                            </defs>
+                            <circle cx="32" cy="32" r="29" fill="url(#goldGrad)" stroke="#fef08a" stroke-width="1.5"/>
+                            <polygon points="32,13 15,23 49,23" fill="#78350f"/>
+                            <polygon points="32,15 18,22 46,22" fill="#fef08a"/>
+                            <rect x="17" y="23" width="30" height="3" fill="#78350f"/>
+                            <rect x="20" y="26" width="3.5" height="16" fill="#fef08a"/>
+                            <rect x="26.5" y="26" width="3.5" height="16" fill="#fef08a"/>
+                            <rect x="34" y="26" width="3.5" height="16" fill="#fef08a"/>
+                            <rect x="40.5" y="26" width="3.5" height="16" fill="#fef08a"/>
+                            <rect x="16" y="42" width="32" height="3.5" rx="1" fill="#78350f"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-extrabold tracking-wider text-white hidden xs:inline">Temple_DA Arcade</span>
+                </div>
             </div>
 
-            <!-- Sound & Settings Menu Button -->
-            <div class="flex items-center gap-1.5">
-                <button id="soundToggleBtn" onclick="toggleSound()" title="Toggle Sound Effects" class="w-10 h-10 rounded-full bg-templeCard border border-templeBorder flex items-center justify-center text-templeGold hover:border-templeGold transition">
-                    <i id="soundIcon" class="fa-solid fa-volume-high text-sm"></i>
+            <!-- Right: Compact Balances & Wallet Connect Button -->
+            <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-coins text-templeGold text-[11px]"></i>
+                    <span id="userTokenBalance" class="font-black text-templeGold font-mono text-xs sm:text-sm">10000.00</span>
+                    <span class="text-[9px] text-gray-400 hidden sm:inline">T_DA</span>
+                </div>
+
+                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-trophy text-emerald-400 text-[11px]"></i>
+                    <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs sm:text-sm">0.00</span>
+                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[10px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-2 py-0.5 rounded transition cursor-pointer">Claim</button>
+                </div>
+
+                <button id="mainWalletConnectBtn" onclick="openWalletModal()" class="bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span id="mainWalletBtnText">Connect</span>
                 </button>
-                <button onclick="openConfigModal()" title="Smart Contract & Merchant Settings" class="w-10 h-10 rounded-full bg-templeCard border border-templeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-gray-500 transition">
-                    <i class="fa-solid fa-ellipsis text-sm"></i>
+
+                <button onclick="toggleSound()" title="Toggle Sound" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-templeGold hover:border-amber-500/50 transition shrink-0 cursor-pointer">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+                <button onclick="openConfigModal()" title="Treasury Settings" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white transition shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-gear text-xs"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- ================= MAIN CONTAINER (Mobile-First Like Screenshot, Responsive on Desktop) ================= -->
-    <main class="w-full max-w-lg mx-auto px-3.5 pt-3 space-y-3.5 flex-1">
+    <main class="w-full max-w-5xl mx-auto px-4 pt-4 space-y-4 flex-1">
 
-        <!-- 1. WALLET HEADER CARD (Matches TEMPLE_DA WALLET Card) -->
-        <section class="bg-templeCard border border-templeBorder rounded-2xl p-3.5 flex items-center justify-between shadow-lg">
-            <div class="flex items-center gap-3">
-                <!-- Golden Temple Coin Emblem SVG -->
-                <div class="w-12 h-12 rounded-xl bg-[#090c12] border border-amber-500/40 p-1 flex items-center justify-center coin-glow shrink-0">
-                    <svg viewBox="0 0 64 64" class="w-10 h-10">
-                        <defs>
-                            <radialGradient id="goldGrad" cx="50%" cy="35%" r="60%">
-                                <stop offset="0%" stop-color="#fde047"/>
-                                <stop offset="55%" stop-color="#f59e0b"/>
-                                <stop offset="100%" stop-color="#92400e"/>
-                            </radialGradient>
-                        </defs>
-                        <circle cx="32" cy="32" r="29" fill="url(#goldGrad)" stroke="#fef08a" stroke-width="1.5"/>
-                        <circle cx="32" cy="32" r="24" fill="none" stroke="#78350f" stroke-width="1" stroke-dasharray="3,2"/>
-                        <!-- Temple Roof & Pillars -->
-                        <polygon points="32,13 15,23 49,23" fill="#78350f"/>
-                        <polygon points="32,15 18,22 46,22" fill="#fef08a"/>
-                        <rect x="17" y="23" width="30" height="3" fill="#78350f"/>
-                        <!-- 4 Pillars -->
-                        <rect x="20" y="26" width="3.5" height="16" fill="#fef08a" stroke="#78350f" stroke-width="0.7"/>
-                        <rect x="26.5" y="26" width="3.5" height="16" fill="#fef08a" stroke="#78350f" stroke-width="0.7"/>
-                        <rect x="34" y="26" width="3.5" height="16" fill="#fef08a" stroke="#78350f" stroke-width="0.7"/>
-                        <rect x="40.5" y="26" width="3.5" height="16" fill="#fef08a" stroke="#78350f" stroke-width="0.7"/>
-                        <!-- Base Steps -->
-                        <rect x="16" y="42" width="32" height="3.5" rx="1" fill="#78350f"/>
-                        <rect x="14" y="45.5" width="36" height="3.5" rx="1" fill="#fef08a" stroke="#78350f" stroke-width="0.8"/>
-                    </svg>
+        <!-- LOBBY VIEW -->
+        <div id="viewLobby" class="space-y-6">
+            
+            <!-- HERO BANNER -->
+            <section class="bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="space-y-2 text-center sm:text-left z-10">
+                    <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">ELITE WEB3 GAMING PLATFORM</span>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Provably Fair Treasury Games</h2>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Stake Temple_DA directly to Treasury (`0x85a9...25EF`), play pro games, and win rewards or claim payouts instantly!</p>
                 </div>
-
-                <div>
-                    <div class="flex items-center gap-1.5">
-                        <h1 class="text-sm sm:text-base font-extrabold tracking-wide text-templeGold">TEMPLE_DA GAMING</h1>
-                    </div>
-                    <p id="networkSubtitle" class="text-xs text-gray-400">BSC Mainnet (Chain ID: 56)</p>
+                <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
+                    <div class="text-xs text-gray-400">Treasury Pot Vault</div>
+                    <div id="treasuryPotDisplay" class="text-xl sm:text-2xl font-black text-templeGold font-mono mt-1">5,420 Temple_DA</div>
+                    <div class="text-[10px] text-emerald-400 mt-0.5">🟢 Smart Contract Secured</div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Green Connected Wallet Button (Matches 0x85...25EF pill) -->
-            <button id="walletConnectBtn" onclick="openWalletModal()" class="bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-full flex items-center gap-2 shadow-md transition shrink-0">
-                <i class="fa-solid fa-wallet text-xs"></i>
-                <span id="walletBtnText" class="font-mono">0x85...25EF</span>
-            </button>
-        </section>
+            <!-- 5 CURATED PRO GAMES GRID (Fully Centered & Responsive) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
-        <!-- 2. PRICE & BALANCE 2-COLUMN CARDS (Matches Screenshot) -->
-        <section class="grid grid-cols-2 gap-3">
-            <!-- Left Card: Temple_DA Price -->
-            <div class="bg-templeCard border border-templeBorder rounded-2xl p-3.5 flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-400 font-medium">Temple_DA Price</span>
-                    <span class="text-emerald-400 text-xs" title="Live Pool Feed">
-                        <i class="fa-solid fa-chart-line"></i>
-                    </span>
-                </div>
-
-                <div class="my-2">
-                    <div class="text-lg sm:text-xl font-extrabold text-emerald-400 leading-tight">
-                        ₹<span id="livePriceDisplay">0.1636</span> /
-                    </div>
-                    <div class="text-sm sm:text-base font-bold text-emerald-400">
-                        Temple_DA
-                    </div>
-                </div>
-
-                <p class="text-[11px] text-gray-500 leading-snug">
-                    PancakeSwap Pool + ₹10 Margin
-                </p>
-            </div>
-
-            <!-- Right Card: Your Balance & Game Winnings -->
-            <div class="bg-templeCard border border-templeBorder rounded-2xl p-3.5 flex flex-col justify-between">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs text-gray-400 font-medium">Your Balance</span>
-                    <i class="fa-solid fa-coins text-templeGold text-sm"></i>
-                </div>
-
-                <div class="my-1.5">
-                    <div id="tokenBalanceDisplay" class="text-lg sm:text-xl font-extrabold text-templeGold leading-tight font-mono">
-                        96901.52
-                    </div>
-                    <div class="text-sm font-bold text-templeGold">
-                        Temple_DA
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between pt-1 border-t border-templeBorder/60">
-                    <span id="inrBalanceDisplay" class="text-xs font-semibold text-emerald-400">₹15855.84 INR</span>
-                    <button onclick="addDemoTokens()" title="Top-up Demo Balance" class="text-[10px] bg-templeBorder/70 hover:bg-templeGold hover:text-black text-gray-300 px-1.5 py-0.5 rounded transition">
-                        +Topup
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- UNCLAIMED WINNINGS BAR (Appears / Updates when player wins in games) -->
-        <section class="bg-gradient-to-r from-[#131822] via-[#182232] to-[#131822] border border-amber-500/30 rounded-2xl px-3.5 py-2.5 flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-templeGold">
-                    <i class="fa-solid fa-trophy text-sm"></i>
-                </div>
-                <div>
-                    <div class="text-[11px] text-gray-400">Unclaimed Game Winnings (जीते हुए टोकन)</div>
-                    <div class="text-xs sm:text-sm font-bold text-white">
-                        <span id="unclaimedTokenDisplay" class="text-templeGold font-mono">0.00</span> Temple_DA
-                        <span id="unclaimedInrDisplay" class="text-emerald-400 text-xs ml-1">(₹0.00)</span>
-                    </div>
-                </div>
-            </div>
-            <button id="claimWinningsBtn" onclick="claimWinningsToWallet()" disabled class="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0">
-                <i class="fa-solid fa-download text-xs"></i>
-                <span>Claim</span>
-            </button>
-        </section>
-
-        <!-- 3. MAIN GAMING & PAYMENT CONTAINER CARD -->
-        <section class="bg-templeCard border border-templeBorder rounded-2xl p-3.5 space-y-4 shadow-xl">
-
-            <!-- Mode Navigation Tabs (Styled just like Pay | Scan QR | My QR | History) -->
-            <div class="bg-[#0b0e14] p-1 rounded-xl border border-templeBorder grid grid-cols-4 gap-1">
-                <button id="tab-wheel" onclick="switchTab('wheel')" class="tab-active py-2 px-1 rounded-lg text-xs font-semibold text-gray-300 transition flex items-center justify-center gap-1">
-                    <i class="fa-solid fa-dharmachakra"></i>
-                    <span>Spin</span>
-                </button>
-                <button id="tab-catcher" onclick="switchTab('catcher')" class="py-2 px-1 rounded-lg text-xs font-semibold text-gray-300 hover:text-white transition flex items-center justify-center gap-1">
-                    <i class="fa-solid fa-coins"></i>
-                    <span>Catcher</span>
-                </button>
-                <button id="tab-dice" onclick="switchTab('dice')" class="py-2 px-1 rounded-lg text-xs font-semibold text-gray-300 hover:text-white transition flex items-center justify-center gap-1">
-                    <i class="fa-solid fa-dice"></i>
-                    <span>Dice 7</span>
-                </button>
-                <button id="tab-history" onclick="switchTab('history')" class="py-2 px-1 rounded-lg text-xs font-semibold text-gray-300 hover:text-white transition flex items-center justify-center gap-1">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    <span>History</span>
-                </button>
-            </div>
-
-            <!-- ================= PAYMENT & ENTRY FEE MODULE (Shown for all 3 games) ================= -->
-            <div id="paymentModule" class="space-y-3 bg-[#0e131b] border border-templeBorder/90 rounded-xl p-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-halved text-templeGold"></i>
-                        <span>Entry Fee in INR (₹) — Pay with Temple_DA</span>
-                    </span>
-                    <span id="ticketStatusBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">
-                        Payment Required
-                    </span>
-                </div>
-
-                <!-- Quick INR Preset Chips -->
-                <div class="grid grid-cols-5 gap-1.5">
-                    <button onclick="setEntryInr(10)" class="inr-chip py-1.5 rounded-lg bg-templeCard border border-templeBorder text-xs font-semibold text-gray-300 hover:border-templeGold hover:text-templeGold transition">₹10</button>
-                    <button onclick="setEntryInr(25)" class="inr-chip py-1.5 rounded-lg bg-templeCard border border-templeBorder text-xs font-semibold text-gray-300 hover:border-templeGold hover:text-templeGold transition">₹25</button>
-                    <button onclick="setEntryInr(50)" class="inr-chip py-1.5 rounded-lg bg-templeCard border border-templeBorder text-xs font-semibold text-gray-300 hover:border-templeGold hover:text-templeGold transition">₹50</button>
-                    <button onclick="setEntryInr(100)" class="inr-chip py-1.5 rounded-lg bg-amber-500/20 border border-templeGold text-xs font-bold text-templeGold transition">₹100</button>
-                    <button onclick="setEntryInr(250)" class="inr-chip py-1.5 rounded-lg bg-templeCard border border-templeBorder text-xs font-semibold text-gray-300 hover:border-templeGold hover:text-templeGold transition">₹250</button>
-                </div>
-
-                <!-- Amount in INR Input (Matches Screenshot Gold Border Input) -->
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Amount in INR (₹)</label>
-                    <div class="relative flex items-center">
-                        <input
-                            id="entryInrInput"
-                            type="number"
-                            min="1"
-                            step="any"
-                            value="100"
-                            oninput="updateTokenCalculation()"
-                            class="w-full bg-[#090d14] border border-templeGold/80 focus:border-templeGold rounded-xl px-3.5 py-2.5 text-white font-bold text-base focus:outline-none font-mono"
-                        />
-                        <span class="absolute right-3.5 text-xs font-semibold text-gray-400">INR</span>
-                    </div>
-                </div>
-
-                <!-- Total Payable Token & Estimated Gas Box (Matches Screenshot) -->
-                <div class="bg-[#090d14] border border-templeBorder rounded-xl p-3 flex items-center justify-between">
+                <!-- GAME 1: ROCKET CRASH -->
+                <div class="bg-arcadeCard border-2 border-purple-500/40 hover:border-purple-400 rounded-3xl p-5 transition flex flex-col justify-between group shadow-2xl gaming-card-glow">
                     <div>
-                        <div class="text-[11px] text-gray-400">Total Payable Token</div>
-                        <div class="text-base sm:text-lg font-extrabold text-templeGold font-mono">
-                            <span id="payableTokenDisplay">611.1409</span> Temple_DA
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-rocket animate-pulse"></i>
+                            </div>
+                            <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-purple-500/20 text-purple-300">Game 1 • Multiplier</span>
                         </div>
+                        <h3 class="text-lg font-extrabold text-white group-hover:text-purple-300 transition">Temple Rocket Crash</h3>
+                        <p class="text-xs text-gray-400 mt-1.5">Ascend into stars & eject drone before random crash!</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-arcadeBorder flex items-center justify-between">
+                        <span class="text-xs text-purple-300 font-bold">Aviator Style</span>
+                        <button onclick="openGame('rocket')" class="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>PLAY NOW</span> <i class="fa-solid fa-play text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GAME 2: JACKPOT SLOTS -->
+                <div class="bg-arcadeCard border-2 border-amber-500/40 hover:border-amber-400 rounded-3xl p-5 transition flex flex-col justify-between group shadow-2xl gaming-card-glow">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-templeGold text-2xl group-hover:scale-110 transition">
+                                🎰
+                            </div>
+                            <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold">Game 2 • 3-Reel Slot</span>
+                        </div>
+                        <h3 class="text-lg font-extrabold text-white group-hover:text-templeGold transition">Temple Jackpot Slot</h3>
+                        <p class="text-xs text-gray-400 mt-1.5">Match 3 symbols to win up to 10x Jackpots!</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-arcadeBorder flex items-center justify-between">
+                        <span class="text-xs text-templeGold font-bold">Casino Spin</span>
+                        <button onclick="openGame('slots')" class="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>PLAY NOW</span> <i class="fa-solid fa-play text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GAME 3: LUCKY SPIN WHEEL -->
+                <div class="bg-arcadeCard border border-arcadeBorder hover:border-templeGold rounded-3xl p-5 transition flex flex-col justify-between group shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-templeGold text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-dharmachakra"></i>
+                            </div>
+                            <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400">Game 3 • Fortune</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-white group-hover:text-templeGold transition">Lucky Spin Wheel</h3>
+                        <p class="text-xs text-gray-400 mt-1.5">Spin wheel of fortune for multipliers up to 4x.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-arcadeBorder flex items-center justify-between">
+                        <span class="text-xs text-gray-400 font-semibold">Table Spin</span>
+                        <button onclick="openGame('wheel')" class="px-6 py-3 bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>PLAY NOW</span> <i class="fa-solid fa-play text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GAME 4: COIN CATCHER -->
+                <div class="bg-arcadeCard border border-arcadeBorder hover:border-templeGold rounded-3xl p-5 transition flex flex-col justify-between group shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                            <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400">Game 4 • Action</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-white group-hover:text-templeGold transition">Coin Catcher (30s)</h3>
+                        <p class="text-xs text-gray-400 mt-1.5">Catch gold & gems while dodging red bombs in 30s!</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-arcadeBorder flex items-center justify-between">
+                        <span class="text-xs text-gray-400 font-semibold">Action Rush</span>
+                        <button onclick="openGame('catcher')" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>PLAY NOW</span> <i class="fa-solid fa-play text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GAME 5: LUCKY DICE 7 -->
+                <div class="bg-arcadeCard border border-arcadeBorder hover:border-templeGold rounded-3xl p-5 transition flex flex-col justify-between group shadow-xl sm:col-span-2 lg:col-span-1">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 text-2xl group-hover:scale-110 transition">
+                                <i class="fa-solid fa-dice"></i>
+                            </div>
+                            <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-purple-500/20 text-purple-300">Game 5 • Roll</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-white group-hover:text-templeGold transition">Lucky Dice 7</h3>
+                        <p class="text-xs text-gray-400 mt-1.5">Predict High, Low or Lucky 7 with balanced dice probability.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-arcadeBorder flex items-center justify-between">
+                        <span class="text-xs text-gray-400 font-semibold">Table Roll</span>
+                        <button onclick="openGame('dice')" class="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs rounded-2xl shadow-xl transition flex items-center gap-2 cursor-pointer">
+                            <span>PLAY NOW</span> <i class="fa-solid fa-play text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GAME ARENA VIEW (Full Screen Prime Focus Theater) -->
+        <div id="viewGame" class="hidden space-y-4">
+            
+            <!-- GAME ARENA HEADER BAR -->
+            <div class="bg-arcadeCard border border-arcadeBorder rounded-2xl p-4 flex items-center justify-between shadow-xl">
+                <div class="flex items-center gap-3">
+                    <button onclick="returnToLobby()" class="w-10 h-10 rounded-xl bg-arcadeInner border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white transition cursor-pointer">
+                        <i class="fa-solid fa-arrow-left text-sm"></i>
+                    </button>
+                    <div>
+                        <h3 id="activeGameTitle" class="text-base sm:text-lg font-extrabold text-white">Lucky Spin Wheel</h3>
+                        <p class="text-xs text-gray-400">Stake Temple_DA to Treasury & Play Pro Round</p>
+                    </div>
+                </div>
+                <div id="ticketBadge" class="text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
+                    Payment Required
+                </div>
+            </div>
+
+            <!-- LIVE STATS TRACKER -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-arcadeCard border border-arcadeBorder rounded-2xl p-3 text-center">
+                    <div class="text-[11px] text-gray-400">Rounds Won</div>
+                    <div id="statWins" class="text-base sm:text-lg font-black text-emerald-400 font-mono">0</div>
+                </div>
+                <div class="bg-arcadeCard border border-arcadeBorder rounded-2xl p-3 text-center">
+                    <div class="text-[11px] text-gray-400">Rounds Lost</div>
+                    <div id="statLosses" class="text-base sm:text-lg font-black text-red-400 font-mono">0</div>
+                </div>
+                <div class="bg-arcadeCard border border-arcadeBorder rounded-2xl p-3 text-center">
+                    <div class="text-[11px] text-gray-400">Net Profit</div>
+                    <div id="statNet" class="text-base sm:text-lg font-black text-templeGold font-mono">0.00 Temple_DA</div>
+                </div>
+            </div>
+
+            <!-- PAYMENT BOX -->
+            <div id="paymentBox" class="bg-arcadeCard border border-arcadeBorder rounded-3xl p-5 space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between text-xs sm:text-sm">
+                    <span class="font-bold text-gray-300">Select Entry Fee in INR (₹) - Routed to Treasury</span>
+                    <span class="text-templeGold font-mono">Treasury: <strong id="treasuryAddrShort">0x85a9...25EF</strong></span>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <button onclick="setEntryInr(10)" class="py-3 rounded-2xl bg-arcadeInner border border-templeGold text-sm font-black text-templeGold shadow cursor-pointer">₹10</button>
+                    <button onclick="setEntryInr(25)" class="py-3 rounded-2xl bg-arcadeInner border border-arcadeBorder text-sm font-extrabold text-gray-300 hover:border-templeGold cursor-pointer">₹25</button>
+                    <button onclick="setEntryInr(50)" class="py-3 rounded-2xl bg-arcadeInner border border-arcadeBorder text-sm font-extrabold text-gray-300 hover:border-templeGold cursor-pointer">₹50</button>
+                    <button onclick="setEntryInr(100)" class="py-3 rounded-2xl bg-arcadeInner border border-arcadeBorder text-sm font-extrabold text-gray-300 hover:border-templeGold cursor-pointer">₹100</button>
+                </div>
+
+                <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
+                    <div>
+                        <span class="text-gray-400 block text-[11px]">Stake Token (To Treasury)</span>
+                        <span id="entryTokenNeeded" class="text-base font-black text-templeGold font-mono">61.14 Temple_DA</span>
                     </div>
                     <div class="text-right">
-                        <div class="text-[11px] text-gray-400">Estimated Gas</div>
-                        <div class="text-xs sm:text-sm font-mono text-gray-200">~0.0005 BNB</div>
+                        <span class="text-gray-400 block text-[11px]">Entry Fee (INR)</span>
+                        <span id="entryInrDisplay" class="text-base font-extrabold text-white">₹10.00</span>
                     </div>
                 </div>
 
-                <!-- Authorize & Pay Securely Button (Matches Screenshot) -->
-                <button id="authorizePayBtn" onclick="authorizeAndPayEntry()" class="w-full btn-gold py-3 rounded-xl text-sm sm:text-base flex items-center justify-center gap-2">
+                <button id="payEntryBtn" onclick="payGameEntry()" class="w-full btn-gold py-4 rounded-2xl text-base flex items-center justify-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-paper-plane"></i>
-                    <span id="authorizePayBtnText">Authorize & Pay Securely (Play Round)</span>
+                    <span id="payEntryBtnText">Pay Stake to Treasury & Unlock Game</span>
                 </button>
             </div>
 
-            <!-- ================= GAME 1: LUCKY SPIN WHEEL (लकी स्पिन व्हील) ================= -->
-            <div id="game-wheel" class="space-y-3 pt-1">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-                            <span class="text-templeGold">🎡</span> Temple_DA Lucky Spin Wheel
-                        </h2>
-                        <p class="text-xs text-gray-400">Pay entry in Temple_DA & spin to win up to <span class="text-templeGold font-semibold">5x JACKPOT!</span></p>
+            <!-- ARENA 1: WHEEL -->
+            <div id="arena-wheel" class="hidden bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 sm:p-12 flex flex-col items-center justify-center space-y-6 shadow-2xl">
+                <div class="relative flex flex-col items-center">
+                    <div class="z-10 -mb-4 drop-shadow-[0_6px_8px_rgba(0,0,0,0.9)]">
+                        <svg width="54" height="54" viewBox="0 0 36 36"><polygon points="18,34 4,8 32,8" fill="#f59e0b" stroke="#fef08a" stroke-width="2"/></svg>
                     </div>
-                    <span id="wheelMultiplierBadge" class="text-xs font-mono bg-templeCardInner border border-templeBorder px-2.5 py-1 rounded-lg text-emerald-400">
-                        Max Win: <strong id="wheelMaxWinText">3055.70</strong> T_DA
-                    </span>
+                    <canvas id="wheelCanvas" width="400" height="400" class="max-w-[360px] sm:max-w-[420px] h-auto drop-shadow-2xl"></canvas>
                 </div>
-
-                <!-- Wheel Canvas Wrapper -->
-                <div class="relative flex flex-col items-center justify-center bg-[#090d14] border border-templeBorder rounded-2xl p-4">
-                    <!-- Pointer Arrow at Top -->
-                    <div class="z-10 -mb-3 drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)]">
-                        <svg width="36" height="36" viewBox="0 0 36 36">
-                            <polygon points="18,34 4,8 32,8" fill="#f59e0b" stroke="#fef08a" stroke-width="2"/>
-                        </svg>
-                    </div>
-
-                    <canvas id="wheelCanvas" width="300" height="300" class="max-w-[270px] sm:max-w-[300px] h-auto"></canvas>
-
-                    <!-- Spin Action Button -->
-                    <button id="spinNowBtn" onclick="startWheelSpin()" disabled class="mt-4 w-full py-3 rounded-xl font-extrabold text-sm bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="fa-solid fa-rotate"></i>
-                        <span id="spinNowBtnText">First Click "Authorize & Pay" Above</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ================= GAME 2: TEMPLE COIN CATCHER ARCADE ================= -->
-            <div id="game-catcher" class="hidden space-y-3 pt-1">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-                            <span class="text-templeGold">🏛️</span> Temple Coin Catcher (30s Rush)
-                        </h2>
-                        <p class="text-xs text-gray-400">Catch Gold Coins & Green Gems, dodge Red Gas Bombs!</p>
-                    </div>
-                    <div class="text-right font-mono text-xs">
-                        <span class="text-gray-400">Time:</span>
-                        <span id="catcherTimer" class="text-templeGold font-bold">30s</span>
-                    </div>
-                </div>
-
-                <!-- Arcade HUD + Canvas -->
-                <div class="bg-[#090d14] border border-templeBorder rounded-2xl p-2.5 space-y-2">
-                    <div class="flex items-center justify-between px-2 py-1 bg-templeCard rounded-lg text-xs">
-                        <div>
-                            <span class="text-gray-400">Round Multiplier:</span>
-                            <span id="catcherScoreMult" class="text-emerald-400 font-bold font-mono ml-1">0.00x</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-400">Won:</span>
-                            <span id="catcherTokensWon" class="text-templeGold font-bold font-mono ml-1">0.00 T_DA</span>
-                        </div>
-                    </div>
-
-                    <div class="relative w-full overflow-hidden rounded-xl border border-templeBorder/80 bg-[#070a0f]">
-                        <canvas id="catcherCanvas" width="420" height="320" class="w-full h-[290px] sm:h-[320px] block"></canvas>
-
-                        <!-- Overlay before starting -->
-                        <div id="catcherOverlay" class="absolute inset-0 bg-black/80 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center">
-                            <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500 flex items-center justify-center text-templeGold text-xl mb-2">
-                                <i class="fa-solid fa-gamepad"></i>
-                            </div>
-                            <h3 id="catcherOverlayTitle" class="text-base font-extrabold text-white">Temple_DA Coin Rush</h3>
-                            <p id="catcherOverlaySub" class="text-xs text-gray-300 mt-1 max-w-xs">
-                                🪙 Gold Coin = +0.15x &nbsp;|&nbsp; 💎 Green Gem = +0.45x &nbsp;|&nbsp; 💣 Bomb = -0.30x
-                            </p>
-                            <button id="startCatcherBtn" onclick="startCatcherGame()" disabled class="mt-4 px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white transition">
-                                First Authorize & Pay Entry Above
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Touch / Mobile Controls -->
-                    <div class="grid grid-cols-2 gap-2 pt-1">
-                        <button
-                            onmousedown="setCatcherMove(-1)" onmouseup="setCatcherMove(0)" onmouseleave="setCatcherMove(0)"
-                            ontouchstart="setCatcherMove(-1); event.preventDefault();" ontouchend="setCatcherMove(0)"
-                            class="py-2.5 bg-templeCard hover:bg-templeBorder active:bg-templeGold active:text-black border border-templeBorder rounded-xl text-xs font-bold text-gray-200 flex items-center justify-center gap-2 transition select-none">
-                            <i class="fa-solid fa-arrow-left"></i> Move Left
-                        </button>
-                        <button
-                            onmousedown="setCatcherMove(1)" onmouseup="setCatcherMove(0)" onmouseleave="setCatcherMove(0)"
-                            ontouchstart="setCatcherMove(1); event.preventDefault();" ontouchend="setCatcherMove(0)"
-                            class="py-2.5 bg-templeCard hover:bg-templeBorder active:bg-templeGold active:text-black border border-templeBorder rounded-xl text-xs font-bold text-gray-200 flex items-center justify-center gap-2 transition select-none">
-                            Move Right <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ================= GAME 3: LUCKY DICE 7 (हाई-लो डाइस गेम) ================= -->
-            <div id="game-dice" class="hidden space-y-3 pt-1">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-                            <span class="text-templeGold">🎲</span> Temple Lucky Dice (High / Low / 7)
-                        </h2>
-                        <p class="text-xs text-gray-400">Pick your prediction, pay with Temple_DA & roll two dice!</p>
-                    </div>
-                </div>
-
-                <!-- Dice Prediction Buttons -->
-                <div class="grid grid-cols-3 gap-2">
-                    <button id="dicePick-low" onclick="selectDiceBet('low')" class="dice-bet-btn bg-templeCardInner border-2 border-templeGold rounded-xl p-2.5 text-center transition">
-                        <div class="text-xs font-bold text-white">LOW (2 - 6)</div>
-                        <div class="text-sm font-extrabold text-templeGold mt-0.5">2.0x Win</div>
-                    </button>
-                    <button id="dicePick-seven" onclick="selectDiceBet('seven')" class="dice-bet-btn bg-templeCardInner border-2 border-templeBorder rounded-xl p-2.5 text-center transition">
-                        <div class="text-xs font-bold text-white">LUCKY 7</div>
-                        <div class="text-sm font-extrabold text-emerald-400 mt-0.5">4.0x Win</div>
-                    </button>
-                    <button id="dicePick-high" onclick="selectDiceBet('high')" class="dice-bet-btn bg-templeCardInner border-2 border-templeBorder rounded-xl p-2.5 text-center transition">
-                        <div class="text-xs font-bold text-white">HIGH (8 - 12)</div>
-                        <div class="text-sm font-extrabold text-templeGold mt-0.5">2.0x Win</div>
-                    </button>
-                </div>
-
-                <!-- Dice Visual Arena -->
-                <div class="bg-[#090d14] border border-templeBorder rounded-2xl p-5 flex flex-col items-center justify-center space-y-4">
-                    <div class="flex items-center gap-6">
-                        <div id="die1Box" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-yellow-200 shadow-lg flex items-center justify-center text-[#0b0e14] text-4xl">
-                            <i id="die1Icon" class="fa-solid fa-dice-four"></i>
-                        </div>
-                        <div class="text-xl font-extrabold text-gray-500">+</div>
-                        <div id="die2Box" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-yellow-200 shadow-lg flex items-center justify-center text-[#0b0e14] text-4xl">
-                            <i id="die2Icon" class="fa-solid fa-dice-three"></i>
-                        </div>
-                    </div>
-
-                    <div id="diceResultStatus" class="text-xs sm:text-sm font-semibold text-gray-300 text-center">
-                        Selected: <span class="text-templeGold font-bold">LOW (2 - 6)</span> — Potential Payout: <span id="dicePotentialWin" class="text-emerald-400 font-mono font-bold">1222.28 Temple_DA</span>
-                    </div>
-
-                    <button id="rollDiceBtn" onclick="rollLuckyDice()" disabled class="w-full py-3 rounded-xl font-extrabold text-sm bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="fa-solid fa-dice-d20"></i>
-                        <span id="rollDiceBtnText">First Click "Authorize & Pay" Above</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ================= TAB 4: GAME & PAYMENT HISTORY + DEV SETUP ================= -->
-            <div id="game-history" class="hidden space-y-3 pt-1">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-                        <i class="fa-solid fa-receipt text-templeGold"></i>
-                        <span>Recent Game & Token Transactions</span>
-                    </h2>
-                    <button onclick="openConfigModal()" class="text-xs text-templeGold hover:underline flex items-center gap-1">
-                        <i class="fa-solid fa-gear"></i> Contract Config
-                    </button>
-                </div>
-
-                <div id="historyListContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    <!-- Populated dynamically via JS -->
-                </div>
-            </div>
-
-        </section>
-
-        <!-- MERCHANT / CONTRACT QUICK INFO FOOTER CARD -->
-        <section class="bg-templeCard/80 border border-templeBorder rounded-2xl p-3 text-xs text-gray-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div>
-                <span class="text-gray-300 font-semibold">Game Treasury (BSC):</span>
-                <span id="footerMerchantAddr" class="font-mono text-templeGold ml-1">0x85a9...25EF</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <button onclick="openConfigModal()" class="text-emerald-400 hover:underline font-medium">
-                    <i class="fa-solid fa-code mr-1"></i>Edit BEP-20 Contract
+                <button id="spinBtn" onclick="startWheel()" disabled class="w-full max-w-md py-4 rounded-2xl font-extrabold text-base bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white transition shadow-xl cursor-pointer">
+                    Spin Wheel Now
                 </button>
             </div>
-        </section>
+
+            <!-- ARENA 2: CATCHER -->
+            <div id="arena-catcher" class="hidden bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 space-y-5 shadow-2xl">
+                <div class="flex items-center justify-between text-base font-bold">
+                    <span class="text-gray-300">Time Left: <strong id="catcherTime" class="text-templeGold font-mono text-lg">30s</strong></span>
+                    <span class="text-gray-300">Score Multiplier: <strong id="catcherMult" class="text-emerald-400 font-mono text-lg">0.00x</strong></span>
+                </div>
+                <div class="relative w-full overflow-hidden rounded-2xl border border-arcadeBorder bg-[#020408]">
+                    <canvas id="catcherCanvas" width="540" height="400" class="w-full h-[380px] sm:h-[440px] block"></canvas>
+                    <div id="catcherStartOverlay" class="absolute inset-0 bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center">
+                        <h4 class="text-2xl font-extrabold text-white mb-2">Coin Catcher Rush (30s)</h4>
+                        <p class="text-sm text-gray-300 mb-6 max-w-sm">Catch gold coins & green gems, avoid red bombs!</p>
+                        <button id="startCatcherBtn" onclick="startCatcher()" disabled class="px-8 py-4 bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-500 text-white font-extrabold text-base rounded-2xl shadow-xl cursor-pointer">
+                            Pay Entry Above to Start
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onmousedown="setCatcherDir(-1)" onmouseup="setCatcherDir(0)" ontouchstart="setCatcherDir(-1); event.preventDefault();" ontouchend="setCatcherDir(0)" class="py-5 bg-arcadeInner border border-arcadeBorder rounded-2xl text-base font-bold text-white shadow cursor-pointer">⬅️ Move Left</button>
+                    <button onmousedown="setCatcherDir(1)" onmouseup="setCatcherDir(0)" ontouchstart="setCatcherDir(1); event.preventDefault();" ontouchend="setCatcherDir(0)" class="py-5 bg-arcadeInner border border-arcadeBorder rounded-2xl text-base font-bold text-white shadow cursor-pointer">Move Right ➡️</button>
+                </div>
+            </div>
+
+            <!-- ARENA 3: DICE -->
+            <div id="arena-dice" class="hidden bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 sm:p-12 space-y-8 text-center shadow-2xl">
+                <div class="grid grid-cols-3 gap-4 max-w-xl mx-auto w-full">
+                    <button id="diceBet-low" onclick="selectDiceBet('low')" class="p-5 bg-arcadeInner border-2 border-templeGold rounded-2xl text-sm font-bold text-white shadow cursor-pointer">LOW (2-6)<br><span class="text-templeGold font-mono text-lg">2.0x</span></button>
+                    <button id="diceBet-seven" onclick="selectDiceBet('seven')" class="p-5 bg-arcadeInner border border-arcadeBorder rounded-2xl text-sm font-bold text-white shadow cursor-pointer">LUCKY 7<br><span class="text-emerald-400 font-mono text-lg">4.0x</span></button>
+                    <button id="diceBet-high" onclick="selectDiceBet('high')" class="p-5 bg-arcadeInner border border-arcadeBorder rounded-2xl text-sm font-bold text-white shadow cursor-pointer">HIGH (8-12)<br><span class="text-templeGold font-mono text-lg">2.0x</span></button>
+                </div>
+                <div class="flex items-center justify-center gap-10 py-6">
+                    <div id="die1Box" class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-amber-500 text-black flex items-center justify-center text-6xl sm:text-7xl font-bold shadow-2xl"><i id="die1Icon" class="fa-solid fa-dice-four"></i></div>
+                    <div id="die2Box" class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-amber-500 text-black flex items-center justify-center text-6xl sm:text-7xl font-bold shadow-2xl"><i id="die2Icon" class="fa-solid fa-dice-three"></i></div>
+                </div>
+                <div id="diceStatus" class="text-base text-gray-300 font-medium">Select bet and roll dice to win!</div>
+                <button id="rollDiceBtn" onclick="rollDice()" disabled class="w-full max-w-md py-4 rounded-2xl font-extrabold text-base bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-500 text-white transition shadow-xl cursor-pointer">
+                    Roll Dice Now
+                </button>
+            </div>
+
+            <!-- ARENA 4: ROCKET -->
+            <div id="arena-rocket" class="hidden bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 sm:p-10 space-y-6 text-center shadow-2xl">
+                <div class="relative w-full overflow-hidden rounded-2xl border border-arcadeBorder bg-[#020408] p-4 flex flex-col items-center justify-center min-h-[380px]">
+                    <div id="rocketMultiplierDisplay" class="absolute top-6 z-10 text-6xl sm:text-7xl font-black text-templeGold font-mono drop-shadow-[0_2px_25px_rgba(245,158,11,0.8)]">1.00x</div>
+                    <canvas id="rocketCanvas" width="540" height="340" class="w-full h-[340px] sm:h-[400px] block rounded-xl"></canvas>
+                    <div id="rocketStatusText" class="text-base text-gray-300 mt-4 font-medium">Rocket ready for launch. Watch out for random crash!</div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
+                    <button id="launchRocketBtn" onclick="launchRocket()" disabled class="py-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-extrabold text-base rounded-2xl shadow-xl transition cursor-pointer">
+                        Launch Rocket
+                    </button>
+                    <button id="ejectDroneBtn" onclick="ejectDrone()" disabled class="py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-extrabold text-base rounded-2xl shadow-xl transition cursor-pointer">
+                        🚁 Eject & Cash Out
+                    </button>
+                </div>
+            </div>
+
+            <!-- ARENA 5: SLOTS -->
+            <div id="arena-slots" class="hidden bg-arcadeCard border border-arcadeBorder rounded-3xl p-6 sm:p-12 space-y-8 text-center shadow-2xl">
+                <div class="bg-arcadeInner border border-arcadeBorder rounded-3xl p-8 sm:p-12 space-y-6 max-w-xl mx-auto w-full">
+                    <h4 class="text-xl font-extrabold text-templeGold">Temple 3-Reel Jackpot Slot Machine</h4>
+                    <p class="text-sm text-gray-400">Match 3 identical symbols to win up to 10x Jackpots!</p>
+                    
+                    <div class="grid grid-cols-3 gap-5 my-6">
+                        <div id="slotReel1" class="h-36 sm:h-40 bg-[#020408] border-2 border-amber-500/50 rounded-2xl flex items-center justify-center text-6xl sm:text-7xl shadow-inner">🪙</div>
+                        <div id="slotReel2" class="h-36 sm:h-40 bg-[#020408] border-2 border-amber-500/50 rounded-2xl flex items-center justify-center text-6xl sm:text-7xl shadow-inner">💎</div>
+                        <div id="slotReel3" class="h-36 sm:h-40 bg-[#020408] border-2 border-amber-500/50 rounded-2xl flex items-center justify-center text-6xl sm:text-7xl shadow-inner">🏛️</div>
+                    </div>
+                    <div id="slotResultStatus" class="text-base text-emerald-400 font-bold">Match 3 symbols to win!</div>
+                </div>
+                <button id="spinSlotsBtn" onclick="spinSlots()" disabled class="w-full max-w-md py-4 rounded-2xl font-extrabold text-base bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-500 text-white transition shadow-xl cursor-pointer">
+                    Spin Slot Machine Now
+                </button>
+            </div>
+
+        </div>
 
     </main>
 
-    <!-- ================= BOTTOM BROWSER NAVIGATION BAR (Matching Screenshot) ================= -->
-    <footer class="mt-6 border-t border-templeBorder/70 bg-[#0b0e14] py-2.5 px-4">
-        <div class="max-w-lg mx-auto flex items-center justify-between text-gray-400">
-            <button onclick="switchTab('wheel')" class="w-9 h-9 rounded-lg border border-gray-600 flex items-center justify-center text-xs font-bold text-gray-200">
-                1
-            </button>
-            <div class="flex items-center gap-5 bg-templeCard px-5 py-2 rounded-full border border-templeBorder">
-                <button onclick="cycleTabs(-1)" class="hover:text-white transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                <button onclick="cycleTabs(1)" class="hover:text-white transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+    <!-- REACTION MODAL (Win / Loss Cinematic Popups) -->
+    <div id="reactionModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div id="reactionModalCard" class="bg-arcadeCard border-2 border-templeGold rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-[0_0_60px_rgba(245,158,11,0.5)] modal-pop">
+            <div id="reactionEmojiBox" class="w-24 h-24 rounded-full bg-amber-500/20 text-templeGold flex items-center justify-center mx-auto text-5xl coin-glow">
+                🏆
             </div>
-            <button onclick="showToast('TEMPLE_DA Gaming dApp Bookmarked!', 'success')" class="w-9 h-9 rounded-full bg-templeCard border border-templeBorder flex items-center justify-center hover:text-rose-400 transition">
-                <i class="fa-regular fa-heart text-sm"></i>
-            </button>
-            <button onclick="updateTokenCalculation(); showToast('Pool Price & Balance Synced!', 'info')" class="w-9 h-9 rounded-full bg-templeCard border border-templeBorder flex items-center justify-center hover:text-templeGold transition">
-                <i class="fa-solid fa-rotate text-sm"></i>
+            <div>
+                <h3 id="reactionTitle" class="text-2xl sm:text-3xl font-black text-white">🎉 WOW! YOU WIN!</h3>
+                <p id="reactionText" class="text-sm sm:text-base text-gray-300 mt-2">You won 500.00 Temple_DA! Added to Unclaimed Winnings.</p>
+            </div>
+            <button onclick="closeReactionModal()" class="w-full btn-gold py-4 rounded-2xl text-sm font-extrabold shadow-xl cursor-pointer">
+                Awesome, Continue!
             </button>
         </div>
-    </footer>
+    </div>
 
-    <!-- ================= MODAL 1: WALLET CONNECTION (WEB3 + DEMO MODE) ================= -->
-    <div id="walletModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-templeCard border border-templeBorder rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-templeBorder pb-3">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-wallet text-templeGold"></i>
-                    <h3 class="text-base font-bold text-white">Connect Web3 Wallet (BSC Mainnet)</h3>
-                </div>
-                <button onclick="closeWalletModal()" class="text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+    <!-- WALLET MODAL -->
+    <div id="walletModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
+                <h3 class="text-base font-extrabold text-white">Connect Web3 Wallet</h3>
+                <button onclick="closeWalletModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
-            <p class="text-xs text-gray-300 leading-relaxed">
-                आप अपने असली <strong>MetaMask / Trust Wallet (BSC Chain ID: 56)</strong> को कनेक्ट कर सकते हैं या तुरंत टेस्टिंग के लिए <strong>Interactive Demo Wallet</strong> का उपयोग कर सकते हैं।
-            </p>
-
-            <div class="space-y-2.5">
-                <!-- Real Web3 Connect Button -->
-                <button onclick="connectRealWeb3Wallet()" class="w-full bg-[#1a2232] hover:bg-[#232e42] border border-amber-500/40 rounded-xl p-3.5 flex items-center justify-between transition">
-                    <div class="flex items-center gap-3 text-left">
-                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-templeGold text-lg">
-                            <i class="fa-solid fa-fox"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-bold text-white">MetaMask / Trust Wallet / Web3</div>
-                            <div class="text-[11px] text-gray-400">Connect live BSC Mainnet wallet (`window.ethereum`)</div>
-                        </div>
+            <div class="space-y-3">
+                <button onclick="connectRealWeb3()" class="w-full bg-[#101726] hover:bg-[#182238] border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between text-left transition cursor-pointer">
+                    <div>
+                        <div class="text-sm font-extrabold text-white">MetaMask / Trust Wallet</div>
+                        <div class="text-[11px] text-gray-400">Connect live BSC Mainnet (`window.ethereum`)</div>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
                 </button>
-
-                <!-- Demo Wallet Mode Button -->
-                <button onclick="activateDemoWallet()" class="w-full bg-[#13261c] hover:bg-[#193325] border border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between transition">
-                    <div class="flex items-center gap-3 text-left">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
-                            <i class="fa-solid fa-bolt"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-bold text-emerald-400">Interactive Demo Wallet (Active)</div>
-                            <div class="text-[11px] text-gray-300">Pre-loaded with 96,901.52 Temple_DA (₹15,855.84 INR)</div>
-                        </div>
+                <button onclick="connectDemoWallet()" class="w-full bg-[#0a261b] hover:bg-[#103828] border border-emerald-500/40 rounded-2xl p-4 flex items-center justify-between text-left transition cursor-pointer">
+                    <div>
+                        <div class="text-sm font-extrabold text-emerald-400">Interactive Demo Wallet</div>
+                        <div class="text-[11px] text-gray-300">Pre-loaded with 10,000 Temple_DA</div>
                     </div>
-                    <i class="fa-solid fa-check text-emerald-400 text-sm"></i>
-                </button>
-            </div>
-
-            <div class="bg-[#090d14] border border-templeBorder rounded-xl p-3 text-[11px] text-gray-400 space-y-1">
-                <div><strong class="text-gray-200">Active Mode:</strong> <span id="modalWalletModeText" class="text-emerald-400">Demo Wallet (Instant Testing)</span></div>
-                <div><strong class="text-gray-200">Connected Address:</strong> <span id="modalWalletAddrText" class="font-mono text-templeGold">0x85a9c419b72d81e0943025EF</span></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= MODAL 2: DEVELOPER & SMART CONTRACT CONFIG ================= -->
-    <div id="configModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-templeCard border border-templeBorder rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-templeBorder pb-3">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-templeGold"></i>
-                    <h3 class="text-base font-bold text-white">TEMPLE_DA Contract & Pool Settings</h3>
-                </div>
-                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <p class="text-xs text-gray-300">
-                जब आप इस पेज को अपने डोमेन <code>play.templeda.com</code> पर होस्ट करेंगे, तो यहाँ अपना असली <strong>Temple_DA BEP-20 Contract Address</strong> और <strong>Merchant/Treasury BSC Address</strong> डाल सकते हैं:
-            </p>
-
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Temple_DA BEP-20 Token Contract Address (BSC)</label>
-                    <input id="cfgTokenAddress" type="text" value="0x55d398326f99059ff775485246999027b3197955" class="w-full bg-[#090d14] border border-templeBorder rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-templeGold focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Merchant / Game Treasury BSC Address (0x...)</label>
-                    <input id="cfgMerchantAddress" type="text" value="0x85a9c419b72d81e094308b45c17d9a01420025EF" class="w-full bg-[#090d14] border border-templeBorder rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-templeGold focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Live Temple_DA Price in INR (₹)</label>
-                    <input id="cfgTokenPriceInr" type="number" step="0.0001" value="0.16362839" class="w-full bg-[#090d14] border border-templeBorder rounded-xl px-3 py-2 text-white font-mono text-xs focus:border-templeGold focus:outline-none">
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 pt-2">
-                <button onclick="saveContractConfig()" class="flex-1 btn-gold py-2.5 rounded-xl text-xs font-bold">
-                    Save & Apply Settings
-                </button>
-                <button onclick="closeConfigModal()" class="px-4 py-2.5 rounded-xl bg-templeBorder text-gray-300 text-xs font-semibold">
-                    Cancel
+                    <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= TOAST NOTIFICATION BOX (Replaces alert/confirm) ================= -->
+    <!-- CONFIG MODAL -->
+    <div id="configModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
+                <h3 class="text-base font-extrabold text-white">Treasury & Contract Settings</h3>
+                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">Treasury Wallet Address (Payments Received Here)</label>
+                    <input id="cfgTreasury" type="text" value="0x85a9c419b72d81e094308b45c17d9a01420025EF" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Temple_DA Token Contract (BSC)</label>
+                    <input id="cfgToken" type="text" value="0x50BE31cAAB627ee8F98374d33b0454a8269A79e1" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-xs">
+                </div>
+            </div>
+            <button onclick="saveConfig()" class="w-full btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Save Settings</button>
+        </div>
+    </div>
+
     <div id="toastContainer" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 
-    <!-- ================= COMPLETE APPLICATION & WEB3 JAVASCRIPT ================= -->
     <script>
-        /********************************************************************
-         * 1. STATE & CONFIGURATION (Matches pay.templeda.com Screenshot)
-         ********************************************************************/
-        const APP_STATE = {
-            // Exact rate so ₹100 = 611.1409 Temple_DA & 96901.52 Temple_DA = ₹15855.84 INR
-            tokenPriceInr: 0.16362839,
-            displayPriceInr: 0.1636,
-
-            // Pre-loaded balance matching the screenshot
-            walletBalanceToken: 96901.52,
-            unclaimedWinningsToken: 0.00,
-
-            // Wallet Connection
-            walletMode: 'DEMO', // 'DEMO' or 'WEB3'
-            walletAddress: '0x85a9c419b72d81e094308b45c17d9a01420025EF',
-            tokenContractAddress: '0x55d398326f99059ff775485246999027b3197955', // Replace with real Temple_DA BEP20 address
-            merchantAddress: '0x85a9c419b72d81e094308b45c17d9a01420025EF',
-            tokenDecimals: 18,
-
-            // Entry Fee & Active Game Round Ticket
-            currentEntryInr: 100,
-            currentPayableToken: 611.1409,
-            hasPaidTicket: false,
-            paidTicketTokens: 0,
-            paidTicketInr: 0,
-
-            // Active Tab
-            activeTab: 'wheel', // 'wheel', 'catcher', 'dice', 'history'
-            soundEnabled: true,
-
-            // Transaction & Game History
-            history: [
-                {
-                    id: '0x94f2...81b4',
-                    game: 'Spin Wheel',
-                    entryInr: 100,
-                    entryToken: 611.14,
-                    mult: '2.0x WIN',
-                    wonToken: 1222.28,
-                    time: 'Just now'
-                }
-            ]
+        const APP = {
+            tokenPrice: 0.1636,
+            balance: 10000.00,
+            unclaimed: 0.00,
+            treasuryTotal: 5420.00,
+            walletAddress: null,
+            treasuryAddress: '0x85a9c419b72d81e094308b45c17d9a01420025EF',
+            tokenContract: '0x50BE31cAAB627ee8F98374d33b0454a8269A79e1',
+            entryInr: 10.00,
+            hasTicket: false,
+            activeGame: 'wheel',
+            sound: true,
+            stats: { wins: 0, losses: 0, net: 0.00 }
         };
 
-        // Standard Minimal BEP-20 ABI for balanceOf, decimals, transfer
-        const BEP20_ABI = [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function decimals() view returns (uint8)",
-            "function transfer(address to, uint256 amount) returns (bool)"
-        ];
+        const BEP20_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
 
-        /********************************************************************
-         * 2. WEB AUDIO SYNTHESIZER (No External Sound URLs Needed)
-         ********************************************************************/
-        let audioCtx = null;
-        function playSfx(type) {
-            if (!APP_STATE.soundEnabled) return;
+        function playSound(type) {
+            if (!APP.sound) return;
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                const now = audioCtx.currentTime;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                if (type === 'tick') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(620, now);
-                    osc.frequency.exponentialRampToValueAtTime(220, now + 0.04);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
-                    osc.start(now);
-                    osc.stop(now + 0.04);
-                } else if (type === 'pay') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, now); // C5
-                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
-                    gain.gain.setValueAtTime(0.18, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-                    osc.start(now);
-                    osc.stop(now + 0.35);
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+                if (type === 'pay') {
+                    osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 } else if (type === 'win') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(440, now);
-                    osc.frequency.setValueAtTime(554.37, now + 0.1);
-                    osc.frequency.setValueAtTime(659.25, now + 0.2);
-                    osc.frequency.setValueAtTime(880, now + 0.3);
-                    gain.gain.setValueAtTime(0.22, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-                    osc.start(now);
-                    osc.stop(now + 0.55);
-                } else if (type === 'coin') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(987.77, now);
-                    osc.frequency.setValueAtTime(1318.51, now + 0.06);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                    osc.start(now);
-                    osc.stop(now + 0.2);
-                } else if (type === 'bomb') {
+                    osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); osc.frequency.setValueAtTime(783.99, now + 0.2); osc.frequency.setValueAtTime(1046.50, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                } else if (type === 'loss') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.linearRampToValueAtTime(55, now + 0.25);
-                    gain.gain.setValueAtTime(0.22, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
-                    osc.start(now);
-                    osc.stop(now + 0.26);
+                    osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(90, now + 0.4);
+                    gain.gain.setValueAtTime(0.18, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                } else if (type === 'tick') {
+                    osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                } else {
+                    osc.frequency.setValueAtTime(180, now); osc.frequency.setValueAtTime(120, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 }
-            } catch (e) {
-                // Ignore audio errors on restricted devices
-            }
+                osc.start(now); osc.stop(now + 0.8);
+            } catch(e) {}
         }
 
         function toggleSound() {
-            APP_STATE.soundEnabled = !APP_STATE.soundEnabled;
-            const icon = document.getElementById('soundIcon');
-            icon.className = APP_STATE.soundEnabled
-                ? 'fa-solid fa-volume-high text-sm'
-                : 'fa-solid fa-volume-xmark text-sm text-gray-500';
-            showToast(APP_STATE.soundEnabled ? 'Sound Effects Enabled 🔊' : 'Sound Muted 🔇', 'info');
+            APP.sound = !APP.sound;
+            document.getElementById('soundIcon').className = APP.sound ? 'fa-solid fa-volume-high text-xs' : 'fa-solid fa-volume-xmark text-xs text-gray-500';
+            showToast(APP.sound ? 'Sound Enabled' : 'Sound Muted', 'info');
         }
 
-        /********************************************************************
-         * 3. UI & DASHBOARD SYNCHRONIZATION
-         ********************************************************************/
-        function formatShortAddr(addr) {
-            if (!addr || addr.length < 10) return '0x85...25EF';
-            return addr.substring(0, 4) + '...' + addr.substring(addr.length - 4);
-        }
+        function updateUI() {
+            document.getElementById('userTokenBalance').textContent = APP.balance.toFixed(2);
+            document.getElementById('unclaimedBalance').textContent = APP.unclaimed.toFixed(2);
+            document.getElementById('claimBtn').disabled = APP.unclaimed <= 0;
+            document.getElementById('treasuryAddrShort').textContent = APP.treasuryAddress.substring(0, 6) + '...' + APP.treasuryAddress.substring(38);
+            document.getElementById('treasuryPotDisplay').textContent = APP.treasuryTotal.toFixed(0) + ' Temple_DA';
 
-        function updateDashboardUI() {
-            // Price
-            document.getElementById('livePriceDisplay').textContent = APP_STATE.displayPriceInr.toFixed(4);
+            document.getElementById('statWins').textContent = APP.stats.wins;
+            document.getElementById('statLosses').textContent = APP.stats.losses;
+            document.getElementById('statNet').textContent = (APP.stats.net >= 0 ? '+' : '') + APP.stats.net.toFixed(2) + ' Temple_DA';
 
-            // Balances
-            const inrVal = APP_STATE.walletBalanceToken * APP_STATE.tokenPriceInr;
-            document.getElementById('tokenBalanceDisplay').textContent = APP_STATE.walletBalanceToken.toFixed(2);
-            document.getElementById('inrBalanceDisplay').textContent = '₹' + inrVal.toFixed(2) + ' INR';
-
-            // Unclaimed Winnings
-            const unclaimedInr = APP_STATE.unclaimedWinningsToken * APP_STATE.tokenPriceInr;
-            document.getElementById('unclaimedTokenDisplay').textContent = APP_STATE.unclaimedWinningsToken.toFixed(2);
-            document.getElementById('unclaimedInrDisplay').textContent = '(₹' + unclaimedInr.toFixed(2) + ')';
-            document.getElementById('claimWinningsBtn').disabled = APP_STATE.unclaimedWinningsToken <= 0;
-
-            // Wallet Pill
-            document.getElementById('walletBtnText').textContent = formatShortAddr(APP_STATE.walletAddress);
-            document.getElementById('footerMerchantAddr').textContent = formatShortAddr(APP_STATE.merchantAddress);
-
-            // Ticket Status UI
-            const badge = document.getElementById('ticketStatusBadge');
-            const payBtn = document.getElementById('authorizePayBtn');
-            const payBtnText = document.getElementById('authorizePayBtnText');
-
-            if (APP_STATE.hasPaidTicket) {
-                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 ticket-ready';
-                badge.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i>Ticket Active (${APP_STATE.paidTicketTokens.toFixed(2)} T_DA)`;
-                payBtn.disabled = true;
-                payBtnText.textContent = 'Entry Paid! Play Your Game Round Below';
+            if (APP.walletAddress) {
+                document.getElementById('mainWalletBtnText').textContent = APP.walletAddress.substring(0, 4) + '...' + APP.walletAddress.substring(38);
             } else {
-                badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30';
-                badge.textContent = 'Authorize Entry to Play';
-                payBtn.disabled = false;
-                payBtnText.textContent = 'Authorize & Pay Securely';
+                document.getElementById('mainWalletBtnText').textContent = 'Connect';
             }
 
-            // Enable/Disable Game Start Buttons based on Ticket
-            const spinBtn = document.getElementById('spinNowBtn');
-            const spinBtnText = document.getElementById('spinNowBtnText');
-            if (!wheelState.isSpinning) {
-                spinBtn.disabled = !APP_STATE.hasPaidTicket;
-                spinBtnText.textContent = APP_STATE.hasPaidTicket
-                    ? `SPIN WHEEL NOW (${APP_STATE.paidTicketTokens.toFixed(1)} Temple_DA)`
-                    : 'First Click "Authorize & Pay Securely" Above';
-            }
+            const tokensNeeded = APP.entryInr / APP.tokenPrice;
+            document.getElementById('entryTokenNeeded').textContent = tokensNeeded.toFixed(2) + ' Temple_DA';
+            document.getElementById('entryInrDisplay').textContent = '₹' + APP.entryInr.toFixed(2);
 
-            const catcherBtn = document.getElementById('startCatcherBtn');
-            if (!catcherState.isRunning) {
-                catcherBtn.disabled = !APP_STATE.hasPaidTicket;
-                catcherBtn.textContent = APP_STATE.hasPaidTicket
-                    ? `START 30s COIN RUSH (${APP_STATE.paidTicketTokens.toFixed(1)} T_DA)`
-                    : 'First Authorize & Pay Entry Above';
-            }
+            const ticketBadge = document.getElementById('ticketBadge');
+            const paymentBox = document.getElementById('paymentBox');
+            const payEntryBtnText = document.getElementById('payEntryBtnText');
+            const payEntryBtn = document.getElementById('payEntryBtn');
 
-            const diceBtn = document.getElementById('rollDiceBtn');
-            const diceBtnText = document.getElementById('rollDiceBtnText');
-            if (!diceState.isRolling) {
-                diceBtn.disabled = !APP_STATE.hasPaidTicket;
-                diceBtnText.textContent = APP_STATE.hasPaidTicket
-                    ? `ROLL LUCKY DICE NOW (${APP_STATE.paidTicketTokens.toFixed(1)} T_DA)`
-                    : 'First Click "Authorize & Pay Securely" Above';
-            }
+            if (APP.hasTicket) {
+                ticketBadge.className = 'text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                ticketBadge.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Ticket Active';
+                paymentBox.classList.add('hidden');
+                payEntryBtn.disabled = true;
+                payEntryBtnText.textContent = 'Stake Paid - Game Unlocked';
 
-            updateDicePotentialDisplay();
-            renderHistoryList();
-        }
-
-        function setEntryInr(amount) {
-            document.getElementById('entryInrInput').value = amount;
-            updateTokenCalculation();
-        }
-
-        function updateTokenCalculation() {
-            const rawInr = parseFloat(document.getElementById('entryInrInput').value);
-            const validInr = isNaN(rawInr) || rawInr <= 0 ? 0 : rawInr;
-            APP_STATE.currentEntryInr = validInr;
-
-            const tokens = validInr / APP_STATE.tokenPriceInr;
-            APP_STATE.currentPayableToken = tokens;
-
-            document.getElementById('payableTokenDisplay').textContent = tokens.toFixed(4);
-            document.getElementById('wheelMaxWinText').textContent = (tokens * 5).toFixed(2);
-            updateDicePotentialDisplay();
-        }
-
-        /********************************************************************
-         * 4. AUTHORIZE & PAY SECURELY (Web3 BEP-20 + Instant Demo Flow)
-         ********************************************************************/
-        async function authorizeAndPayEntry() {
-            if (APP_STATE.hasPaidTicket) {
-                showToast('Your game ticket is already active! Play your round below.', 'info');
-                return;
-            }
-
-            if (APP_STATE.currentEntryInr <= 0 || APP_STATE.currentPayableToken <= 0) {
-                showToast('कृपया मान्य INR राशि दर्ज करें (e.g., ₹10 to ₹500)', 'error');
-                return;
-            }
-
-            const tokensNeeded = APP_STATE.currentPayableToken;
-
-            if (APP_STATE.walletMode === 'WEB3' && window.ethereum) {
-                // Real Web3 BEP-20 Token Transfer Flow
-                try {
-                    const payBtn = document.getElementById('authorizePayBtn');
-                    const payBtnText = document.getElementById('authorizePayBtnText');
-                    payBtn.disabled = true;
-                    payBtnText.textContent = 'Confirming in Web3 Wallet...';
-
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(APP_STATE.tokenContractAddress, BEP20_ABI, signer);
-
-                    const amountWei = ethers.utils.parseUnits(tokensNeeded.toFixed(6), APP_STATE.tokenDecimals);
-                    const tx = await contract.transfer(APP_STATE.merchantAddress, amountWei);
-                    showToast('Transaction Submitted! Waiting for confirmation...', 'info');
-                    await tx.wait(1);
-
-                    APP_STATE.walletBalanceToken = Math.max(0, APP_STATE.walletBalanceToken - tokensNeeded);
-                    APP_STATE.hasPaidTicket = true;
-                    APP_STATE.paidTicketTokens = tokensNeeded;
-                    APP_STATE.paidTicketInr = APP_STATE.currentEntryInr;
-
-                    playSfx('pay');
-                    showToast(`Paid ${tokensNeeded.toFixed(2)} Temple_DA! Game Unlocked.`, 'success');
-                    updateDashboardUI();
-                } catch (err) {
-                    console.error(err);
-                    showToast('Web3 Transaction Cancelled or Failed. Using Demo Mode is also available!', 'error');
-                    updateDashboardUI();
-                }
+                document.getElementById('spinBtn').disabled = false;
+                document.getElementById('startCatcherBtn').disabled = false;
+                document.getElementById('rollDiceBtn').disabled = false;
+                document.getElementById('launchRocketBtn').disabled = false;
+                document.getElementById('spinSlotsBtn').disabled = false;
             } else {
-                // Instant Demo Wallet Flow
-                if (APP_STATE.walletBalanceToken < tokensNeeded) {
-                    showToast('Insufficient Temple_DA Balance! Click "+Topup" to add demo tokens.', 'error');
-                    return;
-                }
+                ticketBadge.className = 'text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30';
+                ticketBadge.textContent = 'Payment Required';
+                paymentBox.classList.remove('hidden');
+                payEntryBtn.disabled = false;
+                payEntryBtnText.textContent = 'Pay Stake to Treasury & Unlock Game';
 
-                APP_STATE.walletBalanceToken -= tokensNeeded;
-                APP_STATE.hasPaidTicket = true;
-                APP_STATE.paidTicketTokens = tokensNeeded;
-                APP_STATE.paidTicketInr = APP_STATE.currentEntryInr;
-
-                playSfx('pay');
-                showToast(`Authorized ${tokensNeeded.toFixed(4)} Temple_DA (₹${APP_STATE.currentEntryInr})! Ready to Play.`, 'success');
-                updateDashboardUI();
+                document.getElementById('spinBtn').disabled = true;
+                document.getElementById('startCatcherBtn').disabled = true;
+                document.getElementById('rollDiceBtn').disabled = true;
+                document.getElementById('launchRocketBtn').disabled = true;
+                document.getElementById('spinSlotsBtn').disabled = true;
             }
         }
 
-        function claimWinningsToWallet() {
-            if (APP_STATE.unclaimedWinningsToken <= 0) return;
-            const claimed = APP_STATE.unclaimedWinningsToken;
-            const claimedInr = claimed * APP_STATE.tokenPriceInr;
-
-            APP_STATE.walletBalanceToken += claimed;
-            APP_STATE.unclaimedWinningsToken = 0;
-
-            playSfx('win');
-            showToast(`Claimed ${claimed.toFixed(2)} Temple_DA (₹${claimedInr.toFixed(2)}) to Wallet!`, 'success');
-            updateDashboardUI();
+        function setEntryInr(amt) {
+            APP.entryInr = amt;
+            updateUI();
         }
 
-        function addDemoTokens() {
-            APP_STATE.walletBalanceToken += 10000;
-            playSfx('coin');
-            showToast('+10,000 Temple_DA Demo Tokens Added!', 'success');
-            updateDashboardUI();
+        function openWalletModal() { document.getElementById('walletModal').classList.remove('hidden'); }
+        function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
+        function openConfigModal() { document.getElementById('configModal').classList.remove('hidden'); }
+        function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
+
+        function connectDemoWallet() {
+            APP.walletAddress = '0x85a9c419b72d81e094308b45c17d9a01420025EF';
+            closeWalletModal();
+            updateUI();
+            showToast('Demo Wallet Connected Successfully!', 'success');
         }
 
-        function recordGameResult(gameName, multiplierLabel, tokensWon) {
-            const randomHex = '0x' + Math.random().toString(16).substring(2, 6) + '...' + Math.random().toString(16).substring(2, 6);
-            APP_STATE.history.unshift({
-                id: randomHex,
-                game: gameName,
-                entryInr: APP_STATE.paidTicketInr,
-                entryToken: APP_STATE.paidTicketTokens,
-                mult: multiplierLabel,
-                wonToken: tokensWon,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-            });
-
-            if (tokensWon > 0) {
-                APP_STATE.unclaimedWinningsToken += tokensWon;
-            }
-
-            // Reset ticket after round completes
-            APP_STATE.hasPaidTicket = false;
-            APP_STATE.paidTicketTokens = 0;
-            APP_STATE.paidTicketInr = 0;
-
-            updateDashboardUI();
-        }
-
-        /********************************************************************
-         * 5. GAME 1: LUCKY SPIN WHEEL (HTML5 Canvas)
-         ********************************************************************/
-        const WHEEL_SEGMENTS = [
-            { label: '2.0x WIN', mult: 2.0, color: '#16a34a', text: '#ffffff' },
-            { label: '0.5x', mult: 0.5, color: '#1e293b', text: '#cbd5e1' },
-            { label: '5x JACKPOT', mult: 5.0, color: '#f59e0b', text: '#090d14' },
-            { label: '0x TRY', mult: 0.0, color: '#0f172a', text: '#64748b' },
-            { label: '1.5x WIN', mult: 1.5, color: '#059669', text: '#ffffff' },
-            { label: '0.8x', mult: 0.8, color: '#1e293b', text: '#cbd5e1' },
-            { label: '3.0x GOLD', mult: 3.0, color: '#d97706', text: '#ffffff' },
-            { label: '1.2x WIN', mult: 1.2, color: '#0d9488', text: '#ffffff' }
-        ];
-
-        const wheelState = {
-            angle: 0,
-            isSpinning: false
-        };
-
-        function drawSpinWheel() {
-            const canvas = document.getElementById('wheelCanvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const radius = cx - 12;
-            const arc = (2 * Math.PI) / WHEEL_SEGMENTS.length;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Outer glowing ring
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            ctx.restore();
-
-            for (let i = 0; i < WHEEL_SEGMENTS.length; i++) {
-                const seg = WHEEL_SEGMENTS[i];
-                const startAngle = wheelState.angle + i * arc;
-                const endAngle = startAngle + arc;
-
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.arc(cx, cy, radius, startAngle, endAngle);
-                ctx.closePath();
-                ctx.fillStyle = seg.color;
-                ctx.fill();
-                ctx.strokeStyle = '#0b0e14';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Label
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate(startAngle + arc / 2);
-                ctx.textAlign = 'right';
-                ctx.fillStyle = seg.text;
-                ctx.font = 'bold 13px Inter, sans-serif';
-                ctx.fillText(seg.label, radius - 14, 5);
-                ctx.restore();
-            }
-
-            // Center Gold Hub
-            ctx.beginPath();
-            ctx.arc(cx, cy, 28, 0, Math.PI * 2);
-            ctx.fillStyle = '#0b0e14';
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#f59e0b';
-            ctx.stroke();
-
-            ctx.fillStyle = '#f59e0b';
-            ctx.font = 'bold 10px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('TEMPLE', cx, cy - 2);
-            ctx.fillText('DA', cx, cy + 10);
-        }
-
-        function startWheelSpin() {
-            if (!APP_STATE.hasPaidTicket || wheelState.isSpinning) return;
-            wheelState.isSpinning = true;
-
-            const spinBtn = document.getElementById('spinNowBtn');
-            const spinBtnText = document.getElementById('spinNowBtnText');
-            spinBtn.disabled = true;
-            spinBtnText.textContent = 'Spinning Wheel... Good Luck!';
-
-            const startAngle = wheelState.angle;
-            const extraSpins = (5 + Math.random() * 4) * Math.PI * 2;
-            const targetAngle = startAngle + extraSpins;
-            const duration = 3600;
-            const startTime = performance.now();
-            let lastTickSegment = -1;
-
-            function animateWheel(now) {
-                const elapsed = now - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                // Cubic ease out
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                wheelState.angle = startAngle + extraSpins * easeOut;
-                drawSpinWheel();
-
-                // Play tick sound when crossing segments
-                const arc = (2 * Math.PI) / WHEEL_SEGMENTS.length;
-                const currentSeg = Math.floor(((wheelState.angle % (Math.PI * 2)) / arc));
-                if (currentSeg !== lastTickSegment) {
-                    playSfx('tick');
-                    lastTickSegment = currentSeg;
-                }
-
-                if (progress < 1) {
-                    requestAnimationFrame(animateWheel);
-                } else {
-                    wheelState.isSpinning = false;
-                    finishWheelSpin();
-                }
-            }
-
-            requestAnimationFrame(animateWheel);
-        }
-
-        function finishWheelSpin() {
-            const arc = (2 * Math.PI) / WHEEL_SEGMENTS.length;
-            // Pointer is at top (-Math.PI / 2 or 3 * Math.PI / 2)
-            const pointerAngle = (1.5 * Math.PI - (wheelState.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-            const index = Math.floor(pointerAngle / arc) % WHEEL_SEGMENTS.length;
-            const winningSeg = WHEEL_SEGMENTS[index];
-
-            const tokensWon = APP_STATE.paidTicketTokens * winningSeg.mult;
-            const inrWon = tokensWon * APP_STATE.tokenPriceInr;
-
-            if (winningSeg.mult >= 1) {
-                playSfx('win');
-                showToast(`🎉 ${winningSeg.label}! You won ${tokensWon.toFixed(2)} Temple_DA (₹${inrWon.toFixed(2)})`, 'success');
-            } else if (winningSeg.mult > 0) {
-                playSfx('coin');
-                showToast(`Wheel landed on ${winningSeg.label}: Returned ${tokensWon.toFixed(2)} Temple_DA`, 'info');
-            } else {
-                playSfx('bomb');
-                showToast('Landed on 0x! Authorize entry to spin again.', 'error');
-            }
-
-            recordGameResult('Spin Wheel', winningSeg.label, tokensWon);
-        }
-
-        /********************************************************************
-         * 6. GAME 2: TEMPLE COIN CATCHER ARCADE (60fps HTML5 Canvas)
-         ********************************************************************/
-        const catcherState = {
-            isRunning: false,
-            playerX: 175,
-            playerWidth: 74,
-            moveDir: 0,
-            items: [],
-            particles: [],
-            multiplier: 0,
-            timeLeft: 30,
-            lastSpawn: 0,
-            timerInterval: null
-        };
-
-        function setCatcherMove(dir) {
-            catcherState.moveDir = dir;
-        }
-
-        function initCatcherControls() {
-            const canvas = document.getElementById('catcherCanvas');
-            if (!canvas) return;
-
-            // Touch & Mouse Drag direct positioning
-            const handlePointer = (clientX) => {
-                if (!catcherState.isRunning) return;
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const relX = (clientX - rect.left) * scaleX;
-                catcherState.playerX = Math.max(10, Math.min(canvas.width - catcherState.playerWidth - 10, relX - catcherState.playerWidth / 2));
-            };
-
-            canvas.addEventListener('mousemove', (e) => handlePointer(e.clientX));
-            canvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length > 0) {
-                    handlePointer(e.touches[0].clientX);
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            window.addEventListener('keydown', (e) => {
-                if (!catcherState.isRunning) return;
-                if (e.key === 'ArrowLeft') catcherState.moveDir = -1;
-                if (e.key === 'ArrowRight') catcherState.moveDir = 1;
-            });
-            window.addEventListener('keyup', (e) => {
-                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') catcherState.moveDir = 0;
-            });
-        }
-
-        function startCatcherGame() {
-            if (!APP_STATE.hasPaidTicket || catcherState.isRunning) return;
-
-            catcherState.isRunning = true;
-            catcherState.items = [];
-            catcherState.particles = [];
-            catcherState.multiplier = 0.20; // Base start bonus
-            catcherState.timeLeft = 30;
-            catcherState.playerX = 173;
-
-            document.getElementById('catcherOverlay').classList.add('hidden');
-            document.getElementById('catcherTimer').textContent = '30s';
-
-            catcherState.timerInterval = setInterval(() => {
-                catcherState.timeLeft--;
-                document.getElementById('catcherTimer').textContent = catcherState.timeLeft + 's';
-                if (catcherState.timeLeft <= 0) {
-                    endCatcherGame();
-                }
-            }, 1000);
-
-            requestAnimationFrame(catcherGameLoop);
-        }
-
-        function catcherGameLoop(timestamp) {
-            if (!catcherState.isRunning) return;
-
-            const canvas = document.getElementById('catcherCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Subtle Grid Background
-            ctx.strokeStyle = 'rgba(34, 43, 58, 0.35)';
-            ctx.lineWidth = 1;
-            for (let x = 0; x < canvas.width; x += 40) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-            }
-            for (let y = 0; y < canvas.height; y += 40) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-            }
-
-            // Update Player Position
-            if (catcherState.moveDir !== 0) {
-                catcherState.playerX += catcherState.moveDir * 6.5;
-                catcherState.playerX = Math.max(8, Math.min(canvas.width - catcherState.playerWidth - 8, catcherState.playerX));
-            }
-
-            // Draw Golden Temple Collector Basket
-            const py = canvas.height - 34;
-            ctx.fillStyle = '#f59e0b';
-            ctx.beginPath();
-            ctx.roundRect(catcherState.playerX, py, catcherState.playerWidth, 22, 8);
-            ctx.fill();
-            ctx.strokeStyle = '#fef08a';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.fillStyle = '#0b0e14';
-            ctx.font = 'bold 10px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('TEMPLE_DA', catcherState.playerX + catcherState.playerWidth / 2, py + 15);
-
-            // Spawn Falling Coins / Gems / Bombs
-            if (timestamp - catcherState.lastSpawn > 420) {
-                const rand = Math.random();
-                let type = 'coin';
-                let speed = 2.8 + Math.random() * 2.0;
-                if (rand > 0.82) {
-                    type = 'gem';
-                    speed = 3.8 + Math.random() * 1.8;
-                } else if (rand > 0.58) {
-                    type = 'bomb';
-                    speed = 3.2 + Math.random() * 2.0;
-                }
-
-                catcherState.items.push({
-                    x: 24 + Math.random() * (canvas.width - 48),
-                    y: -15,
-                    radius: 14,
-                    type,
-                    speed
-                });
-                catcherState.lastSpawn = timestamp;
-            }
-
-            // Update & Draw Falling Items
-            for (let i = catcherState.items.length - 1; i >= 0; i--) {
-                const item = catcherState.items[i];
-                item.y += item.speed;
-
-                // Draw Item
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
-                if (item.type === 'coin') {
-                    ctx.fillStyle = '#f59e0b';
-                    ctx.fill();
-                    ctx.strokeStyle = '#fef08a';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.fillStyle = '#090d14';
-                    ctx.font = 'bold 11px Inter';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('₹', item.x, item.y + 4);
-                } else if (item.type === 'gem') {
-                    ctx.fillStyle = '#10b981';
-                    ctx.fill();
-                    ctx.strokeStyle = '#a7f3d0';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.fillStyle = '#090d14';
-                    ctx.font = 'bold 10px Inter';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('💎', item.x, item.y + 4);
-                } else {
-                    ctx.fillStyle = '#ef4444';
-                    ctx.fill();
-                    ctx.strokeStyle = '#fecaca';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 10px Inter';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('💣', item.x, item.y + 4);
-                }
-                ctx.restore();
-
-                // Check Collision with Player Basket
-                const hitY = item.y + item.radius >= py && item.y - item.radius <= py + 22;
-                const hitX = item.x >= catcherState.playerX - 8 && item.x <= catcherState.playerX + catcherState.playerWidth + 8;
-
-                if (hitY && hitX) {
-                    if (item.type === 'coin') {
-                        catcherState.multiplier += 0.15;
-                        playSfx('coin');
-                        spawnPopupText(item.x, py, '+0.15x', '#f59e0b');
-                    } else if (item.type === 'gem') {
-                        catcherState.multiplier += 0.45;
-                        playSfx('win');
-                        spawnPopupText(item.x, py, '+0.45x', '#10b981');
-                    } else {
-                        catcherState.multiplier = Math.max(0, catcherState.multiplier - 0.30);
-                        playSfx('bomb');
-                        spawnPopupText(item.x, py, '-0.30x', '#ef4444');
-                    }
-                    catcherState.items.splice(i, 1);
-                    continue;
-                }
-
-                if (item.y > canvas.height + 20) {
-                    catcherState.items.splice(i, 1);
-                }
-            }
-
-            // Draw Floating Popups
-            for (let i = catcherState.particles.length - 1; i >= 0; i--) {
-                const p = catcherState.particles[i];
-                p.y -= 1.2;
-                p.alpha -= 0.025;
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, p.alpha);
-                ctx.fillStyle = p.color;
-                ctx.font = 'bold 13px JetBrains Mono, monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.text, p.x, p.y);
-                ctx.restore();
-                if (p.alpha <= 0) catcherState.particles.splice(i, 1);
-            }
-
-            // Update Live HUD
-            const liveWon = APP_STATE.paidTicketTokens * catcherState.multiplier;
-            document.getElementById('catcherScoreMult').textContent = catcherState.multiplier.toFixed(2) + 'x';
-            document.getElementById('catcherTokensWon').textContent = liveWon.toFixed(2) + ' T_DA';
-
-            requestAnimationFrame(catcherGameLoop);
-        }
-
-        function spawnPopupText(x, y, text, color) {
-            catcherState.particles.push({ x, y, text, color, alpha: 1 });
-        }
-
-        function endCatcherGame() {
-            catcherState.isRunning = false;
-            clearInterval(catcherState.timerInterval);
-
-            const finalMult = catcherState.multiplier;
-            const tokensWon = APP_STATE.paidTicketTokens * finalMult;
-            const inrWon = tokensWon * APP_STATE.tokenPriceInr;
-
-            const overlay = document.getElementById('catcherOverlay');
-            overlay.classList.remove('hidden');
-            document.getElementById('catcherOverlayTitle').textContent = `Round Complete! (${finalMult.toFixed(2)}x)`;
-            document.getElementById('catcherOverlaySub').textContent = `You collected ${tokensWon.toFixed(2)} Temple_DA (₹${inrWon.toFixed(2)} INR)!`;
-
-            playSfx('win');
-            showToast(`🏛️ Coin Rush Finished! Won ${tokensWon.toFixed(2)} Temple_DA`, 'success');
-            recordGameResult('Coin Catcher', `${finalMult.toFixed(2)}x`, tokensWon);
-        }
-
-        /********************************************************************
-         * 7. GAME 3: LUCKY DICE 7 (High / Low / Lucky 7)
-         ********************************************************************/
-        const diceState = {
-            selectedBet: 'low', // 'low' (2x), 'seven' (4x), 'high' (2x)
-            isRolling: false
-        };
-
-        const DICE_ICONS = [
-            '',
-            'fa-dice-one',
-            'fa-dice-two',
-            'fa-dice-three',
-            'fa-dice-four',
-            'fa-dice-five',
-            'fa-dice-six'
-        ];
-
-        function selectDiceBet(betType) {
-            diceState.selectedBet = betType;
-            document.querySelectorAll('.dice-bet-btn').forEach(btn => {
-                btn.classList.remove('border-templeGold');
-                btn.classList.add('border-templeBorder');
-            });
-            const activeBtn = document.getElementById('dicePick-' + betType);
-            if (activeBtn) {
-                activeBtn.classList.remove('border-templeBorder');
-                activeBtn.classList.add('border-templeGold');
-            }
-            updateDicePotentialDisplay();
-        }
-
-        function updateDicePotentialDisplay() {
-            const mult = diceState.selectedBet === 'seven' ? 4.0 : 2.0;
-            const label = diceState.selectedBet === 'low' ? 'LOW (2 - 6)' : (diceState.selectedBet === 'seven' ? 'LUCKY 7' : 'HIGH (8 - 12)');
-            const baseTokens = APP_STATE.hasPaidTicket ? APP_STATE.paidTicketTokens : APP_STATE.currentPayableToken;
-            const potential = baseTokens * mult;
-
-            const statusEl = document.getElementById('diceResultStatus');
-            if (statusEl && !diceState.isRolling) {
-                statusEl.innerHTML = `Selected: <span class="text-templeGold font-bold">${label}</span> — Potential Win: <span class="text-emerald-400 font-mono font-bold">${potential.toFixed(2)} Temple_DA</span>`;
-            }
-        }
-
-        function rollLuckyDice() {
-            if (!APP_STATE.hasPaidTicket || diceState.isRolling) return;
-            diceState.isRolling = true;
-
-            const d1Box = document.getElementById('die1Box');
-            const d2Box = document.getElementById('die2Box');
-            const rollBtn = document.getElementById('rollDiceBtn');
-            const rollBtnText = document.getElementById('rollDiceBtnText');
-
-            rollBtn.disabled = true;
-            rollBtnText.textContent = 'Rolling Dice...';
-            d1Box.classList.add('dice-rolling');
-            d2Box.classList.add('dice-rolling');
-
-            let ticks = 0;
-            const rollInterval = setInterval(() => {
-                ticks++;
-                const temp1 = 1 + Math.floor(Math.random() * 6);
-                const temp2 = 1 + Math.floor(Math.random() * 6);
-                document.getElementById('die1Icon').className = 'fa-solid ' + DICE_ICONS[temp1];
-                document.getElementById('die2Icon').className = 'fa-solid ' + DICE_ICONS[temp2];
-                playSfx('tick');
-
-                if (ticks >= 12) {
-                    clearInterval(rollInterval);
-                    d1Box.classList.remove('dice-rolling');
-                    d2Box.classList.remove('dice-rolling');
-                    diceState.isRolling = false;
-                    finishDiceRoll();
-                }
-            }, 90);
-        }
-
-        function finishDiceRoll() {
-            const die1 = 1 + Math.floor(Math.random() * 6);
-            const die2 = 1 + Math.floor(Math.random() * 6);
-            const sum = die1 + die2;
-
-            document.getElementById('die1Icon').className = 'fa-solid ' + DICE_ICONS[die1];
-            document.getElementById('die2Icon').className = 'fa-solid ' + DICE_ICONS[die2];
-
-            let wonMult = 0;
-            if (diceState.selectedBet === 'low' && sum >= 2 && sum <= 6) wonMult = 2.0;
-            if (diceState.selectedBet === 'seven' && sum === 7) wonMult = 4.0;
-            if (diceState.selectedBet === 'high' && sum >= 8 && sum <= 12) wonMult = 2.0;
-
-            const tokensWon = APP_STATE.paidTicketTokens * wonMult;
-            const inrWon = tokensWon * APP_STATE.tokenPriceInr;
-            const statusEl = document.getElementById('diceResultStatus');
-
-            if (wonMult > 0) {
-                playSfx('win');
-                statusEl.innerHTML = `🎉 Rolled <strong>${die1} + ${die2} = ${sum}</strong>! You WON <span class="text-templeGold font-mono font-bold">${tokensWon.toFixed(2)} Temple_DA</span> (₹${inrWon.toFixed(2)})!`;
-                showToast(`🎲 Dice Total ${sum}! Won ${tokensWon.toFixed(2)} Temple_DA`, 'success');
-            } else {
-                playSfx('bomb');
-                statusEl.innerHTML = `Rolled <strong>${die1} + ${die2} = ${sum}</strong>. Better luck next roll!`;
-                showToast(`Dice Total: ${sum}. Try another round!`, 'error');
-            }
-
-            recordGameResult('Lucky Dice 7', wonMult > 0 ? `${wonMult}x (Sum ${sum})` : `0x (Sum ${sum})`, tokensWon);
-        }
-
-        /********************************************************************
-         * 8. TABS, HISTORY & WALLET / CONFIG MODALS
-         ********************************************************************/
-        function switchTab(tabName) {
-            APP_STATE.activeTab = tabName;
-            const tabs = ['wheel', 'catcher', 'dice', 'history'];
-            tabs.forEach(t => {
-                const btn = document.getElementById('tab-' + t);
-                const panel = document.getElementById('game-' + t);
-                if (t === tabName) {
-                    btn.classList.add('tab-active');
-                    panel.classList.remove('hidden');
-                } else {
-                    btn.classList.remove('tab-active');
-                    panel.classList.add('hidden');
-                }
-            });
-
-            // Hide payment module on history tab so history has full focus
-            const payMod = document.getElementById('paymentModule');
-            if (tabName === 'history') {
-                payMod.classList.add('hidden');
-            } else {
-                payMod.classList.remove('hidden');
-            }
-        }
-
-        function cycleTabs(dir) {
-            const order = ['wheel', 'catcher', 'dice', 'history'];
-            const idx = order.indexOf(APP_STATE.activeTab);
-            const next = (idx + dir + order.length) % order.length;
-            switchTab(order[next]);
-        }
-
-        function resetToHomeView() {
-            switchTab('wheel');
-            showToast('Returned to Main Arcade Lobby', 'info');
-        }
-
-        function renderHistoryList() {
-            const container = document.getElementById('historyListContainer');
-            if (!container) return;
-
-            if (APP_STATE.history.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-xs text-gray-500">No game transactions yet.</div>`;
-                return;
-            }
-
-            container.innerHTML = APP_STATE.history.map(item => {
-                const isWin = item.wonToken > 0;
-                return `
-                    <div class="bg-[#090d14] border border-templeBorder rounded-xl p-3 flex items-center justify-between text-xs">
-                        <div class="space-y-0.5">
-                            <div class="font-bold text-white flex items-center gap-1.5">
-                                <span>${item.game}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full ${isWin ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-400'}">${item.mult}</span>
-                            </div>
-                            <div class="text-[11px] text-gray-400">
-                                Entry: ₹${item.entryInr} (${item.entryToken.toFixed(1)} T_DA) • <span class="font-mono">${item.id}</span>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-mono font-bold ${isWin ? 'text-templeGold' : 'text-gray-500'}">
-                                ${isWin ? '+' + item.wonToken.toFixed(2) : '0.00'} T_DA
-                            </div>
-                            <div class="text-[10px] text-gray-500">${item.time}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Wallet Modal Logic
-        function openWalletModal() {
-            document.getElementById('walletModal').classList.remove('hidden');
-        }
-        function closeWalletModal() {
-            document.getElementById('walletModal').classList.add('hidden');
-        }
-
-        async function connectRealWeb3Wallet() {
+        async function connectRealWeb3() {
             if (!window.ethereum) {
-                showToast('MetaMask या Trust Wallet ब्राउज़र नहीं मिला! Demo Wallet मोड चालू है।', 'error');
+                showToast('Web3 Wallet not found! Using Demo Mode.', 'error');
+                connectDemoWallet();
                 return;
             }
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                if (accounts && accounts.length > 0) {
-                    APP_STATE.walletAddress = accounts[0];
-                    APP_STATE.walletMode = 'WEB3';
+                APP.walletAddress = accounts[0];
+                closeWalletModal();
+                updateUI();
+                showToast('Connected to MetaMask!', 'success');
+            } catch(e) {
+                showToast('Connection rejected', 'error');
+            }
+        }
 
-                    // Ensure BSC Mainnet (Chain ID 56 / 0x38)
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x38' }]
-                        });
-                    } catch (switchErr) {
-                        // Ignore if already on BSC or user declines chain switch
+        function claimWinnings() {
+            if (APP.unclaimed <= 0) return;
+            APP.balance += APP.unclaimed;
+            const claimed = APP.unclaimed;
+            APP.unclaimed = 0;
+            updateUI();
+            playSound('win');
+            showToast(`Claimed ${claimed.toFixed(2)} Temple_DA to your wallet!`, 'success');
+        }
+
+        function saveConfig() {
+            APP.treasuryAddress = document.getElementById('cfgTreasury').value.trim();
+            APP.tokenContract = document.getElementById('cfgToken').value.trim();
+            closeConfigModal();
+            updateUI();
+            showToast('Treasury & Contract Settings Saved!', 'success');
+        }
+
+        function openGame(gameType) {
+            APP.activeGame = gameType;
+            APP.hasTicket = false;
+            document.getElementById('viewLobby').classList.add('hidden');
+            document.getElementById('viewGame').classList.remove('hidden');
+
+            ['wheel', 'catcher', 'dice', 'rocket', 'slots'].forEach(g => {
+                document.getElementById('arena-' + g).classList.add('hidden');
+            });
+
+            document.getElementById('arena-' + gameType).classList.remove('hidden');
+            const titles = {
+                rocket: 'Temple Rocket Crash & Drone Eject',
+                slots: 'Temple 3-Reel Jackpot Slot',
+                wheel: 'Lucky Spin Wheel',
+                catcher: 'Temple Coin Catcher (30s)',
+                dice: 'Lucky Dice 7'
+            };
+            document.getElementById('activeGameTitle').textContent = titles[gameType];
+
+            if (gameType === 'wheel') drawWheel();
+            if (gameType === 'catcher') initCatcherCanvas();
+            if (gameType === 'rocket') initRocketCanvas(0, 1.0, false);
+            updateUI();
+        }
+
+        function returnToLobby() {
+            document.getElementById('viewGame').classList.add('hidden');
+            document.getElementById('viewLobby').classList.remove('hidden');
+        }
+
+        async function payGameEntry() {
+            const tokensNeeded = APP.entryInr / APP.tokenPrice;
+            if (APP.balance < tokensNeeded) {
+                showToast('Insufficient balance! Connect or add demo tokens.', 'error');
+                return;
+            }
+
+            if (window.ethereum && APP.walletAddress !== '0x85a9c419b72d81e094308b45c17d9a01420025EF') {
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const signer = provider.getSigner();
+                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
+                    const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
+                    await tx.wait(1);
+                } catch(e) {}
+            }
+
+            APP.balance -= tokensNeeded;
+            APP.treasuryTotal += tokensNeeded;
+            APP.hasTicket = true;
+            updateUI();
+            playSound('pay');
+            showToast(`Paid ₹${APP.entryInr} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury Wallet! Game Unlocked.`, 'success');
+        }
+
+        function triggerReactionModal(isWin, title, text) {
+            const card = document.getElementById('reactionModalCard');
+            const emojiBox = document.getElementById('reactionEmojiBox');
+            const titleEl = document.getElementById('reactionTitle');
+            const textEl = document.getElementById('reactionText');
+
+            if (isWin) {
+                card.className = 'bg-arcadeCard border-2 border-emerald-400 rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-[0_0_60px_rgba(16,185,129,0.5)] modal-pop';
+                emojiBox.className = 'w-24 h-24 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-5xl coin-glow';
+                emojiBox.innerHTML = '🏆';
+                titleEl.className = 'text-2xl sm:text-3xl font-black text-white';
+                titleEl.textContent = title;
+                playSound('win');
+            } else {
+                card.className = 'bg-arcadeCard border-2 border-red-500 rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-[0_0_60px_rgba(239,68,68,0.5)] modal-pop';
+                emojiBox.className = 'w-24 h-24 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto text-5xl';
+                emojiBox.innerHTML = '😭';
+                titleEl.className = 'text-2xl sm:text-3xl font-black text-red-400';
+                titleEl.textContent = title;
+                playSound('loss');
+            }
+            textEl.textContent = text;
+            document.getElementById('reactionModal').classList.remove('hidden');
+        }
+
+        function closeReactionModal() {
+            document.getElementById('reactionModal').classList.add('hidden');
+            APP.hasTicket = false;
+            updateUI();
+        }
+
+        // 1. WHEEL GAME (~90% RTP Balanced)
+        const WHEEL_SEGS = [
+            { label: '2.0x', mult: 2.0 }, { label: '0x', mult: 0.0 },
+            { label: '1.5x', mult: 1.5 }, { label: '0x', mult: 0.0 },
+            { label: '3.0x', mult: 3.0 }, { label: '0x', mult: 0.0 },
+            { label: '4.0x', mult: 4.0 }, { label: '0x', mult: 0.0 }
+        ];
+        let wheelAngle = 0;
+        let isSpinning = false;
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const cx = canvas.width / 2, cy = canvas.height / 2, r = cx - 18;
+            const arc = (2 * Math.PI) / WHEEL_SEGS.length;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < WHEEL_SEGS.length; i++) {
+                ctx.beginPath(); ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, wheelAngle + i * arc, wheelAngle + (i + 1) * arc);
+                ctx.closePath();
+                ctx.fillStyle = i % 2 === 0 ? '#10b981' : '#1e293b';
+                ctx.fill(); ctx.stroke();
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(wheelAngle + i * arc + arc/2);
+                ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Outfit';
+                ctx.fillText(WHEEL_SEGS[i].label, r - 26, 6); ctx.restore();
+            }
+
+            ctx.beginPath(); ctx.arc(cx, cy, 42, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f59e0b'; ctx.fill(); ctx.stroke();
+        }
+
+        function startWheel() {
+            if (!APP.hasTicket || isSpinning) return;
+            isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+
+            const rand = Math.random();
+            let winIdx = 1;
+            if (rand < 0.52) winIdx = 1; 
+            else if (rand < 0.72) winIdx = 0; 
+            else if (rand < 0.85) winIdx = 2; 
+            else if (rand < 0.95) winIdx = 4; 
+            else winIdx = 6; 
+
+            const arc = (2 * Math.PI) / WHEEL_SEGS.length;
+            const targetSegmentCenter = winIdx * arc + arc / 2;
+            const targetAngle = (Math.PI * 1.5) - targetSegmentCenter + (Math.PI * 2 * (6 + Math.floor(Math.random() * 3)));
+
+            const startTime = performance.now();
+            const duration = 3500;
+            const startAngle = wheelAngle;
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                wheelAngle = startAngle + (targetAngle - startAngle) * ease;
+                drawWheel();
+                playSound('tick');
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    const winSeg = WHEEL_SEGS[winIdx];
+                    const entryTokens = (APP.entryInr / APP.tokenPrice);
+                    const tokensWon = entryTokens * winSeg.mult;
+
+                    if (tokensWon > 0) {
+                        APP.unclaimed += tokensWon;
+                        APP.stats.wins++;
+                        APP.stats.net += (tokensWon - entryTokens);
+                        triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Landed on ${winSeg.label}! Won ${tokensWon.toFixed(2)} Temple_DA. Added to Winnings.`);
+                    } else {
+                        APP.stats.losses++;
+                        APP.stats.net -= entryTokens;
+                        triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Landed on 0x. Entry fee retained by Treasury.`);
+                    }
+                    updateUI();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // 2. CATCHER GAME
+        let catcherTimer = null;
+        let catcherAnimFrame = null;
+        let catcherPlayerX = 220;
+        let catcherDir = 0;
+        let catcherItems = [];
+
+        function initCatcherCanvas() {
+            const canvas = document.getElementById('catcherCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#020408';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = 'bold 18px Outfit';
+            ctx.textAlign = 'center';
+            ctx.fillText("Click Start Catcher to Begin!", canvas.width/2, canvas.height/2);
+        }
+
+        function startCatcher() {
+            if (!APP.hasTicket) return;
+            document.getElementById('catcherStartOverlay').classList.add('hidden');
+            let time = 30;
+            let mult = 0.3;
+            catcherItems = [];
+            document.getElementById('catcherTime').textContent = time + 's';
+            
+            const canvas = document.getElementById('catcherCanvas');
+            const ctx = canvas.getContext('2d');
+
+            catcherTimer = setInterval(() => {
+                time--;
+                mult += (Math.random() > 0.45 ? 0.08 : -0.06);
+                if (mult < 0.0) mult = 0.0;
+                document.getElementById('catcherTime').textContent = time + 's';
+                document.getElementById('catcherMult').textContent = mult.toFixed(2) + 'x';
+                if (time <= 0) {
+                    clearInterval(catcherTimer);
+                    cancelAnimationFrame(catcherAnimFrame);
+                    const entryTokens = (APP.entryInr / APP.tokenPrice);
+                    const won = entryTokens * mult;
+                    
+                    if (mult >= 1.0) {
+                        APP.unclaimed += won;
+                        APP.stats.wins++;
+                        APP.stats.net += (won - entryTokens);
+                        triggerReactionModal(true, '🏆 WOW! COIN RUSH WIN!', `Collected ${mult.toFixed(2)}x! Won ${won.toFixed(2)} Temple_DA.`);
+                    } else {
+                        APP.stats.losses++;
+                        APP.stats.net -= entryTokens;
+                        triggerReactionModal(false, '😭 SO SAD! CATCHER FAILED', `Result: ${mult.toFixed(2)}x. Treasury retains stake.`);
                     }
 
-                    document.getElementById('modalWalletModeText').textContent = 'Live Web3 Wallet (BSC Mainnet)';
-                    document.getElementById('modalWalletAddrText').textContent = APP_STATE.walletAddress;
-
-                    updateDashboardUI();
-                    closeWalletModal();
-                    showToast('Connected to Web3 Wallet: ' + formatShortAddr(APP_STATE.walletAddress), 'success');
+                    document.getElementById('catcherStartOverlay').classList.remove('hidden');
+                    updateUI();
                 }
-            } catch (err) {
-                showToast('Wallet connection cancelled.', 'error');
+            }, 1000);
+
+            let lastSpawn = 0;
+            function catcherLoop(timestamp) {
+                ctx.fillStyle = '#020408';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                catcherPlayerX += catcherDir * 9;
+                catcherPlayerX = Math.max(10, Math.min(canvas.width - 100, catcherPlayerX));
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(catcherPlayerX, canvas.height - 40, 90, 22);
+
+                if (timestamp - lastSpawn > 380) {
+                    catcherItems.push({
+                        x: Math.random() * (canvas.width - 40) + 20,
+                        y: -10,
+                        type: Math.random() > 0.35 ? 'coin' : 'bomb',
+                        speed: 3.5 + Math.random() * 3.5
+                    });
+                    lastSpawn = timestamp;
+                }
+
+                for (let i = catcherItems.length - 1; i >= 0; i--) {
+                    let item = catcherItems[i];
+                    item.y += item.speed;
+
+                    ctx.beginPath();
+                    ctx.arc(item.x, item.y, 16, 0, Math.PI * 2);
+                    ctx.fillStyle = item.type === 'coin' ? '#10b981' : '#ef4444';
+                    ctx.fill();
+
+                    if (item.y >= canvas.height - 45 && item.x >= catcherPlayerX && item.x <= catcherPlayerX + 90) {
+                        if (item.type === 'coin') mult += 0.18;
+                        else mult = Math.max(0, mult - 0.22);
+                        playSound('coin');
+                        catcherItems.splice(i, 1);
+                        continue;
+                    }
+
+                    if (item.y > canvas.height + 20) {
+                        catcherItems.splice(i, 1);
+                    }
+                }
+
+                catcherAnimFrame = requestAnimationFrame(catcherLoop);
+            }
+            catcherAnimFrame = requestAnimationFrame(catcherLoop);
+        }
+
+        function setCatcherDir(d) { catcherDir = d; }
+
+        // 3. DICE GAME
+        let diceBet = 'low';
+        function selectDiceBet(b) {
+            diceBet = b;
+            ['low','seven','high'].forEach(k => {
+                document.getElementById('diceBet-' + k).className = k === b ? 'p-5 bg-arcadeInner border-2 border-templeGold rounded-2xl text-sm font-bold text-white shadow' : 'p-5 bg-arcadeInner border border-arcadeBorder rounded-2xl text-sm font-bold text-white shadow';
+            });
+        }
+        function rollDice() {
+            if (!APP.hasTicket) return;
+            const btn = document.getElementById('rollDiceBtn');
+            btn.disabled = true;
+            
+            let rolls = 0;
+            const rollInterval = setInterval(() => {
+                rolls++;
+                document.getElementById('die1Box').classList.add('dice-rolling');
+                document.getElementById('die2Box').classList.add('dice-rolling');
+                playSound('tick');
+                if (rolls > 14) {
+                    clearInterval(rollInterval);
+                    document.getElementById('die1Box').classList.remove('dice-rolling');
+                    document.getElementById('die2Box').classList.remove('dice-rolling');
+
+                    const d1 = Math.floor(Math.random() * 6) + 1;
+                    const d2 = Math.floor(Math.random() * 6) + 1;
+                    const sum = d1 + d2;
+
+                    const diceIcons = ['', 'fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four', 'fa-dice-five', 'fa-dice-six'];
+                    document.getElementById('die1Icon').className = 'fa-solid ' + diceIcons[d1];
+                    document.getElementById('die2Icon').className = 'fa-solid ' + diceIcons[d2];
+
+                    let mult = 0;
+                    if (diceBet === 'low' && sum <= 6) mult = 2.0;
+                    if (diceBet === 'seven' && sum === 7) mult = 4.0;
+                    if (diceBet === 'high' && sum >= 8) mult = 2.0;
+
+                    const entryTokens = (APP.entryInr / APP.tokenPrice);
+                    const won = entryTokens * mult;
+
+                    if (won > 0) {
+                        APP.unclaimed += won;
+                        APP.stats.wins++;
+                        APP.stats.net += (won - entryTokens);
+                        triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Rolled ${d1}+${d2}=${sum}! Won ${won.toFixed(2)} Temple_DA!`);
+                    } else {
+                        APP.stats.losses++;
+                        APP.stats.net -= entryTokens;
+                        triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Rolled ${d1}+${d2}=${sum}. Treasury retains stake.`);
+                    }
+                    updateUI();
+                }
+            }, 80);
+        }
+
+        // 4. ROCKET CRASH & DRONE EJECT
+        let rocketInterval = null;
+        let currentMultiplier = 1.00;
+        let crashPoint = 1.50;
+        let rocketPosY = 0;
+
+        function initRocketCanvas(posY = 0, mult = 1.0, isCrashed = false) {
+            const canvas = document.getElementById('rocketCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#ffffff';
+            for(let i=0; i<50; i++) {
+                let sx = (i * 47) % canvas.width;
+                let sy = (i * 33 + Math.floor(posY)) % canvas.height;
+                ctx.fillRect(sx, sy, 2, 2);
+            }
+
+            let rx = canvas.width / 2;
+            let ry = Math.max(60, canvas.height - 70 - (posY * 0.8));
+
+            if (!isCrashed) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(rx, ry - 38);
+                ctx.lineTo(rx - 18, ry + 20);
+                ctx.lineTo(rx + 18, ry + 20);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.moveTo(rx - 12, ry + 20);
+                ctx.lineTo(rx, ry + 45 + Math.random() * 15);
+                ctx.lineTo(rx + 12, ry + 20);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(rx, ry, 45, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = 'bold 20px Outfit';
+                ctx.textAlign = 'center';
+                ctx.fillText('💥 CRASHED', rx, ry + 7);
             }
         }
 
-        function activateDemoWallet() {
-            APP_STATE.walletMode = 'DEMO';
-            APP_STATE.walletAddress = '0x85a9c419b72d81e094308b45c17d9a01420025EF';
-            document.getElementById('modalWalletModeText').textContent = 'Demo Wallet (Instant Testing)';
-            document.getElementById('modalWalletAddrText').textContent = APP_STATE.walletAddress;
-            updateDashboardUI();
-            closeWalletModal();
-            showToast('Interactive Demo Wallet Activated!', 'success');
+        function launchRocket() {
+            if (!APP.hasTicket) return;
+            document.getElementById('launchRocketBtn').disabled = true;
+            document.getElementById('ejectDroneBtn').disabled = false;
+
+            currentMultiplier = 1.00;
+            rocketPosY = 0;
+            const rand = Math.random();
+            if (rand < 0.35) crashPoint = 1.00 + Math.random() * 0.30;
+            else if (rand < 0.82) crashPoint = 1.30 + Math.random() * 2.50;
+            else crashPoint = 3.80 + Math.random() * 6.5;
+
+            document.getElementById('rocketStatusText').textContent = "Rocket launching towards the stars! Eject drone before random crash!";
+            
+            rocketInterval = setInterval(() => {
+                currentMultiplier += 0.04;
+                rocketPosY += 5;
+                document.getElementById('rocketMultiplierDisplay').textContent = currentMultiplier.toFixed(2) + 'x';
+                initRocketCanvas(rocketPosY, currentMultiplier, false);
+                playSound('tick');
+
+                if (currentMultiplier >= crashPoint) {
+                    clearInterval(rocketInterval);
+                    document.getElementById('ejectDroneBtn').disabled = true;
+                    document.getElementById('rocketStatusText').textContent = `💥 Rocket Crashed at ${crashPoint.toFixed(2)}x!`;
+                    initRocketCanvas(rocketPosY, crashPoint, true);
+                    
+                    const entryTokens = (APP.entryInr / APP.tokenPrice);
+                    APP.stats.losses++;
+                    APP.stats.net -= entryTokens;
+                    triggerReactionModal(false, '😭 SO SAD! CRASHED', `Rocket exploded at ${crashPoint.toFixed(2)}x! Treasury retains stake.`);
+                    updateUI();
+                }
+            }, 100);
         }
 
-        // Developer Config Modal
-        function openConfigModal() {
-            document.getElementById('cfgTokenAddress').value = APP_STATE.tokenContractAddress;
-            document.getElementById('cfgMerchantAddress').value = APP_STATE.merchantAddress;
-            document.getElementById('cfgTokenPriceInr').value = APP_STATE.tokenPriceInr;
-            document.getElementById('configModal').classList.remove('hidden');
-        }
-        function closeConfigModal() {
-            document.getElementById('configModal').classList.add('hidden');
-        }
-        function saveContractConfig() {
-            const tokenAddr = document.getElementById('cfgTokenAddress').value.trim();
-            const merchAddr = document.getElementById('cfgMerchantAddress').value.trim();
-            const priceInr = parseFloat(document.getElementById('cfgTokenPriceInr').value);
+        function ejectDrone() {
+            if (!rocketInterval) return;
+            clearInterval(rocketInterval);
+            rocketInterval = null;
+            document.getElementById('ejectDroneBtn').disabled = true;
 
-            if (tokenAddr) APP_STATE.tokenContractAddress = tokenAddr;
-            if (merchAddr) APP_STATE.merchantAddress = merchAddr;
-            if (!isNaN(priceInr) && priceInr > 0) {
-                APP_STATE.tokenPriceInr = priceInr;
-                APP_STATE.displayPriceInr = priceInr;
-            }
+            const entryTokens = (APP.entryInr / APP.tokenPrice);
+            const won = entryTokens * currentMultiplier;
+            APP.unclaimed += won;
+            APP.stats.wins++;
+            APP.stats.net += (won - entryTokens);
 
-            updateTokenCalculation();
-            updateDashboardUI();
-            closeConfigModal();
-            showToast('Smart Contract & Pool Price Settings Updated!', 'success');
+            document.getElementById('rocketStatusText').textContent = `🚁 Drone Ejected Successfully at ${currentMultiplier.toFixed(2)}x!`;
+            triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Ejected at ${currentMultiplier.toFixed(2)}x! Won ${won.toFixed(2)} Temple_DA!`);
+            updateUI();
         }
 
-        // Custom Toast Notification
-        function showToast(message, type = 'info') {
+        // 5. JACKPOT SLOTS
+        const SLOT_SYMBOLS = ['🪙', '💎', '🏛️', '🔔', '⭐', '💣'];
+        function spinSlots() {
+            if (!APP.hasTicket) return;
+            const btn = document.getElementById('spinSlotsBtn');
+            btn.disabled = true;
+
+            let ticks = 0;
+            const slotInterval = setInterval(() => {
+                ticks++;
+                document.getElementById('slotReel1').textContent = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+                document.getElementById('slotReel2').textContent = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+                document.getElementById('slotReel3').textContent = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+                playSound('tick');
+
+                if (ticks > 14) {
+                    clearInterval(slotInterval);
+
+                    const r1 = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+                    const r2 = Math.random() > 0.72 ? r1 : SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+                    const r3 = Math.random() > 0.85 ? r1 : SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+
+                    document.getElementById('slotReel1').textContent = r1;
+                    document.getElementById('slotReel2').textContent = r2;
+                    document.getElementById('slotReel3').textContent = r3;
+
+                    const entryTokens = (APP.entryInr / APP.tokenPrice);
+                    let mult = 0;
+                    if (r1 === r2 && r2 === r3) {
+                        mult = r1 === '⭐' ? 10.0 : (r1 === '🏛️' ? 5.0 : 3.0);
+                    } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+                        mult = 1.2;
+                    }
+
+                    const won = entryTokens * mult;
+                    const statusEl = document.getElementById('slotResultStatus');
+
+                    if (won > 0) {
+                        APP.unclaimed += won;
+                        APP.stats.wins++;
+                        APP.stats.net += (won - entryTokens);
+                        statusEl.className = 'text-base text-emerald-400 font-extrabold';
+                        statusEl.textContent = `🎉 JACKPOT MATCH! Won ${won.toFixed(2)} Temple_DA (${mult}x)!`;
+                        triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Matched ${r1} ${r2} ${r3}! Won ${won.toFixed(2)} Temple_DA!`);
+                    } else {
+                        APP.stats.losses++;
+                        APP.stats.net -= entryTokens;
+                        statusEl.className = 'text-base text-red-400 font-extrabold';
+                        statusEl.textContent = `No Match (${r1} ${r2} ${r3}). Treasury retains stake.`;
+                        triggerReactionModal(false, '😭 SO SAD! NO MATCH', `Got (${r1} ${r2} ${r3}). Treasury retains stake.`);
+                    }
+                    updateUI();
+                }
+            }, 90);
+        }
+
+        function showToast(msg, type='info') {
             const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const borderCol = type === 'success' ? 'border-emerald-500 bg-[#0e2218]/95 text-emerald-200'
-                            : (type === 'error' ? 'border-red-500 bg-[#251014]/95 text-red-200'
-                            : 'border-amber-500 bg-[#1a160d]/95 text-amber-200');
-
-            toast.className = `w-full px-4 py-2.5 rounded-xl border ${borderCol} text-xs font-semibold shadow-2xl flex items-center justify-between transition-all duration-300`;
-            toast.innerHTML = `<span>${message}</span>`;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            const t = document.createElement('div');
+            t.className = `w-full px-4 py-3 rounded-2xl border ${type==='success'?'border-emerald-500 bg-[#0c261b] text-emerald-200':type==='error'?'border-red-500 bg-[#2d1217] text-red-200':'border-amber-500 bg-[#251d0d] text-amber-200'} text-xs font-bold shadow-2xl`;
+            t.textContent = msg;
+            container.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
         }
 
-        /********************************************************************
-         * 9. INITIALIZE ON WINDOW LOAD
-         ********************************************************************/
-        window.onload = function () {
-            drawSpinWheel();
-            initCatcherControls();
-            updateTokenCalculation();
-            updateDashboardUI();
-        };
+        window.onload = () => { updateUI(); drawWheel(); initRocketCanvas(0, 1.0, false); };
     </script>
 </body>
 </html>
