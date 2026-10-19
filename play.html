@@ -129,16 +129,7 @@
             <!-- Right: Wallet Balances & Actions -->
             <div class="flex items-center gap-1.5 text-xs flex-wrap justify-end">
                 
-                <!-- Web3 Connected Wallet Balance -->
-                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow" title="Connected Web3 Wallet Balance">
-                    <i class="fa-solid fa-wallet text-gray-400 text-[11px]"></i>
-                    <div class="flex flex-col text-right">
-                        <span id="web3WalletBalance" class="font-bold text-gray-200 font-mono text-xs">0.00</span>
-                        <span class="text-[8px] text-gray-400">Web3 Wallet</span>
-                    </div>
-                </div>
-
-                <!-- Platform Gaming Wallet Balance -->
+                <!-- Active Gaming Platform Balance -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-amber-500/40 flex items-center gap-1.5 shadow" title="Active Gaming Platform Balance">
                     <i class="fa-solid fa-gamepad text-templeGold text-[11px]"></i>
                     <div class="flex flex-col text-right">
@@ -166,7 +157,7 @@
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
-                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY ACCESSIBLE WHEN EXACT TREASURY WALLET IS CONNECTED) -->
+                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY VISIBLE WHEN OFFICIAL TREASURY WALLET IS CONNECTED) -->
                 <button id="adminNavBtn" onclick="openAdminModal()" title="Admin Dashboard" class="hidden px-2.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer">
                     <i class="fa-solid fa-shield-halved text-[11px]"></i>
                     <span>Admin Panel</span>
@@ -191,7 +182,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">OFFICIAL TEMPLE_DA GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Treasury & Provably Fair Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit Temple_DA tokens (`0x50BE...79e1`) securely via MetaMask/Trust Wallet to Treasury (`0x2760...5De95`), fund your isolated Gaming Wallet, play pro games, and withdraw winnings anytime!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely to Treasury (`0x2760...5De95`), fund your isolated Gaming Wallet, play pro games, and withdraw winnings anytime!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Live Token Price</div>
@@ -521,7 +512,7 @@
                 </div>
                 <!-- Minimum Withdrawal Note -->
                 <div class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
-                    <i class="fa-solid fa-info-circle mr-1"></i> Minimum Withdrawal Limit: <strong>₹100</strong> (~61 Temple_DA). Requests are reviewed by Admin Treasury.
+                    <i class="fa-solid fa-info-circle mr-1"></i> Minimum Withdrawal Limit: <strong>₹100</strong> (~61 Temple_DA). Requests are sent to Admin Treasury.
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -599,7 +590,6 @@
     <script>
         const APP = {
             tokenPrice: 0.1636, // INR per Temple_DA
-            web3Balance: 0.00,
             gamingBalance: 0.00,
             unclaimed: 0.00,
             walletAddress: null,
@@ -610,7 +600,6 @@
             activeGame: 'wheel',
             sound: true,
             stats: { wins: 0, losses: 0, net: 0.00 },
-            pendingWithdrawals: [],
             history: []
         };
 
@@ -619,10 +608,21 @@
             "function balanceOf(address account) view returns (uint256)"
         ];
 
-        // Load Wallet-Specific Persistent State & Gaming Balance
-        function loadPersistentState() {
+        // Global shared pending withdrawals list across browser storage
+        function getGlobalPendingWithdrawals() {
+            try {
+                return JSON.parse(localStorage.getItem('temple_global_pending_withdrawals') || '[]');
+            } catch(e) { return []; }
+        }
+
+        function saveGlobalPendingWithdrawals(list) {
+            try {
+                localStorage.setItem('temple_global_pending_withdrawals', JSON.stringify(list));
+            } catch(e) {}
+        }
+
+        function loadWalletPersistentState() {
             if (!APP.walletAddress) {
-                APP.web3Balance = 0.00;
                 APP.gamingBalance = 0.00;
                 APP.unclaimed = 0.00;
                 APP.stats = { wins: 0, losses: 0, net: 0.00 };
@@ -655,7 +655,7 @@
             updateUI();
         }
 
-        function savePersistentState() {
+        function saveWalletPersistentState() {
             if (!APP.walletAddress) return;
             const prefix = APP.walletAddress.toLowerCase();
             try {
@@ -676,7 +676,7 @@
                 time: new Date().toLocaleTimeString()
             });
             if (APP.history.length > 50) APP.history.pop();
-            savePersistentState();
+            saveWalletPersistentState();
         }
 
         function renderPersistentHistory() {
@@ -706,7 +706,7 @@
         function clearHistory() {
             if (!APP.walletAddress) return;
             APP.history = [];
-            savePersistentState();
+            saveWalletPersistentState();
             showToast('History cleared for this wallet', 'info');
         }
 
@@ -760,7 +760,6 @@
         }
 
         function updateUI() {
-            document.getElementById('web3WalletBalance').textContent = APP.web3Balance.toFixed(2);
             document.getElementById('gamingBalance').textContent = APP.gamingBalance.toFixed(2);
             document.getElementById('gamingInrBalance').textContent = '₹' + (APP.gamingBalance * APP.tokenPrice).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('gamingBalanceInside').textContent = APP.gamingBalance.toFixed(2) + ' Temple_DA';
@@ -854,10 +853,9 @@
 
         function connectDemoWallet() {
             APP.walletAddress = '0x1111222233334444555566667777888899990000';
-            APP.web3Balance = 5000.00;
             closeWalletModal();
-            loadPersistentState();
-            addHistoryRecord('Connected Demo Wallet with 5,000 Temple_DA', 'info');
+            loadWalletPersistentState();
+            addHistoryRecord('Connected Demo Wallet', 'info');
             showToast('Connected as Demo Wallet! Permanent balance restored.', 'success');
         }
 
@@ -872,15 +870,7 @@
                 APP.walletAddress = accounts[0];
                 closeWalletModal();
 
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
-                    const rawBal = await contract.balanceOf(APP.walletAddress);
-                    const bal = parseFloat(ethers.utils.formatUnits(rawBal, 18));
-                    APP.web3Balance = bal;
-                } catch(e) {}
-
-                loadPersistentState();
+                loadWalletPersistentState();
                 addHistoryRecord(`Connected Web3 Wallet: ${APP.walletAddress.substring(0,6)}...`, 'success');
                 if (APP.walletAddress.toLowerCase() === APP.treasuryAddress.toLowerCase()) {
                     showToast('Admin Treasury Wallet Connected Successfully! Admin Panel Unlocked.', 'success');
@@ -907,10 +897,9 @@
             const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const tokensNeeded = inrVal / APP.tokenPrice;
 
-            if (!window.ethereum || !APP.walletAddress || APP.walletAddress.toLowerCase() === '0x1111222233334444555566667777888899990000'.toLowerCase()) {
-                APP.web3Balance = Math.max(0, APP.web3Balance - tokensNeeded);
+            if (!window.ethereum || !APP.walletAddress) {
                 APP.gamingBalance += tokensNeeded;
-                savePersistentState();
+                saveWalletPersistentState();
                 updateUI();
                 playSound('pay');
                 addHistoryRecord(`Demo Deposited ₹${inrVal} (${tokensNeeded.toFixed(2)} Temple_DA)`, 'success');
@@ -931,9 +920,8 @@
                 const receipt = await tx.wait(1);
                 const txHash = receipt.transactionHash;
 
-                APP.web3Balance = Math.max(0, APP.web3Balance - tokensNeeded);
                 APP.gamingBalance += tokensNeeded;
-                savePersistentState();
+                saveWalletPersistentState();
                 updateUI();
                 playSound('pay');
 
@@ -948,7 +936,11 @@
             }
         }
 
-        async function requestWithdrawalToWallet() {
+        function requestWithdrawalToWallet() {
+            if (!APP.walletAddress) {
+                showToast('Connect wallet to withdraw', 'error');
+                return;
+            }
             const minWithdrawTokens = 100.0 / APP.tokenPrice;
             if (APP.gamingBalance < minWithdrawTokens) {
                 showToast(`Minimum withdrawal limit is ₹100 (~${minWithdrawTokens.toFixed(0)} Temple_DA). Your gaming balance is insufficient.`, 'error');
@@ -956,14 +948,18 @@
             }
 
             const withdrawAmt = APP.gamingBalance;
-            APP.pendingWithdrawals.push({
+            APP.gamingBalance = 0; // Deduct from user gaming wallet upon request
+            saveWalletPersistentState();
+
+            let globalPending = getGlobalPendingWithdrawals();
+            const reqObj = {
                 id: Date.now(),
                 wallet: APP.walletAddress,
                 amount: withdrawAmt
-            });
+            };
+            globalPending.push(reqObj);
+            saveGlobalPendingWithdrawals(globalPending);
 
-            APP.gamingBalance = 0;
-            savePersistentState();
             updateUI();
             playSound('win');
             addHistoryRecord(`Withdrawal Request: ${withdrawAmt.toFixed(2)} Temple_DA pending admin review`, 'info');
@@ -976,7 +972,7 @@
             APP.gamingBalance += APP.unclaimed;
             const claimed = APP.unclaimed;
             APP.unclaimed = 0;
-            savePersistentState();
+            saveWalletPersistentState();
             updateUI();
             playSound('win');
             addHistoryRecord(`Claimed ${claimed.toFixed(2)} Temple_DA to Gaming Wallet`, 'success');
@@ -985,19 +981,24 @@
 
         function renderAdminWithdrawals() {
             const listEl = document.getElementById('adminWithdrawalList');
-            if (APP.pendingWithdrawals.length === 0) {
+            const pendingList = getGlobalPendingWithdrawals();
+
+            if (pendingList.length === 0) {
                 listEl.innerHTML = `<div class="bg-arcadeInner p-3 rounded-xl border border-arcadeBorder text-center text-gray-500">No pending withdrawal requests.</div>`;
                 return;
             }
             let html = '';
-            APP.pendingWithdrawals.forEach((req, idx) => {
+            pendingList.forEach((req, idx) => {
                 html += `
                     <div class="bg-arcadeInner p-3 rounded-xl border border-arcadeBorder flex items-center justify-between text-xs">
                         <div>
                             <span class="text-templeGold font-mono font-bold block">${req.amount.toFixed(2)} Temple_DA</span>
                             <span class="text-[10px] text-gray-400 font-mono">To: ${req.wallet.substring(0,6)}...${req.wallet.substring(38)}</span>
                         </div>
-                        <button onclick="approveWithdrawal(${idx})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl cursor-pointer">Approve Payout</button>
+                        <div class="flex gap-1">
+                            <button onclick="approveWithdrawal(${idx})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl cursor-pointer">Approve</button>
+                            <button onclick="rejectWithdrawal(${idx})" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl cursor-pointer">Reject</button>
+                        </div>
                     </div>
                 `;
             });
@@ -1005,7 +1006,8 @@
         }
 
         async function approveWithdrawal(idx) {
-            const req = APP.pendingWithdrawals[idx];
+            let pendingList = getGlobalPendingWithdrawals();
+            const req = pendingList[idx];
             
             if (window.ethereum && APP.walletAddress && APP.walletAddress.toLowerCase() === APP.treasuryAddress.toLowerCase()) {
                 try {
@@ -1017,11 +1019,37 @@
                 } catch(e) {}
             }
 
-            APP.pendingWithdrawals.splice(idx, 1);
+            pendingList.splice(idx, 1);
+            saveGlobalPendingWithdrawals(pendingList);
             renderAdminWithdrawals();
             playSound('win');
-            addHistoryRecord(`Admin Approved Payout: ${req.amount.toFixed(2)} Temple_DA`, 'success');
-            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury to player wallet!`, 'success');
+            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury!`, 'success');
+        }
+
+        function rejectWithdrawal(idx) {
+            let pendingList = getGlobalPendingWithdrawals();
+            const req = pendingList[idx];
+
+            // Refund balance back to user's gaming wallet if they are currently connected
+            if (APP.walletAddress && APP.walletAddress.toLowerCase() === req.wallet.toLowerCase()) {
+                APP.gamingBalance += req.amount;
+                saveWalletPersistentState();
+                updateUI();
+            } else {
+                // Refund in storage for that wallet
+                const prefix = req.wallet.toLowerCase();
+                try {
+                    let bal = parseFloat(localStorage.getItem('temple_gaming_bal_' + prefix) || '0');
+                    bal += req.amount;
+                    localStorage.setItem('temple_gaming_bal_' + prefix, bal.toString());
+                } catch(e) {}
+            }
+
+            pendingList.splice(idx, 1);
+            saveGlobalPendingWithdrawals(pendingList);
+            renderAdminWithdrawals();
+            playSound('loss');
+            showToast(`Rejected withdrawal request. ${req.amount.toFixed(2)} Temple_DA refunded to user's gaming balance.`, 'info');
         }
 
         function openGame(gameType) {
@@ -1070,7 +1098,7 @@
 
             APP.gamingBalance -= tokensNeeded;
             APP.hasStake = true;
-            savePersistentState();
+            saveWalletPersistentState();
             updateUI();
             playSound('pay');
             addHistoryRecord(`Staked ${tokensNeeded.toFixed(2)} Temple_DA for ${APP.activeGame}`, 'info');
@@ -1106,7 +1134,7 @@
             document.getElementById('reactionModal').classList.add('hidden');
             document.getElementById('depositReceiptBox').classList.add('hidden');
             APP.hasStake = false;
-            savePersistentState();
+            saveWalletPersistentState();
             updateUI();
         }
 
@@ -1184,13 +1212,13 @@
                         APP.unclaimed += tokensWon;
                         APP.stats.wins++;
                         APP.stats.net += (tokensWon - entryTokens);
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Wheel Win: +${tokensWon.toFixed(2)} Temple_DA (${winSeg.label})`, 'success');
                         triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Landed on ${winSeg.label}! Won ${tokensWon.toFixed(2)} Temple_DA. Added to Unclaimed Winnings.`);
                     } else {
                         APP.stats.losses++;
                         APP.stats.net -= entryTokens;
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Wheel Loss: -${entryTokens.toFixed(2)} Temple_DA`, 'error');
                         triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Landed on 0x. Stake retained by Treasury.`);
                     }
@@ -1246,13 +1274,13 @@
                         APP.unclaimed += won;
                         APP.stats.wins++;
                         APP.stats.net += (won - entryTokens);
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Catcher Win: +${won.toFixed(2)} Temple_DA (${mult.toFixed(2)}x)`, 'success');
                         triggerReactionModal(true, '🏆 WOW! COIN RUSH WIN!', `Collected ${mult.toFixed(2)}x! Won ${won.toFixed(2)} Temple_DA.`);
                     } else {
                         APP.stats.losses++;
                         APP.stats.net -= entryTokens;
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Catcher Loss: -${entryTokens.toFixed(2)} Temple_DA`, 'error');
                         triggerReactionModal(false, '😭 SO SAD! CATCHER FAILED', `Result: ${mult.toFixed(2)}x. Treasury retains stake.`);
                     }
@@ -1356,13 +1384,13 @@
                         APP.unclaimed += won;
                         APP.stats.wins++;
                         APP.stats.net += (won - entryTokens);
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Dice Win: +${won.toFixed(2)} Temple_DA (Rolled ${sum})`, 'success');
                         triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Rolled ${d1}+${d2}=${sum}! Won ${won.toFixed(2)} Temple_DA!`);
                     } else {
                         APP.stats.losses++;
                         APP.stats.net -= entryTokens;
-                        savePersistentState();
+                        saveWalletPersistentState();
                         addHistoryRecord(`Dice Loss: -${entryTokens.toFixed(2)} Temple_DA (Rolled ${sum})`, 'error');
                         triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Rolled ${d1}+${d2}=${sum}. Treasury retains stake.`);
                     }
@@ -1451,7 +1479,7 @@
                     const entryTokens = (APP.entryInr / APP.tokenPrice);
                     APP.stats.losses++;
                     APP.stats.net -= entryTokens;
-                    savePersistentState();
+                    saveWalletPersistentState();
                     addHistoryRecord(`Rocket Crash: -${entryTokens.toFixed(2)} Temple_DA at ${crashPoint.toFixed(2)}x`, 'error');
                     triggerReactionModal(false, '😭 SO SAD! CRASHED', `Rocket exploded at ${crashPoint.toFixed(2)}x! Treasury retains stake.`);
                     updateUI();
@@ -1470,7 +1498,7 @@
             APP.unclaimed += won;
             APP.stats.wins++;
             APP.stats.net += (won - entryTokens);
-            savePersistentState();
+            saveWalletPersistentState();
 
             document.getElementById('rocketStatusText').textContent = `🚁 Drone Ejected Successfully at ${currentMultiplier.toFixed(2)}x!`;
             addHistoryRecord(`Rocket Eject Win: +${won.toFixed(2)} Temple_DA at ${currentMultiplier.toFixed(2)}x`, 'success');
@@ -1519,7 +1547,7 @@
                         APP.unclaimed += won;
                         APP.stats.wins++;
                         APP.stats.net += (won - entryTokens);
-                        savePersistentState();
+                        saveWalletPersistentState();
                         statusEl.className = 'text-base text-emerald-400 font-extrabold';
                         statusEl.textContent = `🎉 JACKPOT MATCH! Won ${won.toFixed(2)} Temple_DA (${mult}x)!`;
                         addHistoryRecord(`Slots Win: +${won.toFixed(2)} Temple_DA (${r1}${r2}${r3})`, 'success');
@@ -1527,7 +1555,7 @@
                     } else {
                         APP.stats.losses++;
                         APP.stats.net -= entryTokens;
-                        savePersistentState();
+                        saveWalletPersistentState();
                         statusEl.className = 'text-base text-red-400 font-extrabold';
                         statusEl.textContent = `No Match (${r1} ${r2} ${r3}). Treasury retains stake.`;
                         addHistoryRecord(`Slots Loss: -${entryTokens.toFixed(2)} Temple_DA (${r1}${r2}${r3})`, 'error');
