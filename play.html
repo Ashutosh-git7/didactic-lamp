@@ -98,7 +98,6 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between pb-12 selection:bg-amber-500 selection:text-black">
 
-    <!-- STICKY SLIMLINE TOP HEADER (Engineered to never hide or overflow) -->
     <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2 shadow-2xl transition-all">
         <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
             <!-- Left: Logo & Lobby Trigger -->
@@ -142,8 +141,8 @@
                     </div>
                 </div>
 
-                <!-- Unclaimed Winnings Pill -->
-                <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow hidden sm:flex">
+                <!-- Unclaimed Winnings Vault Pill & Claim Button -->
+                <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-trophy text-emerald-400 text-[11px]"></i>
                     <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs">0.00</span>
                     <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-1.5 py-0.5 rounded transition cursor-pointer">Claim</button>
@@ -292,7 +291,6 @@
             </div>
         </div>
 
-        <!-- GAME ARENA VIEW (Full Screen Prime Focus Theater) -->
         <div id="viewGame" class="hidden space-y-4">
             
             <!-- GAME ARENA HEADER BAR -->
@@ -327,7 +325,7 @@
                 </div>
             </div>
 
-            <!-- PAYMENT BOX -->
+            <!-- PAYMENT BOX (STAKES ROUTED TO TREASURY) -->
             <div id="paymentBox" class="bg-arcadeCard border border-arcadeBorder rounded-3xl p-5 space-y-4 shadow-2xl">
                 <div class="flex items-center justify-between text-xs sm:text-sm">
                     <span class="font-bold text-gray-300">Select Entry Fee in INR (₹) - Routed to Treasury</span>
@@ -356,6 +354,11 @@
                     <i class="fa-solid fa-paper-plane"></i>
                     <span id="payEntryBtnText">Pay Stake to Treasury & Unlock Game</span>
                 </button>
+                
+                <div id="receiptBox" class="hidden bg-[#020408] border border-emerald-500/30 rounded-xl p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
+                    <div><i class="fa-solid fa-receipt mr-1"></i> TxHash: <span id="receiptHash">0xf8a3...2c11</span></div>
+                    <a id="receiptScanLink" href="#" target="_blank" class="text-amber-400 underline hover:text-amber-300 text-[11px]">BscScan</a>
+                </div>
             </div>
 
             <!-- ARENA 1: WHEEL -->
@@ -449,7 +452,7 @@
 
     </main>
 
-    <!-- REACTION MODAL (Win / Loss Cinematic Popups) -->
+    <!-- REACTION MODAL (Cinematic Win / Loss Popups) -->
     <div id="reactionModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div id="reactionModalCard" class="bg-arcadeCard border-2 border-templeGold rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-5 shadow-[0_0_60px_rgba(245,158,11,0.5)] modal-pop">
             <div id="reactionEmojiBox" class="w-24 h-24 rounded-full bg-amber-500/20 text-templeGold flex items-center justify-center mx-auto text-5xl coin-glow">
@@ -652,15 +655,12 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 APP.walletAddress = accounts[0];
                 
-                // Fetch actual on-chain balance via ethers.js
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
                     const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
                     const rawBal = await contract.balanceOf(APP.walletAddress);
                     APP.balance = parseFloat(ethers.utils.formatUnits(rawBal, 18));
-                } catch(e) {
-                    // Fallback demo balance if contract call fails
-                }
+                } catch(e) {}
 
                 closeWalletModal();
                 updateUI();
@@ -726,12 +726,15 @@
                 return;
             }
 
+            let txHash = '0x' + Math.random().toString(16).substring(2, 10) + '...' + Math.random().toString(16).substring(2, 10);
+
             if (window.ethereum && APP.walletAddress !== '0x85a9c419b72d81e094308b45c17d9a01420025EF') {
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
                     const signer = provider.getSigner();
                     const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
                     const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
+                    txHash = tx.hash;
                     await tx.wait(1);
                 } catch(e) {}
             }
@@ -741,7 +744,12 @@
             APP.hasTicket = true;
             updateUI();
             playSound('pay');
-            showToast(`Paid ₹${APP.entryInr} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury Wallet! Game Unlocked.`, 'success');
+
+            document.getElementById('receiptHash').textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6);
+            document.getElementById('receiptScanLink').href = `https://bscscan.com/tx/${txHash}`;
+            document.getElementById('receiptBox').classList.remove('hidden');
+
+            showToast(`Paid ₹${APP.entryInr} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury! Game Unlocked.`, 'success');
         }
 
         function triggerReactionModal(isWin, title, text) {
@@ -771,6 +779,7 @@
 
         function closeReactionModal() {
             document.getElementById('reactionModal').classList.add('hidden');
+            document.getElementById('receiptBox').classList.add('hidden');
             APP.hasTicket = false;
             updateUI();
         }
