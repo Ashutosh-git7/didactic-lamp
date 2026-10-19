@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -19,10 +19,10 @@
             theme: {
                 extend: {
                     colors: {
-                        arcadeBg: '#04060b',
-                        arcadeCard: '#0d1322',
-                        arcadeInner: '#070b14',
-                        arcadeBorder: '#1a233a',
+                        arcadeBg: '#04060d',
+                        arcadeCard: '#0b101c',
+                        arcadeInner: '#060913',
+                        arcadeBorder: '#182238',
                         templeGold: '#f59e0b',
                         templeGoldBright: '#fbbf24',
                         templeEmerald: '#10b981',
@@ -39,22 +39,22 @@
 
     <style>
         body {
-            background-color: #04060b;
+            background-color: #04060d;
             color: #f8fafc;
             font-family: 'Outfit', sans-serif;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
-            background-image: radial-gradient(circle at 50% 0%, #111b33 0%, #04060b 75%);
+            background-image: radial-gradient(circle at 50% 0%, #0d152a 0%, #04060d 85%);
         }
 
         ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #04060b; }
-        ::-webkit-scrollbar-thumb { background: #1a233a; border-radius: 9999px; }
+        ::-webkit-scrollbar-track { background: #04060d; }
+        ::-webkit-scrollbar-thumb { background: #182238; border-radius: 9999px; }
         ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
 
         .btn-gold {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #04060b;
+            color: #04060d;
             font-weight: 800;
             box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.4);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -66,17 +66,13 @@
         }
         .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .coin-glow {
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-        }
+        .coin-glow { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
 
         @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
-            50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.5); }
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+            50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.45); }
         }
-        .gaming-card-glow {
-            animation: pulseGlow 3s infinite ease-in-out;
-        }
+        .gaming-card-glow { animation: pulseGlow 3s infinite ease-in-out; }
 
         @keyframes diceShake {
             0%, 100% { transform: rotate(0deg) scale(1) translateY(0); }
@@ -96,17 +92,17 @@
         canvas { touch-action: none; user-select: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between pb-12 selection:bg-amber-500 selection:text-black">
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-black">
 
-    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2.5 shadow-2xl transition-all">
+    <header class="sticky top-0 z-50 bg-[#04060d]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2.5 shadow-2xl">
         <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
             <!-- Left: Logo & Lobby Trigger -->
-            <div class="flex items-center gap-2 sm:gap-3">
-                <button onclick="returnToLobby()" title="Arcade Lobby" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-amber-500/50 transition shadow shrink-0 cursor-pointer">
+            <div class="flex items-center gap-2">
+                <button onclick="returnToLobby()" title="Arcade Lobby" class="w-9 h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-amber-500/50 transition shadow shrink-0 cursor-pointer">
                     <i class="fa-solid fa-gamepad text-xs text-templeGold"></i>
                 </button>
-                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder">
-                    <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center coin-glow shrink-0 overflow-hidden p-0.5">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder">
+                    <div class="w-5 h-5 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center coin-glow shrink-0 overflow-hidden p-0.5">
                         <svg viewBox="0 0 64 64" class="w-full h-full">
                             <defs>
                                 <radialGradient id="goldGrad" cx="50%" cy="35%" r="60%">
@@ -130,8 +126,8 @@
                 </div>
             </div>
 
-            <!-- Right: Gaming Balance, Deposit, Claim, Withdraw & Wallet Connect -->
-            <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+            <!-- Right: Gaming Balance, Deposit, Claim & Prominent Wallet Connect -->
+            <div class="flex items-center gap-1.5 text-xs flex-wrap justify-end">
                 <!-- Gaming Balance Pill -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-coins text-templeGold text-[11px]"></i>
@@ -154,24 +150,21 @@
                     <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-1.5 py-0.5 rounded transition cursor-pointer">Claim</button>
                 </div>
 
-                <!-- Wallet Connect Button -->
-                <button id="mainWalletConnectBtn" onclick="openWalletModal()" class="bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
+                <!-- Prominent Wallet Connect Button -->
+                <button id="mainWalletConnectBtn" onclick="openWalletModal()" class="bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer shrink-0">
                     <i class="fa-solid fa-plug"></i>
-                    <span id="mainWalletBtnText">Connect</span>
+                    <span id="mainWalletBtnText">Connect Wallet</span>
                 </button>
 
-                <!-- Sound & Config -->
+                <!-- Sound Toggle -->
                 <button onclick="toggleSound()" title="Toggle Sound" class="w-8 h-8 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-templeGold hover:border-amber-500/50 transition shrink-0 cursor-pointer">
                     <i id="soundIcon" class="fa-solid fa-volume-high text-xs"></i>
-                </button>
-                <button onclick="openConfigModal()" title="Treasury Settings" class="w-8 h-8 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white transition shrink-0 cursor-pointer">
-                    <i class="fa-solid fa-gear text-xs"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="w-full max-w-5xl mx-auto px-4 pt-4 space-y-4 flex-1">
+    <main class="w-full max-w-5xl mx-auto px-4 py-6 space-y-6 flex-1">
 
         <!-- LOBBY VIEW -->
         <div id="viewLobby" class="space-y-6">
@@ -182,7 +175,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">ELITE WEB3 GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Provably Fair Treasury Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit Temple_DA to Treasury (`0x85a9...25EF`), play pro games, and withdraw winnings directly to your wallet anytime!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit Temple_DA BEP-20 tokens directly via Web3 pop-up to Treasury (`0x85a9...25EF`), play pro games, and withdraw winnings anytime!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Treasury Pot Vault</div>
@@ -191,7 +184,7 @@
                 </div>
             </section>
 
-            <!-- 5 CURATED PRO GAMES GRID (Fully Centered & Responsive) -->
+            <!-- 5 CURATED PRO GAMES GRID -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
                 <!-- GAME 1: ROCKET CRASH -->
@@ -478,16 +471,27 @@
             </div>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1">Top-up Amount in INR (₹) - Deposited to Treasury</label>
-                    <input id="depositInrInput" type="number" value="100" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold">
+                    <label class="block text-gray-400 mb-1">Top-up Amount in INR (₹) - Sent via Web3 BEP-20 Transfer</label>
+                    <input id="depositInrInput" type="number" value="100" oninput="updateDepositPreview()" class="w-full bg-[#05070f] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold">
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-3 flex justify-between items-center text-xs">
-                    <span class="text-gray-400">Tokens to Transfer:</span>
+                    <span class="text-gray-400">Tokens to Transfer (BEP-20):</span>
                     <span id="depositTokenPreview" class="text-templeGold font-mono font-bold">611.14 Temple_DA</span>
+                </div>
+                <!-- Direct Treasury Transfer Link for User Convenience -->
+                <div class="bg-arcadeInner border border-amber-500/30 rounded-2xl p-3 space-y-1">
+                    <div class="text-gray-300 font-bold">Official Treasury Wallet Address:</div>
+                    <div id="treasuryAddrDisplay" class="text-amber-400 font-mono select-all truncate text-[11px]">0x85a9c419b72d81e094308b45c17d9a01420025EF</div>
+                    <div class="pt-1 flex items-center justify-between">
+                        <a id="treasuryBscScanLink" href="https://bscscan.com/address/0x85a9c419b72d81e094308b45c17d9a01420025EF" target="_blank" class="text-emerald-400 underline hover:text-emerald-300 text-[11px]">
+                            <i class="fa-solid fa-external-link-alt mr-1"></i>View on BscScan / Direct Transfer
+                        </a>
+                        <button onclick="copyTreasuryAddress()" class="bg-arcadeCard hover:bg-arcadeBorder text-amber-400 px-2 py-1 rounded text-[10px] font-bold border border-arcadeBorder">Copy Address</button>
+                    </div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="executeDepositToTreasury()" class="btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Deposit to Treasury</button>
+                <button onclick="executeDepositToTreasury()" class="btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Deposit via Web3</button>
                 <button onclick="executeWithdrawToWallet()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Withdraw to Wallet</button>
             </div>
             <div id="depositReceiptBox" class="hidden bg-[#020408] border border-emerald-500/30 rounded-xl p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
@@ -497,13 +501,19 @@
         </div>
     </div>
 
-    <!-- WALLET MODAL -->
+    <!-- WALLET MODAL (PROMINENT & FULLY VISIBLE) -->
     <div id="walletModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl">
+        <div class="bg-arcadeCard border-2 border-templeGold rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-[0_0_50px_rgba(245,158,11,0.4)] modal-pop">
             <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
-                <h3 class="text-base font-extrabold text-white">Connect Web3 Wallet</h3>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-wallet text-templeGold text-lg"></i>
+                    <h3 class="text-base font-extrabold text-white">Connect Web3 Wallet</h3>
+                </div>
                 <button onclick="closeWalletModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+                Connect your live MetaMask or Trust Wallet on BSC Mainnet to sync your Temple_DA balance and interact with the official Treasury smart contract.
+            </p>
             <div class="space-y-3">
                 <button onclick="connectRealWeb3()" class="w-full bg-[#101726] hover:bg-[#182238] border border-amber-500/40 rounded-2xl p-4 flex items-center justify-between text-left transition cursor-pointer">
                     <div>
@@ -515,36 +525,13 @@
                 <button onclick="connectDemoWallet()" class="w-full bg-[#0a261b] hover:bg-[#103828] border border-emerald-500/40 rounded-2xl p-4 flex items-center justify-between text-left transition cursor-pointer">
                     <div>
                         <div class="text-sm font-extrabold text-emerald-400">Interactive Demo Wallet</div>
-                        <div class="text-[11px] text-gray-300">Pre-loaded with 10,000 Temple_DA</div>
+                        <div class="text-[11px] text-gray-300">Pre-loaded with 1,000 Temple_DA</div>
                     </div>
                     <i class="fa-solid fa-check text-emerald-400 text-xs"></i>
                 </button>
             </div>
         </div>
     </div>
-
-    <!-- CONFIG MODAL -->
-    <div id="configModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
-                <h3 class="text-base font-extrabold text-white">Treasury & Contract Settings</h3>
-                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="space-y-4 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Treasury Wallet Address (Deposits Sent Here)</label>
-                    <input id="cfgTreasury" type="text" value="0x85a9c419b72d81e094308b45c17d9a01420025EF" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-xs">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Temple_DA Token Contract (BSC)</label>
-                    <input id="cfgToken" type="text" value="0x50BE31cAAB627ee8F98374d33b0454a8269A79e1" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-xs">
-                </div>
-            </div>
-            <button onclick="saveConfig()" class="w-full btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Save Settings</button>
-        </div>
-    </div>
-
-    <div id="toastContainer" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 
     <script>
         const APP = {
@@ -566,6 +553,19 @@
             "function transfer(address to, uint256 amount) returns (bool)",
             "function balanceOf(address account) view returns (uint256)"
         ];
+
+        async function fetchLiveTokenPrice() {
+            try {
+                const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x50BE31cAAB627ee8F98374d33b0454a8269A79e1');
+                const data = await res.json();
+                if (data && data.pairs && data.pairs.length > 0) {
+                    const p = parseFloat(data.pairs[0].priceUsd);
+                    if (p > 0) APP.tokenPrice = p * 92.0;
+                }
+            } catch(e) {}
+            updateUI();
+        }
+        setInterval(fetchLiveTokenPrice, 45000);
 
         function playSound(type) {
             if (!APP.sound) return;
@@ -616,16 +616,17 @@
 
             if (APP.walletAddress) {
                 document.getElementById('mainWalletBtnText').textContent = APP.walletAddress.substring(0, 4) + '...' + APP.walletAddress.substring(38);
+                document.getElementById('mainWalletConnectBtn').className = 'bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer shrink-0';
             } else {
-                document.getElementById('mainWalletBtnText').textContent = 'Connect';
+                document.getElementById('mainWalletBtnText').textContent = 'Connect Wallet';
+                document.getElementById('mainWalletConnectBtn').className = 'bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer shrink-0';
             }
 
             const tokensNeeded = APP.entryInr / APP.tokenPrice;
             document.getElementById('entryTokenNeeded').textContent = tokensNeeded.toFixed(2) + ' Temple_DA';
             document.getElementById('entryInrDisplay').textContent = '₹' + APP.entryInr.toFixed(2);
 
-            const depositInr = parseFloat(document.getElementById('depositInrInput').value) || 100;
-            document.getElementById('depositTokenPreview').textContent = (depositInr / APP.tokenPrice).toFixed(2) + ' Temple_DA';
+            updateDepositPreview();
 
             const ticketBadge = document.getElementById('ticketBadge');
             const paymentBox = document.getElementById('paymentBox');
@@ -659,6 +660,12 @@
             }
         }
 
+        function updateDepositPreview() {
+            const depositInr = parseFloat(document.getElementById('depositInrInput').value) || 100;
+            const tokens = depositInr / APP.tokenPrice;
+            document.getElementById('depositTokenPreview').textContent = tokens.toFixed(2) + ' Temple_DA';
+        }
+
         function setEntryInr(amt) {
             APP.entryInr = amt;
             updateUI();
@@ -668,12 +675,10 @@
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
         function openDepositModal() { document.getElementById('depositModal').classList.remove('hidden'); }
         function closeDepositModal() { document.getElementById('depositModal').classList.add('hidden'); }
-        function openConfigModal() { document.getElementById('configModal').classList.remove('hidden'); }
-        function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
 
         function connectDemoWallet() {
             APP.walletAddress = '0x85a9c419b72d81e094308b45c17d9a01420025EF';
-            APP.gamingBalance = 1000.00; // Starter demo platform gaming balance
+            APP.gamingBalance = 1000.00;
             closeWalletModal();
             updateUI();
             showToast('Demo Wallet Connected & 1,000 Temple_DA Platform Balance Ready!', 'success');
@@ -689,11 +694,30 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 APP.walletAddress = accounts[0];
                 closeWalletModal();
+
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
+                    const rawBal = await contract.balanceOf(APP.walletAddress);
+                    APP.gamingBalance = parseFloat(ethers.utils.formatUnits(rawBal, 18));
+                } catch(e) {}
+
                 updateUI();
-                showToast('Connected to MetaMask!', 'success');
+                showToast('Connected to MetaMask & Synced Wallet Balance!', 'success');
             } catch(e) {
                 showToast('Connection rejected', 'error');
             }
+        }
+
+        function copyTreasuryAddress() {
+            const addr = APP.treasuryAddress;
+            const textarea = document.createElement("textarea");
+            textarea.value = addr;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            showToast('Treasury Address Copied to Clipboard!', 'success');
         }
 
         async function executeDepositToTreasury() {
@@ -726,16 +750,15 @@
         }
 
         async function executeWithdrawToWallet() {
-            if (APP.unclaimed <= 0 && APP.gamingBalance <= 0) {
-                showToast('No funds available to withdraw.', 'error');
+            if (APP.gamingBalance <= 0) {
+                showToast('No funds available in gaming balance to withdraw.', 'error');
                 return;
             }
-            const withdrawAmt = APP.gamingBalance + APP.unclaimed;
+            const withdrawAmt = APP.gamingBalance;
             APP.gamingBalance = 0;
-            APP.unclaimed = 0;
             updateUI();
             playSound('win');
-            showToast(`Successfully withdrawn ${withdrawAmt.toFixed(2)} Temple_DA from Treasury to your Wallet!`, 'success');
+            showToast(`Successfully withdrawn ${withdrawAmt.toFixed(2)} Temple_DA from Treasury to your Connected Wallet!`, 'success');
             closeDepositModal();
         }
 
@@ -747,14 +770,6 @@
             updateUI();
             playSound('win');
             showToast(`Claimed ${claimed.toFixed(2)} Temple_DA to Gaming Balance!`, 'success');
-        }
-
-        function saveConfig() {
-            APP.treasuryAddress = document.getElementById('cfgTreasury').value.trim();
-            APP.tokenContract = document.getElementById('cfgToken').value.trim();
-            closeConfigModal();
-            updateUI();
-            showToast('Treasury & Contract Settings Saved!', 'success');
         }
 
         function openGame(gameType) {
@@ -791,7 +806,7 @@
         function payGameEntry() {
             const tokensNeeded = APP.entryInr / APP.tokenPrice;
             if (APP.gamingBalance < tokensNeeded) {
-                showToast('Insufficient gaming balance! Deposit funds via "Deposit / Withdraw".', 'error');
+                showToast('Insufficient gaming balance! Deposit funds via "Deposit".', 'error');
                 return;
             }
 
@@ -1252,7 +1267,8 @@
             setTimeout(() => t.remove(), 3000);
         }
 
-        window.onload = () => { updateUI(); drawWheel(); initRocketCanvas(0, 1.0, false); };
+        window.onload = () => { fetchLiveTokenPrice(); drawWheel(); initRocketCanvas(0, 1.0, false); };
     </script>
+    <div id="toastContainer" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
 </body>
 </html>
