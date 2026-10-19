@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>play.templeda.com | Official TEMPLE_DA Web3 Gaming Arcade </title>
+    <title>play.templeda.com | Elite TEMPLE_DA Web3 Gaming Arcade & Treasury</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ethers.js v5 for BSC Mainnet Web3 Wallet & BEP-20 Temple_DA Integration -->
@@ -144,10 +144,10 @@
                 </button>
 
                 <!-- Unclaimed Winnings Vault Pill & Claim Button -->
-                <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
+                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-trophy text-emerald-400 text-[11px]"></i>
                     <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs">0.00</span>
-                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-1.5 py-0.5 rounded transition cursor-pointer">Claim</button>
+                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-2 py-0.5 rounded transition cursor-pointer">Claim</button>
                 </div>
 
                 <!-- Prominent Wallet Connect Button -->
@@ -156,9 +156,10 @@
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
-                <!-- Admin Dashboard Trigger (Visible ONLY when Treasury Wallet 0x2760...5De95 is connected) -->
-                <button id="adminNavBtn" onclick="openAdminModal()" title="Admin Login" class="hidden w-8 h-8 rounded-xl bg-arcadeCard border border-purple-500/50 flex items-center justify-center text-purple-400 hover:border-purple-400 transition shrink-0 cursor-pointer">
-                    <i class="fa-solid fa-lock text-xs"></i>
+                <!-- Admin Dashboard Trigger (Auto-visible when Treasury Wallet 0x2760...5De95 is connected) -->
+                <button id="adminNavBtn" onclick="openAdminModal()" title="Admin Dashboard" class="hidden px-2.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-shield-halved text-[11px]"></i>
+                    <span>Admin Panel</span>
                 </button>
 
                 <!-- Sound Toggle -->
@@ -180,7 +181,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">OFFICIAL TEMPLE_DA GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Treasury & Provably Fair Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely to Treasury (`0x2760...5De95`), fund your Gaming Wallet, play pro games, and withdraw winnings anytime (Min ₹100 / ~61 Temple_DA)!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely to Treasury (`0x2760f05248a8377d3fdD86b80A3D48B010d5De95`), fund your Gaming Wallet, play pro games, and withdraw winnings anytime (Min ₹100 / ~61 Temple_DA)!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Live Token Price</div>
@@ -468,6 +469,7 @@
         </div>
     </div>
 
+    <!-- DEPOSIT & WITHDRAW MODAL -->
     <div id="depositModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
@@ -496,7 +498,7 @@
                 </div>
                 <!-- Minimum Withdrawal Note -->
                 <div class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
-                    <i class="fa-solid fa-info-circle mr-1"></i> Minimum Withdrawal Limit: <strong>₹100</strong> (~61 Temple_DA). Withdrawals are processed by Admin Treasury.
+                    <i class="fa-solid fa-info-circle mr-1"></i> Minimum Withdrawal Limit: <strong>₹100</strong> (~61 Temple_DA). Requests are reviewed by Admin Treasury.
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -510,6 +512,7 @@
         </div>
     </div>
 
+    <!-- WALLET MODAL -->
     <div id="walletModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-arcadeCard border-2 border-templeGold rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-[0_0_50px_rgba(245,158,11,0.4)] modal-pop">
             <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
@@ -541,40 +544,25 @@
         </div>
     </div>
 
+    <!-- ADMIN MODAL (AUTO-VERIFIED ON TREASURY WALLET CONNECTION) -->
     <div id="adminModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-arcadeCard border-2 border-purple-500 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-[0_0_60px_rgba(139,92,246,0.4)] modal-pop">
             <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-lock text-purple-400 text-lg"></i>
-                    <h3 class="text-base font-extrabold text-white">Admin Dashboard & Withdrawal Approvals</h3>
+                    <i class="fa-solid fa-shield-halved text-purple-400 text-lg"></i>
+                    <h3 class="text-base font-extrabold text-white">Admin Treasury Dashboard & Payout Approvals</h3>
                 </div>
                 <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- LOGIN FORM -->
-            <div id="adminLoginForm" class="space-y-4 text-xs">
-                <p id="adminLoginNotice" class="text-gray-300">Please connect your official Treasury wallet (`0x2760...5De95`) and enter admin credentials.</p>
-                <div>
-                    <label class="block text-gray-400 mb-1">Admin Email</label>
-                    <input id="adminEmailInput" type="text" placeholder="Ashutoshkarmkar@gmail.com" class="w-full bg-[#05070f] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Admin Password</label>
-                    <input id="adminPassInput" type="password" placeholder="Jaihanuman@7" class="w-full bg-[#05070f] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold">
-                </div>
-                <button onclick="loginAdmin()" class="w-full py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-extrabold rounded-2xl shadow-xl transition cursor-pointer">
-                    Authenticate Admin Access
-                </button>
-            </div>
-
-            <!-- ADMIN DASHBOARD PANEL (HIDDEN UNTIL LOGIN) -->
-            <div id="adminDashboardPanel" class="hidden space-y-4 text-xs">
+            <!-- ADMIN DASHBOARD PANEL -->
+            <div class="space-y-4 text-xs">
                 <div class="flex items-center justify-between bg-arcadeInner p-3 rounded-2xl border border-arcadeBorder">
                     <div>
-                        <span class="text-emerald-400 font-bold block">🟢 Admin Authenticated</span>
-                        <span class="text-[11px] text-gray-400">Treasury Wallet: 0x2760...5De95</span>
+                        <span class="text-emerald-400 font-bold block">🟢 Admin Wallet Connected & Verified</span>
+                        <span id="adminWalletDisplay" class="text-[11px] text-gray-400 font-mono">0x2760...5De95</span>
                     </div>
-                    <button onclick="logoutAdmin()" class="px-3 py-1 bg-red-500/20 text-red-400 rounded-xl font-bold">Logout</button>
+                    <button onclick="closeAdminModal()" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl">Close</button>
                 </div>
                 <div class="space-y-2">
                     <h4 class="font-bold text-white text-sm">Pending Player Withdrawal Requests</h4>
@@ -598,7 +586,6 @@
             hasStake: false,
             activeGame: 'wheel',
             sound: true,
-            isAdmin: false,
             stats: { wins: 0, losses: 0, net: 0.00 },
             pendingWithdrawals: []
         };
@@ -672,7 +659,7 @@
                 document.getElementById('mainWalletBtnText').textContent = APP.walletAddress.substring(0, 4) + '...' + APP.walletAddress.substring(38);
                 document.getElementById('mainWalletConnectBtn').className = 'bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer shrink-0';
                 
-                // Show admin button only if connected wallet is treasury/admin
+                // Show admin button automatically if connected wallet is Treasury Address
                 if (APP.walletAddress.toLowerCase() === APP.treasuryAddress.toLowerCase()) {
                     document.getElementById('adminNavBtn').classList.remove('hidden');
                 } else {
@@ -737,7 +724,16 @@
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
         function openDepositModal() { document.getElementById('depositModal').classList.remove('hidden'); }
         function closeDepositModal() { document.getElementById('depositModal').classList.add('hidden'); }
-        function openAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
+        
+        function openAdminModal() { 
+            if (!APP.walletAddress || APP.walletAddress.toLowerCase() !== APP.treasuryAddress.toLowerCase()) {
+                showToast('Access Restricted: Please connect your official Treasury wallet first!', 'error');
+                return;
+            }
+            document.getElementById('adminWalletDisplay').textContent = APP.walletAddress;
+            document.getElementById('adminModal').classList.remove('hidden'); 
+            renderAdminWithdrawals();
+        }
         function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
 
         function connectDemoWallet() {
@@ -745,7 +741,7 @@
             APP.gamingBalance = 1000.00;
             closeWalletModal();
             updateUI();
-            showToast('Demo Wallet Connected & 1,000 Temple_DA Ready!', 'success');
+            showToast('Connected as Treasury / Admin Wallet & 1,000 Temple_DA Ready!', 'success');
         }
 
         async function connectRealWeb3() {
@@ -768,7 +764,11 @@
                 } catch(e) {}
 
                 updateUI();
-                showToast('Connected to MetaMask & Synced Web3 Wallet!', 'success');
+                if (APP.walletAddress.toLowerCase() === APP.treasuryAddress.toLowerCase()) {
+                    showToast('Admin Treasury Wallet Connected Successfully!', 'success');
+                } else {
+                    showToast('Connected to MetaMask & Synced Web3 Wallet!', 'success');
+                }
             } catch(e) {
                 showToast('Connection rejected', 'error');
             }
@@ -789,28 +789,36 @@
             const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const tokensNeeded = inrVal / APP.tokenPrice;
 
-            let txHash = '0x' + Math.random().toString(16).substring(2, 10) + '...' + Math.random().toString(16).substring(2, 10);
-
-            if (window.ethereum && APP.walletAddress && APP.walletAddress.toLowerCase() !== APP.treasuryAddress.toLowerCase()) {
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
-                    const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
-                    txHash = tx.hash;
-                    await tx.wait(1);
-                } catch(e) {}
+            if (!window.ethereum || !APP.walletAddress) {
+                showToast('Please connect your real Web3 wallet first to execute on-chain transfer!', 'error');
+                openWalletModal();
+                return;
             }
 
-            APP.gamingBalance += tokensNeeded;
-            updateUI();
-            playSound('pay');
+            try {
+                showToast('Please confirm the BEP-20 transfer in your wallet...', 'info');
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
+                
+                const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
+                showToast('Transaction submitted. Waiting for confirmation...', 'info');
+                
+                const receipt = await tx.wait(1);
+                const txHash = receipt.transactionHash;
 
-            document.getElementById('depositReceiptHash').textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6);
-            document.getElementById('depositScanLink').href = `https://bscscan.com/tx/${txHash}`;
-            document.getElementById('depositReceiptBox').classList.remove('hidden');
+                APP.gamingBalance += tokensNeeded;
+                updateUI();
+                playSound('pay');
 
-            showToast(`Deposited ₹${inrVal} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury (` + APP.treasuryAddress.substring(0,6) + `...)! Added to Gaming Balance.`, 'success');
+                document.getElementById('depositReceiptHash').textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6);
+                document.getElementById('depositScanLink').href = `https://bscscan.com/tx/${txHash}`;
+                document.getElementById('depositReceiptBox').classList.remove('hidden');
+
+                showToast(`Successfully deposited ${tokensNeeded.toFixed(2)} Temple_DA to Treasury! Added to Gaming Balance.`, 'success');
+            } catch(e) {
+                showToast('Deposit transaction rejected or failed in wallet', 'error');
+            }
         }
 
         async function requestWithdrawalToWallet() {
@@ -842,33 +850,6 @@
             updateUI();
             playSound('win');
             showToast(`Claimed ${claimed.toFixed(2)} Temple_DA to Gaming Balance!`, 'success');
-        }
-
-        function loginAdmin() {
-            const email = document.getElementById('adminEmailInput').value.trim();
-            const pass = document.getElementById('adminPassInput').value.trim();
-
-            if (!APP.walletAddress || APP.walletAddress.toLowerCase() !== APP.treasuryAddress.toLowerCase()) {
-                showToast('Access Denied: Please connect the official Treasury wallet first!', 'error');
-                return;
-            }
-
-            if (email === 'ashutoshkarmkar@gmail.com' && pass === 'Jaihanuman@7') {
-                APP.isAdmin = true;
-                document.getElementById('adminLoginForm').classList.add('hidden');
-                document.getElementById('adminDashboardPanel').classList.remove('hidden');
-                renderAdminWithdrawals();
-                showToast('Admin Authenticated Successfully!', 'success');
-            } else {
-                showToast('Invalid Admin Email or Password!', 'error');
-            }
-        }
-
-        function logoutAdmin() {
-            APP.isAdmin = false;
-            document.getElementById('adminDashboardPanel').classList.add('hidden');
-            document.getElementById('adminLoginForm').classList.remove('hidden');
-            showToast('Admin Logged Out', 'info');
         }
 
         function renderAdminWithdrawals() {
@@ -908,7 +889,7 @@
             APP.pendingWithdrawals.splice(idx, 1);
             renderAdminWithdrawals();
             playSound('win');
-            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury (0x2760...5De95) to player wallet!`, 'success');
+            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury (` + APP.treasuryAddress.substring(0,6) + `...) to player wallet!`, 'success');
         }
 
         function openGame(gameType) {
