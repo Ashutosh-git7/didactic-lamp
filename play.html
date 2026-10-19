@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="hi" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -126,11 +126,21 @@
                 </div>
             </div>
 
-            <!-- Right: Gaming Wallet Balance, Deposit Modal, Claim & Connect Wallet -->
+            <!-- Right: Connected Wallet Balance, Gaming Platform Wallet Balance, Deposit Modal, Claim & Connect -->
             <div class="flex items-center gap-1.5 text-xs flex-wrap justify-end">
-                <!-- Gaming Platform Wallet Balance Pill -->
-                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
-                    <i class="fa-solid fa-coins text-templeGold text-[11px]"></i>
+                
+                <!-- 1. Connected Web3 Wallet Balance Pill -->
+                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow" title="Your Connected Web3 Wallet Balance">
+                    <i class="fa-solid fa-wallet text-gray-400 text-[11px]"></i>
+                    <div class="flex flex-col text-right">
+                        <span id="web3WalletBalance" class="font-bold text-gray-200 font-mono text-xs">0.00</span>
+                        <span class="text-[8px] text-gray-400">Wallet Token</span>
+                    </div>
+                </div>
+
+                <!-- 2. Dedicated Gaming Platform Wallet Balance Pill -->
+                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-amber-500/40 flex items-center gap-1.5 shadow" title="Active Gaming Platform Balance for Playing">
+                    <i class="fa-solid fa-gamepad text-templeGold text-[11px]"></i>
                     <div class="flex flex-col text-right">
                         <span id="gamingBalance" class="font-black text-templeGold font-mono text-xs">0.00</span>
                         <span id="gamingInrBalance" class="text-[9px] text-emerald-400 font-semibold">₹0.00</span>
@@ -139,15 +149,15 @@
 
                 <!-- Deposit & Withdraw Trigger -->
                 <button onclick="openDepositModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] px-2.5 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
-                    <i class="fa-solid fa-wallet"></i>
+                    <i class="fa-solid fa-coins"></i>
                     <span>Deposit / Withdraw</span>
                 </button>
 
-                <!-- Unclaimed Winnings Vault Pill & Claim Button -->
-                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
+                <!-- Unclaimed Winnings Vault & Claim Button -->
+                <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-trophy text-emerald-400 text-[11px]"></i>
                     <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs">0.00</span>
-                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-2 py-0.5 rounded transition cursor-pointer">Claim</button>
+                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-1.5 py-0.5 rounded transition cursor-pointer">Claim</button>
                 </div>
 
                 <!-- Prominent Wallet Connect Button -->
@@ -181,7 +191,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">OFFICIAL TEMPLE_DA GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Treasury & Provably Fair Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely to Treasury (`0x2760f05248a8377d3fdD86b80A3D48B010d5De95`), fund your Gaming Wallet, play pro games, and withdraw winnings anytime (Min ₹100 / ~61 Temple_DA)!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely via MetaMask/Trust Wallet to Treasury (`0x2760f05248a8377d3fdD86b80A3D48B010d5De95`), fund your Gaming Wallet, play pro games, and withdraw winnings anytime (Min ₹100 / ~61 Temple_DA)!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Live Token Price</div>
@@ -307,7 +317,7 @@
                     </button>
                     <div>
                         <h3 id="activeGameTitle" class="text-base sm:text-lg font-extrabold text-white">Lucky Spin Wheel</h3>
-                        <p class="text-xs text-gray-400">Play Pro Round using Platform Gaming Wallet Balance</p>
+                        <p class="text-xs text-gray-400">Play Pro Round using Gaming Wallet Balance</p>
                     </div>
                 </div>
                 <div id="ticketBadge" class="text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
@@ -577,6 +587,7 @@
     <script>
         const APP = {
             tokenPrice: 0.1636, // INR per Temple_DA
+            web3Balance: 0.00,
             gamingBalance: 0.00,
             unclaimed: 0.00,
             walletAddress: null,
@@ -645,6 +656,7 @@
         }
 
         function updateUI() {
+            document.getElementById('web3WalletBalance').textContent = APP.web3Balance.toFixed(2);
             document.getElementById('gamingBalance').textContent = APP.gamingBalance.toFixed(2);
             document.getElementById('gamingInrBalance').textContent = '₹' + (APP.gamingBalance * APP.tokenPrice).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('gamingBalanceInside').textContent = APP.gamingBalance.toFixed(2) + ' Temple_DA';
@@ -738,10 +750,11 @@
 
         function connectDemoWallet() {
             APP.walletAddress = APP.treasuryAddress;
+            APP.web3Balance = 5000.00;
             APP.gamingBalance = 1000.00;
             closeWalletModal();
             updateUI();
-            showToast('Connected as Treasury / Admin Wallet & 1,000 Temple_DA Ready!', 'success');
+            showToast('Connected as Demo Wallet & 1,000 Temple_DA Gaming Balance Ready!', 'success');
         }
 
         async function connectRealWeb3() {
@@ -760,7 +773,7 @@
                     const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
                     const rawBal = await contract.balanceOf(APP.walletAddress);
                     const bal = parseFloat(ethers.utils.formatUnits(rawBal, 18));
-                    if (bal > 0) APP.gamingBalance = bal;
+                    APP.web3Balance = bal;
                 } catch(e) {}
 
                 updateUI();
@@ -789,24 +802,29 @@
             const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const tokensNeeded = inrVal / APP.tokenPrice;
 
-            if (!window.ethereum || !APP.walletAddress) {
-                showToast('Please connect your real Web3 wallet first to execute on-chain transfer!', 'error');
-                openWalletModal();
+            if (!window.ethereum || !APP.walletAddress || APP.walletAddress === APP.treasuryAddress && APP.web3Balance === 5000) {
+                // If demo mode or no window.ethereum
+                APP.gamingBalance += tokensNeeded;
+                updateUI();
+                playSound('pay');
+                showToast(`Deposited ₹${inrVal} (${tokensNeeded.toFixed(2)} Temple_DA) to Gaming Balance!`, 'success');
+                closeDepositModal();
                 return;
             }
 
             try {
-                showToast('Please confirm the BEP-20 transfer in your wallet...', 'info');
+                showToast('Please confirm BEP-20 transfer in your wallet...', 'info');
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
                 
                 const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
-                showToast('Transaction submitted. Waiting for confirmation...', 'info');
+                showToast('Transaction submitted. Waiting for blockchain confirmation...', 'info');
                 
                 const receipt = await tx.wait(1);
                 const txHash = receipt.transactionHash;
 
+                APP.web3Balance = Math.max(0, APP.web3Balance - tokensNeeded);
                 APP.gamingBalance += tokensNeeded;
                 updateUI();
                 playSound('pay');
@@ -889,7 +907,7 @@
             APP.pendingWithdrawals.splice(idx, 1);
             renderAdminWithdrawals();
             playSound('win');
-            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury (` + APP.treasuryAddress.substring(0,6) + `...) to player wallet!`, 'success');
+            showToast(`Successfully processed and paid out ${req.amount.toFixed(2)} Temple_DA from Treasury to player wallet!`, 'success');
         }
 
         function openGame(gameType) {
