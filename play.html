@@ -126,10 +126,10 @@
                 </div>
             </div>
 
-            <!-- Right: Isolated Gaming Wallet, Web3 Wallet Balance, Deposit, Claim & Connect -->
+            <!-- Right: Wallet Balances & Actions -->
             <div class="flex items-center gap-1.5 text-xs flex-wrap justify-end">
                 
-                <!-- 1. Connected Web3 Wallet Balance -->
+                <!-- Web3 Connected Wallet Balance -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow" title="Connected Web3 Wallet Balance">
                     <i class="fa-solid fa-wallet text-gray-400 text-[11px]"></i>
                     <div class="flex flex-col text-right">
@@ -138,7 +138,7 @@
                     </div>
                 </div>
 
-                <!-- 2. Dedicated Separate Platform Gaming Wallet Balance -->
+                <!-- Platform Gaming Wallet Balance -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-amber-500/40 flex items-center gap-1.5 shadow" title="Active Gaming Platform Balance">
                     <i class="fa-solid fa-gamepad text-templeGold text-[11px]"></i>
                     <div class="flex flex-col text-right">
@@ -166,7 +166,7 @@
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
-                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY VISIBLE WHEN OFFICIAL TREASURY WALLET 0x2760f05248a8377d3fdD86b80A3D48B010d5De95 IS CONNECTED) -->
+                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY ACCESSIBLE WHEN EXACT TREASURY WALLET IS CONNECTED) -->
                 <button id="adminNavBtn" onclick="openAdminModal()" title="Admin Dashboard" class="hidden px-2.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer">
                     <i class="fa-solid fa-shield-halved text-[11px]"></i>
                     <span>Admin Panel</span>
@@ -191,7 +191,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">OFFICIAL TEMPLE_DA GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Treasury & Provably Fair Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit official Temple_DA tokens (`0x50BE...79e1`) securely via MetaMask/Trust Wallet to Treasury (`0x2760f05248a8377d3fdD86b80A3D48B010d5De95`), fund your isolated Gaming Wallet, play pro games, and withdraw winnings anytime!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit Temple_DA tokens (`0x50BE...79e1`) securely via MetaMask/Trust Wallet to Treasury (`0x2760...5De95`), fund your isolated Gaming Wallet, play pro games, and withdraw winnings anytime!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Live Token Price</div>
@@ -355,7 +355,7 @@
                 </div>
             </div>
 
-            <!-- PAYMENT BOX (STAKE DEDUCTED FROM GAMING WALLET BALANCE) -->
+            <!-- PAYMENT BOX -->
             <div id="paymentBox" class="bg-arcadeCard border border-arcadeBorder rounded-3xl p-5 space-y-4 shadow-2xl">
                 <div class="flex items-center justify-between text-xs sm:text-sm">
                     <span class="font-bold text-gray-300">Select Entry Stake in INR (₹)</span>
@@ -567,7 +567,7 @@
         </div>
     </div>
 
-    <!-- ADMIN MODAL (STRICTLY GUARDED: ONLY ACCESSIBLE WHEN EXACT OFFICIAL TREASURY WALLET 0x2760f05248a8377d3fdD86b80A3D48B010d5De95 IS CONNECTED) -->
+    <!-- ADMIN MODAL (STRICTLY GUARDED: ONLY ACCESSIBLE WHEN EXACT TREASURY WALLET IS CONNECTED) -->
     <div id="adminModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-arcadeCard border-2 border-purple-500 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-[0_0_60px_rgba(139,92,246,0.4)] modal-pop">
             <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
@@ -578,7 +578,6 @@
                 <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- ADMIN DASHBOARD PANEL -->
             <div class="space-y-4 text-xs">
                 <div class="flex items-center justify-between bg-arcadeInner p-3 rounded-2xl border border-arcadeBorder">
                     <div>
@@ -843,7 +842,6 @@
         function closeDepositModal() { document.getElementById('depositModal').classList.add('hidden'); }
         
         function openAdminModal() { 
-            // STRICT SECURITY GUARD: BLOCK DEMO WALLET OR ANY OTHER ADDRESS FROM OPENING ADMIN PANEL
             if (!APP.walletAddress || APP.walletAddress.toLowerCase() !== APP.treasuryAddress.toLowerCase()) {
                 showToast('Access Denied: Admin Panel can only be opened by the official Treasury address (`0x2760...5De95`)!', 'error');
                 return;
@@ -855,12 +853,12 @@
         function closeAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
 
         function connectDemoWallet() {
-            APP.walletAddress = '0x1111222233334444555566667777888899990000'; // Non-admin dummy demo address
+            APP.walletAddress = '0x1111222233334444555566667777888899990000';
             APP.web3Balance = 5000.00;
             closeWalletModal();
             loadPersistentState();
-            addHistoryRecord('Connected Demo Wallet with 1,000 Temple_DA', 'info');
-            showToast('Connected as Demo Wallet! Separate isolated balance active.', 'success');
+            addHistoryRecord('Connected Demo Wallet with 5,000 Temple_DA', 'info');
+            showToast('Connected as Demo Wallet! Permanent balance restored.', 'success');
         }
 
         async function connectRealWeb3() {
@@ -909,8 +907,7 @@
             const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
             const tokensNeeded = inrVal / APP.tokenPrice;
 
-            if (!window.ethereum || !APP.walletAddress || (APP.walletAddress.toLowerCase() !== APP.treasuryAddress.toLowerCase() && APP.web3Balance === 5000)) {
-                // Demo mode fallback deposit
+            if (!window.ethereum || !APP.walletAddress || APP.walletAddress.toLowerCase() === '0x1111222233334444555566667777888899990000'.toLowerCase()) {
                 APP.web3Balance = Math.max(0, APP.web3Balance - tokensNeeded);
                 APP.gamingBalance += tokensNeeded;
                 savePersistentState();
@@ -952,7 +949,7 @@
         }
 
         async function requestWithdrawalToWallet() {
-            const minWithdrawTokens = 100.0 / APP.tokenPrice; // ~61 Temple_DA (₹100 min)
+            const minWithdrawTokens = 100.0 / APP.tokenPrice;
             if (APP.gamingBalance < minWithdrawTokens) {
                 showToast(`Minimum withdrawal limit is ₹100 (~${minWithdrawTokens.toFixed(0)} Temple_DA). Your gaming balance is insufficient.`, 'error');
                 return;
@@ -961,7 +958,7 @@
             const withdrawAmt = APP.gamingBalance;
             APP.pendingWithdrawals.push({
                 id: Date.now(),
-                wallet: APP.walletAddress || APP.treasuryAddress,
+                wallet: APP.walletAddress,
                 amount: withdrawAmt
             });
 
@@ -1113,7 +1110,7 @@
             updateUI();
         }
 
-        // 1. WHEEL GAME (~90% RTP Balanced)
+        // 1. WHEEL GAME
         const WHEEL_SEGS = [
             { label: '2.0x', mult: 2.0 }, { label: '0x', mult: 0.0 },
             { label: '1.5x', mult: 1.5 }, { label: '0x', mult: 0.0 },
@@ -1374,7 +1371,7 @@
             }, 80);
         }
 
-        // 4. ROCKET CRASH & DRONE EJECT
+        // 4. ROCKET CRASH
         let rocketInterval = null;
         let currentMultiplier = 1.00;
         let crashPoint = 1.50;
@@ -1481,7 +1478,7 @@
             updateUI();
         }
 
-        // 5. JACKPOT SLOTS
+        // 5. SLOTS
         const SLOT_SYMBOLS = ['🪙', '💎', '🏛️', '🔔', '⭐', '💣'];
         function spinSlots() {
             if (!APP.hasStake) return;
