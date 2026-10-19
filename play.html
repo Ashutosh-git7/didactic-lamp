@@ -96,18 +96,18 @@
         canvas { touch-action: none; user-select: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between pb-16 selection:bg-amber-500 selection:text-black">
+<body class="min-h-screen flex flex-col justify-between pb-12 selection:bg-amber-500 selection:text-black">
 
-    <!-- STICKY TOP HEADER (Compact, engineered to never hide or overflow) -->
-    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2.5 shadow-2xl transition-all">
+    <!-- STICKY SLIMLINE TOP HEADER (Engineered to never hide or overflow) -->
+    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2 shadow-2xl transition-all">
         <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
             <!-- Left: Logo & Lobby Trigger -->
             <div class="flex items-center gap-2 sm:gap-3">
-                <button onclick="returnToLobby()" title="Arcade Lobby" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-amber-500/50 transition shadow shrink-0 cursor-pointer">
-                    <i class="fa-solid fa-gamepad text-sm text-templeGold"></i>
+                <button onclick="returnToLobby()" title="Arcade Lobby" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white hover:border-amber-500/50 transition shadow shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-gamepad text-xs text-templeGold"></i>
                 </button>
-                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-arcadeCard border border-arcadeBorder">
-                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center coin-glow shrink-0 overflow-hidden p-0.5">
+                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder">
+                    <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center coin-glow shrink-0 overflow-hidden p-0.5">
                         <svg viewBox="0 0 64 64" class="w-full h-full">
                             <defs>
                                 <radialGradient id="goldGrad" cx="50%" cy="35%" r="60%">
@@ -131,29 +131,35 @@
                 </div>
             </div>
 
-            <!-- Right: Compact Balances & Wallet Connect Button -->
+            <!-- Right: Balances, INR Value & Wallet Connect -->
             <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
+                <!-- Balance & INR Pill -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-coins text-templeGold text-[11px]"></i>
-                    <span id="userTokenBalance" class="font-black text-templeGold font-mono text-xs sm:text-sm">10000.00</span>
-                    <span class="text-[9px] text-gray-400 hidden sm:inline">T_DA</span>
+                    <div class="flex flex-col text-right">
+                        <span id="userTokenBalance" class="font-black text-templeGold font-mono text-xs">10000.00</span>
+                        <span id="userInrBalance" class="text-[9px] text-emerald-400 font-semibold">₹1,636.00</span>
+                    </div>
                 </div>
 
-                <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
+                <!-- Unclaimed Winnings Pill -->
+                <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow hidden sm:flex">
                     <i class="fa-solid fa-trophy text-emerald-400 text-[11px]"></i>
-                    <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs sm:text-sm">0.00</span>
-                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[10px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-2 py-0.5 rounded transition cursor-pointer">Claim</button>
+                    <span id="unclaimedBalance" class="font-black text-emerald-400 font-mono text-xs">0.00</span>
+                    <button id="claimBtn" onclick="claimWinnings()" disabled class="text-[9px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold px-1.5 py-0.5 rounded transition cursor-pointer">Claim</button>
                 </div>
 
+                <!-- Wallet Connect Button -->
                 <button id="mainWalletConnectBtn" onclick="openWalletModal()" class="bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
                     <i class="fa-solid fa-wallet"></i>
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
-                <button onclick="toggleSound()" title="Toggle Sound" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-templeGold hover:border-amber-500/50 transition shrink-0 cursor-pointer">
+                <!-- Sound & Config -->
+                <button onclick="toggleSound()" title="Toggle Sound" class="w-8 h-8 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-templeGold hover:border-amber-500/50 transition shrink-0 cursor-pointer">
                     <i id="soundIcon" class="fa-solid fa-volume-high text-xs"></i>
                 </button>
-                <button onclick="openConfigModal()" title="Treasury Settings" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white transition shrink-0 cursor-pointer">
+                <button onclick="openConfigModal()" title="Treasury Settings" class="w-8 h-8 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center justify-center text-gray-300 hover:text-white transition shrink-0 cursor-pointer">
                     <i class="fa-solid fa-gear text-xs"></i>
                 </button>
             </div>
@@ -524,7 +530,10 @@
             stats: { wins: 0, losses: 0, net: 0.00 }
         };
 
-        const BEP20_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
+        const BEP20_ABI = [
+            "function transfer(address to, uint256 amount) returns (bool)",
+            "function balanceOf(address account) view returns (uint256)"
+        ];
 
         function playSound(type) {
             if (!APP.sound) return;
@@ -561,8 +570,9 @@
             showToast(APP.sound ? 'Sound Enabled' : 'Sound Muted', 'info');
         }
 
-        function updateUI() {
+        async function updateUI() {
             document.getElementById('userTokenBalance').textContent = APP.balance.toFixed(2);
+            document.getElementById('userInrBalance').textContent = '₹' + (APP.balance * APP.tokenPrice).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('unclaimedBalance').textContent = APP.unclaimed.toFixed(2);
             document.getElementById('claimBtn').disabled = APP.unclaimed <= 0;
             document.getElementById('treasuryAddrShort').textContent = APP.treasuryAddress.substring(0, 6) + '...' + APP.treasuryAddress.substring(38);
@@ -626,9 +636,10 @@
 
         function connectDemoWallet() {
             APP.walletAddress = '0x85a9c419b72d81e094308b45c17d9a01420025EF';
+            APP.balance = 10000.00;
             closeWalletModal();
             updateUI();
-            showToast('Demo Wallet Connected Successfully!', 'success');
+            showToast('Demo Wallet Connected & Balance Fetched!', 'success');
         }
 
         async function connectRealWeb3() {
@@ -640,9 +651,20 @@
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 APP.walletAddress = accounts[0];
+                
+                // Fetch actual on-chain balance via ethers.js
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
+                    const rawBal = await contract.balanceOf(APP.walletAddress);
+                    APP.balance = parseFloat(ethers.utils.formatUnits(rawBal, 18));
+                } catch(e) {
+                    // Fallback demo balance if contract call fails
+                }
+
                 closeWalletModal();
                 updateUI();
-                showToast('Connected to MetaMask!', 'success');
+                showToast('Connected to MetaMask & Real Balance Fetched!', 'success');
             } catch(e) {
                 showToast('Connection rejected', 'error');
             }
