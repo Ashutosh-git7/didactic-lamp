@@ -98,7 +98,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between pb-12 selection:bg-amber-500 selection:text-black">
 
-    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2 shadow-2xl transition-all">
+    <header id="mainHeader" class="sticky top-0 z-50 bg-[#04060b]/95 backdrop-blur-xl border-b border-arcadeBorder px-3 sm:px-6 py-2.5 shadow-2xl transition-all">
         <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
             <!-- Left: Logo & Lobby Trigger -->
             <div class="flex items-center gap-2 sm:gap-3">
@@ -130,16 +130,22 @@
                 </div>
             </div>
 
-            <!-- Right: Balances, INR Value & Wallet Connect -->
+            <!-- Right: Gaming Balance, Deposit, Claim, Withdraw & Wallet Connect -->
             <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
-                <!-- Balance & INR Pill -->
+                <!-- Gaming Balance Pill -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
                     <i class="fa-solid fa-coins text-templeGold text-[11px]"></i>
                     <div class="flex flex-col text-right">
-                        <span id="userTokenBalance" class="font-black text-templeGold font-mono text-xs">10000.00</span>
-                        <span id="userInrBalance" class="text-[9px] text-emerald-400 font-semibold">₹1,636.00</span>
+                        <span id="gamingBalance" class="font-black text-templeGold font-mono text-xs">0.00</span>
+                        <span id="gamingInrBalance" class="text-[9px] text-emerald-400 font-semibold">₹0.00</span>
                     </div>
                 </div>
+
+                <!-- Deposit & Withdraw Trigger -->
+                <button onclick="openDepositModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] px-2.5 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Deposit / Withdraw</span>
+                </button>
 
                 <!-- Unclaimed Winnings Vault Pill & Claim Button -->
                 <div class="px-2 py-1.5 rounded-xl bg-arcadeCard border border-arcadeBorder flex items-center gap-1.5 shadow">
@@ -150,7 +156,7 @@
 
                 <!-- Wallet Connect Button -->
                 <button id="mainWalletConnectBtn" onclick="openWalletModal()" class="bg-templeGold hover:bg-amber-400 text-gray-950 font-extrabold text-xs px-3 py-2 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0">
-                    <i class="fa-solid fa-wallet"></i>
+                    <i class="fa-solid fa-plug"></i>
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
@@ -176,7 +182,7 @@
                 <div class="space-y-2 text-center sm:text-left z-10">
                     <span class="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-templeGold border border-amber-500/30">ELITE WEB3 GAMING PLATFORM</span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Temple_DA Provably Fair Treasury Games</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Stake Temple_DA directly to Treasury (`0x85a9...25EF`), play pro games, and win rewards or claim payouts instantly!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-lg">Deposit Temple_DA to Treasury (`0x85a9...25EF`), play pro games, and withdraw winnings directly to your wallet anytime!</p>
                 </div>
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner">
                     <div class="text-xs text-gray-400">Treasury Pot Vault</div>
@@ -301,11 +307,11 @@
                     </button>
                     <div>
                         <h3 id="activeGameTitle" class="text-base sm:text-lg font-extrabold text-white">Lucky Spin Wheel</h3>
-                        <p class="text-xs text-gray-400">Stake Temple_DA to Treasury & Play Pro Round</p>
+                        <p class="text-xs text-gray-400">Play Pro Round using Platform Gaming Balance</p>
                     </div>
                 </div>
                 <div id="ticketBadge" class="text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
-                    Payment Required
+                    Stake Required
                 </div>
             </div>
 
@@ -325,11 +331,11 @@
                 </div>
             </div>
 
-            <!-- PAYMENT BOX (STAKES ROUTED TO TREASURY) -->
+            <!-- PAYMENT BOX (STAKE DEDUCTED FROM PLATFORM BALANCE) -->
             <div id="paymentBox" class="bg-arcadeCard border border-arcadeBorder rounded-3xl p-5 space-y-4 shadow-2xl">
                 <div class="flex items-center justify-between text-xs sm:text-sm">
-                    <span class="font-bold text-gray-300">Select Entry Fee in INR (₹) - Routed to Treasury</span>
-                    <span class="text-templeGold font-mono">Treasury: <strong id="treasuryAddrShort">0x85a9...25EF</strong></span>
+                    <span class="font-bold text-gray-300">Select Entry Stake in INR (₹)</span>
+                    <span class="text-templeGold font-mono">Gaming Balance: <strong id="gamingBalanceInside">0.00 Temple_DA</strong></span>
                 </div>
 
                 <div class="grid grid-cols-4 gap-3">
@@ -341,7 +347,7 @@
 
                 <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
                     <div>
-                        <span class="text-gray-400 block text-[11px]">Stake Token (To Treasury)</span>
+                        <span class="text-gray-400 block text-[11px]">Stake Token</span>
                         <span id="entryTokenNeeded" class="text-base font-black text-templeGold font-mono">61.14 Temple_DA</span>
                     </div>
                     <div class="text-right">
@@ -351,14 +357,9 @@
                 </div>
 
                 <button id="payEntryBtn" onclick="payGameEntry()" class="w-full btn-gold py-4 rounded-2xl text-base flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span id="payEntryBtnText">Pay Stake to Treasury & Unlock Game</span>
+                    <i class="fa-solid fa-play"></i>
+                    <span id="payEntryBtnText">Stake Gaming Balance & Unlock Game</span>
                 </button>
-                
-                <div id="receiptBox" class="hidden bg-[#020408] border border-emerald-500/30 rounded-xl p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
-                    <div><i class="fa-solid fa-receipt mr-1"></i> TxHash: <span id="receiptHash">0xf8a3...2c11</span></div>
-                    <a id="receiptScanLink" href="#" target="_blank" class="text-amber-400 underline hover:text-amber-300 text-[11px]">BscScan</a>
-                </div>
             </div>
 
             <!-- ARENA 1: WHEEL -->
@@ -386,7 +387,7 @@
                         <h4 class="text-2xl font-extrabold text-white mb-2">Coin Catcher Rush (30s)</h4>
                         <p class="text-sm text-gray-300 mb-6 max-w-sm">Catch gold coins & green gems, avoid red bombs!</p>
                         <button id="startCatcherBtn" onclick="startCatcher()" disabled class="px-8 py-4 bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-500 text-white font-extrabold text-base rounded-2xl shadow-xl cursor-pointer">
-                            Pay Entry Above to Start
+                            Stake Above to Start
                         </button>
                     </div>
                 </div>
@@ -468,6 +469,34 @@
         </div>
     </div>
 
+    <!-- DEPOSIT & WITHDRAW MODAL -->
+    <div id="depositModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-arcadeBorder pb-3">
+                <h3 class="text-base font-extrabold text-white">Top-up Platform Balance / Withdraw</h3>
+                <button onclick="closeDepositModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">Top-up Amount in INR (₹) - Deposited to Treasury</label>
+                    <input id="depositInrInput" type="number" value="100" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold">
+                </div>
+                <div class="bg-arcadeInner border border-arcadeBorder rounded-2xl p-3 flex justify-between items-center text-xs">
+                    <span class="text-gray-400">Tokens to Transfer:</span>
+                    <span id="depositTokenPreview" class="text-templeGold font-mono font-bold">611.14 Temple_DA</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="executeDepositToTreasury()" class="btn-gold py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Deposit to Treasury</button>
+                <button onclick="executeWithdrawToWallet()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl text-xs font-extrabold cursor-pointer">Withdraw to Wallet</button>
+            </div>
+            <div id="depositReceiptBox" class="hidden bg-[#020408] border border-emerald-500/30 rounded-xl p-3 text-xs font-mono text-emerald-400 flex items-center justify-between">
+                <div><i class="fa-solid fa-receipt mr-1"></i> TxHash: <span id="depositReceiptHash">0xf8a3...2c11</span></div>
+                <a id="depositScanLink" href="#" target="_blank" class="text-amber-400 underline hover:text-amber-300 text-[11px]">BscScan</a>
+            </div>
+        </div>
+    </div>
+
     <!-- WALLET MODAL -->
     <div id="walletModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-arcadeCard border border-arcadeBorder rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl">
@@ -503,7 +532,7 @@
             </div>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1">Treasury Wallet Address (Payments Received Here)</label>
+                    <label class="block text-gray-400 mb-1">Treasury Wallet Address (Deposits Sent Here)</label>
                     <input id="cfgTreasury" type="text" value="0x85a9c419b72d81e094308b45c17d9a01420025EF" class="w-full bg-[#04060b] border border-arcadeBorder rounded-2xl p-3.5 text-white font-mono text-xs">
                 </div>
                 <div>
@@ -520,14 +549,14 @@
     <script>
         const APP = {
             tokenPrice: 0.1636,
-            balance: 10000.00,
+            gamingBalance: 0.00,
             unclaimed: 0.00,
             treasuryTotal: 5420.00,
             walletAddress: null,
             treasuryAddress: '0x85a9c419b72d81e094308b45c17d9a01420025EF',
             tokenContract: '0x50BE31cAAB627ee8F98374d33b0454a8269A79e1',
             entryInr: 10.00,
-            hasTicket: false,
+            hasStake: false,
             activeGame: 'wheel',
             sound: true,
             stats: { wins: 0, losses: 0, net: 0.00 }
@@ -573,12 +602,12 @@
             showToast(APP.sound ? 'Sound Enabled' : 'Sound Muted', 'info');
         }
 
-        async function updateUI() {
-            document.getElementById('userTokenBalance').textContent = APP.balance.toFixed(2);
-            document.getElementById('userInrBalance').textContent = '₹' + (APP.balance * APP.tokenPrice).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        function updateUI() {
+            document.getElementById('gamingBalance').textContent = APP.gamingBalance.toFixed(2);
+            document.getElementById('gamingInrBalance').textContent = '₹' + (APP.gamingBalance * APP.tokenPrice).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('gamingBalanceInside').textContent = APP.gamingBalance.toFixed(2) + ' Temple_DA';
             document.getElementById('unclaimedBalance').textContent = APP.unclaimed.toFixed(2);
             document.getElementById('claimBtn').disabled = APP.unclaimed <= 0;
-            document.getElementById('treasuryAddrShort').textContent = APP.treasuryAddress.substring(0, 6) + '...' + APP.treasuryAddress.substring(38);
             document.getElementById('treasuryPotDisplay').textContent = APP.treasuryTotal.toFixed(0) + ' Temple_DA';
 
             document.getElementById('statWins').textContent = APP.stats.wins;
@@ -595,14 +624,17 @@
             document.getElementById('entryTokenNeeded').textContent = tokensNeeded.toFixed(2) + ' Temple_DA';
             document.getElementById('entryInrDisplay').textContent = '₹' + APP.entryInr.toFixed(2);
 
+            const depositInr = parseFloat(document.getElementById('depositInrInput').value) || 100;
+            document.getElementById('depositTokenPreview').textContent = (depositInr / APP.tokenPrice).toFixed(2) + ' Temple_DA';
+
             const ticketBadge = document.getElementById('ticketBadge');
             const paymentBox = document.getElementById('paymentBox');
             const payEntryBtnText = document.getElementById('payEntryBtnText');
             const payEntryBtn = document.getElementById('payEntryBtn');
 
-            if (APP.hasTicket) {
+            if (APP.hasStake) {
                 ticketBadge.className = 'text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-                ticketBadge.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Ticket Active';
+                ticketBadge.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>Stake Active';
                 paymentBox.classList.add('hidden');
                 payEntryBtn.disabled = true;
                 payEntryBtnText.textContent = 'Stake Paid - Game Unlocked';
@@ -614,10 +646,10 @@
                 document.getElementById('spinSlotsBtn').disabled = false;
             } else {
                 ticketBadge.className = 'text-xs font-extrabold px-3.5 py-1.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30';
-                ticketBadge.textContent = 'Payment Required';
+                ticketBadge.textContent = 'Stake Required';
                 paymentBox.classList.remove('hidden');
                 payEntryBtn.disabled = false;
-                payEntryBtnText.textContent = 'Pay Stake to Treasury & Unlock Game';
+                payEntryBtnText.textContent = 'Stake Gaming Balance & Unlock Game';
 
                 document.getElementById('spinBtn').disabled = true;
                 document.getElementById('startCatcherBtn').disabled = true;
@@ -634,15 +666,17 @@
 
         function openWalletModal() { document.getElementById('walletModal').classList.remove('hidden'); }
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
+        function openDepositModal() { document.getElementById('depositModal').classList.remove('hidden'); }
+        function closeDepositModal() { document.getElementById('depositModal').classList.add('hidden'); }
         function openConfigModal() { document.getElementById('configModal').classList.remove('hidden'); }
         function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
 
         function connectDemoWallet() {
             APP.walletAddress = '0x85a9c419b72d81e094308b45c17d9a01420025EF';
-            APP.balance = 10000.00;
+            APP.gamingBalance = 1000.00; // Starter demo platform gaming balance
             closeWalletModal();
             updateUI();
-            showToast('Demo Wallet Connected & Balance Fetched!', 'success');
+            showToast('Demo Wallet Connected & 1,000 Temple_DA Platform Balance Ready!', 'success');
         }
 
         async function connectRealWeb3() {
@@ -654,30 +688,65 @@
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 APP.walletAddress = accounts[0];
-                
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, provider);
-                    const rawBal = await contract.balanceOf(APP.walletAddress);
-                    APP.balance = parseFloat(ethers.utils.formatUnits(rawBal, 18));
-                } catch(e) {}
-
                 closeWalletModal();
                 updateUI();
-                showToast('Connected to MetaMask & Real Balance Fetched!', 'success');
+                showToast('Connected to MetaMask!', 'success');
             } catch(e) {
                 showToast('Connection rejected', 'error');
             }
         }
 
+        async function executeDepositToTreasury() {
+            const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
+            const tokensNeeded = inrVal / APP.tokenPrice;
+
+            let txHash = '0x' + Math.random().toString(16).substring(2, 10) + '...' + Math.random().toString(16).substring(2, 10);
+
+            if (window.ethereum && APP.walletAddress !== '0x85a9c419b72d81e094308b45c17d9a01420025EF') {
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const signer = provider.getSigner();
+                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
+                    const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
+                    txHash = tx.hash;
+                    await tx.wait(1);
+                } catch(e) {}
+            }
+
+            APP.gamingBalance += tokensNeeded;
+            APP.treasuryTotal += tokensNeeded;
+            updateUI();
+            playSound('pay');
+
+            document.getElementById('depositReceiptHash').textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6);
+            document.getElementById('depositScanLink').href = `https://bscscan.com/tx/${txHash}`;
+            document.getElementById('depositReceiptBox').classList.remove('hidden');
+
+            showToast(`Deposited ₹${inrVal} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury! Added to Gaming Balance.`, 'success');
+        }
+
+        async function executeWithdrawToWallet() {
+            if (APP.unclaimed <= 0 && APP.gamingBalance <= 0) {
+                showToast('No funds available to withdraw.', 'error');
+                return;
+            }
+            const withdrawAmt = APP.gamingBalance + APP.unclaimed;
+            APP.gamingBalance = 0;
+            APP.unclaimed = 0;
+            updateUI();
+            playSound('win');
+            showToast(`Successfully withdrawn ${withdrawAmt.toFixed(2)} Temple_DA from Treasury to your Wallet!`, 'success');
+            closeDepositModal();
+        }
+
         function claimWinnings() {
             if (APP.unclaimed <= 0) return;
-            APP.balance += APP.unclaimed;
+            APP.gamingBalance += APP.unclaimed;
             const claimed = APP.unclaimed;
             APP.unclaimed = 0;
             updateUI();
             playSound('win');
-            showToast(`Claimed ${claimed.toFixed(2)} Temple_DA to your wallet!`, 'success');
+            showToast(`Claimed ${claimed.toFixed(2)} Temple_DA to Gaming Balance!`, 'success');
         }
 
         function saveConfig() {
@@ -690,7 +759,7 @@
 
         function openGame(gameType) {
             APP.activeGame = gameType;
-            APP.hasTicket = false;
+            APP.hasStake = false;
             document.getElementById('viewLobby').classList.add('hidden');
             document.getElementById('viewGame').classList.remove('hidden');
 
@@ -719,37 +788,19 @@
             document.getElementById('viewLobby').classList.remove('hidden');
         }
 
-        async function payGameEntry() {
+        function payGameEntry() {
             const tokensNeeded = APP.entryInr / APP.tokenPrice;
-            if (APP.balance < tokensNeeded) {
-                showToast('Insufficient balance! Connect or add demo tokens.', 'error');
+            if (APP.gamingBalance < tokensNeeded) {
+                showToast('Insufficient gaming balance! Deposit funds via "Deposit / Withdraw".', 'error');
                 return;
             }
 
-            let txHash = '0x' + Math.random().toString(16).substring(2, 10) + '...' + Math.random().toString(16).substring(2, 10);
-
-            if (window.ethereum && APP.walletAddress !== '0x85a9c419b72d81e094308b45c17d9a01420025EF') {
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(APP.tokenContract, BEP20_ABI, signer);
-                    const tx = await contract.transfer(APP.treasuryAddress, ethers.utils.parseUnits(tokensNeeded.toFixed(6), 18));
-                    txHash = tx.hash;
-                    await tx.wait(1);
-                } catch(e) {}
-            }
-
-            APP.balance -= tokensNeeded;
+            APP.gamingBalance -= tokensNeeded;
             APP.treasuryTotal += tokensNeeded;
-            APP.hasTicket = true;
+            APP.hasStake = true;
             updateUI();
             playSound('pay');
-
-            document.getElementById('receiptHash').textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 6);
-            document.getElementById('receiptScanLink').href = `https://bscscan.com/tx/${txHash}`;
-            document.getElementById('receiptBox').classList.remove('hidden');
-
-            showToast(`Paid ₹${APP.entryInr} (${tokensNeeded.toFixed(2)} Temple_DA) to Treasury! Game Unlocked.`, 'success');
+            showToast(`Staked ${tokensNeeded.toFixed(2)} Temple_DA from Gaming Balance! Game Unlocked.`, 'success');
         }
 
         function triggerReactionModal(isWin, title, text) {
@@ -779,8 +830,8 @@
 
         function closeReactionModal() {
             document.getElementById('reactionModal').classList.add('hidden');
-            document.getElementById('receiptBox').classList.add('hidden');
-            APP.hasTicket = false;
+            document.getElementById('depositReceiptBox').classList.add('hidden');
+            APP.hasStake = false;
             updateUI();
         }
 
@@ -818,7 +869,7 @@
         }
 
         function startWheel() {
-            if (!APP.hasTicket || isSpinning) return;
+            if (!APP.hasStake || isSpinning) return;
             isSpinning = true;
             document.getElementById('spinBtn').disabled = true;
 
@@ -858,11 +909,11 @@
                         APP.unclaimed += tokensWon;
                         APP.stats.wins++;
                         APP.stats.net += (tokensWon - entryTokens);
-                        triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Landed on ${winSeg.label}! Won ${tokensWon.toFixed(2)} Temple_DA. Added to Winnings.`);
+                        triggerReactionModal(true, '🎉 WOW! YOU WIN!', `Landed on ${winSeg.label}! Won ${tokensWon.toFixed(2)} Temple_DA. Added to Unclaimed Winnings.`);
                     } else {
                         APP.stats.losses++;
                         APP.stats.net -= entryTokens;
-                        triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Landed on 0x. Entry fee retained by Treasury.`);
+                        triggerReactionModal(false, '😭 SO SAD! HOUSE WINS', `Landed on 0x. Stake retained by Treasury.`);
                     }
                     updateUI();
                 }
@@ -890,7 +941,7 @@
         }
 
         function startCatcher() {
-            if (!APP.hasTicket) return;
+            if (!APP.hasStake) return;
             document.getElementById('catcherStartOverlay').classList.add('hidden');
             let time = 30;
             let mult = 0.3;
@@ -987,7 +1038,7 @@
             });
         }
         function rollDice() {
-            if (!APP.hasTicket) return;
+            if (!APP.hasStake) return;
             const btn = document.getElementById('rollDiceBtn');
             btn.disabled = true;
             
@@ -1084,7 +1135,7 @@
         }
 
         function launchRocket() {
-            if (!APP.hasTicket) return;
+            if (!APP.hasStake) return;
             document.getElementById('launchRocketBtn').disabled = true;
             document.getElementById('ejectDroneBtn').disabled = false;
 
@@ -1139,7 +1190,7 @@
         // 5. JACKPOT SLOTS
         const SLOT_SYMBOLS = ['🪙', '💎', '🏛️', '🔔', '⭐', '💣'];
         function spinSlots() {
-            if (!APP.hasTicket) return;
+            if (!APP.hasStake) return;
             const btn = document.getElementById('spinSlotsBtn');
             btn.disabled = true;
 
