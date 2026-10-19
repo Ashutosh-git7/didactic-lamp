@@ -126,7 +126,7 @@
                 </div>
             </div>
 
-            <!-- Right: Connected Wallet Balance, Gaming Platform Wallet, Deposit, Claim & Connect -->
+            <!-- Right: Connected Web3 Wallet, Gaming Platform Wallet, Deposit, Claim & Connect -->
             <div class="flex items-center gap-1.5 text-xs flex-wrap justify-end">
                 
                 <!-- 1. Connected Web3 Wallet Balance -->
@@ -138,7 +138,7 @@
                     </div>
                 </div>
 
-                <!-- 2. Dedicated Platform Gaming Wallet Balance -->
+                <!-- 2. Dedicated Separate Platform Gaming Wallet Balance -->
                 <div class="px-2.5 py-1.5 rounded-xl bg-arcadeCard border border-amber-500/40 flex items-center gap-1.5 shadow" title="Active Gaming Platform Balance">
                     <i class="fa-solid fa-gamepad text-templeGold text-[11px]"></i>
                     <div class="flex flex-col text-right">
@@ -166,7 +166,7 @@
                     <span id="mainWalletBtnText">Connect</span>
                 </button>
 
-                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY VISIBLE & ACCESSIBLE WHEN EXACT OFFICIAL TREASURY WALLET 0x2760f05248a8377d3fdD86b80A3D48B010d5De95 IS CONNECTED) -->
+                <!-- Admin Dashboard Trigger (STRICTLY GUARDED: ONLY ACCESSIBLE WHEN EXACT OFFICIAL TREASURY WALLET 0x2760f05248a8377d3fdD86b80A3D48B010d5De95 IS CONNECTED) -->
                 <button id="adminNavBtn" onclick="openAdminModal()" title="Admin Dashboard" class="hidden px-2.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer">
                     <i class="fa-solid fa-shield-halved text-[11px]"></i>
                     <span>Admin Panel</span>
@@ -1030,7 +1030,7 @@
 
         function openGame(gameType) {
             if (!APP.walletAddress) {
-                showWalletModal();
+                openWalletModal();
                 showToast('Please connect your Web3 wallet first to play games.', 'error');
                 return;
             }
@@ -1552,7 +1552,6 @@
         }
 
         window.onload = () => { 
-            loadPersistentState();
             fetchLiveTokenPrice(); 
             drawWheel(); 
             initRocketCanvas(0, 1.0, false); 
