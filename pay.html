@@ -172,6 +172,7 @@
         let provider, signer, userAddress;
         let html5QrCode = null;
         let userTokenBalanceNum = 0;
+        let balancePollInterval = null;
         const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         let templePriceINR = 0.15; // fallback price
@@ -291,6 +292,14 @@
                     document.getElementById("connectWalletBtn").className = "bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3.5 rounded-xl transition text-xs shadow-md flex items-center space-x-1.5";
                     
                     fetchUserBalance();
+                    
+                    // Start periodic background sync for balance & incoming transfers
+                    if (balancePollInterval) clearInterval(balancePollInterval);
+                    balancePollInterval = setInterval(() => {
+                        fetchUserBalance();
+                        checkIncomingTransfers();
+                    }, 10000);
+
                     showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", true);
                 } catch (error) {
                     showModal("Connection Cancelled", "Wallet connection was denied.", false);
@@ -300,19 +309,87 @@
             }
         }
 
-        // Fetch User Temple_DA Balance
+        // Fetch User Temple_DA Balance and detect incoming changes
         async function fetchUserBalance() {
-            if(!signer || !userAddress) return;
+            if(!provider || !userAddress) return;
             try {
                 const erc20BalanceAbi = ["function balanceOf(address account) view returns (uint256)"];
                 const tokenContract = new ethers.Contract(tokenAddress, erc20BalanceAbi, provider);
                 const rawBalance = await tokenContract.balanceOf(userAddress);
                 const formatted = ethers.utils.formatUnits(rawBalance, 18);
-                userTokenBalanceNum = parseFloat(formatted);
+                let newBalanceNum = parseFloat(formatted);
+
+                // Check if balance increased (Incoming Payment Detected!)
+                if(userTokenBalanceNum > 0 && newBalanceNum > userTokenBalanceNum) {
+                    let diff = newBalanceNum - userTokenBalanceNum;
+                    let diffInr = diff * templePriceINR;
+                    saveTransaction({
+                        recipient: userAddress, // Received to us
+                        inr: diffInr.toFixed(2),
+                        tokens: diff.toFixed(4),
+                        hash: "Incoming Transfer",
+                        time: new Date().toLocaleString(),
+                        isIncoming: true
+                    });
+                    showModal("Payment Received! 🎉", `Successfully received ${diff.toFixed(4)} Temple_DA (₹${diffInr.toFixed(2)}) in your wallet!`, true);
+                }
+
+                userTokenBalanceNum = newBalanceNum;
                 document.getElementById("userBalance").innerText = `${userTokenBalanceNum.toFixed(2)} Temple_DA`;
                 updateUserBalanceINRDisplay();
             } catch (err) {
                 console.error("Balance fetch error", err);
+            }
+        }
+
+        // Check BSC Transfer Event logs for incoming transactions when connected
+        async function checkIncomingTransfers() {
+            if(!provider || !userAddress) return;
+            try {
+                const erc20TransferEventAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
+                const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
+                
+                // Query Transfer events where 'to' is userAddress
+                const currentBlock = await provider.getBlockNumber();
+                const fromBlock = Math.max(0, currentBlock - 5000); // Check last ~5000 blocks (~4 hours)
+                
+                const filterTo = tokenContract.filters.Transfer(null, userAddress);
+                const logs = await tokenContract.queryFilter(filterTo, fromBlock, currentBlock);
+                
+                let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+                let updated = false;
+
+                for (let log of logs) {
+                    const parsed = tokenContract.interface.parseLog(log);
+                    const txHash = log.transactionHash;
+                    const fromAddr = parsed.args.from;
+                    const valueFormatted = ethers.utils.formatUnits(parsed.args.value, 18);
+                    const tokenNum = parseFloat(valueFormatted);
+                    const inrVal = (tokenNum * templePriceINR).toFixed(2);
+
+                    // Check if this txHash is already in local history
+                    let exists = history.some(item => item.hash === txHash);
+                    if (!exists && fromAddr.toLowerCase() !== userAddress.toLowerCase()) {
+                        history.unshift({
+                            recipient: fromAddr, // From sender
+                            inr: inrVal,
+                            tokens: tokenNum.toFixed(4),
+                            hash: txHash,
+                            time: "Verified on BSC",
+                            isIncoming: true
+                        });
+                        updated = true;
+                    }
+                }
+
+                if (updated) {
+                    localStorage.setItem("temple_tx_history", JSON.stringify(history));
+                    if(document.getElementById("sectionHistory").classList.contains("hidden") === false) {
+                        loadTransactionHistory();
+                    }
+                }
+            } catch (e) {
+                console.log("Transfer logs query skipped or rate limited:", e);
             }
         }
 
@@ -474,8 +551,13 @@
         // Transaction History Management
         function saveTransaction(txData) {
             let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+            // Prevent duplicate entries by hash
+            if(txData.hash && txData.hash !== "Incoming Transfer") {
+                let exists = history.some(item => item.hash === txData.hash);
+                if(exists) return;
+            }
             history.unshift(txData);
-            if(history.length > 20) history.pop();
+            if(history.length > 30) history.pop();
             localStorage.setItem("temple_tx_history", JSON.stringify(history));
         }
 
@@ -488,16 +570,24 @@
             }
             let html = "";
             history.forEach(tx => {
+                let badgeColor = tx.isIncoming ? "text-green-400 bg-green-500/10 border-green-500/30" : "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
+                let labelType = tx.isIncoming ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1">RECEIVED</span>' : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1">SENT</span>';
+                let addressLabel = tx.isIncoming ? `From: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}` : `To: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}`;
+                let explorerLink = tx.hash && tx.hash !== "Incoming Transfer" ? `<a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>` : `<span class="text-[10px] text-green-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Confirmed</span>`;
+
                 html += `
                     <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
                         <div>
-                            <span class="text-yellow-400 font-bold block">${tx.tokens} Temple_DA (₹${tx.inr})</span>
-                            <span class="text-[10px] text-gray-500 font-mono">To: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}</span>
-                            <span class="text-[9px] text-gray-600 block">${tx.time}</span>
+                            <div class="flex items-center mb-0.5">
+                                ${labelType}
+                                <span class="${tx.isIncoming ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
+                            <span class="text-[9px] text-gray-500 block">${tx.time}</span>
                         </div>
-                        <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">
-                            View <i class="fa-solid fa-external-link-alt ml-0.5"></i>
-                        </a>
+                        <div>
+                            ${explorerLink}
+                        </div>
                     </div>
                 `;
             });
