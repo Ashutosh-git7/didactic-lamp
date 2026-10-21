@@ -139,11 +139,11 @@
         <!-- Section 4: Transaction History -->
         <div id="sectionHistory" class="hidden space-y-3">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold text-gray-400">Recent Transactions</span>
-                <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:underline">Clear History (Reset Cache)</button>
+                <span class="text-xs font-bold text-gray-400">On-Chain BSC History (Live Sync)</span>
+                <button onclick="syncBlockchainHistory()" class="text-[10px] text-yellow-400 hover:underline"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
             </div>
             <div id="historyList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
-                <div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>
+                <div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch blockchain history.</div>
             </div>
         </div>
 
@@ -175,29 +175,24 @@
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         let templePriceINR = 0.15;
 
-        // Fetch live pool price
         async function fetchTemplePrice() {
             try {
                 const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
                 const data = await res.json();
-                
                 let templeUsd = 0.00156;
                 if(data && data.pair && data.pair.priceUsd) {
                     templeUsd = parseFloat(data.pair.priceUsd);
                 } else if(data && data.pairs && data.pairs.length > 0) {
                     templeUsd = parseFloat(data.pairs[0].priceUsd);
                 }
-
                 const inrRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=inr");
                 const inrData = await inrRes.json();
                 let baseUsdtInr = (inrData && inrData.tether && inrData.tether.inr) ? inrData.tether.inr : 92.0;
-
                 let adjustedUsdtInr = baseUsdtInr + 10.0;
                 templePriceINR = templeUsd * adjustedUsdtInr;
             } catch (e) {
                 templePriceINR = (0.00156 * (92.0 + 10.0));
             }
-            
             document.getElementById("livePrice").innerText = `₹${templePriceINR.toFixed(4)} / Temple_DA`;
             calculateToken();
             updateUserBalanceINRDisplay();
@@ -206,7 +201,6 @@
         fetchTemplePrice();
         setInterval(fetchTemplePrice, 30000);
 
-        // UI Tabs Switcher
         function switchTab(tab) {
             const paySec = document.getElementById("sectionPay");
             const scanSec = document.getElementById("sectionScan");
@@ -218,9 +212,7 @@
             const tabMerchant = document.getElementById("tabMerchant");
             const tabHistory = document.getElementById("tabHistory");
 
-            if(tab !== 'scan') {
-                stopQrScanner();
-            }
+            if(tab !== 'scan') stopQrScanner();
 
             paySec.classList.add("hidden");
             scanSec.classList.add("hidden");
@@ -246,7 +238,7 @@
             } else if(tab === 'history') {
                 historySec.classList.remove("hidden");
                 tabHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
-                loadTransactionHistory();
+                syncBlockchainHistory();
             }
         }
 
@@ -269,17 +261,14 @@
             document.getElementById("userBalanceINR").innerText = `₹${valINR.toFixed(2)} INR`;
         }
 
-        // Web3 Wallet Connection
         async function connectWallet() {
             if (window.ethereum) {
                 try {
                     provider = new ethers.providers.Web3Provider(window.ethereum);
                     const network = await provider.getNetwork();
-                    
                     if (network.chainId !== 56) {
                         showModal("Network Warning", "Please switch your wallet network to Binance Smart Chain (BSC Mainnet - Chain ID 56).", false);
                     }
-
                     await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
                     userAddress = await signer.getAddress();
@@ -292,7 +281,6 @@
                     if (balancePollInterval) clearInterval(balancePollInterval);
                     balancePollInterval = setInterval(() => {
                         fetchUserBalance();
-                        syncBlockchainTransfers();
                     }, 10000);
 
                     showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", true);
@@ -311,9 +299,7 @@
                 const tokenContract = new ethers.Contract(tokenAddress, erc20BalanceAbi, provider);
                 const rawBalance = await tokenContract.balanceOf(userAddress);
                 const formatted = ethers.utils.formatUnits(rawBalance, 18);
-                let newBalanceNum = parseFloat(formatted);
-
-                userTokenBalanceNum = newBalanceNum;
+                userTokenBalanceNum = parseFloat(formatted);
                 document.getElementById("userBalance").innerText = `${userTokenBalanceNum.toFixed(2)} Temple_DA`;
                 updateUserBalanceINRDisplay();
             } catch (err) {
@@ -321,16 +307,23 @@
             }
         }
 
-        // Blockchain Transfer Logs Reader with Precise Sender vs Receiver Matching
-        async function syncBlockchainTransfers() {
-            if(!provider || !userAddress) return;
+        // 100% On-Chain True Verification using BSC Event Logs
+        async function syncBlockchainHistory() {
+            if(!provider || !userAddress) {
+                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch blockchain history.</div>`;
+                return;
+            }
+
+            document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-yellow-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Querying BSC Blockchain Logs...</div>`;
+
             try {
                 const erc20TransferEventAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
                 const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
                 
                 const currentBlock = await provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 6000);
+                const fromBlock = Math.max(0, currentBlock - 9000); // Last ~9000 blocks (~6 hours)
                 
+                // Query both Incoming (to user) and Outgoing (from user) logs
                 const filterTo = tokenContract.filters.Transfer(null, userAddress);
                 const filterFrom = tokenContract.filters.Transfer(userAddress, null);
                 
@@ -338,71 +331,85 @@
                     tokenContract.queryFilter(filterTo, fromBlock, currentBlock),
                     tokenContract.queryFilter(filterFrom, fromBlock, currentBlock)
                 ]);
-                
-                const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
-                let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
-                let updated = false;
 
-                // 1. Process Incoming Transfers (RECEIVED)
+                let allTransactions = [];
+
+                // Process Incoming Transfers (RECEIVED)
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
-                    const txHash = log.transactionHash;
-                    const senderAddr = parsed.args.from;
-                    
-                    if (senderAddr.toLowerCase() === userAddress.toLowerCase()) continue;
-
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
                     const inrVal = (tokenNum * templePriceINR).toFixed(2);
-
-                    let exists = history.some(item => item.hash === txHash);
-                    if (!exists) {
-                        history.unshift({
-                            peerAddress: senderAddr,
-                            inr: inrVal,
-                            tokens: tokenNum.toFixed(4),
-                            hash: txHash,
-                            time: "BSC Confirmed",
-                            isIncoming: true // STRICTLY RECEIVED
-                        });
-                        updated = true;
-                    }
+                    
+                    allTransactions.push({
+                        hash: log.transactionHash,
+                        peerAddress: parsed.args.from,
+                        tokens: tokenNum.toFixed(4),
+                        inr: inrVal,
+                        isIncoming: true, // TRUE RECEIVED
+                        blockNumber: log.blockNumber
+                    });
                 }
 
-                // 2. Process Outgoing Transfers (SENT)
+                // Process Outgoing Transfers (SENT)
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
-                    const txHash = log.transactionHash;
-                    const recipientAddr = parsed.args.to;
-
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
                     const inrVal = (tokenNum * templePriceINR).toFixed(2);
-
-                    let exists = history.some(item => item.hash === txHash);
-                    if (!exists) {
-                        history.unshift({
-                            peerAddress: recipientAddr,
-                            inr: inrVal,
-                            tokens: tokenNum.toFixed(4),
-                            hash: txHash,
-                            time: "BSC Confirmed",
-                            isIncoming: false // STRICTLY SENT
-                        });
-                        updated = true;
-                    }
+                    
+                    allTransactions.push({
+                        hash: log.transactionHash,
+                        peerAddress: parsed.args.to,
+                        tokens: tokenNum.toFixed(4),
+                        inr: inrVal,
+                        isIncoming: false, // TRUE SENT
+                        blockNumber: log.blockNumber
+                    });
                 }
 
-                if (updated) {
-                    localStorage.setItem(storageKey, JSON.stringify(history));
-                    if(!document.getElementById("sectionHistory").classList.contains("hidden")) {
-                        loadTransactionHistory();
-                    }
+                // Sort by block number descending (newest first)
+                allTransactions.sort((a, b) => b.blockNumber - a.blockNumber);
+
+                const container = document.getElementById("historyList");
+                if(allTransactions.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions found on BSC.</div>`;
+                    return;
                 }
+
+                let html = "";
+                allTransactions.forEach(tx => {
+                    let isInc = tx.isIncoming === true;
+                    let labelType = isInc 
+                        ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' 
+                        : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
+                    
+                    let peer = tx.peerAddress || "0x000";
+                    let shortPeer = peer.substring(0,6) + '...' + peer.substring(peer.length - 4);
+                    let addressLabel = isInc ? `From: ${shortPeer}` : `To: ${shortPeer}`;
+                    
+                    html += `
+                        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
+                            <div>
+                                <div class="flex items-center mb-0.5">
+                                    ${labelType}
+                                    <span class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
+                                <span class="text-[9px] text-gray-500 block">BSC Confirmed</span>
+                            </div>
+                            <div>
+                                <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+
             } catch (e) {
-                console.log("Log sync error:", e);
+                console.error("BSC History sync error:", e);
+                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-red-400">Failed to load blockchain history. Please retry.</div>`;
             }
         }
 
-        // Camera & gallery scanner
         function startQrScanner() {
             if (html5QrCode) {
                 try { html5QrCode.stop().catch(e => {}); } catch(e) {}
@@ -481,7 +488,6 @@
             showModal("Copied!", "Wallet address copied to clipboard.", true);
         }
 
-        // Secure Outgoing Payment Execution (Explicitly isIncoming: false)
         async function makeSecurePayment() {
             if(!signer) {
                 showModal("Wallet Required", "Please connect your Web3 wallet first.", false);
@@ -511,16 +517,6 @@
                 showModal("Broadcasted", "Transaction submitted. Waiting for confirmation...", false);
                 
                 await tx.wait();
-                
-                // Save locally immediately as SENT (isIncoming: false)
-                saveTransaction({
-                    peerAddress: recipient,
-                    inr: inr,
-                    tokens: tokenAmount.toFixed(4),
-                    hash: tx.hash,
-                    time: new Date().toLocaleString(),
-                    isIncoming: false // STRICTLY SENT
-                });
 
                 showModal("Success!", "Payment confirmed successfully! Sent to merchant.", true);
                 fetchUserBalance();
@@ -530,76 +526,6 @@
                 console.error(err);
                 showModal("Transaction Failed", err.reason || err.message || "Rejected or insufficient balance.", false);
             }
-        }
-
-        function saveTransaction(txData) {
-            if(!userAddress) return;
-            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
-            let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            if(txData.hash) {
-                let exists = history.some(item => item.hash === txData.hash);
-                if(exists) return;
-            }
-            history.unshift(txData);
-            if(history.length > 40) history.pop();
-            localStorage.setItem(storageKey, JSON.stringify(history));
-            loadTransactionHistory();
-        }
-
-        // Render history with absolute correct labeling based on isIncoming boolean
-        function loadTransactionHistory() {
-            if(!userAddress) {
-                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to view history.</div>`;
-                return;
-            }
-            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
-            let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            const container = document.getElementById("historyList");
-            if(history.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>`;
-                return;
-            }
-            let html = "";
-            history.forEach(tx => {
-                let isInc = (tx.isIncoming === true);
-                
-                let labelType = isInc 
-                    ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' 
-                    : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
-                
-                let peer = tx.peerAddress || "0x000...000";
-                let shortPeer = peer.length > 10 ? peer.substring(0,6) + '...' + peer.substring(peer.length - 4) : peer;
-                let addressLabel = isInc ? `From: ${shortPeer}` : `To: ${shortPeer}`;
-                
-                let explorerLink = tx.hash && !tx.hash.startsWith("LiveInc_") 
-                    ? `<a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>` 
-                    : `<span class="text-[10px] text-green-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Confirmed</span>`;
-
-                html += `
-                    <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
-                        <div>
-                            <div class="flex items-center mb-0.5">
-                                ${labelType}
-                                <span class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
-                            </div>
-                            <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
-                            <span class="text-[9px] text-gray-500 block">${tx.time}</span>
-                        </div>
-                        <div>
-                            ${explorerLink}
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        function clearHistory() {
-            if(!userAddress) return;
-            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
-            localStorage.removeItem(storageKey);
-            loadTransactionHistory();
-            showModal("Cache Reset", "Transaction history cache cleared successfully.", true);
         }
 
         function showModal(title, desc, isSuccess = false) {
