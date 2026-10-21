@@ -281,7 +281,6 @@
                     if (balancePollInterval) clearInterval(balancePollInterval);
                     balancePollInterval = setInterval(() => {
                         fetchUserBalance();
-                        checkIncomingTransfers();
                     }, 10000);
 
                     showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", true);
@@ -321,54 +320,6 @@
                 updateUserBalanceINRDisplay();
             } catch (err) {
                 console.error("Balance fetch error", err);
-            }
-        }
-
-        async function checkIncomingTransfers() {
-            if(!provider || !userAddress) return;
-            try {
-                const erc20TransferEventAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
-                const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
-                
-                const currentBlock = await provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 5000);
-                
-                const filterTo = tokenContract.filters.Transfer(null, userAddress);
-                const logs = await tokenContract.queryFilter(filterTo, fromBlock, currentBlock);
-                
-                let history = JSON.parse(localStorage.getItem("temple_tx_history_stable") || "[]");
-                let updated = false;
-
-                for (let log of logs) {
-                    const parsed = tokenContract.interface.parseLog(log);
-                    const txHash = log.transactionHash;
-                    const fromAddr = parsed.args.from;
-                    const valueFormatted = ethers.utils.formatUnits(parsed.args.value, 18);
-                    const tokenNum = parseFloat(valueFormatted);
-                    const inrVal = (tokenNum * templePriceINR).toFixed(2);
-
-                    let exists = history.some(item => item.hash === txHash);
-                    if (!exists && fromAddr.toLowerCase() !== userAddress.toLowerCase()) {
-                        history.unshift({
-                            recipient: fromAddr,
-                            inr: inrVal,
-                            tokens: tokenNum.toFixed(4),
-                            hash: txHash,
-                            time: "Verified on BSC",
-                            isIncoming: true
-                        });
-                        updated = true;
-                    }
-                }
-
-                if (updated) {
-                    localStorage.setItem("temple_tx_history_stable", JSON.stringify(history));
-                    if(!document.getElementById("sectionHistory").classList.contains("hidden")) {
-                        loadTransactionHistory();
-                    }
-                }
-            } catch (e) {
-                console.log("Transfer logs check skipped:", e);
             }
         }
 
@@ -500,18 +451,18 @@
         }
 
         function saveTransaction(txData) {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history_stable") || "[]");
+            let history = JSON.parse(localStorage.getItem("temple_tx_history_stable_v8") || "[]");
             if(txData.hash && txData.hash !== "Incoming Transfer") {
                 let exists = history.some(item => item.hash === txData.hash);
                 if(exists) return;
             }
             history.unshift(txData);
             if(history.length > 30) history.pop();
-            localStorage.setItem("temple_tx_history_stable", JSON.stringify(history));
+            localStorage.setItem("temple_tx_history_stable_v8", JSON.stringify(history));
         }
 
         function loadTransactionHistory() {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history_stable") || "[]");
+            let history = JSON.parse(localStorage.getItem("temple_tx_history_stable_v8") || "[]");
             const container = document.getElementById("historyList");
             if(history.length === 0) {
                 container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>`;
@@ -548,7 +499,7 @@
         }
 
         function clearHistory() {
-            localStorage.removeItem("temple_tx_history_stable");
+            localStorage.removeItem("temple_tx_history_stable_v8");
             loadTransactionHistory();
         }
 
