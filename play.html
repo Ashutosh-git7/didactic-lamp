@@ -122,13 +122,13 @@
                 </div>
 
                 <!-- Separate Deposit / Withdraw Button -->
-                <button onclick="openDepositModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-1.5 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap" title="Deposit or Withdraw Winnings (2% Fee)">
+                <button onclick="openDepositModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-1.5 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap" title="Deposit or Withdraw Winnings (Min ₹30 deposit, ₹100 withdrawal)">
                     <i class="fa-solid fa-wallet text-[9px]"></i>
                     <span>Deposit / Withdraw</span>
                 </button>
 
                 <!-- Separate Ecosystem Bridge Button -->
-                <button onclick="openEcosystemModal()" class="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-1.5 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap" title="Transfer Winnings to templeda.com Hub">
+                <button onclick="openEcosystemModal()" class="bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-1.5 rounded-xl shadow transition flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap" title="Transfer Winnings to www.templeda.com Hub">
                     <i class="fa-solid fa-bridge text-[9px]"></i>
                     <span>Bridge</span>
                 </button>
@@ -166,7 +166,7 @@
                         ELITE ESPORTS ARCADE & BRIDGE
                     </span>
                     <h2 class="text-2xl sm:text-3xl font-black text-white">Provably Fair Games & Secure Treasury</h2>
-                    <p class="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">Deposit Temple_DA tokens (Tiers: ₹30, ₹50, ₹100, ₹200, ₹500, ₹1000) straight to Treasury (`0x2760...5De95`). Deposited capital is strictly for gaming; <strong>only your game winnings can be withdrawn</strong> (Min ₹100, in ₹50 multiples e.g. 100, 150, 200..., 2% fee) or bridged to **www.templeda.com**!</p>
+                    <p class="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">Deposit Temple_DA tokens (Min ₹30, in ₹10 multiples: 30, 40, 50...) straight to Treasury (`0x2760...5De95`). Deposited capital is strictly for gaming; <strong>only your game winnings can be withdrawn</strong> (Min ₹100, in ₹50 multiples e.g. 100, 150, 200..., 2% fee) or bridged to **www.templeda.com**!</p>
                 </div>
                 <div class="bg-eliteInner border border-eliteBorder rounded-2xl p-4 text-center z-10 shrink-0 shadow-inner min-w-[180px]">
                     <div class="text-xs text-gray-400 font-medium">Live Token Price</div>
@@ -331,7 +331,7 @@
                 </div>
             </div>
 
-            <!-- STAKE PAYMENT BOX WITH BALANCE CHOICE -->
+            <!-- STAKE PAYMENT BOX WITH DUAL BALANCE CHOICE -->
             <div id="paymentBox" class="bg-eliteCard border border-eliteBorder rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xl">
                 <div class="flex items-center justify-between text-xs sm:text-sm">
                     <span class="font-bold text-gray-300">Select Entry Stake in INR (₹)</span>
@@ -466,7 +466,7 @@
         </div>
     </div>
 
-    <!-- DEPOSIT & WITHDRAW MODAL WITH ₹30 - ₹1000 TIERS & ₹50 MULTIPLE RULES + 2% FEE -->
+    <!-- DEPOSIT & WITHDRAW MODAL WITH MIN ₹30 & ₹10 MULTIPLES + MIN ₹100 WITHDRAWAL IN ₹50 MULTIPLES -->
     <div id="depositModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-eliteCard border border-eliteBorder rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-5 shadow-2xl">
             <div class="flex items-center justify-between border-b border-eliteBorder pb-3">
@@ -475,7 +475,7 @@
             </div>
             <div class="space-y-4 text-xs">
                 <div>
-                    <label class="block text-gray-400 mb-1 font-medium">Select or Enter Deposit Amount in INR (₹)</label>
+                    <label class="block text-gray-400 mb-1 font-medium">Select or Enter Deposit Amount in INR (₹) [Min ₹30, in ₹10 multiples]</label>
                     <div class="grid grid-cols-3 gap-2 mb-2">
                         <button onclick="setDepositInr(30)" class="py-2 rounded-xl bg-eliteInner border border-eliteBorder text-xs font-bold text-gray-300 hover:border-eliteGold">₹30</button>
                         <button onclick="setDepositInr(50)" class="py-2 rounded-xl bg-eliteInner border border-eliteBorder text-xs font-bold text-gray-300 hover:border-eliteGold">₹50</button>
@@ -484,7 +484,7 @@
                         <button onclick="setDepositInr(500)" class="py-2 rounded-xl bg-eliteInner border border-eliteBorder text-xs font-bold text-gray-300 hover:border-eliteGold">₹500</button>
                         <button onclick="setDepositInr(1000)" class="py-2 rounded-xl bg-eliteInner border border-eliteBorder text-xs font-bold text-gray-300 hover:border-eliteGold">₹1000</button>
                     </div>
-                    <input id="depositInrInput" type="number" value="100" oninput="updateDepositPreview()" class="w-full bg-[#03050b] border border-eliteBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold focus:border-amber-500 focus:outline-none">
+                    <input id="depositInrInput" type="number" step="10" min="30" value="100" oninput="updateDepositPreview()" class="w-full bg-[#03050b] border border-eliteBorder rounded-2xl p-3.5 text-white font-mono text-sm font-bold focus:border-amber-500 focus:outline-none">
                 </div>
                 <div class="bg-eliteInner border border-eliteBorder rounded-2xl p-3.5 space-y-1.5 shadow-inner">
                     <div class="flex justify-between"><span class="text-gray-400">Total Transferred to Treasury:</span> <span id="depositTotalPreview" class="text-white font-mono font-bold">611.14 Temple_DA</span></div>
@@ -500,7 +500,7 @@
                     </div>
                 </div>
                 <div class="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-3 rounded-2xl leading-relaxed">
-                    <i class="fa-solid fa-info-circle mr-1"></i> <strong>Rule:</strong> Deposited funds are strictly for playing/staking (Auto-credited upon blockchain confirmation). Only game <strong>winnings</strong> can be withdrawn (Min ₹100, in ₹50 multiples e.g. 100, 150, 200..., 2% fee).
+                    <i class="fa-solid fa-info-circle mr-1"></i> <strong>Rule:</strong> Min deposit ₹30 (in ₹10 multiples). Deposited funds are strictly for playing/staking. Only game <strong>winnings</strong> can be withdrawn (Min ₹100, in ₹50 multiples e.g. 100, 150, 200..., 2% fee).
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3 pt-1">
@@ -870,7 +870,16 @@
         }
 
         function updateDepositPreview() {
-            const depositInr = parseFloat(document.getElementById('depositInrInput').value) || 100;
+            let depositInr = parseFloat(document.getElementById('depositInrInput').value) || 30;
+            if (depositInr < 30) depositInr = 30;
+            
+            // Ensure 10 multiples after 30
+            let remainder = (depositInr - 30) % 10;
+            if (remainder !== 0) {
+                depositInr = depositInr - remainder;
+            }
+            if (depositInr < 30) depositInr = 30;
+
             const grossTokens = depositInr / APP.tokenPrice;
             const platformFee = grossTokens * 0.015; // 1.5% Deposit Fee Cut
             const netDepositTokens = grossTokens * 0.985; // 98.5% Credited to deposit balance
@@ -902,7 +911,6 @@
             document.getElementById('bridgeValueDisplay').textContent = '₹' + (APP.winningsBalance * APP.tokenPrice).toFixed(2);
             document.getElementById('bridgeUserWalletInput').value = APP.walletAddress;
 
-            // Check if wallet is already registered in local hub registry
             const registeredHubs = JSON.parse(localStorage.getItem('temple_hub_registrations') || '{}');
             const isRegistered = !!registeredHubs[APP.walletAddress.toLowerCase()];
 
@@ -946,11 +954,13 @@
             showToast('Treasury Address Copied!', 'success');
         }
 
-        // INSTANT AUTOMATED DEPOSIT CREDITING (Blockchain Verified)
+        // INSTANT AUTOMATED DEPOSIT CREDITING (Blockchain Verified with Min ₹30 & ₹10 multiples)
         async function executeDepositToTreasury() {
             if (APP.isDemo) { showToast('Demo accounts cannot make live Web3 deposits.', 'error'); return; }
 
-            const inrVal = parseFloat(document.getElementById('depositInrInput').value) || 100;
+            let inrVal = parseFloat(document.getElementById('depositInrInput').value) || 30;
+            if (inrVal < 30) { showToast('Minimum deposit amount is ₹30', 'error'); return; }
+
             const grossTokens = inrVal / APP.tokenPrice;
             const netDepositTokens = grossTokens * 0.985;
 
@@ -966,7 +976,6 @@
                 const receipt = await tx.wait(1);
                 const txHash = receipt.transactionHash;
 
-                // AUTOMATIC DEPOSIT CREDITING (Instant auto-credit upon blockchain confirmation)
                 APP.depositBalance += netDepositTokens;
                 
                 let treasury = getGlobalTreasuryStats();
@@ -979,24 +988,24 @@
                 document.getElementById('depositScanLink').href = `https://bscscan.com/tx/${txHash}`;
                 document.getElementById('depositReceiptBox').classList.remove('hidden');
 
-                addHistoryRecord(`On-Chain Deposit: ${grossTokens.toFixed(2)} Temple_DA (${netDepositTokens.toFixed(2)} auto-credited)`, 'success');
-                showToast(`Successfully deposited! Credited ${netDepositTokens.toFixed(2)} Temple_DA to deposit balance instantly.`, 'success');
+                addHistoryRecord(`On-Chain Deposit: ₹${inrVal} (${grossTokens.toFixed(2)} Temple_DA)`, 'success');
+                showToast(`Successfully deposited! Credited ${netDepositTokens.toFixed(2)} Temple_DA to deposit balance.`, 'success');
             } catch(e) { showToast('Deposit transaction rejected or failed', 'error'); }
         }
 
-        // STRICT WITHDRAWAL RULE: Winnings Only, Min ₹100, in ₹50 Multiples (100, 150, 200...), 2% Fee -> Admin Approval Required
+        // STRICT WITHDRAWAL RULE: Winnings Only, Min ₹100, in ₹50 Multiples, 2% Fee -> Admin Approval Required
         async function requestWithdrawalToWallet() {
             if (!APP.walletAddress) { showToast('Connect wallet to request withdrawal', 'error'); return; }
             if (APP.isDemo) { showToast('Demo accounts cannot request withdrawals!', 'error'); return; }
 
             if (APP.winningsBalance <= 0) {
-                showToast('Withdrawal denied: Your Winnings Balance is 0.00 Temple_DA! Note: Deposited capital cannot be withdrawn.', 'error');
+                showToast('Withdrawal denied: Winnings Balance is 0.00 Temple_DA! Deposited capital cannot be withdrawn.', 'error');
                 return;
             }
 
             const minWithdrawTokens = 100.0 / APP.tokenPrice;
             if (APP.winningsBalance < minWithdrawTokens) {
-                showToast(`Withdrawal denied: Minimum withdrawal limit is ₹100 (~${minWithdrawTokens.toFixed(0)} Temple_DA winnings). Your winnings balance is insufficient.`, 'error');
+                showToast(`Withdrawal denied: Minimum withdrawal limit is ₹100 (~${minWithdrawTokens.toFixed(0)} Temple_DA winnings).`, 'error');
                 return;
             }
 
@@ -1006,7 +1015,7 @@
             const eligibleTokens = eligibleInr / APP.tokenPrice;
 
             if (eligibleInr < 100) {
-                showToast('Withdrawal denied: Withdrawals must be in multiples of ₹50 after the ₹100 minimum (e.g. ₹100, ₹150, ₹200...).', 'error');
+                showToast('Withdrawal denied: Withdrawals must be in multiples of ₹50 after ₹100 minimum (100, 150, 200...).', 'error');
                 return;
             }
 
@@ -1025,8 +1034,8 @@
             saveGlobalTreasuryStats(treasury);
 
             updateUI(); playSound('win');
-            addHistoryRecord(`Withdrawal Request: ${requestedAmt.toFixed(2)} Temple_DA winnings (${finalPayoutAmt.toFixed(2)} net after 2% fee) pending admin approval`, 'info');
-            showToast(`Withdrawal request submitted for admin review! ${finalPayoutAmt.toFixed(2)} Temple_DA (after 2% fee) queued.`, 'success');
+            addHistoryRecord(`Withdrawal Request: ${requestedAmt.toFixed(2)} Temple_DA winnings pending admin approval`, 'info');
+            showToast(`Withdrawal request submitted for admin review! ${finalPayoutAmt.toFixed(2)} Temple_DA queued.`, 'success');
             closeDepositModal();
         }
 
@@ -1061,12 +1070,11 @@
 
             updateUI(); playSound('win'); closeEcosystemModal();
             
-            // Show Success Confirmation Modal
             document.getElementById('successAmtDisplay').textContent = transferAmt.toFixed(2) + ' Temple_DA';
             document.getElementById('successInrDisplay').textContent = '₹' + transferInr.toFixed(2);
             document.getElementById('transferSuccessModal').classList.remove('hidden');
 
-            addHistoryRecord(`Bridge Transfer: ${transferAmt.toFixed(2)} Temple_DA moved to www.templeda.com (${APP.walletAddress.substring(0,6)}...) under hidden Sponsor ID 8709840006`, 'success');
+            addHistoryRecord(`Bridge Transfer: ${transferAmt.toFixed(2)} Temple_DA moved to www.templeda.com (Hidden Sponsor ID 8709840006)`, 'success');
         }
 
         function renderAdminDashboard() {
@@ -1121,7 +1129,7 @@
             let pendingList = getGlobalPendingWithdrawals();
             const req = pendingList[idx];
             const prefix = req.wallet.toLowerCase();
-            const refundAmt = req.requested || (req.amount / 0.98); // full requested tokens refunded
+            const refundAmt = req.requested || (req.amount / 0.98);
             try {
                 let winBal = parseFloat(localStorage.getItem('temple_win_bal_' + prefix) || '0');
                 winBal += refundAmt;
@@ -1133,7 +1141,7 @@
             pendingList.splice(idx, 1);
             saveGlobalPendingWithdrawals(pendingList);
             renderAdminDashboard(); playSound('loss');
-            showToast(`Rejected withdrawal. Refunded ${refundAmt.toFixed(2)} Temple_DA back to user's Winnings balance.`, 'info');
+            showToast(`Rejected withdrawal. Refunded ${refundAmt.toFixed(2)} Temple_DA back to Winnings balance.`, 'info');
         }
 
         function openGame(gameType) {
@@ -1185,7 +1193,7 @@
             APP.hasStake = true;
             if (!APP.isDemo) savePersistentState();
             updateUI(); playSound('pay');
-            addHistoryRecord(`Staked ${tokensNeeded.toFixed(2)} Temple_DA from ${source === 'deposit' ? 'Deposit' : 'Winnings'} wallet for ${APP.activeGame}`, 'info');
+            addHistoryRecord(`Staked ${tokensNeeded.toFixed(2)} Temple_DA from ${source === 'deposit' ? 'Deposit' : 'Winnings'} wallet`, 'info');
             showToast(`Staked ${tokensNeeded.toFixed(2)} Temple_DA!`, 'success');
         }
 
