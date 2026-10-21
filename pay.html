@@ -175,9 +175,9 @@
         let balancePollInterval = null;
         const tokenAddress = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1"; 
         const poolPairAddress = "0x707171A0C27f87B8C530B20831f7B004e6647830";
-        let templePriceINR = 0.15; // fallback price
+        let templePriceINR = 0.15;
 
-        // Fetch live pool price using DexScreener & USDT-INR + 10 INR margin formula
+        // Fetch live pool price
         async function fetchTemplePrice() {
             try {
                 const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${poolPairAddress}`);
@@ -197,7 +197,6 @@
                 let adjustedUsdtInr = baseUsdtInr + 10.0;
                 templePriceINR = templeUsd * adjustedUsdtInr;
             } catch (e) {
-                console.warn("Using fallback pool price calculation with +₹10 margin.");
                 templePriceINR = (0.00156 * (92.0 + 10.0));
             }
             
@@ -221,7 +220,6 @@
             const tabMerchant = document.getElementById("tabMerchant");
             const tabHistory = document.getElementById("tabHistory");
 
-            // Stop scanner if leaving scan tab
             if(tab !== 'scan') {
                 stopQrScanner();
             }
@@ -293,11 +291,10 @@
                     
                     fetchUserBalance();
                     
-                    // Start periodic background sync for balance & incoming transfers
                     if (balancePollInterval) clearInterval(balancePollInterval);
                     balancePollInterval = setInterval(() => {
                         fetchUserBalance();
-                        checkIncomingTransfers();
+                        syncBlockchainTransfers();
                     }, 10000);
 
                     showModal("Wallet Connected", "Successfully linked with your Web3 wallet.", true);
@@ -309,7 +306,6 @@
             }
         }
 
-        // Fetch User Temple_DA Balance and detect incoming changes
         async function fetchUserBalance() {
             if(!provider || !userAddress) return;
             try {
@@ -319,7 +315,6 @@
                 const formatted = ethers.utils.formatUnits(rawBalance, 18);
                 let newBalanceNum = parseFloat(formatted);
 
-                // Check if balance increased (Incoming Payment Detected!)
                 if(userTokenBalanceNum > 0 && newBalanceNum > userTokenBalanceNum) {
                     let diff = newBalanceNum - userTokenBalanceNum;
                     let diffInr = diff * templePriceINR;
@@ -327,7 +322,7 @@
                         peerAddress: userAddress, 
                         inr: diffInr.toFixed(2),
                         tokens: diff.toFixed(4),
-                        hash: "Incoming Transfer_" + Date.now(),
+                        hash: "LiveInc_" + Date.now(),
                         time: new Date().toLocaleString(),
                         isIncoming: true
                     });
@@ -342,8 +337,8 @@
             }
         }
 
-        // Check BSC Transfer Event logs for incoming & outgoing transactions when connected
-        async function checkIncomingTransfers() {
+        // Blockchain logs synchronization with strict isIncoming assignment
+        async function syncBlockchainTransfers() {
             if(!provider || !userAddress) return;
             try {
                 const erc20TransferEventAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
@@ -360,53 +355,51 @@
                     tokenContract.queryFilter(filterFrom, fromBlock, currentBlock)
                 ]);
                 
-                let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+                let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
                 let updated = false;
 
-                // Process incoming transfers (To User) -> isIncoming = true
+                // 1. Incoming transfers (isIncoming: true)
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
-                    const fromAddr = parsed.args.from;
+                    const senderAddr = parsed.args.from;
                     
-                    if (fromAddr.toLowerCase() === userAddress.toLowerCase()) continue;
+                    if (senderAddr.toLowerCase() === userAddress.toLowerCase()) continue;
 
-                    const valueFormatted = ethers.utils.formatUnits(parsed.args.value, 18);
-                    const tokenNum = parseFloat(valueFormatted);
+                    const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
                     const inrVal = (tokenNum * templePriceINR).toFixed(2);
 
                     let exists = history.some(item => item.hash === txHash);
                     if (!exists) {
                         history.unshift({
-                            peerAddress: fromAddr,
+                            peerAddress: senderAddr,
                             inr: inrVal,
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
-                            time: "Verified on BSC",
+                            time: "BSC Confirmed",
                             isIncoming: true
                         });
                         updated = true;
                     }
                 }
 
-                // Process outgoing transfers (From User) -> isIncoming = false
+                // 2. Outgoing transfers (isIncoming: false)
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
-                    const toAddr = parsed.args.to;
+                    const recipientAddr = parsed.args.to;
 
-                    const valueFormatted = ethers.utils.formatUnits(parsed.args.value, 18);
-                    const tokenNum = parseFloat(valueFormatted);
+                    const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
                     const inrVal = (tokenNum * templePriceINR).toFixed(2);
 
                     let exists = history.some(item => item.hash === txHash);
                     if (!exists) {
                         history.unshift({
-                            peerAddress: toAddr,
+                            peerAddress: recipientAddr,
                             inr: inrVal,
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
-                            time: "Verified on BSC",
+                            time: "BSC Confirmed",
                             isIncoming: false
                         });
                         updated = true;
@@ -414,58 +407,39 @@
                 }
 
                 if (updated) {
-                    localStorage.setItem("temple_tx_history", JSON.stringify(history));
-                    if(document.getElementById("sectionHistory").classList.contains("hidden") === false) {
+                    localStorage.setItem("temple_tx_history_v2", JSON.stringify(history));
+                    if(!document.getElementById("sectionHistory").classList.contains("hidden")) {
                         loadTransactionHistory();
                     }
                 }
             } catch (e) {
-                console.log("Transfer logs query skipped or rate limited:", e);
+                console.log("Log sync skipped:", e);
             }
         }
 
-        // Robust Camera QR Scanner Implementation
+        // Camera & gallery scanner
         function startQrScanner() {
             if (html5QrCode) {
-                try {
-                    html5QrCode.stop().catch(e => {});
-                } catch(e) {}
+                try { html5QrCode.stop().catch(e => {}); } catch(e) {}
             }
-            
             html5QrCode = new Html5Qrcode("reader");
-            const qrConfig = { fps: 15, qrbox: { width: 220, height: 220 } };
-            
             html5QrCode.start(
                 { facingMode: "environment" },
-                qrConfig,
-                (decodedText) => {
-                    handleScannedResult(decodedText);
-                },
-                (errorMessage) => {
-                    // Scanning active quietly
-                }
+                { fps: 15, qrbox: { width: 220, height: 220 } },
+                (decodedText) => { handleScannedResult(decodedText); },
+                (err) => {}
             ).catch(err => {
-                console.error("Camera start error:", err);
-                showModal("Camera Notice", "Camera preview unavailable or permission denied. You can also upload a QR code image from your gallery below.", false);
+                showModal("Camera Notice", "Camera permission denied or unavailable. Please upload QR image from gallery.", false);
             });
         }
 
-        // Scan QR from Image File Upload (Gallery Support)
         function scanQrFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
-            }
-
+            if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
             html5QrCode.scanFile(file, true)
-                .then(decodedText => {
-                    handleScannedResult(decodedText);
-                })
-                .catch(err => {
-                    showModal("Scan Failed", "Could not detect a valid QR code in the selected image. Please try another image.", false);
-                });
+                .then(decodedText => { handleScannedResult(decodedText); })
+                .catch(err => { showModal("Scan Failed", "No QR code detected in image.", false); });
         }
 
         function handleScannedResult(decodedText) {
@@ -475,7 +449,7 @@
                 document.getElementById("merchantAddress").value = cleanAddr.substring(0, 42);
                 stopQrScanner();
                 switchTab('pay');
-                showModal("QR Scanned", "Merchant address successfully captured!", true);
+                showModal("QR Scanned", "Merchant address captured successfully!", true);
             } else {
                 document.getElementById("merchantAddress").value = cleanAddr;
                 stopQrScanner();
@@ -485,11 +459,7 @@
 
         function stopQrScanner() {
             if(html5QrCode) {
-                try {
-                    html5QrCode.stop().then(() => {
-                        html5QrCode.clear();
-                    }).catch(err => {});
-                } catch(e) {}
+                try { html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => {}); } catch(e) {}
                 html5QrCode = null;
             }
         }
@@ -499,25 +469,22 @@
             switchTab('pay');
         }
 
-        // Render My Merchant QR Code
         function renderMerchantQR() {
             const canvas = document.getElementById("merchantCanvasQR");
             const addrEl = document.getElementById("merchantMyAddress");
             if(!userAddress) {
-                addrEl.innerText = "Please connect wallet first";
+                addrEl.innerText = "Connect wallet first";
                 const ctx = canvas.getContext("2d");
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 return;
             }
             addrEl.innerText = userAddress;
-            QRCode.toCanvas(canvas, userAddress, { width: 192, margin: 1 }, function (error) {
-                if (error) console.error(error);
-            });
+            QRCode.toCanvas(canvas, userAddress, { width: 192, margin: 1 }, function (error) {});
         }
 
         function copyMyAddress() {
             if(!userAddress) {
-                showModal("Wallet Required", "Connect wallet to copy address.", false);
+                showModal("Wallet Required", "Connect wallet first.", false);
                 return;
             }
             const textarea = document.createElement("textarea");
@@ -526,10 +493,10 @@
             textarea.select();
             document.execCommand("copy");
             document.body.removeChild(textarea);
-            showModal("Copied!", "Your wallet address has been copied to clipboard.", true);
+            showModal("Copied!", "Wallet address copied to clipboard.", true);
         }
 
-        // Secure Smart Contract Transfer Execution with Success Checkmark
+        // Secure Outgoing Payment Execution (Explicitly isIncoming: false)
         async function makeSecurePayment() {
             if(!signer) {
                 showModal("Wallet Required", "Please connect your Web3 wallet first.", false);
@@ -539,7 +506,7 @@
             let inr = document.getElementById("inrAmount").value;
 
             if(!ethers.utils.isAddress(recipient)) {
-                showModal("Invalid Address", "The merchant BSC address is incorrect.", false);
+                showModal("Invalid Address", "Merchant BSC address is incorrect.", false);
                 return;
             }
             if(!inr || inr <= 0) {
@@ -552,15 +519,15 @@
             const erc20TransferAbi = ["function transfer(address to, uint256 amount) public returns (bool)"];
 
             try {
-                showModal("Processing", "Please approve the transaction in your connected Web3 wallet...", false);
+                showModal("Processing", "Please approve the transaction in your wallet...", false);
                 const contract = new ethers.Contract(tokenAddress, erc20TransferAbi, signer);
                 
                 const tx = await contract.transfer(recipient, parsedAmount);
-                showModal("Broadcasted", "Transaction submitted to BSC network. Waiting for block confirmation...", false);
+                showModal("Broadcasted", "Transaction submitted. Waiting for confirmation...", false);
                 
                 await tx.wait();
                 
-                // Explicitly save as outgoing transaction (isIncoming = false)
+                // CRITICAL: Explicitly set isIncoming: false for sent payments
                 saveTransaction({
                     peerAddress: recipient,
                     inr: inr,
@@ -570,30 +537,32 @@
                     isIncoming: false
                 });
 
-                showModal("Success!", "Payment confirmed successfully! Funds transferred to merchant.", true);
+                showModal("Success!", "Payment confirmed successfully! Sent to merchant.", true);
                 fetchUserBalance();
                 document.getElementById("inrAmount").value = "";
                 document.getElementById("tokenOutput").innerText = "0.0000 Temple_DA";
             } catch (err) {
                 console.error(err);
-                showModal("Transaction Failed", err.reason || err.message || "User rejected transaction or insufficient balance.", false);
+                showModal("Transaction Failed", err.reason || err.message || "Rejected or insufficient balance.", false);
             }
         }
 
-        // Transaction History Management
+        // Save transaction to storage v2
         function saveTransaction(txData) {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
-            if(txData.hash && !txData.hash.startsWith("Incoming Transfer_")) {
+            let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
+            if(txData.hash && !txData.hash.startsWith("LiveInc_")) {
                 let exists = history.some(item => item.hash === txData.hash);
                 if(exists) return;
             }
             history.unshift(txData);
-            if(history.length > 30) history.pop();
-            localStorage.setItem("temple_tx_history", JSON.stringify(history));
+            if(history.length > 40) history.pop();
+            localStorage.setItem("temple_tx_history_v2", JSON.stringify(history));
+            loadTransactionHistory();
         }
 
+        // Load and render history with strict badge differentiation
         function loadTransactionHistory() {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
+            let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
             const container = document.getElementById("historyList");
             if(history.length === 0) {
                 container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>`;
@@ -601,12 +570,20 @@
             }
             let html = "";
             history.forEach(tx => {
-                // Strictly evaluate boolean isIncoming
-                let isInc = tx.isIncoming === true;
-                let labelType = isInc ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
-                let counterAddr = tx.peerAddress || "0x000...000";
-                let addressLabel = isInc ? `From: ${counterAddr.substring(0,6)}...${counterAddr.substring(38)}` : `To: ${counterAddr.substring(0,6)}...${counterAddr.substring(38)}`;
-                let explorerLink = tx.hash && !tx.hash.startsWith("Incoming Transfer_") ? `<a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>` : `<span class="text-[10px] text-green-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Confirmed</span>`;
+                // Ensure strict boolean check
+                let isInc = (tx.isIncoming === true);
+                
+                let labelType = isInc 
+                    ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' 
+                    : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
+                
+                let peer = tx.peerAddress || "0x000...000";
+                let shortPeer = peer.length > 10 ? peer.substring(0,6) + '...' + peer.substring(peer.length - 4) : peer;
+                let addressLabel = isInc ? `From: ${shortPeer}` : `To: ${shortPeer}`;
+                
+                let explorerLink = tx.hash && !tx.hash.startsWith("LiveInc_") 
+                    ? `<a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>` 
+                    : `<span class="text-[10px] text-green-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Confirmed</span>`;
 
                 html += `
                     <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
@@ -624,15 +601,15 @@
                     </div>
                 `;
             });
+            container.html = html; // fix
             container.innerHTML = html;
         }
 
         function clearHistory() {
-            localStorage.removeItem("temple_tx_history");
+            localStorage.removeItem("temple_tx_history_v2");
             loadTransactionHistory();
         }
 
-        // Custom Modal with Success Checkmark support
         function showModal(title, desc, isSuccess = false) {
             document.getElementById("modalTitle").innerText = title;
             document.getElementById("modalDesc").innerText = desc;
