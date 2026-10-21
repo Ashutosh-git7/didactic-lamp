@@ -108,11 +108,9 @@
         <div id="sectionScan" class="hidden space-y-3">
             <div class="text-center">
                 <p class="text-xs text-gray-400 mb-2">Align merchant QR code within camera frame or upload from gallery</p>
-                <!-- Scanner viewport element -->
                 <div id="reader" class="w-full rounded-xl overflow-hidden border border-yellow-500/30 bg-black min-h-[240px]"></div>
             </div>
             
-            <!-- Gallery File Upload Button for QR Scanning -->
             <div class="relative">
                 <input type="file" id="qrFileInput" accept="image/*" onchange="scanQrFromFile(event)" class="hidden">
                 <button onclick="document.getElementById('qrFileInput').click();" class="w-full bg-gray-800 hover:bg-gray-700 text-yellow-400 text-xs py-2.5 rounded-xl border border-yellow-500/30 font-semibold transition flex items-center justify-center space-x-2">
@@ -142,7 +140,7 @@
         <div id="sectionHistory" class="hidden space-y-3">
             <div class="flex justify-between items-center mb-1">
                 <span class="text-xs font-bold text-gray-400">Recent Transactions</span>
-                <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:underline">Clear History</button>
+                <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:underline">Clear History (Reset Cache)</button>
             </div>
             <div id="historyList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
                 <div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>
@@ -315,20 +313,6 @@
                 const formatted = ethers.utils.formatUnits(rawBalance, 18);
                 let newBalanceNum = parseFloat(formatted);
 
-                if(userTokenBalanceNum > 0 && newBalanceNum > userTokenBalanceNum) {
-                    let diff = newBalanceNum - userTokenBalanceNum;
-                    let diffInr = diff * templePriceINR;
-                    saveTransaction({
-                        peerAddress: userAddress, 
-                        inr: diffInr.toFixed(2),
-                        tokens: diff.toFixed(4),
-                        hash: "LiveInc_" + Date.now(),
-                        time: new Date().toLocaleString(),
-                        isIncoming: true
-                    });
-                    showModal("Payment Received! 🎉", `Successfully received ${diff.toFixed(4)} Temple_DA (₹${diffInr.toFixed(2)}) in your wallet!`, true);
-                }
-
                 userTokenBalanceNum = newBalanceNum;
                 document.getElementById("userBalance").innerText = `${userTokenBalanceNum.toFixed(2)} Temple_DA`;
                 updateUserBalanceINRDisplay();
@@ -337,7 +321,7 @@
             }
         }
 
-        // Blockchain logs synchronization with strict isIncoming assignment
+        // Blockchain Transfer Logs Reader with Precise Sender vs Receiver Matching
         async function syncBlockchainTransfers() {
             if(!provider || !userAddress) return;
             try {
@@ -345,7 +329,7 @@
                 const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
                 
                 const currentBlock = await provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 5000);
+                const fromBlock = Math.max(0, currentBlock - 6000);
                 
                 const filterTo = tokenContract.filters.Transfer(null, userAddress);
                 const filterFrom = tokenContract.filters.Transfer(userAddress, null);
@@ -355,10 +339,11 @@
                     tokenContract.queryFilter(filterFrom, fromBlock, currentBlock)
                 ]);
                 
-                let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
+                const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
+                let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
                 let updated = false;
 
-                // 1. Incoming transfers (isIncoming: true)
+                // 1. Process Incoming Transfers (RECEIVED)
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
@@ -377,13 +362,13 @@
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
                             time: "BSC Confirmed",
-                            isIncoming: true
+                            isIncoming: true // STRICTLY RECEIVED
                         });
                         updated = true;
                     }
                 }
 
-                // 2. Outgoing transfers (isIncoming: false)
+                // 2. Process Outgoing Transfers (SENT)
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
@@ -400,20 +385,20 @@
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
                             time: "BSC Confirmed",
-                            isIncoming: false
+                            isIncoming: false // STRICTLY SENT
                         });
                         updated = true;
                     }
                 }
 
                 if (updated) {
-                    localStorage.setItem("temple_tx_history_v2", JSON.stringify(history));
+                    localStorage.setItem(storageKey, JSON.stringify(history));
                     if(!document.getElementById("sectionHistory").classList.contains("hidden")) {
                         loadTransactionHistory();
                     }
                 }
             } catch (e) {
-                console.log("Log sync skipped:", e);
+                console.log("Log sync error:", e);
             }
         }
 
@@ -527,14 +512,14 @@
                 
                 await tx.wait();
                 
-                // CRITICAL: Explicitly set isIncoming: false for sent payments
+                // Save locally immediately as SENT (isIncoming: false)
                 saveTransaction({
                     peerAddress: recipient,
                     inr: inr,
                     tokens: tokenAmount.toFixed(4),
                     hash: tx.hash,
                     time: new Date().toLocaleString(),
-                    isIncoming: false
+                    isIncoming: false // STRICTLY SENT
                 });
 
                 showModal("Success!", "Payment confirmed successfully! Sent to merchant.", true);
@@ -547,22 +532,28 @@
             }
         }
 
-        // Save transaction to storage v2
         function saveTransaction(txData) {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
-            if(txData.hash && !txData.hash.startsWith("LiveInc_")) {
+            if(!userAddress) return;
+            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
+            let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            if(txData.hash) {
                 let exists = history.some(item => item.hash === txData.hash);
                 if(exists) return;
             }
             history.unshift(txData);
             if(history.length > 40) history.pop();
-            localStorage.setItem("temple_tx_history_v2", JSON.stringify(history));
+            localStorage.setItem(storageKey, JSON.stringify(history));
             loadTransactionHistory();
         }
 
-        // Load and render history with strict badge differentiation
+        // Render history with absolute correct labeling based on isIncoming boolean
         function loadTransactionHistory() {
-            let history = JSON.parse(localStorage.getItem("temple_tx_history_v2") || "[]");
+            if(!userAddress) {
+                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to view history.</div>`;
+                return;
+            }
+            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
+            let history = JSON.parse(localStorage.getItem(storageKey) || "[]");
             const container = document.getElementById("historyList");
             if(history.length === 0) {
                 container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions recorded.</div>`;
@@ -570,7 +561,6 @@
             }
             let html = "";
             history.forEach(tx => {
-                // Ensure strict boolean check
                 let isInc = (tx.isIncoming === true);
                 
                 let labelType = isInc 
@@ -601,13 +591,15 @@
                     </div>
                 `;
             });
-            container.html = html; // fix
             container.innerHTML = html;
         }
 
         function clearHistory() {
-            localStorage.removeItem("temple_tx_history_v2");
+            if(!userAddress) return;
+            const storageKey = `temple_tx_history_v4_${userAddress.toLowerCase()}`;
+            localStorage.removeItem(storageKey);
             loadTransactionHistory();
+            showModal("Cache Reset", "Transaction history cache cleared successfully.", true);
         }
 
         function showModal(title, desc, isSuccess = false) {
