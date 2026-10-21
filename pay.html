@@ -352,7 +352,6 @@
                 const currentBlock = await provider.getBlockNumber();
                 const fromBlock = Math.max(0, currentBlock - 5000); // Check last ~5000 blocks
                 
-                // Query both transfers TO user and FROM user
                 const filterTo = tokenContract.filters.Transfer(null, userAddress);
                 const filterFrom = tokenContract.filters.Transfer(userAddress, null);
                 
@@ -364,7 +363,7 @@
                 let history = JSON.parse(localStorage.getItem("temple_tx_history") || "[]");
                 let updated = false;
 
-                // Process incoming transfers
+                // Process incoming transfers (To User)
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
@@ -379,7 +378,7 @@
                     let exists = history.some(item => item.hash === txHash);
                     if (!exists) {
                         history.unshift({
-                            recipient: fromAddr,
+                            counterparty: fromAddr,
                             inr: inrVal,
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
@@ -390,7 +389,7 @@
                     }
                 }
 
-                // Process outgoing transfers
+                // Process outgoing transfers (From User)
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const txHash = log.transactionHash;
@@ -403,7 +402,7 @@
                     let exists = history.some(item => item.hash === txHash);
                     if (!exists) {
                         history.unshift({
-                            recipient: toAddr,
+                            counterparty: toAddr,
                             inr: inrVal,
                             tokens: tokenNum.toFixed(4),
                             hash: txHash,
@@ -415,7 +414,7 @@
                 }
 
                 if (updated) {
-                    // Sort history by order if needed or keep latest first
+                    // Sort history or keep latest first
                     localStorage.setItem("temple_tx_history", JSON.stringify(history));
                     if(document.getElementById("sectionHistory").classList.contains("hidden") === false) {
                         loadTransactionHistory();
@@ -562,9 +561,9 @@
                 
                 await tx.wait();
                 
-                // Save transaction to local history as SENT (isIncoming: false)
+                // Save outgoing transaction explicitly with isIncoming: false
                 saveTransaction({
-                    recipient: recipient,
+                    counterparty: recipient,
                     inr: inr,
                     tokens: tokenAmount.toFixed(4),
                     hash: tx.hash,
@@ -603,8 +602,10 @@
             }
             let html = "";
             history.forEach(tx => {
-                let labelType = tx.isIncoming ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
-                let addressLabel = tx.isIncoming ? `From: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}` : `To: ${tx.recipient.substring(0,6)}...${tx.recipient.substring(38)}`;
+                let isInc = tx.isIncoming === true;
+                let labelType = isInc ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
+                let counterAddr = tx.counterparty || tx.recipient || "0x000...000";
+                let addressLabel = isInc ? `From: ${counterAddr.substring(0,6)}...${counterAddr.substring(38)}` : `To: ${counterAddr.substring(0,6)}...${counterAddr.substring(38)}`;
                 let explorerLink = tx.hash && tx.hash !== "Incoming Transfer" ? `<a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>` : `<span class="text-[10px] text-green-400 font-semibold"><i class="fa-solid fa-check-circle"></i> Confirmed</span>`;
 
                 html += `
@@ -612,7 +613,7 @@
                         <div>
                             <div class="flex items-center mb-0.5">
                                 ${labelType}
-                                <span class="${tx.isIncoming ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
+                                <span class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
                             </div>
                             <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
                             <span class="text-[9px] text-gray-500 block">${tx.time}</span>
