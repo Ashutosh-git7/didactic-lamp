@@ -136,14 +136,14 @@
             </button>
         </div>
 
-        <!-- Section 4: Transaction History -->
+        <!-- Section 4: On-Chain Temple_DA History with Directional Arrows -->
         <div id="sectionHistory" class="hidden space-y-3">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold text-gray-400">On-Chain BSC History (Arrows Indicator)</span>
-                <button onclick="syncBlockchainHistory()" class="text-[10px] text-yellow-400 hover:underline"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                <span class="text-xs font-bold text-gray-400">Connected Wallet On-Chain History</span>
+                <button onclick="syncOnChainHistory()" class="text-[10px] text-yellow-400 hover:underline"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
             </div>
             <div id="historyList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
-                <div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch blockchain history.</div>
+                <div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch Temple_DA history.</div>
             </div>
         </div>
 
@@ -238,7 +238,7 @@
             } else if(tab === 'history') {
                 historySec.classList.remove("hidden");
                 tabHistory.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-yellow-500 text-gray-950 transition shadow";
-                syncBlockchainHistory();
+                syncOnChainHistory();
             }
         }
 
@@ -307,21 +307,21 @@
             }
         }
 
-        // True On-Chain History using Directional Arrows (Up arrow for Outgoing, Down arrow for Incoming)
-        async function syncBlockchainHistory() {
+        // Strictly fetch on-chain transfer logs related ONLY to the connected userAddress
+        async function syncOnChainHistory() {
             if(!provider || !userAddress) {
-                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch blockchain history.</div>`;
+                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch Temple_DA history.</div>`;
                 return;
             }
 
-            document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-yellow-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Querying BSC Blockchain Logs...</div>`;
+            document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-yellow-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching Temple_DA history for your connected wallet...</div>`;
 
             try {
                 const erc20TransferEventAbi = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
                 const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
                 
                 const currentBlock = await provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 9000);
+                const fromBlock = Math.max(0, currentBlock - 20000); // Scans last ~20,000 blocks
                 
                 const filterTo = tokenContract.filters.Transfer(null, userAddress);
                 const filterFrom = tokenContract.filters.Transfer(userAddress, null);
@@ -333,7 +333,7 @@
 
                 let allTransactions = [];
 
-                // Incoming Transfers (DOWN ARROW ⬇️ - Money coming into wallet)
+                // Incoming (Funds received TO connected wallet) -> Down Arrow ⬇️
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
@@ -341,7 +341,7 @@
                     
                     allTransactions.push({
                         hash: log.transactionHash,
-                        peerAddress: parsed.args.from,
+                        peer: parsed.args.from,
                         tokens: tokenNum.toFixed(4),
                         inr: inrVal,
                         isIncoming: true,
@@ -349,7 +349,7 @@
                     });
                 }
 
-                // Outgoing Transfers (UP ARROW ⬆️ - Money going out of wallet)
+                // Outgoing (Funds sent FROM connected wallet) -> Up Arrow ⬆️
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
@@ -357,7 +357,7 @@
                     
                     allTransactions.push({
                         hash: log.transactionHash,
-                        peerAddress: parsed.args.to,
+                        peer: parsed.args.to,
                         tokens: tokenNum.toFixed(4),
                         inr: inrVal,
                         isIncoming: false,
@@ -365,37 +365,37 @@
                     });
                 }
 
+                // Sort newest blocks first
                 allTransactions.sort((a, b) => b.blockNumber - a.blockNumber);
 
                 const container = document.getElementById("historyList");
                 if(allTransactions.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No recent transactions found on BSC.</div>`;
+                    container.innerHTML = `<div class="text-center py-8 text-xs text-gray-500">No Temple_DA transactions found for this connected wallet.</div>`;
                     return;
                 }
 
                 let html = "";
                 allTransactions.forEach(tx => {
                     let isInc = tx.isIncoming === true;
-                    // Using Clear Directional Arrows instead of confusion-prone text labels
+                    // Directional Arrow Badge: Down arrow for incoming, Up arrow for outgoing
                     let arrowBadge = isInc 
-                        ? '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400 mr-2 text-xs"><i class="fa-solid fa-arrow-down"></i></span>' 
-                        : '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 mr-2 text-xs"><i class="fa-solid fa-arrow-up"></i></span>';
+                        ? '<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-500/20 text-green-400 mr-2.5 text-xs flex-shrink-0"><i class="fa-solid fa-arrow-down"></i></span>' 
+                        : '<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-yellow-500/20 text-yellow-400 mr-2.5 text-xs flex-shrink-0"><i class="fa-solid fa-arrow-up"></i></span>';
                     
-                    let peer = tx.peerAddress || "0x000";
-                    let shortPeer = peer.substring(0,6) + '...' + peer.substring(peer.length - 4);
-                    let addressLabel = isInc ? `From: ${shortPeer}` : `To: ${shortPeer}`;
+                    let peerShort = tx.peer.substring(0,6) + '...' + tx.peer.substring(tx.peer.length - 4);
+                    let addressLabel = isInc ? `From: ${peerShort}` : `To: ${peerShort}`;
                     
                     html += `
                         <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
-                            <div class="flex items-center">
+                            <div class="flex items-center overflow-hidden">
                                 ${arrowBadge}
-                                <div>
+                                <div class="truncate">
                                     <div class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</div>
                                     <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
                                     <span class="text-[9px] text-gray-500 block">BSC Confirmed</span>
                                 </div>
                             </div>
-                            <div>
+                            <div class="ml-2 flex-shrink-0">
                                 <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>
                             </div>
                         </div>
@@ -404,8 +404,8 @@
                 container.innerHTML = html;
 
             } catch (e) {
-                console.error("BSC History sync error:", e);
-                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-red-400">Failed to load blockchain history. Please retry.</div>`;
+                console.error("BSC On-Chain History fetch error:", e);
+                document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-red-400">Failed to load on-chain history. Please retry.</div>`;
             }
         }
 
