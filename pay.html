@@ -139,7 +139,7 @@
         <!-- Section 4: Transaction History -->
         <div id="sectionHistory" class="hidden space-y-3">
             <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold text-gray-400">On-Chain BSC History (Live Sync)</span>
+                <span class="text-xs font-bold text-gray-400">On-Chain BSC History (Arrows Indicator)</span>
                 <button onclick="syncBlockchainHistory()" class="text-[10px] text-yellow-400 hover:underline"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
             </div>
             <div id="historyList" class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
@@ -307,7 +307,7 @@
             }
         }
 
-        // 100% On-Chain True Verification using BSC Event Logs
+        // True On-Chain History using Directional Arrows (Up arrow for Outgoing, Down arrow for Incoming)
         async function syncBlockchainHistory() {
             if(!provider || !userAddress) {
                 document.getElementById("historyList").innerHTML = `<div class="text-center py-8 text-xs text-gray-500">Connect wallet to fetch blockchain history.</div>`;
@@ -321,9 +321,8 @@
                 const tokenContract = new ethers.Contract(tokenAddress, erc20TransferEventAbi, provider);
                 
                 const currentBlock = await provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 9000); // Last ~9000 blocks (~6 hours)
+                const fromBlock = Math.max(0, currentBlock - 9000);
                 
-                // Query both Incoming (to user) and Outgoing (from user) logs
                 const filterTo = tokenContract.filters.Transfer(null, userAddress);
                 const filterFrom = tokenContract.filters.Transfer(userAddress, null);
                 
@@ -334,7 +333,7 @@
 
                 let allTransactions = [];
 
-                // Process Incoming Transfers (RECEIVED)
+                // Incoming Transfers (DOWN ARROW ⬇️ - Money coming into wallet)
                 for (let log of logsTo) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
@@ -345,12 +344,12 @@
                         peerAddress: parsed.args.from,
                         tokens: tokenNum.toFixed(4),
                         inr: inrVal,
-                        isIncoming: true, // TRUE RECEIVED
+                        isIncoming: true,
                         blockNumber: log.blockNumber
                     });
                 }
 
-                // Process Outgoing Transfers (SENT)
+                // Outgoing Transfers (UP ARROW ⬆️ - Money going out of wallet)
                 for (let log of logsFrom) {
                     const parsed = tokenContract.interface.parseLog(log);
                     const tokenNum = parseFloat(ethers.utils.formatUnits(parsed.args.value, 18));
@@ -361,12 +360,11 @@
                         peerAddress: parsed.args.to,
                         tokens: tokenNum.toFixed(4),
                         inr: inrVal,
-                        isIncoming: false, // TRUE SENT
+                        isIncoming: false,
                         blockNumber: log.blockNumber
                     });
                 }
 
-                // Sort by block number descending (newest first)
                 allTransactions.sort((a, b) => b.blockNumber - a.blockNumber);
 
                 const container = document.getElementById("historyList");
@@ -378,9 +376,10 @@
                 let html = "";
                 allTransactions.forEach(tx => {
                     let isInc = tx.isIncoming === true;
-                    let labelType = isInc 
-                        ? '<span class="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded mr-1 font-bold">RECEIVED</span>' 
-                        : '<span class="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded mr-1 font-bold">SENT</span>';
+                    // Using Clear Directional Arrows instead of confusion-prone text labels
+                    let arrowBadge = isInc 
+                        ? '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400 mr-2 text-xs"><i class="fa-solid fa-arrow-down"></i></span>' 
+                        : '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 mr-2 text-xs"><i class="fa-solid fa-arrow-up"></i></span>';
                     
                     let peer = tx.peerAddress || "0x000";
                     let shortPeer = peer.substring(0,6) + '...' + peer.substring(peer.length - 4);
@@ -388,13 +387,13 @@
                     
                     html += `
                         <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 flex justify-between items-center text-xs">
-                            <div>
-                                <div class="flex items-center mb-0.5">
-                                    ${labelType}
-                                    <span class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</span>
+                            <div class="flex items-center">
+                                ${arrowBadge}
+                                <div>
+                                    <div class="${isInc ? 'text-green-400' : 'text-yellow-400'} font-bold">${tx.tokens} Temple_DA (₹${tx.inr})</div>
+                                    <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
+                                    <span class="text-[9px] text-gray-500 block">BSC Confirmed</span>
                                 </div>
-                                <span class="text-[10px] text-gray-400 font-mono">${addressLabel}</span>
-                                <span class="text-[9px] text-gray-500 block">BSC Confirmed</span>
                             </div>
                             <div>
                                 <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-yellow-400 px-2.5 py-1 rounded-lg text-[10px] font-semibold">View <i class="fa-solid fa-external-link-alt ml-0.5"></i></a>
