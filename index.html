@@ -789,8 +789,20 @@ function isUserPackageActive(u) {
   return true;
 }
 
-// 🟢 NEW MANDATORY ACTIVATION CHECK LOGIC
+// 🟢 NEW MANDATORY ACTIVATION CHECK LOGIC (With Legacy User Bypass)
 function isAccountFullyActivated(u) {
+  // Cutoff Timestamp: Users created before this exact time will be considered Legacy/VIP users
+  // and will have their dashboard 100% unlocked automatically without forcing a combo!
+  // Current set to roughly match: 25 October 2026, 00:00:00 (UTC)
+  const CUTOFF_TIMESTAMP = 1729814400000; 
+  
+  const isOldUser = (!u.createdAt) || (u.createdAt < CUTOFF_TIMESTAMP);
+  
+  if (isOldUser) {
+      return true; // 🔓 Old users bypass the lock entirely!
+  }
+
+  // Lock applies only to new users joining after the cutoff
   const hasInvestment = Number(u.investment || 0) >= 25;
   const hasPackage = isUserPackageActive(u);
   return hasInvestment && hasPackage;
@@ -2587,7 +2599,6 @@ async function userDashboard() {
     const u = snap.val() || {};
     await checkAndTriggerAutoModeReinvestment(phone, u);
 
-    // 🟢 Activation Check Logic
     const fullyActivated = isAccountFullyActivated(u);
     const lockClass = fullyActivated ? "" : "locked-feature";
 
@@ -2633,7 +2644,6 @@ async function userDashboard() {
         <span style="color:#00ff88; font-size:13px;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>`;
 
-    // 🔴 SMART CHECKOUT INJECTION FOR INACTIVE USERS
     if (!fullyActivated) {
         html += `
         <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05); box-shadow: 0 0 30px rgba(0,255,136,0.2);">
@@ -2755,7 +2765,7 @@ async function userDashboard() {
       <div class="card"><h3>Package</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
     </div>
 
-    <!-- 🔒 WRAPPING FEATURES WITH LOCK IF NOT ACTIVATED -->
+    <!-- 🔒 WRAPPING FEATURES WITH LOCK IF NOT FULLY ACTIVATED (FOR NEW USERS) -->
     <div class="${lockClass}">
 
         <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
@@ -2839,6 +2849,7 @@ async function userDashboard() {
     <!-- 🔒 END LOCKED FEATURES -->
 
     <h3 style="margin-top:24px;">Account Histories & Records (Click To View)</h3>
+    <div class="accordion-wrapper" id="accTeamNetwork"><div class="accordion-header" onclick="toggleAccordion('accTeamNetwork')"><span>📊 My Team & 15-Level Business Network</span><span>▼</span></div><div class="accordion-content" id="teamNetworkData">Loading team data...</div></div>
     <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 Package Upline/Downline (50/50 Split) & Staking Income</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accReinvestCycles"><div class="accordion-header" onclick="toggleAccordion('accReinvestCycles')"><span>🔄 2X Auto-Rejoining Wheel Cycle History</span><span>▼</span></div><div class="accordion-content" id="reinvestHistoryList">Loading...</div></div>
     <div class="accordion-wrapper" id="accRefPointsHistory"><div class="accordion-header" onclick="toggleAccordion('accRefPointsHistory')"><span>🌟 Referral Points History (+20 Pts Earnings)</span><span>▼</span></div><div class="accordion-content" id="refPointsHistoryList">Loading...</div></div>
@@ -2863,6 +2874,7 @@ async function userDashboard() {
     loadPackageHistory(phone);
     loadMyPosts(phone); 
     loadGiftHistory(phone);
+    loadTeamNetworkInfo(phone);
   });
 }
 
@@ -3696,6 +3708,108 @@ window.editUser = async oldId => {
 window.deleteUser = async id => { customConfirm("Are you sure?", async () => { await remove(ref(db, "users/" + id)); customAlert("User deleted."); }); };
 window.logout = () => { localStorage.removeItem("user"); location.hash = "#login"; };
 window.adminLogout = () => { localStorage.removeItem("admin"); location.hash = "#login"; };
+
+// 🟢 NEW FUNCTION: LOAD TEAM NETWORK (15 LEVELS)
+async function loadTeamNetworkInfo(phone) {
+  try {
+    const el = document.getElementById("teamNetworkData");
+    if (!el) return;
+    
+    const usersSnap = await get(ref(db, "users"));
+    if (!usersSnap.exists()) { el.innerHTML = "<p class='small'>No team data found.</p>"; return; }
+
+    let allUsers = {};
+    usersSnap.forEach(child => { allUsers[child.key] = child.val(); });
+
+    let levelData = []; 
+    for(let i=0; i<15; i++) {
+        levelData.push({total: 0, active: 0, business: 0, directsList: []});
+    }
+
+    let currentLevelPhones = [phone];
+
+    for (let i = 0; i < 15; i++) {
+      if (currentLevelPhones.length === 0) break;
+      let nextLevelPhones = [];
+
+      for (const parentPhone of currentLevelPhones) {
+        for (const uPhone in allUsers) {
+          if (allUsers[uPhone].referrer === parentPhone) {
+            nextLevelPhones.push(uPhone);
+            const uData = allUsers[uPhone];
+
+            // Check if user is active (Has active package OR CTO Club OR Investment >= $25)
+            const isPkgActive = isUserPackageActive(uData);
+            const isCtoActive = (uData.ctoActiveClub > 0 || uData.inWaitingQueue || uData.inHoldingQueueForClub || uData.isCrownAmbassador);
+            const isActive = isPkgActive || isCtoActive || (Number(uData.investment || 0) >= 25);
+
+            // Calculate Business (Using Monthly Business + Total Investment)
+            const business = Number(uData.investment || 0) + Number(uData.monthlyBusiness || 0);
+
+            levelData[i].total++;
+            if (isActive) levelData[i].active++;
+            levelData[i].business += business;
+
+            // Store Directs Data for Level 1 Only
+            if (i === 0) {
+              levelData[0].directsList.push({ phone: uPhone, name: uData.name, active: isActive, biz: business });
+            }
+          }
+        }
+      }
+      currentLevelPhones = nextLevelPhones;
+    }
+
+    // Build UI HTML
+    let html = `<h4 style="color:#00ff88; margin-bottom:8px;">👤 My Direct Referrals (Level 1)</h4>`;
+    if (levelData[0].directsList.length === 0) {
+      html += `<p class="small" style="margin-bottom:14px;">You have no direct referrals yet.</p>`;
+    } else {
+      html += `<table style="margin-bottom:14px;"><tr><th>User Name</th><th>Status</th><th>Total Business</th></tr>`;
+      levelData[0].directsList.forEach(d => {
+        html += `<tr>
+          <td><b>${d.name || 'Member'}</b><br><span class="small" style="color:#aaa;">${maskPhone(d.phone)}</span></td>
+          <td>${d.active ? '<span class="badge-tag" style="background:rgba(0,255,136,0.1); color:#00ff88; border-color:#00ff88;">Active</span>' : '<span class="badge-tag" style="background:rgba(255,68,68,0.1); color:#ff4444; border-color:#ff4444;">Inactive</span>'}</td>
+          <td style="color:#dfb72c;">$${d.biz.toFixed(2)}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+    }
+
+    html += `<h4 style="color:#dfb72c; margin-bottom:8px;">📊 15-Level Network Summary</h4>`;
+    html += `<table><tr><th>Level</th><th>Registered</th><th>Active</th><th>Business Volume</th></tr>`;
+    let totalBizAll = 0, totalRegAll = 0, totalActAll = 0;
+    
+    for(let i=0; i<15; i++) {
+      if (levelData[i].total > 0) {
+        html += `<tr>
+          <td>Level ${i+1}</td>
+          <td>${levelData[i].total}</td>
+          <td style="color:#00ff88;">${levelData[i].active}</td>
+          <td style="color:#dfb72c;">$${levelData[i].business.toFixed(2)}</td>
+        </tr>`;
+        totalRegAll += levelData[i].total;
+        totalActAll += levelData[i].active;
+        totalBizAll += levelData[i].business;
+      }
+    }
+    
+    if(totalRegAll === 0) {
+        html += `<tr><td colspan="4" class="center small">No team built yet.</td></tr>`;
+    } else {
+        html += `<tr style="background:rgba(223,183,44,0.15); font-weight:bold;">
+          <td style="color:#dfb72c;">TOTAL</td><td>${totalRegAll}</td><td style="color:#00ff88;">${totalActAll}</td><td style="color:#dfb72c;">$${totalBizAll.toFixed(2)}</td>
+        </tr>`;
+    }
+    html += `</table>`;
+
+    el.innerHTML = html;
+  } catch(e) {
+    console.error("Team Network Load Error", e);
+    const el = document.getElementById("teamNetworkData");
+    if(el) el.innerHTML = "<p class='small' style='color:#ff4444;'>Error loading team data.</p>";
+  }
+}
 
 async function loadReferralHistory(phone) {
   try {
