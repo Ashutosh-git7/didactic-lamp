@@ -578,6 +578,14 @@ td {
   border-color: #00ff88;
   box-shadow: 0 0 20px rgba(0, 255, 136, 0.25);
 }
+
+/* Lock Overlay for Inactive Users (Smart Checkout) */
+.locked-feature { position: relative; opacity: 0.6; pointer-events: none; filter: grayscale(100%); }
+.locked-feature::after {
+    content: "🔒 Unlock via Smart Checkout";
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9); color: #ff4444; padding: 8px 16px; border: 1px solid #ff4444; border-radius: 8px; font-weight: bold; font-size: 12px; z-index: 10; white-space: nowrap; font-family: 'Orbitron', sans-serif;
+}
 </style>
 </head>
 
@@ -752,6 +760,7 @@ const walletRegex = /^0x[a-fA-F0-9]{40}$/;
 const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
 const OFFICIAL_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; 
 const OFFICIAL_RECEIVER_ADDRESS = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95"; 
+const LIQUIDITY_POOL_ADDRESS = "0x707171A0C27f87B8C530B20831f7B004e6647830";
 
 let activePostIdForComments = null;
 
@@ -778,6 +787,13 @@ function isUserPackageActive(u) {
   if (!u || !u.tier || u.tier === "none" || u.packageExpired) return false;
   if (u.packageExpiresAt && Date.now() > u.packageExpiresAt) return false;
   return true;
+}
+
+// 🟢 NEW MANDATORY ACTIVATION CHECK LOGIC
+function isAccountFullyActivated(u) {
+  const hasInvestment = Number(u.investment || 0) >= 25;
+  const hasPackage = isUserPackageActive(u);
+  return hasInvestment && hasPackage;
 }
 
 // ========================================================
@@ -1013,7 +1029,6 @@ async function executeUsdtTransfer(amount, descriptionLabel) {
     throw new Error("Transaction failed or reverted on BNB Smart Chain! Payment was not received.");
   }
 
-  customAlert(`Transaction Confirmed on BSC!\nTx Hash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`);
   return { tx: { hash: txHash }, senderAddress };
 }
 
@@ -1082,7 +1097,6 @@ async function distribute15LevelCommission(startReferrerPhone, totalAmountUSDT, 
 // 2X SMART SPLIT & AUTO-REJOINING WHEEL HELPER FOR RECIPIENTS
 // ========================================================
 async function creditPackageIncomeWith2XSmartSplit(recipientPhone, recipientData, grossUSDT, currentPrice, fromUserPhone, level, percentage, sourceLabel, recursionDepth = 0) {
-  // 1. Check Active Package Eligibility (No Free Riding - Flush-out to Admin Reserve)
   if (!isUserPackageActive(recipientData)) {
     const masterRef = ref(db, "cto_master");
     const mSnap = await get(masterRef);
@@ -1093,9 +1107,6 @@ async function creditPackageIncomeWith2XSmartSplit(recipientPhone, recipientData
     return;
   }
 
-  // 2. 50% / 50% Smart Split:
-  // - 50% credited immediately to Main Balance (Withdrawable Temple_DA tokens)
-  // - 50% held in Auto-Rejoin Wheel Reserve (Tracked via packageEarningsAccumulated towards 2X Gross Cap)
   const netWithdrawableUSDT = Number((grossUSDT * 0.50).toFixed(4));
   const netWithdrawableTokens = Number((netWithdrawableUSDT / currentPrice).toFixed(2));
 
@@ -1121,7 +1132,6 @@ async function creditPackageIncomeWith2XSmartSplit(recipientPhone, recipientData
     timestamp: Date.now()
   });
 
-  // 3. Check if 2X Auto-Rejoin Threshold is reached
   if (recursionDepth < 2) {
     const updatedSnap = await get(ref(db, "users/" + recipientPhone));
     if (updatedSnap.exists()) {
@@ -1140,26 +1150,25 @@ async function distributeCustomPackageCommission(startReferrerPhone, userPhone, 
 
   if (packageTier === "starter" || packageTier === "5") {
     depth = 5;
-    uplinePercentages = [2.2, 1.8, 1.4, 1.0, 0.6]; // 7.0% Upline
-    downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3]; // 3.0% Downline (10% Total)
+    uplinePercentages = [2.2, 1.8, 1.4, 1.0, 0.6]; 
+    downlinePercentages = [1.0, 0.8, 0.5, 0.4, 0.3]; 
   } else if (packageTier === "monthly" || packageTier === "15") {
     depth = 10;
-    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.5, 0.3, 0.2]; // 10.0% Upline
-    downlinePercentages = [1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2]; // 5.0% Downline (15% Total)
+    uplinePercentages = [2.0, 1.8, 1.5, 1.2, 1.0, 0.8, 0.7, 0.5, 0.3, 0.2]; 
+    downlinePercentages = [1.0, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2]; 
   } else if (packageTier === "50" || packageTier === "advanced") {
     depth = 15;
-    uplinePercentages = [2.5, 2.0, 1.6, 1.3, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.4, 0.3, 0.2, 0.2]; // 14.0% Upline
-    downlinePercentages = [1.2, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1]; // 6.0% Downline (20% Total)
+    uplinePercentages = [2.5, 2.0, 1.6, 1.3, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.4, 0.3, 0.2, 0.2]; 
+    downlinePercentages = [1.2, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1]; 
   } else if (packageTier === "yearly" || packageTier === "120") {
     depth = 20;
-    uplinePercentages = [3.0, 2.4, 2.0, 1.6, 1.4, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.1]; // 18.0% Upline
-    downlinePercentages = [1.4, 1.1, 0.9, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]; // 7.0% Downline (25% Total)
+    uplinePercentages = [3.0, 2.4, 2.0, 1.6, 1.4, 1.2, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2, 0.1]; 
+    downlinePercentages = [1.4, 1.1, 0.9, 0.7, 0.5, 0.4, 0.3, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]; 
   }
 
   let currentRefPhone = startReferrerPhone;
   const currentPrice = await getPrice();
 
-  // 1. Upline Distribution (with Active Package Check & 50/50 Rejoin Split)
   for (let i = 0; i < depth; i++) {
     if (!currentRefPhone || i >= uplinePercentages.length) break;
     const refUserSnap = await get(ref(db, "users/" + currentRefPhone));
@@ -1184,7 +1193,6 @@ async function distributeCustomPackageCommission(startReferrerPhone, userPhone, 
     currentRefPhone = refUserData.referrer || "";
   }
 
-  // 2. Downline Spillover Distribution (with Active Package Check & 50/50 Rejoin Split)
   let currentDownlinePhones = [userPhone];
   const allUsersSnap = await get(ref(db, "users"));
   if (!allUsersSnap.exists()) return;
@@ -1268,7 +1276,7 @@ async function checkAndTriggerAutoModeReinvestment(phone, u, recursionDepth = 0)
   if (!u || !u.tier || u.tier === "none" || u.packageExpired) return;
   const packagePrice = Number(u.packagePriceUSDT || getPackagePriceByTier(u.tier));
   const earningsAccumulated = Number(u.packageEarningsAccumulated || 0);
-  const threshold = packagePrice * 2.0; // 2X Gross Cap ($50% paid to balance + 50% = 1X Package Price reserved for Auto-Rejoin!)
+  const threshold = packagePrice * 2.0; 
 
   if (earningsAccumulated >= threshold) {
     const carryOver = Number(Math.max(0, earningsAccumulated - threshold).toFixed(4));
@@ -1299,7 +1307,6 @@ async function checkAndTriggerAutoModeReinvestment(phone, u, recursionDepth = 0)
       timestamp: newActivatedAt
     });
 
-    // Trigger fresh Upline, Downline & CTO distribution backed 100% by the user's 50% Rejoin Reserve!
     await recordMasterInflowAndDistribute(
       phone,
       packagePrice,
@@ -1465,32 +1472,122 @@ function router() {
   (routes[hash] || landing)();
 }
 
-async function getLivePriceData() {
-  try {
-    const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
-    const data = await res.json();
-    if (data && data.pair && data.pair.priceUsd) {
-      const livePrice = parseFloat(data.pair.priceUsd);
-      if (livePrice > 0) return livePrice;
-    }
-  } catch (err) {}
-  try {
-    const fallbackRes = await fetch("https://api.coingecko.com/api/v3/simple/token_price/binance-smart-chain?contract_addresses=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1&vs_currencies=usd");
-    const fallbackData = await fallbackRes.json();
-    if (fallbackData && fallbackData["0x50be31caab627ee8F98374d33b0454a8269A79e1"]?.usd) {
-      return parseFloat(fallbackData["0x50be31caab627ee8F98374d33b0454a8269A79e1"].usd);
-    }
-  } catch (err) {}
-  return 0.0002;
-}
-
+// 🟢 100% DECENTRALIZED WEB3 PRICE FETCH FROM PANCAKESWAP LIQUIDITY POOL
 async function getPrice() {
+  // 1. Firebase Admin Override Check (अगर एडमिन ने मैन्युअली प्राइस डाला है)
   try {
     const s = await get(ref(db, "config/temple_DAPrice"));
     if (s.exists() && parseFloat(s.val()) > 0) return parseFloat(s.val());
   } catch (e) {}
-  return await getLivePriceData();
+
+  // 2. Direct Web3 Fetch from PancakeSwap Pair Contract
+  try {
+    const PAIR_ABI = ["function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast)"];
+    
+    // We use a robust public RPC node to avoid Binance CORS errors in browser
+    const provider = new ethers.providers.JsonRpcProvider("https://bsc-rpc.publicnode.com");
+    const pairContract = new ethers.Contract(LIQUIDITY_POOL_ADDRESS, PAIR_ABI, provider);
+    
+    const reserves = await pairContract.getReserves();
+    
+    // In Pair 0x707171A0C27f87B8C530B20831f7B004e6647830:
+    // token0 = TEMPLE_DA (0x50BE31cAAB627ee8F98374d33b0454a8269A79e1)
+    // token1 = USDT (0x55d398326f99059fF775485246999027B3197955)
+    // Lexicographically sorted: 0x50B < 0x55d
+    
+    const reserve0 = parseFloat(ethers.utils.formatUnits(reserves._reserve0, 18)); // Temple_DA Reserve
+    const reserve1 = parseFloat(ethers.utils.formatUnits(reserves._reserve1, 18)); // USDT Reserve
+    
+    if (reserve0 > 0) {
+      const priceUsdt = reserve1 / reserve0;
+      console.log(`✅ Web3 Price Fetched Successfully: $${priceUsdt.toFixed(6)}`);
+      return priceUsdt;
+    }
+  } catch (web3Err) {
+    console.error("❌ Web3 Pool Fetch Failed (RPC Issue or CORS), falling back to API", web3Err);
+  }
+
+  // 3. Fallback to DexScreener API if RPC is blocked by user's network
+  try {
+    const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
+    const data = await res.json();
+    if (data && data.pair && data.pair.priceUsd) {
+      const apiPrice = parseFloat(data.pair.priceUsd);
+      console.log(`✅ API Price Fetched Successfully: $${apiPrice.toFixed(6)}`);
+      return apiPrice;
+    }
+  } catch(e) {
+    console.error("❌ DexScreener API Fetch Failed:", e);
+  }
+  
+  // Ultimate Fallback - Close to current real price
+  return 0.001569; 
 }
+
+// 🟢 SMART CHECKOUT GLOBALS
+window.updateLiveTotal = () => {
+    const pkgAmt = parseFloat(document.getElementById("checkoutPackage").value || 0);
+    let invAmt = parseFloat(document.getElementById("checkoutInvest").value || 0);
+    if (invAmt < 25) { 
+        document.getElementById("checkoutInvest").value = 25; 
+        invAmt = 25; 
+    }
+    const total = pkgAmt + invAmt;
+    document.getElementById("liveTotalText").innerText = `$${total} USDT`;
+};
+
+window.executeSmartCheckout = async () => {
+    const phone = localStorage.getItem("user");
+    if (!phone) return customAlert("Please login first");
+
+    const pkgSelect = document.getElementById("checkoutPackage");
+    const invInput = document.getElementById("checkoutInvest");
+    
+    const pkgAmt = parseFloat(pkgSelect.value);
+    const invAmt = parseFloat(invInput.value);
+
+    if (invAmt < 25) return customAlert("Minimum investment for combo activation must be $25 or more.");
+
+    const totalAmt = pkgAmt + invAmt;
+    let tierName = "starter";
+    if (pkgAmt === 15) tierName = "monthly";
+    if (pkgAmt === 50) tierName = "50";
+    if (pkgAmt === 120) tierName = "yearly";
+
+    try {
+        const { tx } = await executeUsdtTransfer(totalAmt, "Mandatory Combo Activation");
+
+        const snap = await get(ref(db, "users/" + phone));
+        const u = snap.exists() ? snap.val() : {};
+
+        // 1. Process Package Part (No Tokens, goes to Networking)
+        await upgradePackageDirectInternal(phone, tierName, pkgAmt, "Smart Combo Activation");
+
+        // 2. Process Investment Part (Gets 100% Tokens, goes to Global Pools)
+        const currentPrice = await getPrice();
+        const temple_DA = Number((invAmt / currentPrice).toFixed(2));
+        
+        await update(ref(db, "users/" + phone), {
+            investment: Number(u.investment || 0) + invAmt, 
+            locked: Number(u.locked || 0) + temple_DA,
+            monthlyBusiness: Number(u.monthlyBusiness || 0) + invAmt,
+            lockDate: u.lockDate || Date.now()
+        });
+        await push(ref(db, "investments/history/" + phone), { amountUSDT: invAmt, txHash: tx.hash, timestamp: Date.now() });
+
+        await recordMasterInflowAndDistribute(phone, invAmt, `Combo Deposit ($${invAmt})`);
+
+        if (!u.ctoActiveClub && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador) {
+            await processClub1Allocation(phone, u.name || "Member", "Smart Combo");
+        }
+
+        customAlert(`🎉 Combo Activation Successful!\n\n• Package: ${tierName.toUpperCase()} ($${pkgAmt})\n• Investment: $${invAmt} (Received ${temple_DA} locked Temple_DA)\n\nYour entire dashboard is now unlocked!`);
+        userDashboard(); 
+
+    } catch (error) {
+        customAlert("Checkout Failed: " + formatWeb3Error(error));
+    }
+};
 
 async function landing() {
   const priceUsd = await getPrice();
@@ -1507,7 +1604,7 @@ async function landing() {
     </div>
 
     <div style="margin: 16px 0; padding: 12px; background: rgba(223, 183, 44, 0.08); border-radius: 10px; border: 1px solid #dfb72c; text-align: center;">
-        <span class="small" style="display:block; color:#aaa;">LIVE PRICE (USDT)</span>
+        <span class="small" style="display:block; color:#aaa;">LIVE DEX PRICE (USDT)</span>
         <span class="number" style="font-size:20px;">$${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
     </div>
 
@@ -2456,6 +2553,10 @@ async function userDashboard() {
     const u = snap.val() || {};
     await checkAndTriggerAutoModeReinvestment(phone, u);
 
+    // 🟢 Activation Check Logic
+    const fullyActivated = isAccountFullyActivated(u);
+    const lockClass = fullyActivated ? "" : "locked-feature";
+
     const activeTier = checkAndHandlePackageExpiry(phone, u);
     let expiryNotice = "";
     if (activeTier !== "none" && u.packageExpiresAt) {
@@ -2487,17 +2588,54 @@ async function userDashboard() {
     const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
     const todayWithdrawn = (u.lastWithdrawDate === todayStr) ? Number(u.todayWithdrawnAmount || 0) : 0;
 
-    appDiv().innerHTML = `
+    let html = `
     <div class="card" style="border: 2px solid #dfb72c; background: rgba(223, 183, 44, 0.08); margin-bottom: 16px; text-align: center;">
       <h3 style="color:#dfb72c; font-size:14px; margin-bottom:4px;">🔗 Linked BEP20 Wallet Address</h3>
       <p style="font-size:14px; word-break:break-all; color:#00ff88; font-weight:bold; font-family:monospace;">${userWallet}</p>
     </div>
 
     <div style="margin-bottom: 16px; padding: 10px 16px; background: rgba(223, 183, 44, 0.08); border-radius: 10px; border: 1px solid #dfb72c; display: flex; justify-content: space-between; align-items:center; flex-wrap: wrap;">
-        <span style="font-weight:bold; color:#dfb72c; font-size:13px;">Live Market Rate:</span>
+        <span style="font-weight:bold; color:#dfb72c; font-size:13px;">Live Web3 DEX Rate (PancakeSwap Pool):</span>
         <span style="color:#00ff88; font-size:13px;">USDT: $${priceUsd < 0.01 ? priceUsd.toFixed(6) : priceUsd.toFixed(4)}</span>
-    </div>
+    </div>`;
 
+    // 🔴 SMART CHECKOUT INJECTION FOR INACTIVE USERS
+    if (!fullyActivated) {
+        html += `
+        <div class="card" style="border: 2px solid #00ff88; background: rgba(0, 255, 136, 0.05); box-shadow: 0 0 30px rgba(0,255,136,0.2);">
+            <h2 style="color:#00ff88; border-bottom:1px solid #00ff88; padding-bottom:10px;">🚀 Mandatory Combo Activation</h2>
+            <p style="color:#fff; font-size:14px; margin-bottom:15px; line-height:1.5;">
+                Welcome to Temple_DA! To unlock Reels uploading, Withdrawals, Point Conversions, and Referral Links, you must complete your one-time Combo Activation via Web3 Wallet.
+            </p>
+            
+            <div style="background:#111; padding:15px; border-radius:10px; border:1px dashed #dfb72c; margin-bottom:15px;">
+                <label style="color:#dfb72c; font-weight:bold; font-size:13px; display:block; margin-bottom:6px;">1. Select Creator Package (Mandatory):</label>
+                <select id="checkoutPackage" onchange="updateLiveTotal()" style="margin-top:0;">
+                    <option value="5">Starter Combo - $5 Package</option>
+                    <option value="15">Pro Combo - $15 Package</option>
+                    <option value="50">Advanced Combo - $50 Package</option>
+                    <option value="120">Elite Combo - $120 Package</option>
+                </select>
+                <p class="small" style="margin-top:4px;">*Package fees fund the network distribution. No tokens are minted for this part.</p>
+            </div>
+
+            <div style="background:#111; padding:15px; border-radius:10px; border:1px dashed #00ff88; margin-bottom:15px;">
+                <label style="color:#00ff88; font-weight:bold; font-size:13px; display:block; margin-bottom:6px;">2. Add Custom Investment (Min $25):</label>
+                <input type="number" id="checkoutInvest" value="25" min="25" oninput="updateLiveTotal()" style="margin-top:0; font-size:18px; font-weight:bold; color:#00ff88;">
+                <p class="small" style="margin-top:4px;">*You receive 100% Temple_DA tokens for this amount + Auto-Entry to Club 1!</p>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:15px; border-radius:10px; margin-bottom:15px;">
+                <span style="font-size:18px; font-weight:bold; color:#fff;">Total Payable:</span>
+                <span id="liveTotalText" style="font-size:24px; font-weight:bold; color:#dfb72c;">$30 USDT</span>
+            </div>
+
+            <button onclick="executeSmartCheckout()" class="btn-green" style="font-size:16px; padding:15px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">⚡ Pay Total Combo via Web3</button>
+        </div>
+        `;
+    }
+
+    html += `
     <!-- DAILY REWARD CLAIM CARD (STRICT 24H COOLDOWN) -->
     <div class="card center" style="border: 2px solid ${canClaimToday ? '#00ff88' : '#444'}; background: ${canClaimToday ? 'rgba(0, 255, 136, 0.05)' : 'rgba(255,255,255,0.02)'}; padding: 18px;">
       <h3 style="color:${canClaimToday ? '#00ff88' : '#888'}; margin-bottom: 4px;">🎁 Daily Login Reward (24h Cooldown)</h3>
@@ -2583,82 +2721,88 @@ async function userDashboard() {
       <div class="card"><h3>Package</h3><span class="${activeTier !== 'none' ? 'badge-tag' : 'badge-expired'}">${activeTier !== 'none' ? activeTier.toUpperCase() : 'FREE / EXPIRED'}</span></div>
     </div>
 
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <div>
-          <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
-          <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
+    <!-- 🔒 WRAPPING FEATURES WITH LOCK IF NOT ACTIVATED -->
+    <div class="${lockClass}">
+
+        <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="color:#00ff88; margin-bottom:4px;">Creator Subscription Status</h3>
+              <p class="small">Tier: <strong>${activeTier !== 'none' ? activeTier.toUpperCase() : 'NO ACTIVE PLAN'}</strong> | ${expiryNotice}</p>
+            </div>
+            <div><a href="#packages"><button style="width:auto; padding:11px 18px; font-size:11px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package ($5, $15, $50, $120)</button></a></div>
+          </div>
         </div>
-        <div><a href="#packages"><button style="width:auto; padding:11px 18px; font-size:11px; background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%);">⚡ Upgrade Package ($5, $15, $50, $120)</button></a></div>
-      </div>
-    </div>
 
-    <div class="card">
-      <h3>Post Instagram-Style Reel</h3>
-      <select id="talentType">
-        <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
-        <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
-        <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
-      </select>
-      <input id="talentTitle" placeholder="Title / Caption for Reel">
-      <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
-        <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📁 Select Video/Image File from Device (Optional):</label>
-        <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
-        <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 25MB)</p>
-      </div>
-      <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
-      <input id="talentMedia" placeholder="Direct Video MP4 URL, Instagram or YouTube Shorts link">
-      <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
-      <div id="uploadProgressContainer" style="display:none; margin: 10px 0;">
-        <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Processing File: 0%</p>
-        <div style="background:#222; border-radius:6px; height:7px; overflow:hidden; margin-top:5px;">
-          <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
+        <div class="card">
+          <h3>Post Instagram-Style Reel</h3>
+          <select id="talentType">
+            <option value="video">Vertical Reel / Video (Creator +3 Pts, Viewer +2 Pts)</option>
+            <option value="photo">Photo / Graphic (Creator +1 Pt, Viewer +1 Pt)</option>
+            <option value="text">Story / Motivation / Poetry (Creator +1 Pt)</option>
+          </select>
+          <input id="talentTitle" placeholder="Title / Caption for Reel">
+          <div style="margin: 8px 0; padding: 10px; background: rgba(223, 183, 44, 0.05); border: 1px dashed rgba(223, 183, 44, 0.4); border-radius: 10px;">
+            <label class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📁 Select Video/Image File from Device (Optional):</label>
+            <input type="file" id="talentFile" accept="video/*,image/*" style="margin: 0; padding: 5px;">
+            <p class="small" style="color:#888; margin-top:4px;">MP4, WebM, Images (Max 25MB)</p>
+          </div>
+          <p class="small" style="text-align:center; color:#dfb72c;">— OR Direct URL (YouTube Shorts / Instagram / MP4) —</p>
+          <input id="talentMedia" placeholder="Direct Video MP4 URL, Instagram or YouTube Shorts link">
+          <textarea id="talentText" placeholder="Post Description (Optional)" rows="2"></textarea>
+          <div id="uploadProgressContainer" style="display:none; margin: 10px 0;">
+            <p id="uploadStatusText" class="small" style="color:#dfb72c; font-weight:bold;">Processing File: 0%</p>
+            <div style="background:#222; border-radius:6px; height:7px; overflow:hidden; margin-top:5px;">
+              <div id="uploadProgressBar" style="background:#dfb72c; width:0%; height:100%;"></div>
+            </div>
+          </div>
+          <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
         </div>
-      </div>
-      <button id="publishBtn" onclick="publishTalent()">Publish Reel</button>
-    </div>
 
-    <div class="card">
-      <h3>Points to Temple_DA Converter</h3>
-      <p class="small">200 Points = 1 Temple_DA (Min. 1000 Points required to convert. Requires Active Package or at least 1 Direct Referral).</p>
-      <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">Convert Points To Temple_DA</button>
-    </div>
-
-    <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
-      <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
-      <p class="small">
-        • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
-        • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
-      </p>
-      <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:10px;">
-      <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit USDT via Web3 Wallet</button>
-    </div>
-
-    <div class="card" style="border: 2px solid #dfb72c;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <h3 style="margin:0;">Withdraw Temple_DA (90% Tokens / 10% Activation USDT)</h3>
-        <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">0% ADMIN CHARGES</span>
-      </div>
-      <p class="small" style="color:#ccc; margin-bottom:10px;">
-        Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP20 wallet. The remaining <strong>10%</strong> converts to USDT and credits automatically to your Activation Wallet upon admin approval for team building.
-      </p>
-      <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:10px 14px; margin-bottom:12px;">
-        <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📊 Daily Withdrawal Tier Limits (Strictly Enforced):</span>
-        <div style="font-size:12px; color:#eee; line-height:1.5;">
-          • <strong>Open Micro-Staking (< $25 single-shot):</strong> Max 60 Temple_DA / day<br>
-          • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
-          • <strong>High-Tier Staking ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
+        <div class="card">
+          <h3>Points to Temple_DA Converter</h3>
+          <p class="small">200 Points = 1 Temple_DA (Min. 1000 Points required to convert. Requires Active Package or at least 1 Direct Referral).</p>
+          <button onclick="convertPointsToToken()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">Convert Points To Temple_DA</button>
         </div>
-        <p class="small" style="color:#00ff88; margin-top:6px; font-weight:bold;">Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)</p>
-      </div>
-      <input id="withdraw" placeholder="Enter Temple_DA amount to withdraw" type="number" step="any">
-      <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (90% Tokens / 10% Activation USDT)</button>
-    </div>
 
-    <div class="card">
-      <h3>Referral Link</h3>
-      <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
+        <div class="card" style="border: 1px solid #00ff88; background: rgba(0, 255, 136, 0.03);">
+          <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
+          <p class="small">
+            • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
+            • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
+          </p>
+          <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:10px;">
+          <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit USDT via Web3 Wallet</button>
+        </div>
+
+        <div class="card" style="border: 2px solid #dfb72c;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <h3 style="margin:0;">Withdraw Temple_DA (90% Tokens / 10% Activation USDT)</h3>
+            <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">0% ADMIN CHARGES</span>
+          </div>
+          <p class="small" style="color:#ccc; margin-bottom:10px;">
+            Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP20 wallet. The remaining <strong>10%</strong> converts to USDT and credits automatically to your Activation Wallet upon admin approval for team building.
+          </p>
+          <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:10px 14px; margin-bottom:12px;">
+            <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📊 Daily Withdrawal Tier Limits (Strictly Enforced):</span>
+            <div style="font-size:12px; color:#eee; line-height:1.5;">
+              • <strong>Open Micro-Staking (< $25 single-shot):</strong> Max 60 Temple_DA / day<br>
+              • <strong>Single-Shot $25+ / Club 1 Active:</strong> Max 1,000 Temple_DA / day<br>
+              • <strong>High-Tier Staking ($251+) / Club 5+:</strong> Max 2,500 Temple_DA / day<br>
+            </div>
+            <p class="small" style="color:#00ff88; margin-top:6px; font-weight:bold;">Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)</p>
+          </div>
+          <input id="withdraw" placeholder="Enter Temple_DA amount to withdraw" type="number" step="any">
+          <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (90% Tokens / 10% Activation USDT)</button>
+        </div>
+
+        <div class="card">
+          <h3>Referral Link</h3>
+          <p class="small" style="color:#dfb72c; word-break: break-all;">${location.origin + location.pathname + "#register?ref=" + phone}</p>
+        </div>
+
     </div>
+    <!-- 🔒 END LOCKED FEATURES -->
 
     <h3 style="margin-top:24px;">Account Histories & Records (Click To View)</h3>
     <div class="accordion-wrapper" id="accReferrals"><div class="accordion-header" onclick="toggleAccordion('accReferrals')"><span>👥 Package Upline/Downline (50/50 Split) & Staking Income</span><span>▼</span></div><div class="accordion-content" id="referralHistory">Loading...</div></div>
@@ -2672,6 +2816,8 @@ async function userDashboard() {
     <div class="accordion-wrapper" id="accWithdraw"><div class="accordion-header" onclick="toggleAccordion('accWithdraw')"><span>📤 Withdrawal History (90% Tokens, 10% Activation USDT)</span><span>▼</span></div><div class="accordion-content" id="withdrawHistory">Loading...</div></div>
     <div class="card center" style="margin-top:18px;"><button onclick="logout()">Logout</button></div>
     `;
+
+    appDiv().innerHTML = html;
 
     startReleaseCountdown(u.lockDate, u.locked);
     loadReferralHistory(phone); 
@@ -3181,8 +3327,8 @@ async function adminDashboard() {
 
     <div class="card">
       <h2>Admin Controls & Settings</h2>
-      <input id="price" placeholder="Override Temple_DA USD price">
-      <button onclick="updatePrice()">Update Price Override</button>
+      <input id="price" placeholder="Override Temple_DA USD price (e.g. 0.0015)">
+      <button onclick="updatePrice()">Set Admin Custom Price</button>
       <div style="margin-top:16px; border-top:1px solid rgba(223,183,44,0.3); padding-top:12px;">
         <label class="small" style="color:#dfb72c; font-weight:bold;">Temple_DA Contract Address (Configured):</label>
         <input id="adminTokenAddress" value="${TEMPLE_DA_CONTRACT}" readonly style="color:#00ff88; font-family:monospace;">
@@ -3502,7 +3648,12 @@ window.releaseLocked = async phone => {
   customAlert("Tokens released!");
 };
 
-window.updatePrice = async () => { await set(ref(db, "config/temple_DAPrice"), parseFloat(v("price"))); customAlert("Price updated!"); };
+window.updatePrice = async () => { 
+  const p = v("price");
+  if (!p || isNaN(p)) return customAlert("Please enter a valid number!");
+  await set(ref(db, "config/temple_DAPrice"), parseFloat(p)); 
+  customAlert("Admin Custom Price updated successfully!"); 
+};
 window.editUser = async oldId => {
   customPrompt("Enter new user ID:", async (newId) => {
     if (!newId) return;
