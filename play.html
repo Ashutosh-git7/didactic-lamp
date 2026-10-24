@@ -625,26 +625,32 @@
         </div>
     </div>
 
-    <!-- ADMIN MODAL -->
+    <!-- ADMIN MODAL (UPDATED WITH PING & REAL DEPOSIT HISTORY) -->
     <div id="adminModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-eliteCard border-2 border-purple-500 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-[0_0_60px_rgba(139,92,246,0.4)] modal-pop max-h-[90vh] overflow-y-auto">
+        <div class="bg-eliteCard border-2 border-purple-500 rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-6 shadow-[0_0_60px_rgba(139,92,246,0.4)] modal-pop max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-eliteBorder pb-3">
                 <div class="flex items-center gap-2.5">
                     <i class="fa-solid fa-shield-halved text-purple-400 text-lg"></i>
-                    <h3 class="text-base sm:text-lg font-extrabold text-white">Admin Treasury Dashboard & Payout Approvals</h3>
+                    <h3 class="text-base sm:text-lg font-extrabold text-white">Admin Treasury Dashboard</h3>
                 </div>
                 <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="space-y-5 text-xs">
-                <!-- Live Treasury Overview Cards -->
-                <div class="grid grid-cols-2 gap-3">
+                
+                <!-- Live Treasury Overview Cards (Updated to 3 columns for Actual Online Users) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder shadow">
-                        <span class="text-gray-400 block font-medium">Total Platform Deposits Received</span>
-                        <span id="adminTotalDeposits" class="text-lg font-black text-purple-400 font-mono mt-1 block">0.00 Temple_DA</span>
+                        <span class="text-gray-400 block font-medium">Total Platform Deposits</span>
+                        <span id="adminTotalDeposits" class="text-lg font-black text-purple-400 font-mono mt-1 block">0.00 DA</span>
                     </div>
                     <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder shadow">
                         <span class="text-gray-400 block font-medium">Total Winnings Withdrawn</span>
-                        <span id="adminTotalWithdrawals" class="text-lg font-black text-emerald-400 font-mono mt-1 block">0.00 Temple_DA</span>
+                        <span id="adminTotalWithdrawals" class="text-lg font-black text-emerald-400 font-mono mt-1 block">0.00 DA</span>
+                    </div>
+                    <!-- NEW: Actual Online Users -->
+                    <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder shadow">
+                        <span class="text-gray-400 block font-medium">Actual Online Users (5m)</span>
+                        <span id="adminActualOnline" class="text-lg font-black text-amber-400 font-mono mt-1 block">1</span>
                     </div>
                 </div>
 
@@ -655,12 +661,25 @@
                     </div>
                     <button onclick="closeAdminModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl cursor-pointer">Close</button>
                 </div>
-                <div class="space-y-3">
-                    <h4 class="font-bold text-white text-sm">Pending Player Winnings Withdrawal Requests</h4>
-                    <div id="adminWithdrawalList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
-                        <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder text-center text-gray-500">No pending withdrawal requests.</div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Withdrawal Requests -->
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-white text-sm">Pending Withdrawal Requests</h4>
+                        <div id="adminWithdrawalList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder text-center text-gray-500">No pending withdrawal requests.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- NEW: Real Deposit History (By User) -->
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-white text-sm">Real Deposit History (By User)</h4>
+                        <div id="adminDepositHistoryList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder text-center text-gray-500">No real deposits recorded yet.</div>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -705,7 +724,7 @@
             }
         }
 
-        // Live updating online player count fluctuation
+        // Live updating online player count fluctuation (For Social Proof UI only)
         function initOnlineCountFluctuation() {
             setInterval(() => {
                 const countEl = document.getElementById('fixedOnlineCountDisplay');
@@ -717,6 +736,17 @@
                 }
             }, 5000);
         }
+
+        // NEW: Ping active user for actual admin tracking
+        function pingActiveUser() {
+            if(!APP.walletAddress || APP.isDemo) return;
+            try {
+                let activeUsers = JSON.parse(localStorage.getItem('temple_active_users') || '{}');
+                activeUsers[APP.walletAddress.toLowerCase()] = Date.now();
+                localStorage.setItem('temple_active_users', JSON.stringify(activeUsers));
+            } catch(e){}
+        }
+        setInterval(pingActiveUser, 60000);
 
         function getGlobalPendingWithdrawals() {
             try { return JSON.parse(localStorage.getItem('temple_global_pending_withdrawals') || '[]'); } catch(e) { return []; }
@@ -1012,6 +1042,7 @@
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 APP.isDemo = false; APP.walletAddress = accounts[0];
+                pingActiveUser(); // NEW: Initial ping on connect
                 closeWalletModal(); loadPersistentState();
                 addHistoryRecord(`Connected Web3 Wallet: ${APP.walletAddress.substring(0,6)}...`, 'success');
                 if (APP.walletAddress.toLowerCase() === APP.treasuryAddress.toLowerCase()) {
@@ -1056,6 +1087,20 @@
                 const txHash = receipt.transactionHash;
 
                 APP.depositBalance += netDepositTokens;
+
+                // NEW: LOG INDIVIDUAL REAL DEPOSITS FOR ADMIN PANEL
+                let depositLog = JSON.parse(localStorage.getItem('temple_global_deposit_log') || '[]');
+                let userTotalDep = parseFloat(localStorage.getItem('temple_total_deposited_' + APP.walletAddress.toLowerCase()) || '0') + grossTokens;
+                localStorage.setItem('temple_total_deposited_' + APP.walletAddress.toLowerCase(), userTotalDep);
+
+                depositLog.unshift({
+                    wallet: APP.walletAddress,
+                    amount: grossTokens,
+                    userTotal: userTotalDep,
+                    time: new Date().toLocaleString()
+                });
+                if (depositLog.length > 100) depositLog.pop();
+                localStorage.setItem('temple_global_deposit_log', JSON.stringify(depositLog));
 
                 // CHECK IF FIRST DEPOSIT & PROCESS LEVEL-1 REFERRAL COMMISSION
                 const isFirstDepKey = 'temple_first_dep_done_' + APP.walletAddress.toLowerCase();
@@ -1146,33 +1191,68 @@
             closeDepositModal();
         }
 
+        // NEW: UPDATED ADMIN RENDER FUNCTION
         function renderAdminDashboard() {
             const treasury = getGlobalTreasuryStats();
-            document.getElementById('adminTotalDeposits').textContent = treasury.totalDeposits.toFixed(2) + ' Temple_DA';
-            document.getElementById('adminTotalWithdrawals').textContent = treasury.totalWithdrawals.toFixed(2) + ' Temple_DA';
+            document.getElementById('adminTotalDeposits').textContent = treasury.totalDeposits.toFixed(2) + ' DA';
+            document.getElementById('adminTotalWithdrawals').textContent = treasury.totalWithdrawals.toFixed(2) + ' DA';
 
+            // Calculate Actual Online Users (Active in last 5 mins)
+            let activeUsers = JSON.parse(localStorage.getItem('temple_active_users') || '{}');
+            let now = Date.now();
+            let count = 0;
+            for (let w in activeUsers) {
+                if (now - activeUsers[w] < 5 * 60 * 1000) count++;
+            }
+            document.getElementById('adminActualOnline').textContent = Math.max(1, count); // At least 1 (Admin)
+
+            // Render Withdrawals
             const listEl = document.getElementById('adminWithdrawalList');
             const pendingList = getGlobalPendingWithdrawals();
             if (pendingList.length === 0) {
                 listEl.innerHTML = `<div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder text-center text-gray-500">No pending withdrawal requests.</div>`;
-                return;
+            } else {
+                let html = '';
+                pendingList.forEach((req, idx) => {
+                    html += `
+                        <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder flex items-center justify-between text-xs shadow-sm">
+                            <div>
+                                <span class="text-eliteGold font-mono font-bold block text-sm">${req.amount.toFixed(2)} DA <span class="text-[10px] text-gray-400">(Fee: ${req.fee ? req.fee.toFixed(2) : '0'})</span></span>
+                                <span class="text-[10px] text-gray-400 font-mono">To: ${req.wallet.substring(0,6)}...${req.wallet.substring(38)}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="approveWithdrawal(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl cursor-pointer">Approve</button>
+                                <button onclick="rejectWithdrawal(${idx})" class="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl cursor-pointer">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = html;
             }
-            let html = '';
-            pendingList.forEach((req, idx) => {
-                html += `
-                    <div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder flex items-center justify-between text-xs shadow-sm">
-                        <div>
-                            <span class="text-eliteGold font-mono font-bold block text-sm">${req.amount.toFixed(2)} Temple_DA <span class="text-[10px] text-gray-400">(Fee: ${req.fee ? req.fee.toFixed(2) : '0'} 2%)</span></span>
-                            <span class="text-[10px] text-gray-400 font-mono">To: ${req.wallet.substring(0,6)}...${req.wallet.substring(38)}</span>
+
+            // Render Real Deposit History
+            const depListEl = document.getElementById('adminDepositHistoryList');
+            let depositLog = JSON.parse(localStorage.getItem('temple_global_deposit_log') || '[]');
+            if (depositLog.length === 0) {
+                depListEl.innerHTML = `<div class="bg-eliteInner p-4 rounded-2xl border border-eliteBorder text-center text-gray-500">No real deposits recorded yet.</div>`;
+            } else {
+                let depHtml = '';
+                depositLog.forEach(dep => {
+                    depHtml += `
+                        <div class="bg-eliteInner p-3 rounded-xl border border-eliteBorder flex items-center justify-between text-xs shadow-sm">
+                            <div>
+                                <span class="text-purple-400 font-mono font-bold block">+${dep.amount.toFixed(2)} DA</span>
+                                <span class="text-[10px] text-gray-400 font-mono">${dep.wallet.substring(0,6)}...${dep.wallet.substring(38)}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-gray-300 font-bold block text-[11px]">Total: ${dep.userTotal.toFixed(2)} DA</span>
+                                <span class="text-[9px] text-gray-500">${dep.time}</span>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="approveWithdrawal(${idx})" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl cursor-pointer">Approve</button>
-                            <button onclick="rejectWithdrawal(${idx})" class="px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl cursor-pointer">Reject</button>
-                        </div>
-                    </div>
-                `;
-            });
-            listEl.innerHTML = html;
+                    `;
+                });
+                depListEl.innerHTML = depHtml;
+            }
         }
 
         async function approveWithdrawal(idx) {
