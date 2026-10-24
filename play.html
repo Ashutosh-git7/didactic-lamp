@@ -300,7 +300,7 @@
                             <span class="text-[10px] font-extrabold px-3 py-1 rounded-full bg-white/5 text-gray-300 border border-white/10">Game 4 • Fortune</span>
                         </div>
                         <h3 class="text-lg font-black text-white group-hover:text-eliteGold transition">Lucky Spin Wheel</h3>
-                        <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Spin the wheel of fortune with a balanced house edge.</p>
+                        <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Spin the wheel of fortune and test your luck today.</p>
                     </div>
                     <div class="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
                         <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">Table Spin</span>
@@ -456,7 +456,7 @@
                         <span id="colorResultText" class="text-gray-500 tracking-widest">?</span>
                     </div>
 
-                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium relative z-10">Select a color trend. Treasury ensures 15% Edge long-term.</p>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-medium relative z-10">Select a color trend to predict the oracle's outcome.</p>
                     
                     <!-- 6 COLORS GRID -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 relative z-10">
@@ -520,7 +520,7 @@
                 </div>
                 <div class="glass-inner rounded-3xl p-6 space-y-4 max-w-xl mx-auto w-full">
                     <h4 class="text-lg font-black text-purple-300">Step Across Temple Tiles</h4>
-                    <p class="text-[11px] text-gray-400">Choose safe tiles to multiply. 32% trap probability per step. Cash out anytime!</p>
+                    <p class="text-[11px] text-gray-400">Choose safe tiles to multiply your reward. Cash out before a trap triggers!</p>
                     <div id="vaultGrid" class="grid grid-cols-3 gap-3 my-4"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
@@ -534,7 +534,7 @@
                 <div class="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-[#010205] p-4 flex flex-col items-center justify-center min-h-[380px]">
                     <div id="rocketMultiplierDisplay" class="absolute top-6 z-10 text-6xl sm:text-7xl font-black text-eliteGold font-mono drop-shadow-[0_2px_25px_rgba(245,158,11,0.8)]">1.00x</div>
                     <canvas id="rocketCanvas" width="540" height="340" class="w-full h-[340px] sm:h-[400px] block rounded-xl"></canvas>
-                    <div id="rocketStatusText" class="text-base text-gray-300 mt-4 font-medium relative z-10">15% Instant Crash Edge</div>
+                    <div id="rocketStatusText" class="text-base text-gray-300 mt-4 font-medium relative z-10">Rocket ready for launch.</div>
                 </div>
                 <div class="grid grid-cols-2 gap-4 max-w-xl mx-auto w-full">
                     <button id="launchRocketBtn" onclick="launchRocket()" disabled class="py-4 bg-purple-600 disabled:bg-gray-800 text-white font-extrabold text-base rounded-2xl shadow-xl transition cursor-pointer">Launch</button>
@@ -1058,7 +1058,7 @@
         }
         function closeReactionModal() { document.getElementById('reactionModal').classList.add('hidden'); APP.hasStake=false; if(!APP.isDemo) savePersistentState(); updateUI(); }
 
-        // 1. WHEEL (52% Edge)
+        // 1. WHEEL
         const WHEEL_SEGS = [{l:'2.0x',m:2,c:'#f59e0b'},{l:'0x',m:0,c:'#0f172a'},{l:'1.5x',m:1.5,c:'#10b981'},{l:'0x',m:0,c:'#1e293b'},{l:'3.0x',m:3,c:'#8b5cf6'},{l:'0x',m:0,c:'#0f172a'},{l:'4.0x',m:4,c:'#ec4899'},{l:'0x',m:0,c:'#1e293b'}];
         let wAngle=0, isSpinning=false;
         function drawWheel() {
@@ -1162,7 +1162,7 @@
             else { APP.stats.losses++; APP.stats.net-=e; triggerReactionModal(false,'CRASHED',`Lost stake.`); }
         }
 
-        // 4. VAULT (6 Steps, 32% Trap)
+        // 4. VAULT (6 Steps)
         let vStep=0, vAct=false; const V_M = [1.20, 1.50, 1.90, 2.40, 3.20, 5.00];
         function initVaultGame() {
             vStep=0; vAct=false; document.getElementById('vaultMultiplier').textContent='1.00x'; document.getElementById('vaultPotential').textContent='0.00 Temple_DA';
@@ -1191,7 +1191,7 @@
             APP.winningsBalance+=w; APP.stats.wins++; APP.stats.net+=(w-e); triggerReactionModal(true,'CASHOUT!',`Won ${w.toFixed(2)} Temple_DA`); initVaultGame();
         }
 
-        // 5. ROCKET (15% Instant Crash)
+        // 5. ROCKET
         let rInt=null, cMult=1.0, cPt=1.5, rY=0;
         function initRocketCanvas(y=0, m=1.0, cr=false) {
             const ctx=document.getElementById('rocketCanvas')?.getContext('2d'); if(!ctx) return;
