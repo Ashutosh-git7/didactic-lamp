@@ -793,10 +793,12 @@ function isUserPackageActive(u) {
 function isAccountFullyActivated(u) {
   // Cutoff Timestamp: Users created before this exact time will be considered Legacy/VIP users
   // and will have their dashboard 100% unlocked automatically without forcing a combo!
-  // Current set to roughly match: 25 October 2026, 00:00:00 (UTC)
-  const CUTOFF_TIMESTAMP = 1729814400000; 
   
-  const isOldUser = (!u.createdAt) || (u.createdAt < CUTOFF_TIMESTAMP);
+  // FIXED: Using JavaScript's exact Date object instead of a hardcoded 2024 number.
+  // 23 October 2026, 23:59:59
+  const CUTOFF_TIMESTAMP = new Date("2026-10-23T23:59:59").getTime(); 
+  
+  const isOldUser = (!u.createdAt) || (u.createdAt <= CUTOFF_TIMESTAMP);
   
   if (isOldUser) {
       return true; // 🔓 Old users bypass the lock entirely!
