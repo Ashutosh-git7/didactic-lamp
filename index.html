@@ -765,6 +765,25 @@ const LIQUIDITY_POOL_ADDRESS = "0x707171A0C27f87B8C530B20831f7B004e6647830";
 let activePostIdForComments = null;
 
 // ========================================================
+// 🟢 NEW HELPER: CHECK ACTIVE DIRECTS FOR CLUB 1 ENTRY
+// ========================================================
+async function getActiveDirectsCount(phone) {
+  let count = 0;
+  const allUsersSnap = await get(ref(db, "users"));
+  if (allUsersSnap.exists()) {
+    allUsersSnap.forEach(child => {
+      const d = child.val();
+      if (d.referrer === phone) {
+        // Count as active if they have an active package OR investment >= $25 OR are in CTO Club
+        const isActive = isUserPackageActive(d) || (Number(d.investment || 0) >= 25) || (d.ctoActiveClub > 0);
+        if (isActive) count++;
+      }
+    });
+  }
+  return count;
+}
+
+// ========================================================
 // PACKAGE FIXED PRICE & CONFIGURATION HELPER
 // ========================================================
 const PACKAGE_PRICES_MAP = {
@@ -789,22 +808,10 @@ function isUserPackageActive(u) {
   return true;
 }
 
-// 🟢 NEW MANDATORY ACTIVATION CHECK LOGIC (With Legacy User Bypass)
 function isAccountFullyActivated(u) {
-  // Cutoff Timestamp: Users created before this exact time will be considered Legacy/VIP users
-  // and will have their dashboard 100% unlocked automatically without forcing a combo!
-  
-  // FIXED: Using JavaScript's exact Date object instead of a hardcoded 2024 number.
-  // 23 October 2026, 23:59:59
   const CUTOFF_TIMESTAMP = new Date("2026-10-23T23:59:59").getTime(); 
-  
   const isOldUser = (!u.createdAt) || (u.createdAt <= CUTOFF_TIMESTAMP);
-  
-  if (isOldUser) {
-      return true; // 🔓 Old users bypass the lock entirely!
-  }
-
-  // Lock applies only to new users joining after the cutoff
+  if (isOldUser) return true; 
   const hasInvestment = Number(u.investment || 0) >= 25;
   const hasPackage = isUserPackageActive(u);
   return hasInvestment && hasPackage;
@@ -1488,21 +1495,17 @@ function router() {
 
 // 🟢 100% DECENTRALIZED WEB3 PRICE FETCH FROM PANCAKESWAP LIQUIDITY POOL
 async function getPrice() {
-  // 1. Firebase Admin Override Check (अगर एडमिन ने मैन्युअली प्राइस डाला है)
   try {
     const s = await get(ref(db, "config/temple_DAPrice"));
     if (s.exists() && parseFloat(s.val()) > 0) return parseFloat(s.val());
   } catch (e) {}
 
-  // 2. Direct Web3 Fetch from PancakeSwap Pair Contract
   try {
     const PAIR_ABI = [
       "function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast)",
       "function token0() public view returns (address)"
     ];
     
-    // We use a robust public RPC node to avoid Binance CORS errors in browser
-    // Using multiple fallback RPCs for stability
     const rpcUrls = [
       "https://binance.llamarpc.com",
       "https://bsc-dataseed.binance.org/",
@@ -1510,7 +1513,6 @@ async function getPrice() {
     ];
     
     let priceUsdt = 0;
-    
     for (const rpc of rpcUrls) {
         try {
             const provider = new ethers.providers.JsonRpcProvider(rpc);
@@ -1522,39 +1524,25 @@ async function getPrice() {
             const reserve0 = parseFloat(ethers.utils.formatUnits(reserves._reserve0, 18)); 
             const reserve1 = parseFloat(ethers.utils.formatUnits(reserves._reserve1, 18)); 
             
-            // Dynamically check which one is USDT to prevent inverted math
             if(token0Address.toLowerCase() === OFFICIAL_USDT_CONTRACT.toLowerCase()) {
-                priceUsdt = reserve0 / reserve1; // USDT / Temple_DA
+                priceUsdt = reserve0 / reserve1; 
             } else {
-                priceUsdt = reserve1 / reserve0; // USDT / Temple_DA
+                priceUsdt = reserve1 / reserve0; 
             }
             
-            if (priceUsdt > 0) {
-              console.log(`✅ Web3 Price Fetched via ${rpc}: $${priceUsdt.toFixed(6)}`);
-              return priceUsdt;
-            }
-        } catch (rpcErr) {
-            console.warn(`RPC ${rpc} failed, trying next...`);
-        }
+            if (priceUsdt > 0) return priceUsdt;
+        } catch (rpcErr) { }
     }
-  } catch (web3Err) {
-    console.error("❌ Web3 Pool Fetch Failed completely", web3Err);
-  }
+  } catch (web3Err) {}
 
-  // 3. Fallback to DexScreener API if all RPCs are blocked by user's network
   try {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x707171A0C27f87B8C530B20831f7B004e6647830");
     const data = await res.json();
     if (data && data.pair && data.pair.priceUsd) {
-      const apiPrice = parseFloat(data.pair.priceUsd);
-      console.log(`✅ API Price Fetched Successfully: $${apiPrice.toFixed(6)}`);
-      return apiPrice;
+      return parseFloat(data.pair.priceUsd);
     }
-  } catch(e) {
-    console.error("❌ DexScreener API Fetch Failed:", e);
-  }
+  } catch(e) {}
   
-  // Ultimate Fallback
   return 0.001569; 
 }
 
@@ -1563,7 +1551,6 @@ window.updateLiveTotal = () => {
     const pkgAmt = parseFloat(document.getElementById("checkoutPackage").value || 0);
     let invAmt = parseFloat(document.getElementById("checkoutInvest").value || 0);
     
-    // Allow users to type freely without automatically replacing their input, but show warning
     if(isNaN(invAmt)) invAmt = 0;
     const total = pkgAmt + invAmt;
     document.getElementById("liveTotalText").innerText = `$${total} USDT`;
@@ -1576,7 +1563,7 @@ window.updateLiveTotal = () => {
         }
     } else {
         if(warningEl) {
-            warningEl.innerText = `*You receive 100% Temple_DA tokens for this amount + Auto-Entry to Club 1!`;
+            warningEl.innerText = `*You receive 100% Temple_DA tokens (Club 1 Auto-Entry requires 1 Active Direct!).`;
             warningEl.style.color = "#00ff88";
         }
     }
@@ -1592,7 +1579,6 @@ window.executeSmartCheckout = async () => {
     const pkgAmt = parseFloat(pkgSelect.value);
     const invAmt = parseFloat(invInput.value);
 
-    // Validate boundaries exactly at the time of submit
     if (isNaN(invAmt) || invAmt < 25) return customAlert("Minimum investment for combo activation must be $25 or more.");
     if (invAmt > 1000) return customAlert("Maximum investment limit per transaction is $1000 USDT.");
 
@@ -1608,10 +1594,8 @@ window.executeSmartCheckout = async () => {
         const snap = await get(ref(db, "users/" + phone));
         const u = snap.exists() ? snap.val() : {};
 
-        // 1. Process Package Part (No Tokens, goes to Networking)
         await upgradePackageDirectInternal(phone, tierName, pkgAmt, "Smart Combo Activation");
 
-        // 2. Process Investment Part (Gets 100% Tokens, goes to Global Pools)
         const currentPrice = await getPrice();
         const temple_DA = Number((invAmt / currentPrice).toFixed(2));
         
@@ -1625,11 +1609,18 @@ window.executeSmartCheckout = async () => {
 
         await recordMasterInflowAndDistribute(phone, invAmt, `Combo Deposit ($${invAmt})`);
 
+        let club1Msg = "";
         if (!u.ctoActiveClub && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador) {
-            await processClub1Allocation(phone, u.name || "Member", "Smart Combo");
+            const directCount = await getActiveDirectsCount(phone);
+            if (directCount >= 1) {
+                await processClub1Allocation(phone, u.name || "Member", "Smart Combo");
+                club1Msg = "\n• Auto-Entered into Club 1!";
+            } else {
+                club1Msg = "\n• Club 1 Eligibility: Pending (Requires 1 Active Direct Referral)";
+            }
         }
 
-        customAlert(`🎉 Combo Activation Successful!\n\n• Package: ${tierName.toUpperCase()} ($${pkgAmt})\n• Investment: $${invAmt} (Received ${temple_DA} locked Temple_DA)\n\nYour entire dashboard is now unlocked!`);
+        customAlert(`🎉 Combo Activation Successful!\n\n• Package: ${tierName.toUpperCase()} ($${pkgAmt})\n• Investment: $${invAmt} (Received ${temple_DA} locked Temple_DA)${club1Msg}\n\nYour entire dashboard is now unlocked!`);
         userDashboard(); 
 
     } catch (error) {
@@ -1702,7 +1693,7 @@ async function landing() {
     <table>
         <tr><td>Vesting Cycle</td><td class="number">30 Days</td></tr>
         <tr><td>Monthly Release</td><td class="number">5% of Locked Tokens</td></tr>
-        <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit</td></tr>
+        <tr><td>CTO Qualification</td><td class="number">Strict Single-Shot $25+ Deposit & 1 Active Direct</td></tr>
         <tr><td>2X Rejoining Wheel</td><td class="number">50% Main Balance / 50% Auto-Rejoin Reserve</td></tr>
     </table>
   </div>
@@ -2000,9 +1991,9 @@ async function ctoClubsPage() {
       <span class="badge-tag" style="margin-bottom:6px; color:#00ff88; border-color:#00ff88;">OFFICIAL 10-CLUB 1,000-SLOT ENGINE</span>
       <h2 style="font-size:24px;">10% GLOBAL CTO SYSTEM</h2>
       <p style="color:#ddd; max-width:800px; margin: 6px auto 0 auto; line-height:1.5; font-size:14px;">
-        Entry requirement: <strong>Strict Single-Shot $25+ Deposit</strong> to activate <strong>Club 1 • Bronze Pillar</strong>. 
+        Entry requirement: <strong>Strict Single-Shot $25+ Deposit & 1 Active Direct Referral</strong> to activate <strong>Club 1 • Bronze Pillar</strong>. 
         Advance through 10 progressive clubs to achieve <strong>$77,255 USDT</strong> cumulative net profit. 
-        <strong style="color:#00ff88;">Zero direct referrals required</strong> to receive passive club dividends!
+        <strong style="color:#00ff88;">Only 1 active direct referral required</strong> to receive lifetime passive club dividends!
       </p>
 
       <!-- 100% Inflow Master Breakup -->
@@ -2032,7 +2023,7 @@ async function ctoClubsPage() {
         <div>
           <h3 style="color:#00ff88; margin-bottom:4px;">👤 My CTO Participation Status</h3>
           <p class="small">
-            ${phone ? `Logged In: <strong>${maskPhone(phone)}</strong> | Access Mode: <strong style="color:#00ff88;">Universal & Non-Conditional (No Direct Referrals Required)</strong>` : 'Please login to track or activate your slot.'}
+            ${phone ? `Logged In: <strong>${maskPhone(phone)}</strong> | Access Mode: <strong style="color:#00ff88;">Requires 1 Active Direct Referral to unlock</strong>` : 'Please login to track or activate your slot.'}
           </p>
           ${u.isCrownAmbassador ? `<div style="margin-top:6px;"><span class="badge-tag" style="background:#330066; color:#cc66ff; border-color:#9933ff; font-size:13px; padding:5px 10px;">👑 CROWN AMBASSADOR (LIFETIME ROYALTY ACTIVE)</span></div>` : ''}
         </div>
@@ -2063,7 +2054,7 @@ async function ctoClubsPage() {
             Funded continuously by the dedicated 2% CTO pool. Once reaching $50 (2X), $25 cash is unlocked for withdrawal and $25 automatically claims your Club 1 slot!
           </p>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:8px;">
-            <span class="small" style="color:#00ff88; font-weight:bold;">✓ Direct Referrals Optional: Every user qualifies for passive payouts!</span>
+            <span class="small" style="color:#00ff88; font-weight:bold;">✓ 1 Active Direct Required: Build your team to unlock massive pools!</span>
             ${(myQueueData.earned2x || 0) >= 50 ? `<button onclick="claimWaitingRoom2X()" style="width:auto; padding:7px 16px; margin:0;" class="btn-green">Claim $25 Cash + Club 1 Slot</button>` : ''}
           </div>
         </div>
@@ -2147,7 +2138,7 @@ async function activationWalletPage() {
       <button onclick="depositToActivationWalletViaWeb3()" class="btn-green">⚡ Deposit USDT via Web3 Wallet</button>
     </div>
 
-    <!-- 2. P2P MEMBER ID ACTIVATION (FIXED PACKAGE PRICE LOCK) -->
+    <!-- 2. P2P MEMBER ID ACTIVATION (FIXED PRICE P2P) -->
     <div class="card">
       <h3 style="color:#dfb72c;">👥 P2P Member ID Activation (Fixed Price Locked)</h3>
       <p class="small" style="margin-bottom:10px;">
@@ -2160,7 +2151,7 @@ async function activationWalletPage() {
         <option value="monthly">Pro Creator Package ($15 USDT - 10 Levels / 5 Videos Daily)</option>
         <option value="50">Advanced Creator Package ($50 USDT - 15 Levels / 25 Videos Daily)</option>
         <option value="yearly">Elite Yearly Package ($120 USDT - 20 Levels / Unlimited Videos)</option>
-        <option value="club1">Club 1 • Bronze Pillar ($25 USDT - 10% CTO Club)</option>
+        <option value="club1">Club 1 • Bronze Pillar ($25 USDT - Requires 1 Active Direct)</option>
       </select>
 
       <input id="p2pAmount" type="number" value="5" readonly style="background:#181818; color:#00ff88; font-weight:bold; cursor:not-allowed;" title="Package price is automatically locked based on selected tier">
@@ -2179,7 +2170,7 @@ async function activationWalletPage() {
         <option value="15">Pro Creator Package ($15 USDT / 10 Levels / 5 Videos Daily)</option>
         <option value="50">Advanced Creator Package ($50 USDT / 15 Levels / 25 Videos Daily)</option>
         <option value="120">Elite Yearly Package ($120 USDT / 20 Levels / Unlimited Videos)</option>
-        <option value="25">Club 1 • Bronze Pillar ($25 USDT)</option>
+        <option value="25">Club 1 • Bronze Pillar ($25 USDT - Requires 1 Active Direct)</option>
       </select>
       <button onclick="executeSelfUpgradeFromActivation()" style="background: linear-gradient(135deg, #dfb72c 0%, #b8860b 100%); color:#000;">⚡ Upgrade Selected Item Using Activation Wallet</button>
     </div>
@@ -2224,7 +2215,6 @@ window.executeP2PMemberActivation = async () => {
   const selectEl = document.getElementById("p2pUpgradeSelect");
   const packageType = selectEl ? selectEl.value : "starter";
   
-  // Strictly enforce exact package price from PACKAGE_PRICES_MAP
   const amount = getPackagePriceByTier(packageType);
 
   if (!targetPhone) return customAlert("Please enter target member's phone number!");
@@ -2244,6 +2234,13 @@ window.executeP2PMemberActivation = async () => {
 
   if (packageType === "club1" && (targetData.ctoActiveClub > 0 || targetData.inWaitingQueue || targetData.inHoldingQueueForClub)) {
     return customAlert(`Member ${targetPhone} already has an active CTO Club slot or is in queue!`);
+  }
+
+  if (packageType === "club1") {
+    const targetDirects = await getActiveDirectsCount(targetPhone);
+    if (targetDirects < 1) {
+      return customAlert(`⚠️ Target member (${targetPhone}) must have at least 1 Active Direct Referral to be upgraded to Club 1!`);
+    }
   }
 
   let packageName = "";
@@ -2284,6 +2281,13 @@ window.executeSelfUpgradeFromActivation = async () => {
     return customAlert(`Insufficient Activation Wallet balance!\nYou have $${(u.activationWallet || 0).toFixed(2)} USDT, but selected item requires $${amount} USDT.\n\nDeposit USDT to your Activation Wallet to proceed.`);
   }
 
+  if (amount === 25) { 
+    const directCount = await getActiveDirectsCount(phone);
+    if (directCount < 1) {
+      return customAlert("⚠️ Club 1 Entry Restricted!\nYou must have at least 1 Active Direct Referral to join Club 1.");
+    }
+  }
+
   customConfirm(`Confirm spending $${amount} from your Activation Wallet for self-upgrade?`, async () => {
     await update(ref(db, "users/" + phone), {
       activationWallet: Number(((u.activationWallet || 0) - amount).toFixed(2))
@@ -2316,6 +2320,11 @@ window.joinCtoClub1 = async () => {
 
   if (u.ctoActiveClub > 0 || u.inWaitingQueue || u.inHoldingQueueForClub || u.isCrownAmbassador) {
     return customAlert("You already have an active CTO Club slot, are in queue, or are a Crown Ambassador!");
+  }
+
+  const directCount = await getActiveDirectsCount(phone);
+  if (directCount < 1) {
+    return customAlert("⚠️ Club 1 Entry Restricted!\nYou must have at least 1 Active Direct Referral to join Club 1.");
   }
 
   const hasActivationBal = (u.activationWallet || 0) >= 25;
@@ -2668,7 +2677,7 @@ async function userDashboard() {
             <div style="background:#111; padding:15px; border-radius:10px; border:1px dashed #00ff88; margin-bottom:15px;">
                 <label style="color:#00ff88; font-weight:bold; font-size:13px; display:block; margin-bottom:6px;">2. Add Custom Investment ($25 to $1000):</label>
                 <input type="number" id="checkoutInvest" value="25" min="25" max="1000" oninput="updateLiveTotal()" style="margin-top:0; font-size:18px; font-weight:bold; color:#00ff88;">
-                <p id="investWarning" class="small" style="margin-top:4px; color:#00ff88;">*You receive 100% Temple_DA tokens for this amount + Auto-Entry to Club 1!</p>
+                <p id="investWarning" class="small" style="margin-top:4px; color:#00ff88;">*You receive 100% Temple_DA tokens (Club 1 Auto-Entry requires 1 Active Direct!).</p>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:15px; border-radius:10px; margin-bottom:15px;">
@@ -2731,7 +2740,7 @@ async function userDashboard() {
           <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88; margin-bottom:4px;">10% CTO PROGRESSION SYSTEM</span>
           <h3 style="color:#00ff88; margin-bottom:4px; font-size:17px;">👑 10-Club 1,000-Slot Ecosystem</h3>
           <p class="small" style="max-width:620px;">
-            Qualify with a <strong>Strict Single-Shot $25+ Deposit</strong> to unlock Club 1 and climb 10 progressive clubs for up to <strong>$77,255 USDT</strong> cumulative net profit!
+            Qualify with a <strong>Strict Single-Shot $25+ Deposit & 1 Active Direct</strong> to unlock Club 1 and climb 10 progressive clubs for up to <strong>$77,255 USDT</strong> cumulative net profit!
           </p>
           <p class="small" style="margin-top:5px;">
             Status: <strong style="color:#dfb72c;">${u.isCrownAmbassador ? '👑 CROWN AMBASSADOR' : (u.ctoActiveClub > 0 ? `Active in Club ${u.ctoActiveClub}` : (u.inHoldingQueueForClub ? `In Club ${u.inHoldingQueueForClub} Priority Queue` : (u.inWaitingQueue ? 'In FIFO Waiting Queue' : 'Open Micro Staking (< $25)')))}</strong> | Activation Wallet: <strong style="color:#00ff88;">$${actWalletUSDT.toFixed(2)} USDT</strong>
@@ -2815,7 +2824,7 @@ async function userDashboard() {
           <h3 style="color:#00ff88;">Investment & Yield Staking (USDT BEP20 via Web3)</h3>
           <p class="small">
             • <strong>$1 to $24 USDT (Micro Staking):</strong> 100% tokens to locked vault with 5% monthly vesting. (Daily Limit: 60 TDA)<br>
-            • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated</strong> + Daily limit raised to 1,000 TDA!
+            • <strong>$25+ USDT (Strict Single-Shot):</strong> 100% tokens to locked vault + <strong>Club 1 Automatically Activated (Requires 1 Active Direct)</strong> + Daily limit raised to 1,000 TDA!
           </p>
           <input id="invest" placeholder="USDT amount (Min 1 USDT, Single-shot $25+ for CTO Club 1)" type="number" step="any" style="margin-top:10px;">
           <button onclick="makeDirectUSDTDeposit()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Deposit USDT via Web3 Wallet</button>
@@ -2823,11 +2832,11 @@ async function userDashboard() {
 
         <div class="card" style="border: 2px solid #dfb72c;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <h3 style="margin:0;">Withdraw Temple_DA (90% Tokens / 10% Activation USDT)</h3>
+            <h3 style="margin:0;">Withdraw Temple_DA (80% Tokens / 20% Activation USDT)</h3>
             <span class="badge-tag" style="background:#003311; color:#00ff88; border-color:#00ff88;">0% ADMIN CHARGES</span>
           </div>
           <p class="small" style="color:#ccc; margin-bottom:10px;">
-            Withdrawals are paid in <strong>Temple_DA tokens</strong> (90% Net) directly to your BEP20 wallet. The remaining <strong>10%</strong> converts to USDT and credits automatically to your Activation Wallet upon admin approval for team building.
+            Withdrawals are paid in <strong>Temple_DA tokens</strong> (80% Net) directly to your BEP20 wallet. The remaining <strong>20%</strong> converts to USDT and credits automatically to your Activation Wallet upon admin approval for team building.
           </p>
           <div style="background:rgba(223,183,44,0.08); border:1px dashed #dfb72c; border-radius:10px; padding:10px 14px; margin-bottom:12px;">
             <span class="small" style="color:#dfb72c; font-weight:bold; display:block; margin-bottom:4px;">📊 Daily Withdrawal Tier Limits (Strictly Enforced):</span>
@@ -2839,7 +2848,7 @@ async function userDashboard() {
             <p class="small" style="color:#00ff88; margin-top:6px; font-weight:bold;">Today's Withdrawn: ${todayWithdrawn} / ${maxDailyAllowed} Temple_DA (Your Effective Limit: ${maxDailyAllowed} TDA)</p>
           </div>
           <input id="withdraw" placeholder="Enter Temple_DA amount to withdraw" type="number" step="any">
-          <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (90% Tokens / 10% Activation USDT)</button>
+          <button onclick="withdraw()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Request Withdrawal (80% Tokens / 20% Activation USDT)</button>
         </div>
 
         <div class="card">
@@ -2860,7 +2869,7 @@ async function userDashboard() {
     <div class="accordion-wrapper" id="accGifts"><div class="accordion-header" onclick="toggleAccordion('accGifts')"><span>🎁 Gift History (Sent & Received)</span><span>▼</span></div><div class="accordion-content" id="giftHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accPackages"><div class="accordion-header" onclick="toggleAccordion('accPackages')"><span>📦 Package Activation History</span><span>▼</span></div><div class="accordion-content" id="packageHistory">Loading...</div></div>
     <div class="accordion-wrapper" id="accInvest"><div class="accordion-header" onclick="toggleAccordion('accInvest')"><span>💰 Investment History</span><span>▼</span></div><div class="accordion-content" id="investHistory">Loading...</div></div>
-    <div class="accordion-wrapper" id="accWithdraw"><div class="accordion-header" onclick="toggleAccordion('accWithdraw')"><span>📤 Withdrawal History (90% Tokens, 10% Activation USDT)</span><span>▼</span></div><div class="accordion-content" id="withdrawHistory">Loading...</div></div>
+    <div class="accordion-wrapper" id="accWithdraw"><div class="accordion-header" onclick="toggleAccordion('accWithdraw')"><span>📤 Withdrawal History (80% Tokens, 20% Activation USDT)</span><span>▼</span></div><div class="accordion-content" id="withdrawHistory">Loading...</div></div>
     <div class="card center" style="margin-top:18px;"><button onclick="logout()">Logout</button></div>
     `;
 
@@ -2941,9 +2950,10 @@ window.withdraw = async () => {
   const userWallet = u.wallet;
   if (!userWallet || !walletRegex.test(userWallet)) return customAlert("No valid BEP20 wallet linked to your account!");
 
-  const ninetyPercentTokens = Number((amount * 0.90).toFixed(2));
-  const tenPercentTokens = Number((amount * 0.10).toFixed(2));
-  const tenPercentUSDT = Number((tenPercentTokens * priceUsd).toFixed(2));
+  // 🟢 80/20 SPLIT UPDATE
+  const eightyPercentTokens = Number((amount * 0.80).toFixed(2));
+  const twentyPercentTokens = Number((amount * 0.20).toFixed(2));
+  const twentyPercentUSDT = Number((twentyPercentTokens * priceUsd).toFixed(2));
 
   const newBalance = Number((u.balance - amount).toFixed(2));
   const newTodayWithdrawn = Number((todayWithdrawnAmount + amount).toFixed(2));
@@ -2956,11 +2966,11 @@ window.withdraw = async () => {
 
   const reqRef = push(ref(db, "withdrawals/pending"));
   const reqKey = reqRef.key;
-  await set(reqRef, { phone: phone, amount: ninetyPercentTokens, totalRequested: amount, tenPercentActivationUSDT: tenPercentUSDT, wallet: userWallet, timestamp: Date.now() });
-  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { amount: ninetyPercentTokens, totalRequested: amount, tenPercentActivationUSDT: tenPercentUSDT, wallet: userWallet, timestamp: Date.now(), status: "Pending Admin Approval (10% Activation USDT credits upon approval)" });
+  await set(reqRef, { phone: phone, amount: eightyPercentTokens, totalRequested: amount, twentyPercentActivationUSDT: twentyPercentUSDT, wallet: userWallet, timestamp: Date.now() });
+  await set(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { amount: eightyPercentTokens, totalRequested: amount, twentyPercentActivationUSDT: twentyPercentUSDT, wallet: userWallet, timestamp: Date.now(), status: "Pending Admin Approval (20% Activation USDT credits upon approval)" });
 
   if (withdrawInput) withdrawInput.value = "";
-  customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• ${amount} Temple_DA deducted from balance immediately.\n• 90% (${ninetyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 10% ($${tenPercentUSDT} USDT) will be credited to your Activation Wallet once approved by admin.`);
+  customAlert(`🎉 Success! Withdrawal Request of ${amount} Temple_DA Submitted!\n\n• ${amount} Temple_DA deducted from balance immediately.\n• 80% (${eightyPercentTokens} Temple_DA) queued for direct delivery to your BEP20 wallet.\n• 20% ($${twentyPercentUSDT} USDT) will be credited to your Activation Wallet once approved by admin.`);
 };
 
 window.makeDirectUSDTDeposit = async () => {
@@ -2992,8 +3002,16 @@ window.makeDirectUSDTDeposit = async () => {
     const notInAnyClubYet = (!u.ctoActiveClub || u.ctoActiveClub === 0) && !u.inWaitingQueue && !u.inHoldingQueueForClub && !u.isCrownAmbassador;
 
     if (isSingleShotEligible && notInAnyClubYet) {
-      await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
-      await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
+      const directCount = await getActiveDirectsCount(phone);
+      if (directCount >= 1) {
+        await recordMasterInflowAndDistribute(phone, amount, `Single-Shot Deposit ($${amount})`);
+        await processClub1Allocation(phone, u.name || "Member", `Single-Shot Deposit ($${amount})`);
+      } else {
+        await recordMasterInflowAndDistribute(phone, amount, `Staking Investment ($${amount})`);
+        customAlert(`✅ Success! ${amount} USDT deposited successfully via Web3 Wallet.\n${temple_DA} Temple_DA added to locked yield!\n\n(Note: Club 1 requires 1 Active Direct Referral to enter. Once referred, you can join manually via the CTO page.)`);
+        if (investInput) investInput.value = "";
+        return; 
+      }
     } else {
       await recordMasterInflowAndDistribute(phone, amount, `Staking Investment ($${amount})`);
     }
@@ -3390,7 +3408,7 @@ async function adminDashboard() {
       <table><tr><th>Phone</th><th>Name</th><th>Wallet Address</th><th>CTO Status</th><th>Balance</th><th>Activation W.</th><th>Locked</th><th>Action</th></tr>${rows}</table>
     </div>
     </div>
-    <div class="card"><h3>Pending Withdrawals (Approval credits 10% Activation USDT & sends 90% Tokens)</h3><div id="pendingWithdraw"></div></div>
+    <div class="card"><h3>Pending Withdrawals (Approval credits 20% Activation USDT & sends 80% Tokens)</h3><div id="pendingWithdraw"></div></div>
     `;
     loadPendingWithdraw();
   });
@@ -3620,14 +3638,15 @@ function loadPendingWithdraw() {
     let html = "";
     snap.forEach(child => {
       const key = child.key, d = child.val(), date = new Date(d.timestamp).toLocaleString();
+      const activationUsdt = d.twentyPercentActivationUSDT || d.tenPercentActivationUSDT || 0;
       html += `
         <div class="card" style="border: 1px solid #00ff88;">
           <b>User Phone:</b> ${d.phone} | <b>Total Requested:</b> ${d.totalRequested || d.amount} Temple_DA<br>
-          <b>90% Net Tokens to Send:</b> <span class="number">${d.amount} Temple_DA</span><br>
-          <b>10% Activation USDT to Credit on Approval:</b> <span style="color:#00ff88; font-weight:bold;">$${d.tenPercentActivationUSDT || 0} USDT</span><br>
+          <b>80% Net Tokens to Send:</b> <span class="number">${d.amount} Temple_DA</span><br>
+          <b>20% Activation USDT to Credit on Approval:</b> <span style="color:#00ff88; font-weight:bold;">$${activationUsdt} USDT</span><br>
           <b>User Wallet:</b> <span style="font-family:monospace; color:#00ff88;">${d.wallet || 'N/A'}</span><br>
           <span style="font-size:11px; color:#aaa;">${date}</span><br><br>
-          <button onclick="approveAndSendWithdrawal('${key}', '${d.phone}', '${d.wallet}', ${d.amount}, ${d.tenPercentActivationUSDT || 0})" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Approve & Send (Credits 10% Activation USDT to User)</button>
+          <button onclick="approveAndSendWithdrawal('${key}', '${d.phone}', '${d.wallet}', ${d.amount}, ${activationUsdt})" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color:#000;">⚡ Approve & Send (Credits 20% Activation USDT to User)</button>
           <button onclick="rejectWithdrawal('${key}', '${d.phone}')" class="btn-danger" style="margin-top:6px;">Reject & Refund Full Balance</button>
         </div>`;
     });
@@ -3664,8 +3683,8 @@ window.approveAndSendWithdrawal = async (reqKey, phone, userWallet, amount, acti
       await update(ref(db, "users/" + phone), { activationWallet: Number(((uData.activationWallet || 0) + activationUSDT).toFixed(2)) });
     }
 
-    await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { status: `Approved & Sent (90% Tokens Dispatched, $${activationUSDT} USDT Added to Activation Wallet)`, txHash: tx.hash, processedAt: Date.now() });
-    customAlert(`✅ Withdrawal successfully approved!\n• 90% (${amount} Temple_DA) sent to user BEP-20 wallet.\n• 10% ($${activationUSDT} USDT) credited to user's Activation Wallet!`);
+    await update(ref(db, "withdrawals/history/" + phone + "/" + reqKey), { status: `Approved & Sent (80% Tokens Dispatched, $${activationUSDT} USDT Added to Activation Wallet)`, txHash: tx.hash, processedAt: Date.now() });
+    customAlert(`✅ Withdrawal successfully approved!\n• 80% (${amount} Temple_DA) sent to user BEP-20 wallet.\n• 20% ($${activationUSDT} USDT) credited to user's Activation Wallet!`);
   } catch (error) { hideWeb3Toast(); customAlert("Payout failed: " + formatWeb3Error(error)); }
 };
 
@@ -3945,7 +3964,7 @@ async function loadWithdrawHistory(phone) {
     historyArr.forEach(d => { 
       const date = new Date(d.timestamp).toLocaleString();
       let color = (d.status && d.status.includes("Pending")) ? "#dfb72c" : (d.status && d.status.includes("Rejected" ) ? "#ff4444" : "#00ff88");
-      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;">Amount: <span class="number">${d.amount} Temple_DA</span> (90% Net)<br>Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>${d.tenPercentActivationUSDT ? `<span style="color:#00ff88;">• 10% Activation: $${d.tenPercentActivationUSDT} USDT</span><br>` : ''}<span style="color:#888;">${date}</span></div>`; 
+      html += `<div class="small" style="border-bottom:1px solid rgba(223, 183, 44, 0.2); padding:7px 0;">Amount: <span class="number">${d.amount} Temple_DA</span> (80% Net)<br>Status: <span style="color:${color}; font-weight:bold;">${d.status || 'Processed'}</span><br>${d.twentyPercentActivationUSDT ? `<span style="color:#00ff88;">• 20% Activation: $${d.twentyPercentActivationUSDT} USDT</span><br>` : ''}<span style="color:#888;">${date}</span></div>`; 
     });
     const el = document.getElementById("withdrawHistory");
     if (el) el.innerHTML = html || "No withdrawal history found.";
