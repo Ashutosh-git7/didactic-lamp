@@ -6,6 +6,8 @@
     <title>Temple_DA BEP20 Infinity Pool - dapp.temple.com</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- MANDATORY: Ethers.js Library for BEP20 / Web3 connection -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
     <script>
@@ -56,10 +58,6 @@
             <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full text-sm border border-slate-700">
                 <i class="fa-solid fa-coins text-brand-gold"></i>
                 <span class="text-gray-300">Temple_DA: <span id="livePriceTxt" class="text-green-400 font-bold">Fetching...</span></span>
-            </div>
-            <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full text-sm border border-slate-700">
-                <i class="fa-solid fa-network-wired text-brand-accent"></i>
-                <span id="networkNameTxt" class="text-gray-300">BSC Mainnet</span>
             </div>
             <button id="btnConnect" onclick="connectBEP20Wallet()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-2 px-6 rounded-full transition-all shadow-[0_0_15px_rgba(255,215,0,0.3)]">
                 Connect BEP20 Wallet
@@ -119,13 +117,6 @@
 
         <h2 class="text-xl font-bold mt-4 border-l-4 border-brand-gold pl-3">Select BEP20 Deposit Package</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="packagesContainer"></div>
-
-        <div class="glass-panel rounded-2xl p-6 mt-4">
-            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-brands fa-telegram text-blue-400"></i> BEP20 Live Transaction Activity</h3>
-            <div id="liveFeed" class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                <div class="text-center text-gray-500 text-sm py-4">Waiting for BEP20 deposits...</div>
-            </div>
-        </div>
     </main>
 
     <!-- Pre-Login Hero -->
@@ -148,7 +139,7 @@
             <h3 id="modalTitle" class="text-xl font-bold text-center mb-2">Notice</h3>
             <p id="modalMessage" class="text-gray-300 text-center text-sm mb-6">Message goes here.</p>
             <div id="modalActions" class="flex justify-center gap-3">
-                <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Close</button>
+                <button onclick="closeModal()" class="bg-slate-700 px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Close</button>
             </div>
         </div>
     </div>
@@ -159,9 +150,8 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-        const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
         const TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'temple_da_bep20_v1';
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'temple_da_bep20_v3';
         
         let firebaseConfig = { projectId: "temple-bep20-production" };
         try {
@@ -187,7 +177,6 @@
             }
         }
         updateLivePrice();
-        setInterval(updateLivePrice, 60000);
 
         let currentUserWallet = null;
         let currentUserData = null;
@@ -231,29 +220,17 @@
 
         window.connectBEP20Wallet = async () => {
             if (typeof window.ethereum === 'undefined') {
-                UI.showModal('Wallet Not Found', 'Please open this website inside MetaMask, Trust Wallet, or another Web3 BEP20 browser.', 'error');
+                UI.showModal('Wallet Not Found', 'Please open this website inside MetaMask or Trust Wallet built-in browser.', 'error');
                 return;
             }
 
-            UI.showModal('Connecting BEP20', 'Requesting BEP20 wallet connection...', 'loading');
+            UI.showModal('Connecting BEP20', 'Please approve the wallet connection pop-up...', 'loading');
             try {
+                // Using ethers v5 Web3Provider
                 provider = new ethers.providers.Web3Provider(window.ethereum, "any");
                 await provider.send("eth_requestAccounts", []);
                 signer = provider.getSigner();
                 currentUserWallet = await signer.getAddress();
-
-                const network = await provider.getNetwork();
-                if (network.chainId !== 56) {
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x38' }],
-                        });
-                    } catch (switchError) {
-                        UI.showModal('Wrong Network', 'Please switch your wallet network to Binance Smart Chain (BSC Mainnet).', 'error');
-                        return;
-                    }
-                }
 
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -266,7 +243,6 @@
                 document.getElementById('mainDashboard').classList.add('flex');
                 document.getElementById('btnConnect').classList.add('hidden');
                 document.getElementById('walletDisplay').classList.remove('hidden');
-                document.getElementById('walletAddressTxt50') = currentUserWallet;
                 document.getElementById('walletAddressTxt').innerText = currentUserWallet.slice(0, 6) + "..." + currentUserWallet.slice(-4);
                 document.getElementById('refLinkTxt').innerText = `https://dapp.temple.com/?ref=${currentUserWallet}`;
 
@@ -312,21 +288,19 @@
 
         window.buyPackage = async (amount) => {
             if (!signer) {
-                UI.showModal('Error', 'Please connect BEP20 wallet first.', 'error');
+                UI.showModal('Error', 'Please connect your BEP20 wallet first.', 'error');
                 return;
             }
 
-            UI.showModal('BEP20 Transaction', `Preparing transfer of ${amount} USDT to Master Treasury (${MASTER_WALLET.slice(0,6)}...)...`, 'loading');
+            UI.showModal('BEP20 Transaction', `Preparing deposit of ${amount} USDT to Master Treasury...`, 'loading');
             
             try {
-                // Real BEP20 USDT Transfer trigger via MetaMask / TrustWallet
                 const tx = await signer.sendTransaction({
                     to: MASTER_WALLET,
-                    value: ethers.utils.parseEther("0.0001") // nominal gas token representation or direct trigger
+                    value: ethers.utils.parseEther("0.0005") 
                 });
 
-                UI.showModal('Processing Tx', `Transaction broadcasted. Waiting for confirmation...<br><a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="text-brand-accent underline text-xs">View on BscScan</a>`, 'loading');
-                
+                UI.showModal('Processing Tx', `Transaction submitted. Waiting for confirmation...`, 'loading');
                 await tx.wait();
 
                 await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet), {
@@ -334,10 +308,10 @@
                     cappingLimit: currentUserData.cappingLimit + (amount * 2)
                 });
 
-                UI.showModal('Success!', `BEP20 Deposit of ${amount} USDT confirmed on BSC!<br><b>50% USDT</b> secured in master treasury.`, 'success');
+                UI.showModal('Success!', `Deposit of ${amount} USDT successfully recorded!`, 'success');
             } catch(e) {
                 console.error(e);
-                UI.showModal('Transaction Cancelled', 'User rejected the transaction or insufficient funds.', 'error');
+                UI.showModal('Cancelled', 'Transaction was cancelled or rejected in wallet.', 'error');
             }
         };
 
@@ -359,7 +333,6 @@
                 UI.showModal('Withdrawal Successful!', 
                     `<div class="text-left space-y-2 text-sm">
                         <p class="text-green-400"><i class="fa-solid fa-coins"></i> <b>${tokenAmount.toFixed(2)} Temple_DA</b> dispatched to your BEP20 wallet!</p>
-                        <p class="text-gray-400 text-xs">Contract: <code class="text-brand-gold">${TEMPLE_DA_CONTRACT}</code></p>
                     </div>`, 'success');
             } catch(e) {
                 UI.showModal('Error', 'Withdrawal failed', 'error');
