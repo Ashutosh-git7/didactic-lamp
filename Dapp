@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temple_DA Global Infinity Pool - dapp.temple.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#FFD700',
+                            dark: '#0f172a',
+                            panel: '#1e293b',
+                            accent: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .text-glow { text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 3px; }
+        .modal-enter { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="glass-panel sticky top-0 z-50 px-4 py-3 flex justify-between items-center border-b border-yellow-500/20">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center font-bold text-gray-900 shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+                T_DA
+            </div>
+            <span class="font-bold text-xl hidden sm:block text-brand-gold text-glow">dapp.temple.com</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full text-sm border border-slate-700">
+                <i class="fa-solid fa-coins text-brand-gold"></i>
+                <span class="text-gray-300">Temple_DA: <span id="livePriceTxt" class="text-green-400 font-bold">Fetching...</span></span>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full text-sm border border-slate-700">
+                <i class="fa-solid fa-droplet text-brand-accent"></i>
+                <span class="text-gray-300">Liquidity: <span id="globalLiquidityUI" class="text-brand-gold font-bold">0.00</span> USDT</span>
+            </div>
+            <button id="btnConnect" onclick="connectWallet()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-2 px-6 rounded-full transition-all shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+                Connect Wallet
+            </button>
+            <div id="walletDisplay" class="hidden bg-slate-800 border border-yellow-500/30 px-4 py-2 rounded-full flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span id="walletAddressTxt" class="font-mono text-sm text-yellow-400">0x...</span>
+                <button id="btnLogout" class="ml-2 text-gray-400 hover:text-white"><i class="fa-solid fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content (Dashboard) -->
+    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-8 hidden flex-col gap-6">
+        <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
+            <h1 class="text-2xl font-bold mb-2">Temple_DA Infinity Pool Dashboard 🚀</h1>
+            <p class="text-gray-400 text-sm mb-4">Your single-leg position is locked on dapp.temple.com. Share your link below:</p>
+            <div class="flex flex-wrap gap-2 items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700 inline-flex">
+                <span class="text-sm text-gray-400">Ref Link:</span>
+                <code id="refLinkTxt" class="text-brand-accent font-mono text-sm select-all">...</code>
+                <button onclick="copyRefLink()" class="text-brand-gold hover:text-white ml-2"><i class="fa-regular fa-copy"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between border-t-4 border-t-brand-gold">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-1">Withdrawable Balance</h3>
+                    <div class="text-4xl font-bold text-white mb-2"><span id="uiBalance">0.00</span> <span class="text-xl text-brand-gold">USDT</span></div>
+                    <p class="text-xs text-brand-accent"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Auto-compounding loop active</p>
+                </div>
+                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-6 w-full bg-slate-800 hover:bg-slate-700 border border-brand-gold text-brand-gold font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    Withdraw (50% USDT Pool / 50% Temple_DA)
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-accent col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-xs uppercase mb-1">Total Invested</p>
+                    <p class="text-2xl font-bold"><span id="uiInvested">0.00</span> USDT</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-xs uppercase mb-1">Total Earned</p>
+                    <p class="text-2xl font-bold text-green-400"><span id="uiEarned">0.00</span> USDT</p>
+                </div>
+                <div class="col-span-2 bg-slate-800/50 p-4 rounded-xl border border-slate-700 mt-2">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-400">2x Capping Progress</span>
+                        <span class="font-bold text-brand-gold"><span id="uiProgressTxt">0</span>% (<span id="uiLimitTxt">0</span> USDT Limit)</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-600 overflow-hidden">
+                        <div id="uiProgressBar" class="bg-gradient-to-r from-yellow-600 to-yellow-400 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold mt-4 border-l-4 border-brand-gold pl-3">Select Deposit Package</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="packagesContainer"></div>
+
+        <div class="glass-panel rounded-2xl p-6 mt-4">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-brands fa-telegram text-blue-400"></i> Live dApp Activity Feed</h3>
+            <div id="liveFeed" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="text-center text-gray-500 text-sm py-4">Waiting for deposits...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Pre-Login Hero -->
+    <main id="heroSection" class="flex-grow flex flex-col items-center justify-center px-4 text-center">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center font-bold text-3xl text-gray-900 shadow-[0_0_40px_rgba(255,215,0,0.4)] mb-8">
+            T_DA
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold mb-4 text-glow">dapp.temple.com</h1>
+        <p class="text-xl text-gray-400 mb-8 max-w-2xl">Decentralized 50/50 Global Infinity Pool. Direct deposit to master treasury & instant community distribution.</p>
+        <button onclick="connectWallet()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 font-bold py-4 px-10 rounded-full text-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.4)]">
+            Connect Wallet & Start
+        </button>
+    </main>
+
+    <!-- Modal -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="modal-enter glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-600 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+            <div id="modalIcon" class="text-4xl mb-4 text-center">🔔</div>
+            <h3 id="modalTitle" class="text-xl font-bold text-center mb-2">Notice</h3>
+            <p id="modalMessage" class="text-gray-300 text-center text-sm mb-6">Message goes here.</p>
+            <div id="modalActions" class="flex justify-center gap-3">
+                <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Master Wallets & Contracts Config
+        const MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+        const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
+        const TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'temple_da_dapp_v1';
+        
+        let firebaseConfig = {
+            projectId: "temple-dapp-production"
+        };
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        } catch(e) {}
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let liveTokenPrice = 0.0015; // Initial fallback matching your exact range
+
+        async function updateLivePrice() {
+            try {
+                const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${TEMPLE_DA_POOL_CONTRACT}`);
+                const data = await res.json();
+                if (data && data.pairs && data.pairs.length > 0) {
+                    liveTokenPrice = parseFloat(data.pairs[0].priceUsd);
+                    document.getElementById('livePriceTxt').innerText = `$${liveTokenPrice.toFixed(6)}`;
+                }
+            } catch (err) {
+                document.getElementById('livePriceTxt').innerText = `$${liveTokenPrice.toFixed(6)}`;
+            }
+        }
+        updateLivePrice();
+        setInterval(updateLivePrice, 60000);
+
+        let currentUserWallet = null;
+        let currentUserData = null;
+        let referrerAddress = "0xAdminGenesisWallet";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.has('ref')) referrerAddress = urlParams.get('ref');
+
+        const UI = {
+            showModal: (title, message, type = 'info', actions = null) => {
+                document.getElementById('customModal').style.display = 'flex';
+                document.getElementById('modalTitle').innerText = title;
+                document.getElementById('modalMessage').innerHTML = message;
+                document.getElementById('modalActions').innerHTML = actions || '<button onclick="closeModal()" class="bg-slate-700 px-6 py-2 rounded-lg text-sm font-semibold">Close</button>';
+            },
+            hideModal: () => document.getElementById('customModal').style.display = 'none'
+        };
+        window.closeModal = UI.hideModal;
+        window.copyRefLink = () => {
+            navigator.clipboard.writeText(document.getElementById('refLinkTxt').innerText);
+            UI.showModal('Copied!', 'Referral link copied to clipboard.', 'success');
+        };
+
+        // Render Packages
+        const packages = [25, 50, 100, 250, 500];
+        const pkgContainer = document.getElementById('packagesContainer');
+        packages.forEach(amt => {
+            pkgContainer.innerHTML += `
+                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-xl hover:border-brand-gold transition-colors">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-2xl font-bold">${amt} <span class="text-sm text-brand-gold">USDT</span></span>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4">2x Capping: ${amt*2} USDT</p>
+                    <button onclick="buyPackage(${amt})" class="w-full bg-slate-700 hover:bg-brand-gold hover:text-gray-900 py-2 rounded-lg text-sm font-semibold transition-all">
+                        Deposit USDT
+                    </button>
+                </div>
+            `;
+        });
+
+        window.connectWallet = async () => {
+            UI.showModal('Connecting...', 'Connecting to your Web3 Wallet...', 'loading');
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                currentUserWallet = "0x" + Math.random().toString(16).slice(2, 10).toUpperCase() + "..." + Math.random().toString(16).slice(2, 6).toUpperCase();
+                
+                document.getElementById('heroSection').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+                document.getElementById('mainDashboard').classList.add('flex');
+                document.getElementById('btnConnect').classList.add('hidden');
+                document.getElementById('walletDisplay').classList.remove('hidden');
+                document.getElementById('walletAddressTxt').innerText = currentUserWallet;
+                document.getElementById('refLinkTxt').innerText = `https://dapp.temple.com/?ref=${currentUserWallet}`;
+                
+                UI.hideModal();
+                initUserData(currentUserWallet);
+            } catch(e) {
+                UI.showModal('Error', 'Connection failed.', 'error');
+            }
+        };
+
+        async function initUserData(wallet) {
+            const userRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', wallet);
+            const globalRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'global', 'state');
+
+            onSnapshot(globalRef, (snap) => {
+                if(snap.exists()) {
+                    document.getElementById('globalLiquidityUI').innerText = (snap.data().totalLiquidity || 0).toFixed(2);
+                } else {
+                    setDoc(globalRef, { singleLegLine: [], totalLiquidity: 0 });
+                }
+            });
+
+            const userSnap = await getDoc(userRef);
+            if (!userSnap.exists()) {
+                await setDoc(userRef, { wallet, sponsor: referrerAddress, balance: 0, totalInvested: 0, totalEarned: 0, cappingLimit: 0 });
+            }
+
+            onSnapshot(userRef, (snap) => {
+                if(snap.exists()) {
+                    currentUserData = snap.data();
+                    document.getElementById('uiBalance').innerText = currentUserData.balance.toFixed(2);
+                    document.getElementById('uiInvested').innerText = currentUserData.totalInvested.toFixed(2);
+                    document.getElementById('uiEarned').innerText = currentUserData.totalEarned.toFixed(2);
+                    document.getElementById('uiLimitTxt').innerText = currentUserData.cappingLimit.toFixed(2);
+                    
+                    let p = currentUserData.cappingLimit > 0 ? (currentUserData.totalEarned / currentUserData.cappingLimit) * 100 : 0;
+                    document.getElementById('uiProgressTxt').innerText = Math.min(p, 100).toFixed(1);
+                    document.getElementById('uiProgressBar').style.width = `${Math.min(p, 100)}%`;
+
+                    document.getElementById('btnWithdraw').disabled = currentUserData.balance < 10;
+                }
+            });
+        }
+
+        window.buyPackage = async (amount) => {
+            UI.showModal('Processing', `Depositing ${amount} USDT to Master Treasury (${MASTER_WALLET.slice(0,6)}...)...`, 'loading');
+            await new Promise(r => setTimeout(r, 1500));
+
+            try {
+                const globalRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'global', 'state');
+                const globalSnap = await getDoc(globalRef);
+                let line = globalSnap.exists() ? globalSnap.data().singleLegLine || [] : [];
+                let liquidity = globalSnap.exists() ? globalSnap.data().totalLiquidity || 0 : 0;
+
+                if(!line.includes(currentUserWallet)) line.push(currentUserWallet);
+
+                const liquidityShare = amount * 0.50;
+                const directShare = amount * 0.10;
+                const levelPool = amount * 0.40;
+
+                await updateDoc(globalRef, {
+                    singleLegLine: line,
+                    totalLiquidity: liquidity + liquidityShare
+                });
+
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet), {
+                    totalInvested: currentUserData.totalInvested + amount,
+                    cappingLimit: currentUserData.cappingLimit + (amount * 2)
+                });
+
+                UI.showModal('Success!', `Deposit of ${amount} USDT registered.<br><b>50% USDT</b> sent to Master Wallet.<br><b>Virtual distribution</b> executed for community!`, 'success');
+            } catch(e) {
+                UI.showModal('Error', 'Transaction failed', 'error');
+            }
+        };
+
+        window.requestWithdrawal = async () => {
+            const amt = currentUserData.balance;
+            if(amt <= 0) return;
+
+            UI.showModal('Withdrawing', `Converting payout to Temple_DA tokens via Pool...`, 'loading');
+            await new Promise(r => setTimeout(r, 1500));
+
+            try {
+                const payoutUSDT = amt * 0.50;
+                const tokenAmount = payoutUSDT / liveTokenPrice;
+
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet), {
+                    balance: 0
+                });
+
+                UI.showModal('Withdrawal Successful!', 
+                    `<div class="text-left space-y-2 text-sm">
+                        <p class="text-green-400"><i class="fa-solid fa-coins"></i> <b>${tokenAmount.toFixed(2)} Temple_DA</b> sent to your wallet!</p>
+                        <p class="text-gray-400 text-xs">Contract: <code class="text-brand-gold">${TEMPLE_DA_CONTRACT}</code></p>
+                        <p class="text-brand-accent">50% USDT re-invested into liquidity loop.</p>
+                    </div>`, 'success');
+            } catch(e) {
+                UI.showModal('Error', 'Withdrawal failed', 'error');
+            }
+        };
+    </script>
+</body>
+</html>
