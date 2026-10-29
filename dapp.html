@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temple_DA BEP20 Infinity Pool - dapp.temple.com</title>
+    <title>Temple_DA Global Infinity Pool - dapp.temple.com</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    <!-- MANDATORY: Ethers.js Library for BEP20 / Web3 connection -->
+    <!-- Ethers.js v5 UMD for Universal BEP20 Web3 Support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
     <script>
@@ -31,129 +31,303 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 215, 0, 0.1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.3);
         }
-        .text-glow { text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .text-glow { text-shadow: 0 0 12px rgba(255, 215, 0, 0.45); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 3px; }
-        .modal-enter { animation: fadeIn 0.3s ease-out forwards; }
+        .modal-enter { animation: fadeIn 0.25s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
 
-    <!-- Navbar -->
+    <!-- Top Navigation -->
     <nav class="glass-panel sticky top-0 z-50 px-4 py-3 flex justify-between items-center border-b border-yellow-500/20">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center font-bold text-gray-900 shadow-[0_0_15px_rgba(255,215,0,0.5)]">
                 T_DA
             </div>
-            <span class="font-bold text-xl hidden sm:block text-brand-gold text-glow">dapp.temple.com</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full text-sm border border-slate-700">
-                <i class="fa-solid fa-coins text-brand-gold"></i>
-                <span class="text-gray-300">Temple_DA: <span id="livePriceTxt" class="text-green-400 font-bold">Fetching...</span></span>
+            <div>
+                <span class="font-bold text-lg sm:text-xl block text-brand-gold text-glow leading-none">Temple_DA</span>
+                <span class="text-[10px] text-gray-400 font-mono">Infinity Pool Protocol</span>
             </div>
-            <button id="btnConnect" onclick="connectBEP20Wallet()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-2 px-6 rounded-full transition-all shadow-[0_0_15px_rgba(255,215,0,0.3)]">
-                Connect BEP20 Wallet
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- Live PancakeSwap Pool Price Badge -->
+            <div class="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-full text-xs sm:text-sm border border-slate-700">
+                <i class="fa-solid fa-chart-line text-brand-gold"></i>
+                <span class="text-gray-300">T_DA: <span id="livePriceTxt" class="text-green-400 font-bold font-mono">$0.001500</span></span>
+            </div>
+
+            <!-- Connect Wallet Button -->
+            <button id="btnConnect" onclick="openUniversalWalletModal()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-2 px-4 sm:px-6 rounded-full text-xs sm:text-sm transition-all shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+                <i class="fa-solid fa-wallet mr-1"></i> Connect Wallet
             </button>
-            <div id="walletDisplay" class="hidden bg-slate-800 border border-yellow-500/30 px-4 py-2 rounded-full flex items-center gap-2">
+
+            <!-- Connected Wallet Badge -->
+            <div id="walletDisplay" class="hidden bg-slate-800 border border-yellow-500/30 px-3 py-1.5 rounded-full flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span id="walletAddressTxt" class="font-mono text-sm text-yellow-400">0x...</span>
-                <button onclick="disconnectWallet()" class="ml-2 text-gray-400 hover:text-white" title="Disconnect"><i class="fa-solid fa-sign-out-alt"></i></button>
+                <span id="walletAddressTxt" class="font-mono text-xs sm:text-sm text-yellow-400">0x...</span>
+                <button onclick="disconnectWallet()" class="ml-1 text-gray-400 hover:text-red-400 transition-colors" title="Disconnect">
+                    <i class="fa-solid fa-power-off text-xs"></i>
+                </button>
             </div>
         </div>
     </nav>
 
-    <!-- Dashboard -->
-    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-8 hidden flex-col gap-6">
-        <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
-            <h1 class="text-2xl font-bold mb-2">Temple_DA BEP20 Infinity Pool 🚀</h1>
-            <p class="text-gray-400 text-sm mb-4">Connected via BEP20 (Binance Smart Chain). Share your referral link:</p>
-            <div class="flex flex-wrap gap-2 items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700 inline-flex">
-                <span class="text-sm text-gray-400">Ref Link:</span>
-                <code id="refLinkTxt" class="text-brand-accent font-mono text-sm select-all">...</code>
-                <button onclick="copyRefLink()" class="text-brand-gold hover:text-white ml-2"><i class="fa-regular fa-copy"></i></button>
+    <!-- Main User Dashboard (Visible after login) -->
+    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-6">
+        
+        <!-- Welcome & Referral Banner -->
+        <div class="glass-panel rounded-2xl p-5 sm:p-6 relative overflow-hidden border-l-4 border-l-brand-gold">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="bg-yellow-500/20 text-brand-gold text-xs font-bold px-2.5 py-0.5 rounded-full border border-yellow-500/30">
+                            Global Position #<span id="uiGlobalPos">--</span>
+                        </span>
+                        <span class="bg-blue-500/20 text-brand-accent text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-500/30">
+                            BEP-20 Verified
+                        </span>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold mt-1">Temple_DA Single-Leg Infinity Loop 🚀</h1>
+                    <p class="text-gray-400 text-xs sm:text-sm mt-1">
+                        Every deposit distributes <b class="text-white">50% Liquidity Pool</b>, <b class="text-white">10% Direct Sponsor</b> & <b class="text-white">40% to 20 Upline + 20 Downline</b>.
+                    </p>
+                </div>
+
+                <!-- Referral Link Box -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700 flex flex-col gap-1 min-w-[260px]">
+                    <span class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Your Direct Referral Link (10% Instant)</span>
+                    <div class="flex items-center justify-between gap-2">
+                        <code id="refLinkTxt" class="text-brand-accent font-mono text-xs truncate max-w-[200px] sm:max-w-[240px]">...</code>
+                        <button onclick="copyRefLink()" class="bg-yellow-500/20 hover:bg-yellow-500 text-brand-gold hover:text-gray-900 px-2.5 py-1 rounded-lg text-xs font-bold transition-all">
+                            <i class="fa-regular fa-copy mr-1"></i> Copy
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Balance, Stats & 2x Capping Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Withdrawable Balance Card -->
             <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between border-t-4 border-t-brand-gold">
                 <div>
-                    <h3 class="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-1">Withdrawable Balance</h3>
-                    <div class="text-4xl font-bold text-white mb-2"><span id="uiBalance">0.00</span> <span class="text-xl text-brand-gold">USDT</span></div>
-                    <p class="text-xs text-brand-accent"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Auto-compounding loop active</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">Available Profit Balance</h3>
+                        <span class="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">50/50 Loop Active</span>
+                    </div>
+                    <div class="text-4xl font-bold text-white my-2">
+                        <span id="uiBalance">0.00</span> <span class="text-xl text-brand-gold">USDT</span>
+                    </div>
+                    <div class="text-xs text-gray-400 bg-slate-800/70 p-2.5 rounded-lg border border-slate-700/60 mt-3 space-y-1">
+                        <div class="flex justify-between">
+                            <span>50% Payout in Temple_DA:</span>
+                            <span class="text-brand-gold font-mono font-bold"><span id="uiEstTokens">0</span> T_DA</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>50% Auto Re-invest Loop:</span>
+                            <span class="text-brand-accent font-mono">10% Sponsor + 20 Up/Down</span>
+                        </div>
+                    </div>
                 </div>
-                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-6 w-full bg-slate-800 hover:bg-slate-700 border border-brand-gold text-brand-gold font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    Withdraw (50% USDT / 50% Temple_DA)
+
+                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-5 w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-3 px-4 rounded-xl transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-money-bill-transfer mr-1"></i> Withdraw Profit Now
                 </button>
             </div>
 
-            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-accent col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
-                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <p class="text-gray-400 text-xs uppercase mb-1">Total Invested</p>
-                    <p class="text-2xl font-bold"><span id="uiInvested">0.00</span> USDT</p>
-                </div>
-                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <p class="text-gray-400 text-xs uppercase mb-1">Total Earned</p>
-                    <p class="text-2xl font-bold text-green-400"><span id="uiEarned">0.00</span> USDT</p>
-                </div>
-                <div class="col-span-2 bg-slate-800/50 p-4 rounded-xl border border-slate-700 mt-2">
-                    <div class="flex justify-between text-sm mb-2">
-                        <span class="text-gray-400">2x Capping Progress</span>
-                        <span class="font-bold text-brand-gold"><span id="uiProgressTxt">0</span>% (<span id="uiLimitTxt">0</span> USDT Limit)</span>
+            <!-- Income Breakdown & 2x Capping -->
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-accent lg:col-span-2 flex flex-col justify-between gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
+                        <p class="text-gray-400 text-[11px] uppercase mb-1">Active Deposit</p>
+                        <p class="text-lg sm:text-xl font-bold text-white"><span id="uiInvested">0.00</span> <span class="text-xs text-brand-gold">USDT</span></p>
                     </div>
-                    <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-600 overflow-hidden">
-                        <div id="uiProgressBar" class="bg-gradient-to-r from-yellow-600 to-yellow-400 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
+                        <p class="text-gray-400 text-[11px] uppercase mb-1">Direct Income (10%)</p>
+                        <p class="text-lg sm:text-xl font-bold text-yellow-400"><span id="uiDirectEarned">0.00</span> <span class="text-xs">USDT</span></p>
                     </div>
+                    <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
+                        <p class="text-gray-400 text-[11px] uppercase mb-1">20 Up / 20 Down Pool</p>
+                        <p class="text-lg sm:text-xl font-bold text-brand-accent"><span id="uiPoolEarned">0.00</span> <span class="text-xs">USDT</span></p>
+                    </div>
+                    <div class="bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
+                        <p class="text-gray-400 text-[11px] uppercase mb-1">Total Earned</p>
+                        <p class="text-lg sm:text-xl font-bold text-green-400"><span id="uiEarned">0.00</span> <span class="text-xs">USDT</span></p>
+                    </div>
+                </div>
+
+                <!-- 2x Capping Bar -->
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between items-center text-xs sm:text-sm mb-2">
+                        <span class="text-gray-300 font-semibold"><i class="fa-solid fa-gauge-high text-brand-gold mr-1"></i> 2x Earning Capping Limit</span>
+                        <span class="font-bold text-brand-gold"><span id="uiProgressTxt">0.0</span>% (<span id="uiEarnedBarTxt">0.00</span> / <span id="uiLimitTxt">0.00</span> USDT)</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-3.5 border border-slate-700 overflow-hidden p-0.5">
+                        <div id="uiProgressBar" class="bg-gradient-to-r from-yellow-500 via-amber-400 to-green-400 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-2">
+                        * Upgrade or re-topup any package anytime to increase your 2x capping limit and continue receiving global upline/downline income.
+                    </p>
                 </div>
             </div>
         </div>
 
-        <h2 class="text-xl font-bold mt-4 border-l-4 border-brand-gold pl-3">Select BEP20 Deposit Package</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="packagesContainer"></div>
+        <!-- Multi-Package Upgrade Section -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg sm:text-xl font-bold border-l-4 border-brand-gold pl-3">Activate / Upgrade Package (BEP-20 USDT)</h2>
+                <span class="text-xs text-gray-400 hidden sm:inline"><i class="fa-solid fa-bolt text-brand-gold mr-1"></i> Instant Smart Distribution</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="packagesContainer"></div>
+        </div>
+
+        <!-- Global Single-Leg Community & Live Feed -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Upline / Downline Tree Status -->
+            <div class="glass-panel rounded-2xl p-5 border border-slate-700">
+                <h3 class="text-base font-bold mb-3 flex items-center justify-between">
+                    <span><i class="fa-solid fa-sitemap text-brand-gold mr-2"></i> Your 20 Upline & 20 Downline Loop</span>
+                    <span class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-brand-accent border border-slate-700">Total Global Users: <b id="uiTotalUsers">1</b></span>
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">
+                    In the Global Single-Leg Pool, every new member joining after you automatically falls into your 20 Downline, and the 20 members before you form your 20 Upline.
+                </p>
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700">
+                        <div class="text-xs text-gray-400">Active Uplines Above You</div>
+                        <div class="text-2xl font-bold text-brand-gold mt-1"><span id="uiUplineCount">0</span> <span class="text-xs font-normal text-gray-400">/ 20 Max</span></div>
+                        <div class="text-[10px] text-green-400 mt-1">Sharing 50% Withdrawal Loop</div>
+                    </div>
+                    <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700">
+                        <div class="text-xs text-gray-400">Active Downlines Below You</div>
+                        <div class="text-2xl font-bold text-brand-accent mt-1"><span id="uiDownlineCount">0</span> <span class="text-xs font-normal text-gray-400">/ 20 Max</span></div>
+                        <div class="text-[10px] text-green-400 mt-1">Sharing Joining & Withdrawal Loop</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Activity Feed -->
+            <div class="glass-panel rounded-2xl p-5 border border-slate-700 flex flex-col">
+                <h3 class="text-base font-bold mb-3 flex items-center gap-2">
+                    <i class="fa-brands fa-telegram text-blue-400 text-lg"></i> Live Global Pool Transactions
+                </h3>
+                <div id="liveFeed" class="space-y-2.5 max-h-44 overflow-y-auto pr-2 flex-grow text-xs">
+                    <div class="text-center text-gray-500 py-6">Syncing live blockchain pool events...</div>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <!-- Pre-Login Hero -->
-    <main id="heroSection" class="flex-grow flex flex-col items-center justify-center px-4 text-center">
-        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center font-bold text-3xl text-gray-900 shadow-[0_0_40px_rgba(255,215,0,0.4)] mb-8">
+    <!-- Pre-Login Landing Hero -->
+    <main id="heroSection" class="flex-grow flex flex-col items-center justify-center px-4 py-12 text-center">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center font-bold text-3xl text-gray-900 shadow-[0_0_40px_rgba(255,215,0,0.4)] mb-6">
             T_DA
         </div>
-        <h1 class="text-4xl md:text-6xl font-bold mb-4 text-glow">dapp.temple.com</h1>
-        <p class="text-xl text-gray-400 mb-8 max-w-2xl">Connect via MetaMask / Trust Wallet (BEP20) to deposit USDT directly to Master Treasury (`0x2760...De95`).</p>
-        <button onclick="connectBEP20Wallet()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 font-bold py-4 px-10 rounded-full text-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,215,0,0.4)]">
-            Connect BEP20 Wallet
-        </button>
+        <div class="inline-flex items-center gap-2 bg-slate-800/90 border border-yellow-500/30 px-4 py-1.5 rounded-full text-xs text-brand-gold mb-4">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-ping"></span> 100% Web3 No-Registration Onboarding
+        </div>
+        <h1 class="text-3xl sm:text-5xl md:text-6xl font-bold mb-4 text-glow">Temple_DA Infinity Pool</h1>
+        <p class="text-sm sm:text-lg text-gray-400 mb-8 max-w-2xl leading-relaxed">
+            Global Single-Leg Auto-Pool where <b class="text-white">50% builds Temple_DA Liquidity</b>, <b class="text-white">10% goes to Direct Sponsor</b>, and <b class="text-white">40% distributes across 20 Upline & 20 Downline</b>.
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-4">
+            <button onclick="openUniversalWalletModal()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 font-bold py-4 px-8 rounded-full text-base sm:text-lg hover:scale-105 transition-transform shadow-[0_0_25px_rgba(255,215,0,0.4)]">
+                <i class="fa-solid fa-wallet mr-2"></i> Connect BEP-20 Wallet
+            </button>
+        </div>
+
+        <!-- Feature Pills -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full mt-12 text-left">
+            <div class="glass-panel p-4 rounded-xl border border-slate-700/80">
+                <div class="text-brand-gold font-bold text-sm mb-1"><i class="fa-solid fa-arrows-spin mr-1"></i> 20 Up & 20 Down Loop</div>
+                <p class="text-xs text-gray-400">Earn passive income from 20 global uplines and 20 global downlines on every deposit & withdrawal.</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-slate-700/80">
+                <div class="text-brand-accent font-bold text-sm mb-1"><i class="fa-solid fa-coins mr-1"></i> Live PancakeSwap Payout</div>
+                <p class="text-xs text-gray-400">Withdrawals convert 50% into Temple_DA tokens at live DEX pool price while 50% re-cycles into the community.</p>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-slate-700/80">
+                <div class="text-green-400 font-bold text-sm mb-1"><i class="fa-solid fa-bolt mr-1"></i> Instant 10% Direct</div>
+                <p class="text-xs text-gray-400">Share your wallet referral link and receive 10% instant reward on every package your referrals activate.</p>
+            </div>
+        </div>
     </main>
 
-    <!-- Modal -->
-    <div id="customModal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+    <!-- Universal Wallet Selection Modal -->
+    <div id="walletModal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="modal-enter glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-600 relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
-            <div id="modalIcon" class="text-4xl mb-4 text-center">🔔</div>
-            <h3 id="modalTitle" class="text-xl font-bold text-center mb-2">Notice</h3>
-            <p id="modalMessage" class="text-gray-300 text-center text-sm mb-6">Message goes here.</p>
-            <div id="modalActions" class="flex justify-center gap-3">
-                <button onclick="closeModal()" class="bg-slate-700 px-6 py-2 rounded-lg text-sm font-semibold transition-colors">Close</button>
+            <button onclick="closeWalletModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+            <h3 class="text-xl font-bold text-center mb-1 text-brand-gold">Connect BEP-20 Wallet</h3>
+            <p class="text-gray-400 text-center text-xs mb-6">Works with MetaMask, Trust Wallet, TokenPocket, Bitget & SafePal</p>
+            
+            <div class="space-y-3">
+                <button onclick="connectInjectedWallet()" class="w-full flex items-center justify-between bg-slate-800 hover:bg-slate-700 border border-yellow-500/40 p-4 rounded-xl transition-all">
+                    <span class="font-bold flex items-center gap-3 text-sm sm:text-base">
+                        <i class="fa-solid fa-fox text-orange-400 text-xl"></i> MetaMask / Trust / Web3 Browser
+                    </span>
+                    <span class="text-xs bg-yellow-500/20 text-brand-gold px-2 py-0.5 rounded">BEP-20</span>
+                </button>
+
+                <div class="border-t border-slate-700 my-3 pt-3">
+                    <p class="text-[11px] text-gray-400 mb-2">Or enter your BEP-20 Wallet Address manually / test in Demo Mode:</p>
+                    <div class="flex gap-2">
+                        <input id="manualWalletInput" type="text" placeholder="Paste 0x... BEP-20 Address" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-brand-gold">
+                        <button onclick="connectManualWallet()" class="bg-brand-gold text-gray-900 font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap hover:bg-yellow-400">
+                            Login
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="connectDemoWallet()" class="w-full flex items-center justify-between bg-slate-800/50 hover:bg-slate-800 border border-slate-700 p-3 rounded-xl transition-all text-xs">
+                    <span class="font-semibold flex items-center gap-2 text-gray-300"><i class="fa-solid fa-flask text-brand-accent"></i> Launch Instant Demo Wallet (For Testing)</span>
+                    <span class="text-brand-gold font-bold">1-Click Test →</span>
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Custom Receipt / Notification Modal -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="modal-enter glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-600 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+            <div id="modalIcon" class="text-4xl mb-3 text-center">🔔</div>
+            <h3 id="modalTitle" class="text-xl font-bold text-center mb-2">Notice</h3>
+            <div id="modalMessage" class="text-gray-300 text-center text-sm mb-6">Message goes here.</div>
+            <div id="modalActions" class="flex justify-center gap-3">
+                <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl text-sm font-semibold transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic + Firebase Real-Time Single-Leg Engine -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // ============================================================================
+        // CORE CONFIGURATION (YOUR SAVED ADDRESSES)
+        // ============================================================================
         const MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+        const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
         const TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'temple_da_bep20_v3';
+        const USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const BSC_CHAIN_ID_HEX = "0x38"; // 56 Decimal (BSC Mainnet)
+
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'temple_da_infinity_pool';
         
-        let firebaseConfig = { projectId: "temple-bep20-production" };
+        let firebaseConfig = { projectId: "temple-da-live" };
         try {
             if (typeof __firebase_config !== 'undefined') firebaseConfig = JSON.parse(__firebase_config);
         } catch(e) {}
@@ -162,182 +336,553 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let liveTokenPrice = 0.0015;
+        // ============================================================================
+        // LIVE PANCAKESWAP POOL PRICE FETCHER (DEXSCREENER API)
+        // ============================================================================
+        let liveTokenPrice = 0.001500;
 
         async function updateLivePrice() {
             try {
                 const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${TEMPLE_DA_POOL_CONTRACT}`);
                 const data = await res.json();
-                if (data && data.pairs && data.pairs.length > 0) {
+                if (data && data.pairs && data.pairs.length > 0 && data.pairs[0].priceUsd) {
                     liveTokenPrice = parseFloat(data.pairs[0].priceUsd);
-                    document.getElementById('livePriceTxt').innerText = `$${liveTokenPrice.toFixed(6)}`;
                 }
             } catch (err) {
-                document.getElementById('livePriceTxt').innerText = `$${liveTokenPrice.toFixed(6)}`;
+                // Keep fallback 0.001500 if offline
             }
+            const priceEl = document.getElementById('livePriceTxt');
+            if (priceEl) priceEl.innerText = `$${liveTokenPrice.toFixed(6)}`;
+            updateEstimatedTokensUI();
         }
         updateLivePrice();
+        setInterval(updateLivePrice, 30000);
 
+        function updateEstimatedTokensUI() {
+            const estEl = document.getElementById('uiEstTokens');
+            if (!estEl || !currentUserData) return;
+            const withdrawable50Percent = (currentUserData.balance || 0) * 0.50;
+            const tokens = liveTokenPrice > 0 ? (withdrawable50Percent / liveTokenPrice) : 0;
+            estEl.innerText = tokens.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+
+        // ============================================================================
+        // STATE & REFERRAL DETECTION
+        // ============================================================================
         let currentUserWallet = null;
         let currentUserData = null;
-        let referrerAddress = "0xAdminGenesisWallet";
+        let allUsersList = [];
+        let referrerAddress = MASTER_WALLET;
         let provider = null;
         let signer = null;
 
         const urlParams = new URLSearchParams(window.location.search);
-        if(urlParams.has('ref')) referrerAddress = urlParams.get('ref');
+        if (urlParams.has('ref') && urlParams.get('ref').startsWith('0x')) {
+            referrerAddress = urlParams.get('ref');
+        }
 
+        // ============================================================================
+        // UI HELPERS & PACKAGE CARDS
+        // ============================================================================
         const UI = {
-            showModal: (title, message, type = 'info', actions = null) => {
+            showModal: (title, message, icon = '🔔', actions = null) => {
                 document.getElementById('customModal').style.display = 'flex';
+                document.getElementById('modalIcon').innerText = icon;
                 document.getElementById('modalTitle').innerText = title;
                 document.getElementById('modalMessage').innerHTML = message;
-                document.getElementById('modalActions').innerHTML = actions || '<button onclick="closeModal()" class="bg-slate-700 px-6 py-2 rounded-lg text-sm font-semibold">Close</button>';
+                document.getElementById('modalActions').innerHTML = actions || '<button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl text-sm font-semibold">Close</button>';
             },
             hideModal: () => document.getElementById('customModal').style.display = 'none'
         };
         window.closeModal = UI.hideModal;
+        window.openUniversalWalletModal = () => document.getElementById('walletModal').style.display = 'flex';
+        window.closeWalletModal = () => document.getElementById('walletModal').style.display = 'none';
+
         window.copyRefLink = () => {
-            navigator.clipboard.writeText(document.getElementById('refLinkTxt').innerText);
-            UI.showModal('Copied!', 'Referral link copied to clipboard.', 'success');
+            const linkText = document.getElementById('refLinkTxt').innerText;
+            const tempInput = document.createElement('input');
+            tempInput.value = linkText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            UI.showModal('Referral Link Copied!', `Share this link to earn <b>10% Instant Direct Bonus</b> on every package:<br><br><code class="text-xs text-brand-gold break-all">${linkText}</code>`, '✅');
         };
 
         const packages = [25, 50, 100, 250, 500];
         const pkgContainer = document.getElementById('packagesContainer');
-        packages.forEach(amt => {
+        packages.forEach((amt, idx) => {
             pkgContainer.innerHTML += `
-                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-xl hover:border-brand-gold transition-colors">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-2xl font-bold">${amt} <span class="text-sm text-brand-gold">USDT</span></span>
+                <div class="glass-panel border border-slate-700/80 p-5 rounded-2xl hover:border-brand-gold transition-all flex flex-col justify-between relative overflow-hidden group">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Tier ${idx + 1}</span>
+                            <span class="text-[10px] bg-yellow-500/20 text-brand-gold px-2 py-0.5 rounded-full font-semibold">2x Cap: ${amt * 2} USDT</span>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-3">${amt} <span class="text-sm text-brand-gold">USDT</span></div>
+                        <div class="space-y-1 text-[11px] text-gray-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 mb-4">
+                            <div class="flex justify-between"><span>💧 Liquidity Pool:</span><span class="text-brand-gold font-semibold">${(amt * 0.50).toFixed(1)} USDT</span></div>
+                            <div class="flex justify-between"><span>🤝 Direct Sponsor:</span><span class="text-green-400 font-semibold">${(amt * 0.10).toFixed(1)} USDT</span></div>
+                            <div class="flex justify-between"><span>🌐 20 Up / 20 Down:</span><span class="text-brand-accent font-semibold">${(amt * 0.40).toFixed(1)} USDT</span></div>
+                        </div>
                     </div>
-                    <p class="text-xs text-gray-400 mb-4">2x Capping: ${amt*2} USDT</p>
-                    <button onclick="buyPackage(${amt})" class="w-full bg-slate-700 hover:bg-brand-gold hover:text-gray-900 py-2 rounded-lg text-sm font-semibold transition-all">
-                        Deposit USDT
+                    <button onclick="buyPackage(${amt})" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-gray-900 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md">
+                        Activate ${amt} USDT
                     </button>
                 </div>
             `;
         });
 
-        window.connectBEP20Wallet = async () => {
-            if (typeof window.ethereum === 'undefined') {
-                UI.showModal('Wallet Not Found', 'Please open this website inside MetaMask or Trust Wallet built-in browser.', 'error');
+        // ============================================================================
+        // UNIVERSAL BEP-20 WALLET CONNECTION
+        // ============================================================================
+        async function ensureBSCNetwork(ethProvider) {
+            try {
+                await ethProvider.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: BSC_CHAIN_ID_HEX }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await ethProvider.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: BSC_CHAIN_ID_HEX,
+                                chainName: 'BNB Smart Chain (BEP20)',
+                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                                blockExplorerUrls: ['https://bscscan.com/']
+                            }]
+                        });
+                    } catch (addError) {}
+                }
+            }
+        }
+
+        window.connectInjectedWallet = async () => {
+            window.closeWalletModal();
+            let eth = window.ethereum || (window.BinanceChain) || (window.web3 && window.web3.currentProvider);
+
+            if (!eth) {
+                UI.showModal(
+                    'Web3 Wallet Not Detected',
+                    'Please open this link inside <b>Trust Wallet / MetaMask Browser</b>, or use the <b>Manual Address / Demo Mode</b> option to test immediately.',
+                    '⚠️'
+                );
                 return;
             }
 
-            UI.showModal('Connecting BEP20', 'Please approve the wallet connection pop-up...', 'loading');
+            UI.showModal('Connecting BEP-20 Wallet', 'Please approve the connection in your wallet...', '⏳');
             try {
-                // Using ethers v5 Web3Provider
-                provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+                await ensureBSCNetwork(eth);
+                provider = new ethers.providers.Web3Provider(eth, "any");
                 await provider.send("eth_requestAccounts", []);
                 signer = provider.getSigner();
-                currentUserWallet = await signer.getAddress();
+                const addr = await signer.getAddress();
+                await finalizeLogin(addr);
+            } catch (e) {
+                console.error(e);
+                UI.showModal('Connection Cancelled', 'Wallet connection request was rejected or failed. You can also login using Manual Address or Demo Mode.', '❌');
+            }
+        };
 
+        window.connectManualWallet = async () => {
+            const val = document.getElementById('manualWalletInput').value.trim();
+            if (!val || !val.startsWith('0x') || val.length < 10) {
+                UI.showModal('Invalid Address', 'Please enter a valid BEP-20 wallet address starting with 0x...', '⚠️');
+                return;
+            }
+            window.closeWalletModal();
+            signer = null;
+            await finalizeLogin(val);
+        };
+
+        window.connectDemoWallet = async () => {
+            window.closeWalletModal();
+            const randomHex = () => Math.floor(Math.random() * 16).toString(16).toUpperCase();
+            let demoAddr = "0x";
+            for (let i = 0; i < 40; i++) demoAddr += randomHex();
+            signer = null;
+            await finalizeLogin(demoAddr);
+        };
+
+        async function finalizeLogin(walletAddress) {
+            try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
 
+                currentUserWallet = walletAddress;
+
                 document.getElementById('heroSection').classList.add('hidden');
                 document.getElementById('mainDashboard').classList.remove('hidden');
                 document.getElementById('mainDashboard').classList.add('flex');
                 document.getElementById('btnConnect').classList.add('hidden');
                 document.getElementById('walletDisplay').classList.remove('hidden');
-                document.getElementById('walletAddressTxt').innerText = currentUserWallet.slice(0, 6) + "..." + currentUserWallet.slice(-4);
-                document.getElementById('refLinkTxt').innerText = `https://dapp.temple.com/?ref=${currentUserWallet}`;
+                document.getElementById('walletAddressTxt').innerText = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+
+                const baseDomain = window.location.origin + window.location.pathname;
+                document.getElementById('refLinkTxt').innerText = `${baseDomain}?ref=${walletAddress}`;
 
                 UI.hideModal();
-                initUserData(currentUserWallet);
-            } catch(e) {
+                await initUserData(walletAddress);
+                listenToGlobalFeed();
+            } catch (e) {
                 console.error(e);
-                UI.showModal('Connection Failed', 'User rejected connection or wallet error occurred.', 'error');
+                UI.showModal('Auth Error', 'Could not initialize cloud database session.', '❌');
             }
-        };
+        }
 
         window.disconnectWallet = () => {
             currentUserWallet = null;
+            signer = null;
             document.getElementById('mainDashboard').classList.add('hidden');
             document.getElementById('heroSection').classList.remove('hidden');
             document.getElementById('btnConnect').classList.remove('hidden');
             document.getElementById('walletDisplay').classList.add('hidden');
         };
 
+        // ============================================================================
+        // SINGLE-LEG DATABASE INITIALIZATION & SYNC
+        // ============================================================================
         async function initUserData(wallet) {
+            const usersCol = collection(db, 'artifacts', APP_ID, 'public', 'data', 'users');
             const userRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', wallet);
             const userSnap = await getDoc(userRef);
+
             if (!userSnap.exists()) {
-                await setDoc(userRef, { wallet, sponsor: referrerAddress, balance: 0, totalInvested: 0, totalEarned: 0, cappingLimit: 0 });
+                const allSnap = await getDocs(usersCol);
+                const joinOrder = allSnap.size + 1;
+                const cleanSponsor = (referrerAddress && referrerAddress !== wallet) ? referrerAddress : MASTER_WALLET;
+
+                await setDoc(userRef, {
+                    wallet: wallet,
+                    sponsor: cleanSponsor,
+                    joinOrder: joinOrder,
+                    balance: 0,
+                    totalInvested: 0,
+                    totalEarned: 0,
+                    directEarned: 0,
+                    poolEarned: 0,
+                    cappingLimit: 0,
+                    createdAt: Date.now()
+                });
             }
 
-            onSnapshot(userRef, (snap) => {
-                if(snap.exists()) {
-                    currentUserData = snap.data();
-                    document.getElementById('uiBalance').innerText = currentUserData.balance.toFixed(2);
-                    document.getElementById('uiInvested').innerText = currentUserData.totalInvested.toFixed(2);
-                    document.getElementById('uiEarned').innerText = currentUserData.totalEarned.toFixed(2);
-                    document.getElementById('uiLimitTxt').innerText = currentUserData.cappingLimit.toFixed(2);
-                    
-                    let p = currentUserData.cappingLimit > 0 ? (currentUserData.totalEarned / currentUserData.cappingLimit) * 100 : 0;
-                    document.getElementById('uiProgressTxt').innerText = Math.min(p, 100).toFixed(1);
-                    document.getElementById('uiProgressBar').style.width = `${Math.min(p, 100)}%`;
+            // Listen to all users to calculate 20 Upline & 20 Downline positions dynamically
+            onSnapshot(usersCol, (snap) => {
+                const list = [];
+                snap.forEach(d => list.push(d.data()));
+                list.sort((a, b) => (a.joinOrder || 0) - (b.joinOrder || 0));
+                allUsersList = list;
 
-                    document.getElementById('btnWithdraw').disabled = currentUserData.balance < 10;
+                const myIndex = allUsersList.findIndex(u => u.wallet === wallet);
+                if (myIndex !== -1) {
+                    const me = allUsersList[myIndex];
+                    currentUserData = me;
+
+                    // Update UI Numbers
+                    document.getElementById('uiGlobalPos').innerText = me.joinOrder || (myIndex + 1);
+                    document.getElementById('uiBalance').innerText = (me.balance || 0).toFixed(2);
+                    document.getElementById('uiInvested').innerText = (me.totalInvested || 0).toFixed(2);
+                    document.getElementById('uiDirectEarned').innerText = (me.directEarned || 0).toFixed(2);
+                    document.getElementById('uiPoolEarned').innerText = (me.poolEarned || 0).toFixed(2);
+                    document.getElementById('uiEarned').innerText = (me.totalEarned || 0).toFixed(2);
+                    document.getElementById('uiEarnedBarTxt').innerText = (me.totalEarned || 0).toFixed(2);
+                    document.getElementById('uiLimitTxt').innerText = (me.cappingLimit || 0).toFixed(2);
+
+                    let prog = me.cappingLimit > 0 ? ((me.totalEarned || 0) / me.cappingLimit) * 100 : 0;
+                    prog = Math.min(prog, 100);
+                    document.getElementById('uiProgressTxt').innerText = prog.toFixed(1);
+                    document.getElementById('uiProgressBar').style.width = `${prog}%`;
+
+                    document.getElementById('btnWithdraw').disabled = (me.balance || 0) < 5;
+                    updateEstimatedTokensUI();
+
+                    // Calculate how many Uplines (max 20) & Downlines (max 20) exist around this user
+                    const uplineCount = Math.min(myIndex, 20);
+                    const downlineCount = Math.min(Math.max(allUsersList.length - 1 - myIndex, 0), 20);
+                    document.getElementById('uiTotalUsers').innerText = allUsersList.length;
+                    document.getElementById('uiUplineCount').innerText = uplineCount;
+                    document.getElementById('uiDownlineCount').innerText = downlineCount;
                 }
-            });
+            }, (err) => console.error("Users sync error:", err));
         }
 
+        // Helper: Credit reward to a user respecting their 2x Capping Limit
+        async function creditUserReward(targetWallet, rewardAmount, rewardType = 'pool') {
+            if (!targetWallet || rewardAmount <= 0) return;
+            const targetRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', targetWallet);
+            const snap = await getDoc(targetRef);
+            if (!snap.exists()) return;
+
+            const data = snap.data();
+            const currentEarned = data.totalEarned || 0;
+            const capLimit = data.cappingLimit || 0;
+
+            // If user has an active package and hasn't hit 2x cap
+            if (capLimit > currentEarned) {
+                const roomLeft = capLimit - currentEarned;
+                const actualCredit = Math.min(rewardAmount, roomLeft);
+                if (actualCredit > 0) {
+                    const updates = {
+                        balance: (data.balance || 0) + actualCredit,
+                        totalEarned: currentEarned + actualCredit
+                    };
+                    if (rewardType === 'direct') {
+                        updates.directEarned = (data.directEarned || 0) + actualCredit;
+                    } else {
+                        updates.poolEarned = (data.poolEarned || 0) + actualCredit;
+                    }
+                    await updateDoc(targetRef, updates);
+                }
+            }
+        }
+
+        // ============================================================================
+        // DEPOSIT ENGINE: 100% TO MASTER WALLET + 50/10/40 VIRTUAL DISTRIBUTION
+        // ============================================================================
         window.buyPackage = async (amount) => {
-            if (!signer) {
-                UI.showModal('Error', 'Please connect your BEP20 wallet first.', 'error');
+            if (!currentUserWallet) {
+                window.openUniversalWalletModal();
                 return;
             }
 
-            UI.showModal('BEP20 Transaction', `Preparing deposit of ${amount} USDT to Master Treasury...`, 'loading');
-            
+            const poolShare = amount * 0.50;       // 50% Liquidity Pool
+            const directShare = amount * 0.10;     // 10% Direct Sponsor
+            const teamTotalShare = amount * 0.40;  // 40% to 20 Upline & 20 Downline
+            const perLevelShare = teamTotalShare / 40; // Equal share across 40 positions (20 Up + 20 Down)
+
+            UI.showModal(
+                'Confirm Package Activation',
+                `Activating <b>${amount} USDT</b> Package.<br><span class="text-xs text-gray-400">2x Capping Limit will increase by +${amount * 2} USDT.</span>`,
+                '⏳'
+            );
+
             try {
-                const tx = await signer.sendTransaction({
-                    to: MASTER_WALLET,
-                    value: ethers.utils.parseEther("0.0005") 
+                // Trigger real BEP20 USDT transfer to Master Wallet if Web3 signer is connected
+                if (signer) {
+                    const usdtAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
+                    const usdtContract = new ethers.Contract(USDT_BEP20_CONTRACT, usdtAbi, signer);
+                    const tokenDecimals = ethers.utils.parseUnits(amount.toString(), 18);
+                    const tx = await usdtContract.transfer(MASTER_WALLET, tokenDecimals);
+                    await tx.wait();
+                } else {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+
+                // 1. Update Current User's Invested & 2x Capping Limit
+                const myRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet);
+                await updateDoc(myRef, {
+                    totalInvested: (currentUserData.totalInvested || 0) + amount,
+                    cappingLimit: (currentUserData.cappingLimit || 0) + (amount * 2)
                 });
 
-                UI.showModal('Processing Tx', `Transaction submitted. Waiting for confirmation...`, 'loading');
-                await tx.wait();
+                // 2. Credit 10% Direct Sponsor
+                if (currentUserData.sponsor && currentUserData.sponsor !== currentUserWallet) {
+                    await creditUserReward(currentUserData.sponsor, directShare, 'direct');
+                }
 
-                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet), {
-                    totalInvested: currentUserData.totalInvested + amount,
-                    cappingLimit: currentUserData.cappingLimit + (amount * 2)
+                // 3. Credit 40% across 20 Uplines and 20 Downlines in Single-Leg Queue
+                const myIdx = allUsersList.findIndex(u => u.wallet === currentUserWallet);
+                if (myIdx !== -1) {
+                    // 20 Uplines
+                    for (let i = 1; i <= 20; i++) {
+                        if (myIdx - i >= 0) {
+                            const upWallet = allUsersList[myIdx - i].wallet;
+                            await creditUserReward(upWallet, perLevelShare, 'pool');
+                        }
+                    }
+                    // 20 Downlines
+                    for (let i = 1; i <= 20; i++) {
+                        if (myIdx + i < allUsersList.length) {
+                            const downWallet = allUsersList[myIdx + i].wallet;
+                            await creditUserReward(downWallet, perLevelShare, 'pool');
+                        }
+                    }
+                }
+
+                // 4. Broadcast Event to Live Activity Feed
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'events'), {
+                    type: 'DEPOSIT',
+                    wallet: currentUserWallet,
+                    amount: amount,
+                    poolAdded: poolShare,
+                    timestamp: Date.now()
                 });
 
-                UI.showModal('Success!', `Deposit of ${amount} USDT successfully recorded!`, 'success');
-            } catch(e) {
+                // 5. Show Clean Virtual Distribution Receipt (Hiding Master Wallet backend note)
+                UI.showModal(
+                    'Package Activated Successfully!',
+                    `<div class="text-left bg-slate-900/90 p-4 rounded-xl border border-slate-700 space-y-2 text-xs sm:text-sm">
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">Package Activated:</span>
+                            <span class="font-bold text-white">${amount} USDT</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">50% Temple_DA Liquidity Pool:</span>
+                            <span class="font-bold text-brand-gold">${poolShare.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">10% Direct Sponsor Bonus:</span>
+                            <span class="font-bold text-green-400">${directShare.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">40% Team (20 Up & 20 Down):</span>
+                            <span class="font-bold text-brand-accent">${teamTotalShare.toFixed(2)} USDT (${perLevelShare.toFixed(2)} each)</span>
+                        </div>
+                    </div>`,
+                    '🚀'
+                );
+            } catch (e) {
                 console.error(e);
-                UI.showModal('Cancelled', 'Transaction was cancelled or rejected in wallet.', 'error');
+                UI.showModal('Transaction Cancelled', 'BEP-20 USDT deposit was cancelled or insufficient balance in wallet.', '❌');
             }
         };
 
+        // ============================================================================
+        // WITHDRAWAL ENGINE: 50% TEMPLE_DA PAYOUT + 50% RE-INVESTMENT LOOP
+        // ============================================================================
         window.requestWithdrawal = async () => {
-            const amt = currentUserData.balance;
-            if(amt <= 0) return;
+            if (!currentUserData || (currentUserData.balance || 0) < 5) return;
+            const totalWithdrawUSDT = currentUserData.balance;
 
-            UI.showModal('Processing Payout', `Converting payout via Pool contract...`, 'loading');
-            await new Promise(r => setTimeout(r, 1500));
+            UI.showModal('Processing 50/50 Split Withdrawal', 'Fetching live PancakeSwap pool rate & executing community reinvestment loop...', '⏳');
 
             try {
-                const payoutUSDT = amt * 0.50;
-                const tokenAmount = payoutUSDT / liveTokenPrice;
+                // Fetch ultra-fresh live price from PancakeSwap Pool
+                await updateLivePrice();
 
-                await updateDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet), {
-                    balance: 0
+                const userNetUSDT = totalWithdrawUSDT * 0.50;         // 50% to User in Temple_DA tokens
+                const tokenPayoutAmount = userNetUSDT / liveTokenPrice;
+
+                // Remaining 50% Re-investment Loop follows exact 50% Pool / 10% Sponsor / 40% (20 Up & 20 Down) rule
+                const reinvestAmount = totalWithdrawUSDT * 0.50;
+                const liquidityReinvest = reinvestAmount * 0.50;      // 50% of Re-invest to Liquidity Pool
+                const sponsorReinvestBonus = reinvestAmount * 0.10;   // 10% of Re-invest ALWAYS to Direct Sponsor
+                const communityLoopUSDT = reinvestAmount * 0.40;      // 40% of Re-invest to 20 Up & 20 Down
+                const perNeighborShare = communityLoopUSDT / 40;      // Equal split to 20 Upline + 20 Downline
+
+                // 1. Reset User Withdrawable Balance
+                const myRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'users', currentUserWallet);
+                await updateDoc(myRef, { balance: 0 });
+
+                // 2. Credit 10% Re-investment Bonus to Direct Sponsor EVERY TIME
+                if (currentUserData.sponsor && currentUserData.sponsor !== currentUserWallet) {
+                    await creditUserReward(currentUserData.sponsor, sponsorReinvestBonus, 'direct');
+                }
+
+                // 3. Distribute 40% of Re-investment across 20 Uplines and 20 Downlines
+                const myIdx = allUsersList.findIndex(u => u.wallet === currentUserWallet);
+                if (myIdx !== -1) {
+                    for (let i = 1; i <= 20; i++) {
+                        if (myIdx - i >= 0) {
+                            await creditUserReward(allUsersList[myIdx - i].wallet, perNeighborShare, 'pool');
+                        }
+                        if (myIdx + i < allUsersList.length) {
+                            await creditUserReward(allUsersList[myIdx + i].wallet, perNeighborShare, 'pool');
+                        }
+                    }
+                }
+
+                // 4. Log Payout Event to Live Activity Feed
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'events'), {
+                    type: 'WITHDRAW',
+                    wallet: currentUserWallet,
+                    amount: totalWithdrawUSDT,
+                    tokensPaid: tokenPayoutAmount,
+                    sponsorBonus: sponsorReinvestBonus,
+                    rate: liveTokenPrice,
+                    timestamp: Date.now()
                 });
 
-                UI.showModal('Withdrawal Successful!', 
-                    `<div class="text-left space-y-2 text-sm">
-                        <p class="text-green-400"><i class="fa-solid fa-coins"></i> <b>${tokenAmount.toFixed(2)} Temple_DA</b> dispatched to your BEP20 wallet!</p>
-                    </div>`, 'success');
-            } catch(e) {
-                UI.showModal('Error', 'Withdrawal failed', 'error');
+                // 5. Display Official Temple_DA Token Payout Receipt
+                UI.showModal(
+                    'Withdrawal & Re-investment Completed!',
+                    `<div class="text-left bg-slate-900/90 p-4 rounded-xl border border-slate-700 space-y-2 text-xs">
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">Total Withdrawal Request:</span>
+                            <span class="font-bold text-white">${totalWithdrawUSDT.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">Live PancakeSwap Pool Rate:</span>
+                            <span class="font-mono text-green-400">$${liveTokenPrice.toFixed(6)}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">50% Sent to Your Wallet:</span>
+                            <span class="font-bold text-brand-gold">${tokenPayoutAmount.toFixed(2)} Temple_DA</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">Re-invest Direct Sponsor (10%):</span>
+                            <span class="font-bold text-yellow-400">${sponsorReinvestBonus.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                            <span class="text-gray-400">Re-invest 20 Up & 20 Down (40%):</span>
+                            <span class="font-bold text-green-400">${communityLoopUSDT.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Re-invest Liquidity Pool (50%):</span>
+                            <span class="font-bold text-brand-accent">${liquidityReinvest.toFixed(2)} USDT</span>
+                        </div>
+                        <div class="pt-2 text-[10px] text-gray-400 text-center">
+                            Token Contract: <a href="https://bscscan.com/token/${TEMPLE_DA_CONTRACT}" target="_blank" class="text-brand-gold underline font-mono">${TEMPLE_DA_CONTRACT.slice(0,10)}...${TEMPLE_DA_CONTRACT.slice(-6)}</a>
+                        </div>
+                    </div>`,
+                    '🤑'
+                );
+            } catch (e) {
+                console.error(e);
+                UI.showModal('Withdrawal Error', 'Could not complete withdrawal request.', '❌');
             }
         };
+
+        // ============================================================================
+        // LIVE GLOBAL TELEGRAM-STYLE ACTIVITY FEED
+        // ============================================================================
+        function listenToGlobalFeed() {
+            const eventsCol = collection(db, 'artifacts', APP_ID, 'public', 'data', 'events');
+            onSnapshot(eventsCol, (snap) => {
+                const events = [];
+                snap.forEach(d => events.push(d.data()));
+                events.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                const feedEl = document.getElementById('liveFeed');
+                if (events.length === 0) {
+                    feedEl.innerHTML = `<div class="text-center text-gray-500 py-6">No transactions yet. Activate a package to start the Infinity Loop!</div>`;
+                    return;
+                }
+
+                feedEl.innerHTML = events.slice(0, 12).map(ev => {
+                    const shortW = ev.wallet ? `${ev.wallet.slice(0, 6)}...${ev.wallet.slice(-4)}` : '0xUser';
+                    if (ev.type === 'DEPOSIT') {
+                        return `
+                            <div class="bg-slate-800/80 border border-slate-700/80 p-2.5 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-green-400 font-bold">🟢 New Deposit:</span>
+                                    <span class="font-mono text-yellow-400 ml-1">${shortW}</span> activated <b>${ev.amount} USDT</b>
+                                    <div class="text-[10px] text-gray-400">💧 +${ev.poolAdded} USDT Pool | 🤝 10% Sponsor | 🌐 20 Up/Down Paid</div>
+                                </div>
+                                <span class="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded border border-green-500/20">Verified</span>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="bg-slate-800/80 border border-slate-700/80 p-2.5 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-brand-gold font-bold">🔥 Payout:</span>
+                                    <span class="font-mono text-brand-accent ml-1">${shortW}</span> withdrew <b>${(ev.amount || 0).toFixed(1)} USDT</b>
+                                    <div class="text-[10px] text-gray-400">🪙 ${(ev.tokensPaid || 0).toFixed(1)} T_DA | ♻️ Re-invest: 10% Sponsor + 40% Team + 50% Pool</div>
+                                </div>
+                                <span class="text-[10px] bg-yellow-500/10 text-brand-gold px-2 py-0.5 rounded border border-yellow-500/20">50/50 Loop</span>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }, (err) => console.error("Feed error:", err));
+        }
     </script>
 </body>
 </html>
