@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Ethers.js v5 UMD for Direct On-Chain Price & BEP20 Wallet Support -->
+    <!-- Ethers.js v5 UMD for Direct On-Chain BSC Price & BEP-20 Transactions -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
     <script>
@@ -44,20 +44,20 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
         .glass-panel {
-            background: rgba(15, 22, 41, 0.78);
+            background: rgba(15, 22, 41, 0.82);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 215, 0, 0.14);
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.16);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55);
         }
         .glass-card {
-            background: linear-gradient(145deg, rgba(22, 32, 58, 0.85), rgba(12, 18, 34, 0.9));
-            border: 1px solid rgba(148, 163, 184, 0.12);
+            background: linear-gradient(145deg, rgba(22, 32, 58, 0.88), rgba(12, 18, 34, 0.94));
+            border: 1px solid rgba(148, 163, 184, 0.14);
             transition: all 0.25s ease;
         }
         .glass-card:hover {
             border-color: rgba(255, 215, 0, 0.45);
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: 0 12px 25px -5px rgba(245, 158, 11, 0.15);
         }
         .gold-gradient-text {
@@ -80,20 +80,62 @@
         .modal-enter { animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     </style>
+
+    <!-- Smart Logo Resolver (Prioritizes lowercase temple_logo.png.png across root/subfolders) -->
+    <script>
+        window.TEMPLE_LOGO_PATHS = [
+            "temple_logo.png.png",
+            "/temple_logo.png.png",
+            "../temple_logo.png.png",
+            "./temple_logo.png.png",
+            "temple_logo.png",
+            "/temple_logo.png",
+            "../temple_logo.png",
+            "Temple_logo.png.png",
+            "/Temple_logo.png.png",
+            "../Temple_logo.png.png"
+        ];
+        window.TEMPLE_SVG_FALLBACK = "data:image/svg+xml;utf8," + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+                <defs>
+                    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700"/>
+                        <stop offset="100%" stop-color="#F59E0B"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="58" fill="#060913" stroke="url(#g)" stroke-width="4"/>
+                <polygon points="60,20 92,44 80,44 80,86 40,86 40,44 28,44" fill="url(#g)" opacity="0.22"/>
+                <text x="60" y="64" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="url(#g)" text-anchor="middle">T_DA</text>
+                <text x="60" y="84" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#38BDF8" text-anchor="middle">INFINITY</text>
+            </svg>
+        `);
+        window.resolveTempleLogo = function(imgEl) {
+            if (!imgEl) return;
+            let idx = parseInt(imgEl.getAttribute('data-logo-idx') || '0', 10);
+            idx++;
+            if (idx < window.TEMPLE_LOGO_PATHS.length) {
+                imgEl.setAttribute('data-logo-idx', idx.toString());
+                imgEl.src = window.TEMPLE_LOGO_PATHS[idx];
+            } else {
+                imgEl.onerror = null;
+                imgEl.src = window.TEMPLE_SVG_FALLBACK;
+            }
+        };
+    </script>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
 
-    <!-- Top Live Blockchain Ticker Bar -->
+    <!-- Top Live Blockchain Status Bar -->
     <div class="bg-slate-950/90 border-b border-slate-800/80 px-4 py-1.5 text-[11px] flex flex-wrap items-center justify-between gap-2 text-gray-400">
         <div class="flex items-center gap-3">
             <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> BSC Mainnet On-Chain Reader
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> BSC Mainnet Live
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
-            <span class="hidden md:inline">Pair Pool: <a href="https://bscscan.com/address/0x707171A0C27f87B8C530B20831f7B004e6647830" target="_blank" class="text-amber-400 hover:underline font-mono">0x7071...7830</a></span>
+            <span class="hidden md:inline">PancakeSwap Pool: <a href="https://bscscan.com/address/0x707171A0C27f87B8C530B20831f7B004e6647830" target="_blank" class="text-amber-400 hover:underline font-mono">0x7071...7830</a></span>
         </div>
         <div class="flex items-center gap-3 ml-auto">
-            <span>Oracle: <b id="priceSourceBadge" class="text-sky-400 font-mono">Syncing BSC RPC...</b></span>
+            <span>Oracle: <b id="priceSourceBadge" class="text-sky-400 font-mono">BSC On-Chain Sync</b></span>
             <button onclick="updateLivePrice(true)" class="bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer" title="Refresh Live On-Chain Price">
                 <i id="refreshPriceIcon" class="fa-solid fa-arrows-rotate"></i> Sync Rate
             </button>
@@ -104,20 +146,20 @@
     <nav class="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-3.5 flex justify-between items-center border-b border-amber-500/20">
         <div class="flex items-center gap-3">
             <div class="relative">
-                <img src="Temple_logo.png.png" onerror="if(this.src.indexOf('/Temple_logo.png.png')===-1){this.src='/Temple_logo.png.png';}else{this.onerror=null;this.src='https://placehold.co/96x96/F59E0B/060913?text=T_DA';}" alt="Temple_DA Logo" class="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
+                <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="Temple_DA Logo" class="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
                 <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
             </div>
             <div>
                 <div class="flex items-center gap-2">
                     <span class="font-extrabold text-lg sm:text-xl tracking-tight gold-gradient-text">TEMPLE_DA</span>
-                    <span class="hidden sm:inline-block text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">v4.7 LIVE</span>
+                    <span class="hidden sm:inline-block text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">MAINNET</span>
                 </div>
                 <span class="text-[11px] text-gray-400 block">Global Single-Leg Infinity Pool</span>
             </div>
         </div>
 
         <div class="flex items-center gap-2.5 sm:gap-3">
-            <!-- Admin Panel Auto Button (Visible only when Master Wallet connects) -->
+            <!-- Admin Panel Auto Button (Visible Automatically ONLY when Master Wallet 0x2760...De95 connects) -->
             <button id="btnAdminPanel" onclick="openAdminModal()" class="hidden bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold py-2 px-3.5 rounded-xl text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
                 <i class="fa-solid fa-crown text-yellow-200"></i>
                 <span>Admin Panel</span>
@@ -131,7 +173,7 @@
                 </div>
                 <div class="leading-tight">
                     <span class="text-[10px] text-gray-400 block uppercase tracking-wider">Temple_DA Live</span>
-                    <span id="livePriceTxt" class="text-emerald-400 font-bold font-mono text-xs sm:text-sm">Syncing...</span>
+                    <span id="livePriceTxt" class="text-emerald-400 font-bold font-mono text-xs sm:text-sm">$0.001500</span>
                 </div>
             </div>
 
@@ -156,12 +198,12 @@
     <main id="heroSection" class="flex-grow container mx-auto px-4 py-10 sm:py-16 flex flex-col items-center justify-center text-center">
         <div class="relative mb-6">
             <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-sky-400 opacity-40 blur-xl animate-pulse"></div>
-            <img src="Temple_logo.png.png" onerror="if(this.src.indexOf('/Temple_logo.png.png')===-1){this.src='/Temple_logo.png.png';}else{this.onerror=null;this.src='https://placehold.co/140x140/F59E0B/060913?text=T_DA';}" alt="Temple_DA Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
+            <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="Temple_DA Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
         </div>
 
         <div class="inline-flex items-center gap-2 bg-slate-900/90 border border-amber-500/30 px-4 py-1.5 rounded-full text-xs text-amber-300 font-medium mb-5">
             <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-            <span>Packages: 10 USDT to 5,000 USDT • Individual 2x Return Capping Meter Per Investment</span>
+            <span>Packages: 10 USDT to 5,000 USDT • Unified 2x Return Capping Meter Per Entry</span>
         </div>
 
         <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mb-4 leading-tight">
@@ -169,7 +211,7 @@
         </h1>
 
         <p class="text-gray-400 text-sm sm:text-lg max-w-2xl mb-8 leading-relaxed">
-            Every package activation & 50% withdrawal auto-reinvestment opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> on your dashboard and allocates <b class="text-amber-400">50% to Temple_DA Pool</b>, <b class="text-emerald-400">10% to Direct Sponsor</b>, and <b class="text-sky-400">40% across 20 Uplines & 20 Downlines</b>.
+            Every Deposit, Package Upgrade, and 50% Withdrawal Auto-Reinvestment follows the <b class="text-amber-300">Exact Same Protocol Rule</b>: opens its own <b class="text-emerald-400">Separate 2x (200%) Return Capping Meter</b> and distributes <b class="text-amber-400">50% to Liquidity Pool</b>, <b class="text-emerald-400">10% to Direct Sponsor</b>, and <b class="text-sky-400">40% across 20 Uplines & 20 Downlines</b>.
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 mb-12">
@@ -186,24 +228,24 @@
                 <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg mb-3">
                     <i class="fa-solid fa-gauge-high"></i>
                 </div>
-                <h3 class="font-bold text-base text-white mb-1">Separate 2x Meter Per Deposit</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Every investment (`#INV`) and 50% auto-reinvestment (`#REINV`) displays its own individual 2x Return Capping Meter with live progress bar!</p>
+                <h3 class="font-bold text-base text-white mb-1">Separate 2x Meter For Every Entry</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Whether you activate a new package, upgrade, or auto-reinvest 50% on withdrawal—each entry gets its own dedicated 2x (200%) Return Capping Meter!</p>
             </div>
 
             <div class="glass-card p-5 rounded-2xl">
                 <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg mb-3">
                     <i class="fa-solid fa-rotate"></i>
                 </div>
-                <h3 class="font-bold text-base text-white mb-1">50% Auto-Reinvest 2x Cycle</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Every withdrawal splits 50/50: 50% goes to your wallet in Temple_DA tokens and 50% opens a brand-new 2x Return Capping Meter (`#REINV`)!</p>
+                <h3 class="font-bold text-base text-white mb-1">Unified 50% / 10% / 40% Split</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Every investment & reinvestment distributes 50% to Pool, 10% to Direct Sponsor, and 40% to 20 Uplines & 20 Downlines (with Held Upline Reserve).</p>
             </div>
 
             <div class="glass-card p-5 rounded-2xl">
                 <div class="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg mb-3">
-                    <i class="fa-solid fa-link"></i>
+                    <i class="fa-solid fa-crown"></i>
                 </div>
-                <h3 class="font-bold text-base text-white mb-1">Direct On-Chain Pool Oracle</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Reads live reserves directly from your BSC PancakeSwap Pool (`0x7071...7830`) + GeckoTerminal & DexScreener APIs in real time.</p>
+                <h3 class="font-bold text-base text-white mb-1">10 USDT Min Withdraw & Auto-Admin</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Withdraw from 10 USDT (with 1 Active Direct) — 50% paid in Temple_DA tokens via Master Admin transfer and 50% re-enters the 2x Infinity Loop.</p>
             </div>
         </div>
     </main>
@@ -218,21 +260,21 @@
                             <i class="fa-solid fa-hashtag mr-1"></i> Global Position #<span id="uiGlobalPos">--</span>
                         </span>
                         <span class="bg-emerald-500/15 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30">
-                            <i class="fa-solid fa-sliders mr-1"></i> Separate 2x Capping Meter Per Investment
+                            <i class="fa-solid fa-sliders mr-1"></i> Unified 2x Capping Engine Active
                         </span>
                         <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">
                             <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1 (Required for Withdraw)
                         </span>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-extrabold text-white">Welcome to Temple_DA Command Center</h2>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white">Temple_DA Command Center</h2>
                     <p class="text-xs sm:text-sm text-gray-400 mt-1">
-                        Every package activation and 50% withdrawal reinvestment tracks its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> below!
+                        Every Deposit, Upgrade & 50% Withdrawal Reinvestment follows the exact same 50/10/40 distribution and opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b>.
                     </p>
                 </div>
 
                 <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5 min-w-[280px] sm:min-w-[340px]">
                     <div class="flex justify-between items-center text-[11px]">
-                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your Referral Link (10% Lifetime)</span>
+                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your Referral Link (10% Every Time)</span>
                         <span class="text-amber-400 font-semibold">1 Direct Unlocks Payout</span>
                     </div>
                     <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
@@ -252,7 +294,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
                         <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
-                            Min: 10 USDT (5+5 Split)
+                            Min: 10 USDT (50/50 Split)
                         </span>
                     </div>
 
@@ -272,15 +314,15 @@
                     <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2 text-xs">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">Live Pool Rate (<span id="dashRateSourceMini" class="text-sky-400">On-Chain</span>):</span>
-                            <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">Syncing...</span>
+                            <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">$0.001500</span>
                         </div>
                         <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
-                            <span class="text-gray-300">50% Token Payout:</span>
+                            <span class="text-gray-300">50% Wallet Payout (T_DA):</span>
                             <span class="font-mono font-bold text-amber-400 text-sm"><span id="uiEstTokens">0.00</span> T_DA</span>
                         </div>
                         <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
                             <span class="text-gray-400">50% Auto-Reinvest:</span>
-                            <span class="text-sky-400 font-semibold">Opens Separate 2x Meter (#REINV)</span>
+                            <span class="text-sky-400 font-semibold">Same 50/10/40 + New 2x Meter</span>
                         </div>
                     </div>
                 </div>
@@ -291,13 +333,13 @@
                 </button>
             </div>
 
-            <!-- RIGHT: STATS + INDIVIDUAL 2x RETURN CAPPING METERS FOR EVERY INVESTMENT -->
+            <!-- RIGHT: STATS + INDIVIDUAL 2x RETURN CAPPING METERS FOR EVERY INVESTMENT/UPGRADE/REINVEST -->
             <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-5">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                     <div class="glass-card p-4 rounded-xl">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Active Deposit</div>
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Package Deposit</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-white font-mono"><span id="uiInvested">0.00</span></div>
-                        <div class="text-[11px] text-sky-400 mt-0.5">Auto-Reinvested: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
+                        <div class="text-[11px] text-sky-400 mt-0.5">Auto-Reinvest: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
                     </div>
 
                     <div class="glass-card p-4 rounded-xl">
@@ -319,11 +361,11 @@
                     </div>
                 </div>
 
-                <!-- INDIVIDUAL 2x RETURN CAPPING METERS PER INVESTMENT -->
+                <!-- INDIVIDUAL 2x RETURN CAPPING METERS PER INVESTMENT / UPGRADE / REINVESTMENT -->
                 <div class="bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-amber-500/30">
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                         <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high text-amber-400"></i> Individual 2x Return Capping Meters
+                            <i class="fa-solid fa-gauge-high text-amber-400"></i> Individual 2x Return Capping Meters (Deposit, Upgrade & Auto-Reinvest)
                         </span>
                         <div class="flex items-center gap-2 text-[11px] font-mono">
                             <span class="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
@@ -335,30 +377,17 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic List of Separate 2x Capping Meters (Always shows visual meter bar) -->
+                    <!-- Dynamic List of Separate 2x Capping Meters -->
                     <div id="individualCappingMetersBox" class="space-y-3 max-h-64 overflow-y-auto pr-1"></div>
 
                     <div class="flex flex-wrap justify-between items-center text-[11px] text-gray-400 mt-3 pt-2.5 border-t border-slate-800/80 gap-2">
-                        <span><i class="fa-solid fa-circle-info text-amber-400 mr-1"></i> Every package & 50% auto-reinvest opens a separate 200% meter above.</span>
-                        <button onclick="toggleDemoSimulatorBar()" class="text-slate-400 hover:text-amber-300 font-mono text-[10px] underline cursor-pointer">
-                            ⚙️ Test Simulator
-                        </button>
-                    </div>
-
-                    <!-- Collapsible Test Simulator Bar (Hidden by default on live screen) -->
-                    <div id="demoSimulatorBar" class="hidden mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                        <span class="text-amber-300 font-semibold">Sandbox Test Controls:</span>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <button onclick="simulateNextDownlineJoin(250)" class="text-sky-400 hover:underline font-semibold cursor-pointer">⚡ +$250 Downline (+2.50 USDT)</button>
-                            <button onclick="simulateNextDownlineJoin(5000)" class="text-amber-400 hover:underline font-semibold cursor-pointer">🐋 +$5000 Whale (+50 USDT)</button>
-                            <button onclick="connectAsAdminPreview()" class="text-rose-400 hover:underline font-semibold cursor-pointer">👑 Admin Preview</button>
-                        </div>
+                        <span><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Same rule on New Deposit, Upgrade & 50% Reinvest: 50% Pool, 10% Direct, 40% Team + 2x Meter.</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- PACKAGES GRID -->
+        <!-- PACKAGES GRID (10 USDT TO 5,000 USDT) -->
         <div>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div>
@@ -368,7 +397,7 @@
                     </h2>
                 </div>
                 <span id="minPackageNoticeBadge" class="text-xs text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/30 font-semibold">
-                    <i class="fa-solid fa-fire mr-1"></i> Starter 10 USDT Package Available for First Activation Only!
+                    <i class="fa-solid fa-fire mr-1"></i> Starter 10 USDT Available for First Activation (Auto-Hides After Joining!)
                 </span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="packagesContainer"></div>
@@ -380,9 +409,9 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <div>
                         <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
-                            <i class="fa-solid fa-chart-column text-emerald-400"></i> Detailed 2x Investment & Auto-Reinvestment Ledger
+                            <i class="fa-solid fa-chart-column text-emerald-400"></i> Unified 2x Investment, Upgrade & Reinvestment Ledger
                         </h3>
-                        <p class="text-xs text-gray-400">Full 50/10/40 breakdown & separate 2x Return Capping Meter for every `#INV` & `#REINV` entry.</p>
+                        <p class="text-xs text-gray-400">Every Package (`#INV`), Upgrade (`#UPG`) & 50% Auto-Reinvest (`#REINV`) with its own 2x Meter & 50/10/40 split.</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="text-xs bg-emerald-500/15 px-2.5 py-1 rounded-full text-emerald-400 border border-emerald-500/30 font-mono">
@@ -403,7 +432,7 @@
                         <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
                             <i class="fa-solid fa-receipt text-amber-400"></i> Your Separate Withdrawal Tickets
                         </h3>
-                        <p class="text-xs text-gray-400">Every withdrawal opens a separate ticket (`#WD`) & automatically starts a new 2x Meter (`#REINV`)!</p>
+                        <p class="text-xs text-gray-400">Every withdrawal creates a ticket (`#WD`) for 50% T_DA payout & triggers a 50% Auto-Reinvest (`#REINV`) under the same rule!</p>
                     </div>
                     <span class="text-xs bg-slate-900 px-3 py-1.5 rounded-full text-amber-300 border border-slate-800 font-mono">
                         Total Tickets: <b id="uiUserWithdrawTicketCount">0</b>
@@ -420,12 +449,12 @@
                         <i class="fa-solid fa-network-wired text-amber-400"></i> Your Single-Leg Community Matrix
                     </h3>
                     <span class="text-xs bg-slate-900 px-3 py-1 rounded-full text-sky-400 border border-slate-800 font-mono">
-                        Global Nodes: <b id="uiTotalUsers">1</b>
+                        Global Active IDs: <b id="uiTotalUsers">1</b>
                     </span>
                 </div>
 
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    When you activate, you immediately receive the <b class="text-amber-300">Held Downline Reserve (1% each)</b> from up to 20 Uplines above you, and your own 20 Downline shares are held for the next 20 IDs joining after you! Incoming profit fills your active 2x meters in order.
+                    On every Deposit, Upgrade, or 50% Auto-Reinvestment, <b class="text-sky-400">40% (1% per level)</b> is distributed to 20 Uplines above & 20 Downlines below. Unfilled downline shares are safely held in the <b class="text-amber-300">Held Downline Reserve</b> and paid immediately as new members join!
                 </p>
 
                 <div class="grid grid-cols-3 gap-3 text-center">
@@ -434,7 +463,7 @@
                         <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 my-1 font-mono">
                             <span id="uiUplineCount">0</span><span class="text-xs text-gray-500 font-normal">/20</span>
                         </div>
-                        <div class="text-[10px] text-emerald-400">Instant Held Bonus</div>
+                        <div class="text-[10px] text-emerald-400">1% From Each</div>
                     </div>
 
                     <div class="glass-card p-3.5 rounded-xl">
@@ -442,7 +471,7 @@
                         <div class="text-2xl sm:text-3xl font-extrabold text-sky-400 my-1 font-mono">
                             <span id="uiDownlineCount">0</span><span class="text-xs text-gray-500 font-normal">/20</span>
                         </div>
-                        <div class="text-[10px] text-emerald-400">Reserved for Next 20</div>
+                        <div class="text-[10px] text-emerald-400">Held Reserve Active</div>
                     </div>
 
                     <div class="glass-card p-3.5 rounded-xl border border-emerald-500/30">
@@ -450,7 +479,7 @@
                         <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 my-1 font-mono">
                             <span id="uiMyDirectsMatrix">0</span><span class="text-xs text-gray-400 font-normal">/1+</span>
                         </div>
-                        <div class="text-[10px] text-amber-300">1 Req. for Payout</div>
+                        <div class="text-[10px] text-amber-300">10% Lifetime Bonus</div>
                     </div>
                 </div>
             </div>
@@ -460,7 +489,7 @@
                     <h3 class="text-base font-bold flex items-center gap-2">
                         <i class="fa-solid fa-satellite-dish text-emerald-400"></i> Live Protocol Activity Feed
                     </h3>
-                    <span class="text-[11px] text-gray-400">Real-Time Sync</span>
+                    <span class="text-[11px] text-gray-400">Real-Time Ledger</span>
                 </div>
                 <div id="liveFeed" class="space-y-2.5 max-h-48 overflow-y-auto pr-1 flex-grow text-xs">
                     <div class="text-center text-gray-500 py-8">Waiting for live pool transactions...</div>
@@ -469,7 +498,7 @@
         </div>
     </main>
 
-    <!-- MASTER ADMIN PANEL MODAL -->
+    <!-- MASTER ADMIN PANEL MODAL (Auto-detects Master Wallet 0x2760...De95) -->
     <div id="adminModal" class="fixed inset-0 bg-black/85 z-[105] hidden items-center justify-center p-4 backdrop-blur-md">
         <div class="modal-enter glass-panel w-full max-w-3xl rounded-2xl p-6 border border-amber-400/40 relative max-h-[90vh] flex flex-col">
             <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
@@ -481,22 +510,22 @@
                     <i class="fa-solid fa-crown"></i>
                 </div>
                 <div>
-                    <h3 class="text-xl font-extrabold text-white">Master Admin Withdrawal Records Queue</h3>
-                    <p class="text-xs text-gray-400 font-mono">Master Wallet: 0x2760f05248a8377d3fdD86b80A3D48B010d5De95</p>
+                    <h3 class="text-xl font-extrabold text-white">Master Admin Withdrawal Approval Queue</h3>
+                    <p class="text-xs text-gray-400 font-mono">Master Deposit & Admin Wallet: 0x2760f05248a8377d3fdD86b80A3D48B010d5De95</p>
                 </div>
             </div>
 
             <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                    <span class="text-gray-400 block">Pending Ticket Records:</span>
+                    <span class="text-gray-400 block">Pending Withdrawal Tickets:</span>
                     <b id="adminModalPendingCount" class="text-amber-400 font-mono text-base">0</b>
                 </div>
                 <div>
-                    <span class="text-gray-400 block">Token Contract (BEP-20):</span>
-                    <b class="text-sky-400 font-mono text-[11px]">0x50BE...79e1</b>
+                    <span class="text-gray-400 block">Temple_DA Token (BEP-20):</span>
+                    <b class="text-sky-400 font-mono text-[11px]">0x50BE31cAAB627ee8F98374d33b0454a8269A79e1</b>
                 </div>
                 <div>
-                    <span class="text-gray-400 block">Capping Overflow Reserve:</span>
+                    <span class="text-gray-400 block">2x Overflow Pool Reserve:</span>
                     <b id="adminModalOverflowTotal" class="text-emerald-400 font-mono text-base">$0.00 USDT</b>
                 </div>
             </div>
@@ -513,7 +542,7 @@
             </button>
             
             <div class="flex justify-center mb-3">
-                <img src="Temple_logo.png.png" onerror="if(this.src.indexOf('/Temple_logo.png.png')===-1){this.src='/Temple_logo.png.png';}else{this.onerror=null;this.src='https://placehold.co/80x80/F59E0B/060913?text=T_DA';}" alt="Temple_DA" class="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shadow-lg">
+                <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="Temple_DA" class="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shadow-lg">
             </div>
             
             <h3 class="text-xl font-extrabold text-center mb-1 gold-gradient-text">Connect BEP-20 Wallet</h3>
@@ -522,37 +551,28 @@
             <div class="space-y-3">
                 <button onclick="connectInjectedWallet()" class="w-full flex items-center justify-between gold-btn p-4 rounded-xl transition-all cursor-pointer">
                     <span class="font-extrabold flex items-center gap-3 text-sm sm:text-base">
-                        <i class="fa-solid fa-wallet text-lg"></i> Auto-Detect Web3 Wallet
+                        <i class="fa-solid fa-wallet text-lg"></i> Connect Web3 Wallet (Auto-Detect)
                     </span>
-                    <span class="text-[11px] bg-black/20 px-2.5 py-0.5 rounded-full font-bold">Recommended</span>
+                    <span class="text-[11px] bg-black/20 px-2.5 py-0.5 rounded-full font-bold">BSC Mainnet</span>
                 </button>
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <button onclick="openInTrustWallet()" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold text-sky-400 transition-all cursor-pointer">
-                        <i class="fa-solid fa-shield-halved"></i> Trust Wallet App
+                        <i class="fa-solid fa-shield-halved"></i> Open in Trust Wallet
                     </button>
                     <button onclick="openInMetaMask()" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold text-amber-400 transition-all cursor-pointer">
-                        <i class="fa-solid fa-fox"></i> MetaMask App
+                        <i class="fa-solid fa-fox"></i> Open in MetaMask
                     </button>
                 </div>
 
                 <div class="border-t border-slate-800 my-2 pt-3">
-                    <label class="text-[11px] text-gray-400 block mb-1.5 font-semibold">Or login with your BEP-20 Wallet Address (0x...):</label>
+                    <label class="text-[11px] text-gray-400 block mb-1.5 font-semibold">Or enter your BEP-20 Wallet Address (0x...):</label>
                     <div class="flex gap-2">
                         <input id="manualWalletInput" type="text" placeholder="Paste 0x... BEP-20 Address" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400">
                         <button onclick="connectManualWallet()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer">
-                            Login
+                            Connect
                         </button>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="connectDemoWallet()" class="w-full flex items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 p-3 rounded-xl transition-all text-xs cursor-pointer font-semibold text-gray-200">
-                        <i class="fa-solid fa-bolt text-emerald-400"></i> 1-Click User Demo
-                    </button>
-                    <button onclick="connectAsAdminPreview()" class="w-full flex items-center justify-center gap-1.5 bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 p-3 rounded-xl transition-all text-xs cursor-pointer font-semibold text-amber-300">
-                        <i class="fa-solid fa-crown text-amber-400"></i> Login as Master Admin
-                    </button>
                 </div>
             </div>
         </div>
@@ -571,8 +591,9 @@
         </div>
     </div>
 
-    <!-- STANDALONE COMPLETE WEB3, ON-CHAIN PRICE & INDIVIDUAL 2X METER ENGINE -->
+    <!-- CORE UNIFIED PROTOCOL ENGINE -->
     <script>
+        // Official Contract & Master Wallet Constants
         window.MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
         window.TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
         window.TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
@@ -580,6 +601,7 @@
         window.WBNB_BEP20_CONTRACT = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
         window.BSC_CHAIN_ID_HEX = "0x38";
         window.MIN_WITHDRAW_USDT = 10;
+        window.STORAGE_KEY_GLOBAL = "temple_da_mainnet_global_v5";
 
         window.BSC_RPC_ENDPOINTS = [
             "https://bsc-dataseed.binance.org/",
@@ -588,13 +610,16 @@
             "https://bsc.publicnode.com"
         ];
 
+        // Global State
         window.liveTokenPrice = 0.001500;
-        window.priceSourceLabel = "On-Chain BSC Pool";
+        window.priceSourceLabel = "BSC On-Chain Pool";
         window.currentUserWallet = null;
         window.currentUserData = null;
-        window.allUsersList = [];
-        window.investmentRecords = [];
-        window.pendingWithdrawals = [];
+        window.globalUsersMap = {};     // walletLower -> userObj
+        window.globalQueueOrder = [];   // ordered array of walletLowers
+        window.investmentRecords = [];  // all #INV, #UPG, #REINV records
+        window.pendingWithdrawals = []; // all #WD tickets
+        window.heldDownlineReserves = []; // { sourceWallet, joinOrder, perSlotAmount, claimedByWallets: [] }
         window.investRecordCounter = 1001;
         window.reinvestRecordCounter = 2001;
         window.withdrawalTicketCounter = 3001;
@@ -611,6 +636,7 @@
         });
         window.dispatchEvent(new Event("eip6963:requestProvider"));
 
+        // Capture Referral Address from URL (?ref=0x...)
         try {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('ref') && urlParams.get('ref').startsWith('0x')) {
@@ -618,48 +644,50 @@
             }
         } catch (e) {}
 
-        // Save & Load State in SessionStorage so mobile browser reload preserves active 2x meters
-        window.saveProtocolSessionState = function() {
+        // Persistent LocalStorage Sync (Never loses data on mobile refresh)
+        window.saveGlobalProtocolState = function() {
             try {
-                if (!window.sessionStorage || !window.currentUserWallet) return;
+                if (!window.localStorage) return;
+                if (window.currentUserWallet && window.currentUserData) {
+                    window.globalUsersMap[window.currentUserWallet.toLowerCase()] = window.currentUserData;
+                }
                 const payload = {
-                    userData: window.currentUserData,
+                    globalUsersMap: window.globalUsersMap,
+                    globalQueueOrder: window.globalQueueOrder,
                     investmentRecords: window.investmentRecords,
                     pendingWithdrawals: window.pendingWithdrawals,
+                    heldDownlineReserves: window.heldDownlineReserves,
                     investRecordCounter: window.investRecordCounter,
                     reinvestRecordCounter: window.reinvestRecordCounter,
                     withdrawalTicketCounter: window.withdrawalTicketCounter,
                     protocolOverflowReserve: window.protocolOverflowReserve
                 };
-                window.sessionStorage.setItem('tda_state_' + window.currentUserWallet.toLowerCase(), JSON.stringify(payload));
+                window.localStorage.setItem(window.STORAGE_KEY_GLOBAL, JSON.stringify(payload));
             } catch (e) {}
         };
 
-        window.loadProtocolSessionState = function(walletAddress) {
+        window.loadGlobalProtocolState = function() {
             try {
-                if (!window.sessionStorage || !walletAddress) return false;
-                const raw = window.sessionStorage.getItem('tda_state_' + walletAddress.toLowerCase());
-                if (!raw) return false;
+                if (!window.localStorage) return;
+                const raw = window.localStorage.getItem(window.STORAGE_KEY_GLOBAL);
+                if (!raw) return;
                 const parsed = JSON.parse(raw);
-                if (parsed && parsed.userData) {
-                    window.currentUserData = parsed.userData;
+                if (parsed) {
+                    window.globalUsersMap = parsed.globalUsersMap || {};
+                    window.globalQueueOrder = parsed.globalQueueOrder || [];
                     window.investmentRecords = parsed.investmentRecords || [];
                     window.pendingWithdrawals = parsed.pendingWithdrawals || [];
+                    window.heldDownlineReserves = parsed.heldDownlineReserves || [];
                     window.investRecordCounter = parsed.investRecordCounter || 1001;
                     window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
                     window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
                     window.protocolOverflowReserve = parsed.protocolOverflowReserve || 0;
-                    return true;
                 }
             } catch (e) {}
-            return false;
         };
+        window.loadGlobalProtocolState();
 
-        window.toggleDemoSimulatorBar = function() {
-            const bar = document.getElementById('demoSimulatorBar');
-            if (bar) bar.classList.toggle('hidden');
-        };
-
+        // Modal Helpers
         window.UI = {
             showModal: function(title, message, icon, actions) {
                 document.getElementById('customModal').style.display = 'flex';
@@ -686,11 +714,217 @@
             if (feed.innerHTML.includes('Waiting for live pool')) feed.innerHTML = '';
             const item = document.createElement('div');
             item.className = "bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl flex items-center justify-between gap-2";
-            item.innerHTML = `<div>${htmlText}</div><span class="text-[10px] text-gray-500 font-mono shrink-0">Just now</span>`;
+            item.innerHTML = `<div>${htmlText}</div><span class="text-[10px] text-gray-500 font-mono shrink-0">Live</span>`;
             feed.prepend(item);
         };
 
-        // Render Top Dashboard Individual 2x Return Capping Meters (Always shows Visual Meter Bar)
+        // FIFO Individual 2x Capping Meter Allocation + Strict 2x Cap Overflow Protection
+        window.creditUserWithCapGuard = function(targetWallet, rawAmount, incomeType) {
+            if (!targetWallet || rawAmount <= 0) return { credited: 0, overflow: rawAmount, completedBoardsNow: [] };
+            const wLower = targetWallet.toLowerCase();
+            let userObj = window.globalUsersMap[wLower];
+            if (!userObj) {
+                if (wLower === window.MASTER_WALLET.toLowerCase()) {
+                    userObj = {
+                        wallet: window.MASTER_WALLET,
+                        sponsor: window.MASTER_WALLET,
+                        joinOrder: 1,
+                        balance: 0,
+                        totalInvested: 0,
+                        autoReinvestedTotal: 0,
+                        totalEarned: 0,
+                        directEarned: 0,
+                        poolEarned: 0,
+                        cappingLimit: 1000000,
+                        directReferrals: 10,
+                        overflowedToPool: 0
+                    };
+                    window.globalUsersMap[wLower] = userObj;
+                } else {
+                    return { credited: 0, overflow: rawAmount, completedBoardsNow: [] };
+                }
+            }
+
+            const capLimit = userObj.cappingLimit || 0;
+            const currentEarned = userObj.totalEarned || 0;
+            const remainingRoom = Math.max(0, capLimit - currentEarned);
+
+            const actualCredited = Math.min(rawAmount, remainingRoom);
+            const overflowAmount = Math.max(0, rawAmount - actualCredited);
+            const completedBoardsNow = [];
+
+            if (actualCredited > 0) {
+                userObj.balance = (userObj.balance || 0) + actualCredited;
+                userObj.totalEarned = (userObj.totalEarned || 0) + actualCredited;
+                if (incomeType === 'direct') {
+                    userObj.directEarned = (userObj.directEarned || 0) + actualCredited;
+                } else {
+                    userObj.poolEarned = (userObj.poolEarned || 0) + actualCredited;
+                }
+
+                // Fill user's active Individual 2x Return Capping Meters sequentially (oldest active meter first)
+                let toDistribute = actualCredited;
+                const userMetersChronological = [...(window.investmentRecords || [])]
+                    .reverse()
+                    .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+
+                for (const rec of userMetersChronological) {
+                    if (toDistribute <= 0) break;
+                    const target = rec.target2x || (rec.amount * 2);
+                    const cur = rec.earned2x || 0;
+                    const room = Math.max(0, target - cur);
+                    if (room > 0) {
+                        const add = Math.min(toDistribute, room);
+                        rec.earned2x = cur + add;
+                        toDistribute -= add;
+                        if (rec.earned2x >= target - 0.0001) {
+                            rec.status2x = 'COMPLETED';
+                            completedBoardsNow.push(rec.id);
+                        }
+                    }
+                }
+            }
+
+            if (overflowAmount > 0) {
+                userObj.overflowedToPool = (userObj.overflowedToPool || 0) + overflowAmount;
+                window.protocolOverflowReserve = (window.protocolOverflowReserve || 0) + overflowAmount;
+            }
+
+            if (window.currentUserWallet && window.currentUserWallet.toLowerCase() === wLower) {
+                window.currentUserData = userObj;
+            }
+            window.saveGlobalProtocolState();
+            return { credited: actualCredited, overflow: overflowAmount, completedBoardsNow: completedBoardsNow };
+        };
+
+        /**
+         * UNIFIED INVESTMENT, UPGRADE & 50% AUTO-REINVESTMENT ENGINE
+         * Applies the EXACT SAME condition to:
+         * 1. First Package Activation (DIRECT_PACKAGE)
+         * 2. Package Upgrade / Re-topup (UPGRADE_PACKAGE)
+         * 3. 50% Auto-Reinvestment from Withdrawal (AUTO_REINVEST)
+         */
+        window.executeUnifiedInvestmentEngine = function(investorWallet, amount, entryType, sourceTicketId) {
+            const wLower = investorWallet.toLowerCase();
+            let userObj = window.globalUsersMap[wLower];
+
+            // Ensure investor is registered in global single-leg queue once they have an active entry
+            if (!window.globalQueueOrder.includes(wLower)) {
+                window.globalQueueOrder.push(wLower);
+            }
+            const userQueueIndex = window.globalQueueOrder.indexOf(wLower);
+            userObj.joinOrder = userQueueIndex + 1;
+
+            // 1. Update Deposit / Auto-Reinvest Totals & Add Separate 2x Capping Limit (200%)
+            if (entryType === 'AUTO_REINVEST') {
+                userObj.autoReinvestedTotal = (userObj.autoReinvestedTotal || 0) + amount;
+            } else {
+                const wasZeroInvested = (userObj.totalInvested || 0) === 0;
+                userObj.totalInvested = (userObj.totalInvested || 0) + amount;
+                // If first time activating, increment sponsor's active direct count
+                if (wasZeroInvested && userObj.sponsor) {
+                    const sponsorLower = userObj.sponsor.toLowerCase();
+                    if (sponsorLower !== wLower && window.globalUsersMap[sponsorLower]) {
+                        window.globalUsersMap[sponsorLower].directReferrals = (window.globalUsersMap[sponsorLower].directReferrals || 0) + 1;
+                    }
+                }
+            }
+            userObj.cappingLimit = (userObj.cappingLimit || 0) + (amount * 2);
+
+            // 2. Identical 50% / 10% / 40% Split for Deposit, Upgrade & Auto-Reinvest
+            const poolShare = amount * 0.50;
+            const directShare = amount * 0.10;
+            const teamTotalShare = amount * 0.40;
+            const perLevelShare = teamTotalShare / 40; // 1% per level (20 Up + 20 Down)
+
+            // 3. Create Separate Individual 2x Return Capping Meter Record
+            const recordId = entryType === 'AUTO_REINVEST'
+                ? ('#REINV-' + (window.reinvestRecordCounter++))
+                : (entryType === 'UPGRADE_PACKAGE' ? ('#UPG-' + (window.investRecordCounter++)) : ('#INV-' + (window.investRecordCounter++)));
+
+            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            window.investmentRecords.unshift({
+                id: recordId,
+                type: entryType,
+                sourceTicket: sourceTicketId || null,
+                timestamp: nowTime,
+                wallet: investorWallet,
+                amount: amount,
+                target2x: amount * 2,
+                earned2x: 0,
+                status2x: 'ACTIVE',
+                poolShare: poolShare,
+                directShare: directShare,
+                teamShare: teamTotalShare
+            });
+
+            // 4. Credit 10% Direct Sponsor Bonus immediately (on Deposit, Upgrade & Reinvest!)
+            if (userObj.sponsor && userObj.sponsor.toLowerCase() !== wLower) {
+                window.creditUserWithCapGuard(userObj.sponsor, directShare, 'direct');
+            } else {
+                window.protocolOverflowReserve = (window.protocolOverflowReserve || 0) + directShare;
+            }
+
+            // 5. Credit 20 Uplines Above (1% each) immediately
+            let uplinesCreditedCount = 0;
+            for (let step = 1; step <= 20; step++) {
+                const upIdx = userQueueIndex - step;
+                if (upIdx >= 0 && window.globalQueueOrder[upIdx]) {
+                    const upWallet = window.globalQueueOrder[upIdx];
+                    window.creditUserWithCapGuard(upWallet, perLevelShare, 'pool');
+                    uplinesCreditedCount++;
+                }
+            }
+
+            // 6. Credit Existing 20 Downlines Below (1% each) OR Hold Reserve for Future Downlines
+            let downlinesCreditedCount = 0;
+            for (let step = 1; step <= 20; step++) {
+                const downIdx = userQueueIndex + step;
+                if (downIdx < window.globalQueueOrder.length && window.globalQueueOrder[downIdx]) {
+                    const downWallet = window.globalQueueOrder[downIdx];
+                    window.creditUserWithCapGuard(downWallet, perLevelShare, 'pool');
+                    downlinesCreditedCount++;
+                }
+            }
+
+            // Any unfilled downline slots (out of 20) are stored in Held Downline Reserve for upcoming joiners
+            if (downlinesCreditedCount < 20) {
+                window.heldDownlineReserves.push({
+                    sourceWallet: wLower,
+                    sourceRecordId: recordId,
+                    sourceQueueIndex: userQueueIndex,
+                    perSlotAmount: perLevelShare,
+                    claimedByWallets: []
+                });
+            }
+
+            // 7. Claim any Held Upline Reserve waiting for this user's position from up to 20 Uplines above
+            let heldBonusClaimedNow = 0;
+            for (const reserve of window.heldDownlineReserves) {
+                const distance = userQueueIndex - reserve.sourceQueueIndex;
+                if (distance >= 1 && distance <= 20 && !reserve.claimedByWallets.includes(wLower)) {
+                    reserve.claimedByWallets.push(wLower);
+                    const claimRes = window.creditUserWithCapGuard(investorWallet, reserve.perSlotAmount, 'pool');
+                    heldBonusClaimedNow += claimRes.credited;
+                }
+            }
+
+            window.saveGlobalProtocolState();
+            return {
+                recordId,
+                nowTime,
+                poolShare,
+                directShare,
+                teamTotalShare,
+                perLevelShare,
+                uplinesCreditedCount,
+                downlinesCreditedCount,
+                heldBonusClaimedNow
+            };
+        };
+
+        // Render Top Dashboard Individual 2x Return Capping Meters
         window.renderTopIndividualCappingMeters = function() {
             const topMetersBox = document.getElementById('individualCappingMetersBox');
             const topActiveCountEl = document.getElementById('uiTopActiveMetersCount');
@@ -698,7 +932,7 @@
             if (!topMetersBox) return;
 
             const myRecords = (window.investmentRecords || []).filter(
-                r => !window.currentUserWallet || r.wallet.toLowerCase() === window.currentUserWallet.toLowerCase() || window.currentUserWallet.toLowerCase() === window.MASTER_WALLET.toLowerCase()
+                r => window.currentUserWallet && r.wallet && r.wallet.toLowerCase() === window.currentUserWallet.toLowerCase()
             );
 
             const activeCount = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001).length;
@@ -713,10 +947,10 @@
                         <div class="flex flex-wrap justify-between items-center gap-2 text-xs mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-extrabold px-2 py-0.5 rounded text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                    #INV-READY
+                                    2x METER READY
                                 </span>
                                 <span class="font-bold text-gray-200">
-                                    2x Capping Meter #1 (Activate a Package Below)
+                                    Activate a Package Below to Start Your 2x Return Capping Meter
                                 </span>
                             </div>
                             <span class="font-mono font-bold text-amber-400">
@@ -724,10 +958,10 @@
                             </span>
                         </div>
                         <div class="w-full bg-slate-950 rounded-full h-3.5 border border-slate-700/80 overflow-hidden p-0.5 mb-2">
-                            <div class="bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-700" style="width: 4%"></div>
+                            <div class="bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-700" style="width: 3%"></div>
                         </div>
                         <div class="flex justify-between items-center text-[11px] text-gray-400">
-                            <span>Select <b>10 USDT</b> or <b>25 USDT</b> below to start your first 200% Meter!</span>
+                            <span>Every Deposit, Upgrade & 50% Reinvest opens its own 200% Meter here.</span>
                             <span class="text-emerald-400 font-mono font-bold">2x Return Target</span>
                         </div>
                     </div>`;
@@ -735,13 +969,18 @@
             }
 
             topMetersBox.innerHTML = '';
-            myRecords.forEach((rec, index) => {
+            myRecords.forEach((rec) => {
                 const isAutoReinvest = rec.type === 'AUTO_REINVEST';
+                const isUpgrade = rec.type === 'UPGRADE_PACKAGE';
                 const target2x = rec.target2x || (rec.amount * 2);
                 const earned2x = rec.earned2x || 0;
                 const remaining2x = Math.max(0, target2x - earned2x);
                 const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
                 const isCompleted = earned2x >= target2x - 0.0001;
+
+                const typeLabel = isAutoReinvest
+                    ? '♻️ 50% Auto-Reinvest'
+                    : (isUpgrade ? '⬆️ Package Upgrade' : '🚀 Package Deposit');
 
                 topMetersBox.innerHTML += `
                     <div class="bg-slate-900/95 p-3.5 rounded-xl border ${isCompleted ? 'border-amber-400/70 shadow-[0_0_12px_rgba(245,158,11,0.18)]' : (isAutoReinvest ? 'border-sky-500/40' : 'border-emerald-500/40')}">
@@ -751,7 +990,7 @@
                                     ${rec.id}
                                 </span>
                                 <span class="font-bold text-white">
-                                    ${isAutoReinvest ? '♻️ 50% Auto-Reinvest' : '🚀 Package #' + (myRecords.length - index)}: <span class="text-amber-300 font-mono">$${rec.amount.toFixed(2)}</span>
+                                    ${typeLabel}: <span class="text-amber-300 font-mono">$${rec.amount.toFixed(2)}</span>
                                 </span>
                                 <span class="text-[10px] text-gray-400 font-mono hidden sm:inline">(${rec.timestamp})</span>
                             </div>
@@ -786,7 +1025,7 @@
             if (!container) return;
 
             const myRecords = (window.investmentRecords || []).filter(
-                r => !window.currentUserWallet || r.wallet.toLowerCase() === window.currentUserWallet.toLowerCase() || window.currentUserWallet.toLowerCase() === window.MASTER_WALLET.toLowerCase()
+                r => window.currentUserWallet && r.wallet && r.wallet.toLowerCase() === window.currentUserWallet.toLowerCase()
             );
 
             const activeCount = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001).length;
@@ -798,7 +1037,7 @@
             if (myRecords.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-gray-400 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">
-                        No active 2x investment boards yet. Activate any package above (e.g. 10 or 25 USDT) to open your first Individual 2x Return Capping Meter!
+                        No active 2x investment boards yet. Activate any package above (10 USDT to 5,000 USDT) to open your first Individual 2x Return Capping Meter!
                     </div>`;
                 return;
             }
@@ -806,11 +1045,16 @@
             container.innerHTML = '';
             myRecords.forEach((rec) => {
                 const isAutoReinvest = rec.type === 'AUTO_REINVEST';
+                const isUpgrade = rec.type === 'UPGRADE_PACKAGE';
                 const target2x = rec.target2x || (rec.amount * 2);
                 const earned2x = rec.earned2x || 0;
                 const remaining2x = Math.max(0, target2x - earned2x);
                 const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
                 const isCompleted = earned2x >= target2x - 0.0001;
+
+                const badgeTitle = isAutoReinvest
+                    ? '♻️ 50% AUTO-REINVEST (' + (rec.sourceTicket || '#WD') + ')'
+                    : (isUpgrade ? '⬆️ PACKAGE UPGRADE' : '🚀 INITIAL PACKAGE');
 
                 container.innerHTML += `
                     <div class="bg-slate-950/95 border ${isCompleted ? 'border-amber-400/60 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : (isAutoReinvest ? 'border-sky-500/40' : 'border-emerald-500/40')} p-4 rounded-xl flex flex-col gap-2.5">
@@ -819,7 +1063,7 @@
                                 <span class="font-mono font-extrabold ${isAutoReinvest ? 'text-sky-400 bg-sky-500/10 border-sky-500/30' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'} px-2 py-0.5 rounded border">${rec.id}</span>
                                 <span class="text-[11px] text-gray-400 font-mono"><i class="fa-regular fa-clock mr-1"></i>${rec.timestamp}</span>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isAutoReinvest ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
-                                    ${isAutoReinvest ? '♻️ 50% AUTO-REINVEST (' + rec.sourceTicket + ')' : '🚀 DIRECT PACKAGE'}
+                                    ${badgeTitle}
                                 </span>
                             </div>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold font-mono ${isCompleted ? 'bg-amber-400 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'}">
@@ -827,13 +1071,12 @@
                             </span>
                         </div>
 
-                        <!-- INDIVIDUAL 2X RETURN CAPPING METER -->
                         <div class="bg-slate-900/95 p-3 rounded-xl border border-slate-800">
                             <div class="flex justify-between items-center text-[11px] mb-1.5">
                                 <span class="text-gray-300 font-semibold">
-                                    2x Capping Meter: <b class="text-white font-mono">$${rec.amount.toFixed(2)}</b> 
+                                    Amount: <b class="text-white font-mono">$${rec.amount.toFixed(2)}</b> 
                                     <i class="fa-solid fa-arrow-right mx-1 text-amber-400 text-[10px]"></i> 
-                                    2x Limit: <b class="text-amber-300 font-mono">$${target2x.toFixed(2)} USDT</b>
+                                    2x Target: <b class="text-amber-300 font-mono">$${target2x.toFixed(2)} USDT</b>
                                 </span>
                                 <span class="font-mono font-bold ${isCompleted ? 'text-amber-400' : 'text-emerald-400'}">
                                     ${pct.toFixed(1)}% ($${earned2x.toFixed(2)} / $${target2x.toFixed(2)})
@@ -865,7 +1108,7 @@
             if (!container) return;
 
             const myRecords = (window.pendingWithdrawals || []).filter(
-                w => !window.currentUserWallet || w.wallet.toLowerCase() === window.currentUserWallet.toLowerCase() || window.currentUserWallet.toLowerCase() === window.MASTER_WALLET.toLowerCase()
+                w => window.currentUserWallet && w.wallet && w.wallet.toLowerCase() === window.currentUserWallet.toLowerCase()
             );
 
             if (countBadge) countBadge.innerText = myRecords.length;
@@ -873,7 +1116,7 @@
             if (myRecords.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">
-                        No withdrawal records yet. Whenever you withdraw (Min 10 USDT), a separate record will open here!
+                        No withdrawal records yet. Whenever you withdraw (Min 10 USDT), a separate ticket & 50% Auto-Reinvest 2x Meter will open here!
                     </div>`;
                 return;
             }
@@ -888,17 +1131,17 @@
                                 <span class="font-mono font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">${rec.id}</span>
                                 <span class="text-[11px] text-gray-400 font-mono"><i class="fa-regular fa-clock mr-1"></i>${rec.timestamp}</span>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isPending ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">
-                                    ${isPending ? '⏳ PENDING ADMIN APPROVAL' : '✅ APPROVED & TRANSFERRED'}
+                                    ${isPending ? '⏳ PENDING ADMIN TRANSFER' : '✅ APPROVED & TRANSFERRED'}
                                 </span>
                             </div>
                             <div class="text-gray-300 pt-1">
                                 Total: <b class="text-white font-mono">$${rec.totalUSDT.toFixed(2)}</b> • 
-                                New 2x Meter: <b class="text-sky-400 font-mono">${rec.reinvestRecordId || '#REINV'} ($${rec.reinvestedUSDT.toFixed(2)} -> 2x: $${(rec.reinvestedUSDT * 2).toFixed(2)})</b> • 
+                                Auto-Reinvest 2x Meter: <b class="text-sky-400 font-mono">${rec.reinvestRecordId || '#REINV'} ($${rec.reinvestedUSDT.toFixed(2)} -> 2x: $${(rec.reinvestedUSDT * 2).toFixed(2)})</b> • 
                                 50% Payout: <b class="text-emerald-400 font-mono">$${rec.netUSDT.toFixed(2)} (${rec.tokenAmount.toFixed(2)} T_DA)</b>
                             </div>
                         </div>
                         <div class="text-right shrink-0">
-                            <span class="text-[11px] text-gray-400 block">Rate Locked: $${rec.liveRate.toFixed(6)}</span>
+                            <span class="text-[11px] text-gray-400 block">Rate: $${rec.liveRate.toFixed(6)}</span>
                             <span class="font-mono font-bold text-amber-300 text-xs">${rec.tokenAmount.toFixed(2)} Temple_DA</span>
                         </div>
                     </div>
@@ -930,6 +1173,7 @@
             visiblePackages.forEach((amt, idx) => {
                 const isStarter = amt === 10;
                 const isWhale = amt >= 1000;
+                const btnLabel = hasInvestedAlready ? `Upgrade ${amt} USDT` : `Activate ${amt} USDT`;
                 pkgContainer.innerHTML += `
                     <div class="glass-card p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden ${isStarter ? 'border-amber-400/50' : ''}">
                         <div>
@@ -947,65 +1191,13 @@
                             </div>
                         </div>
                         <button onclick="buyPackage(${amt})" class="w-full gold-btn py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-circle-plus"></i> Activate ${amt} USDT
+                            <i class="fa-solid fa-circle-plus"></i> ${btnLabel}
                         </button>
                     </div>
                 `;
             });
         };
         window.renderPackagesDynamic();
-
-        // FIFO Individual 2x Capping Meter Allocation + Strict Overall Cap Guard
-        window.creditUserWithCapGuard = function(userObj, rawAmount, incomeType) {
-            if (!userObj || rawAmount <= 0) return { credited: 0, overflow: rawAmount, completedBoardsNow: [] };
-            const capLimit = userObj.cappingLimit || 0;
-            const currentEarned = userObj.totalEarned || 0;
-            const remainingRoom = Math.max(0, capLimit - currentEarned);
-
-            const actualCredited = Math.min(rawAmount, remainingRoom);
-            const overflowAmount = Math.max(0, rawAmount - actualCredited);
-            const completedBoardsNow = [];
-
-            if (actualCredited > 0) {
-                userObj.balance = (userObj.balance || 0) + actualCredited;
-                userObj.totalEarned = (userObj.totalEarned || 0) + actualCredited;
-                if (incomeType === 'direct') {
-                    userObj.directEarned = (userObj.directEarned || 0) + actualCredited;
-                } else {
-                    userObj.poolEarned = (userObj.poolEarned || 0) + actualCredited;
-                }
-
-                // Allocate income across user's active Individual 2x Meters in chronological order (oldest active meter first)
-                let toDistribute = actualCredited;
-                const chronologicalRecords = [...(window.investmentRecords || [])].reverse().filter(
-                    r => !window.currentUserWallet || r.wallet.toLowerCase() === window.currentUserWallet.toLowerCase()
-                );
-
-                for (const rec of chronologicalRecords) {
-                    if (toDistribute <= 0) break;
-                    const target = rec.target2x || (rec.amount * 2);
-                    const cur = rec.earned2x || 0;
-                    const room = Math.max(0, target - cur);
-                    if (room > 0) {
-                        const add = Math.min(toDistribute, room);
-                        rec.earned2x = cur + add;
-                        toDistribute -= add;
-                        if (rec.earned2x >= target - 0.0001) {
-                            rec.status2x = 'COMPLETED';
-                            completedBoardsNow.push(rec.id);
-                        }
-                    }
-                }
-            }
-
-            if (overflowAmount > 0) {
-                userObj.overflowedToPool = (userObj.overflowedToPool || 0) + overflowAmount;
-                window.protocolOverflowReserve = (window.protocolOverflowReserve || 0) + overflowAmount;
-            }
-
-            window.saveProtocolSessionState();
-            return { credited: actualCredited, overflow: overflowAmount, completedBoardsNow: completedBoardsNow };
-        };
 
         // 4-LAYER LIVE ON-CHAIN + DEX PRICE ENGINE FOR TEMPLE_DA
         window.fetchDirectOnChainPoolPrice = async function() {
@@ -1197,7 +1389,7 @@
             window.closeWalletModal();
             const eth = window.getDetectedWeb3Provider();
             if (!eth) {
-                await window.connectDemoWallet();
+                window.openUniversalWalletModal();
                 return;
             }
 
@@ -1224,16 +1416,12 @@
                 if (accounts && accounts.length > 0) {
                     await window.finalizeLogin(accounts[0]);
                 } else {
-                    await window.connectDemoWallet();
+                    window.UI.hideModal();
+                    window.openUniversalWalletModal();
                 }
             } catch (err) {
-                window.UI.showModal(
-                    'Wallet Connection Options',
-                    'Click below for <b>Instant 1-Click Connect</b> or login as Master Admin.',
-                    '⚡',
-                    `<button onclick="connectDemoWallet()" class="gold-btn font-extrabold px-5 py-2.5 rounded-xl text-xs cursor-pointer">1-Click Instant Connect</button>
-                     <button onclick="closeModal(); openUniversalWalletModal();" class="bg-slate-800 px-4 py-2.5 rounded-xl text-xs cursor-pointer">Other Options</button>`
-                );
+                window.UI.hideModal();
+                window.openUniversalWalletModal();
             }
         };
 
@@ -1259,34 +1447,14 @@
             await window.finalizeLogin(val);
         };
 
-        window.connectAsAdminPreview = async function() {
-            window.closeWalletModal();
-            window.UI.hideModal();
-            await window.finalizeLogin(window.MASTER_WALLET);
-        };
-
-        window.connectDemoWallet = async function() {
-            window.closeWalletModal();
-            let demoAddr = null;
-            try {
-                demoAddr = window.sessionStorage ? window.sessionStorage.getItem('temple_da_wallet') : null;
-            } catch (e) {}
-
-            if (!demoAddr || demoAddr.toLowerCase() === window.MASTER_WALLET.toLowerCase()) {
-                const randomHex = () => Math.floor(Math.random() * 16).toString(16).toUpperCase();
-                demoAddr = "0x";
-                for (let i = 0; i < 40; i++) demoAddr += randomHex();
-            }
-            window.web3Signer = null;
-            await window.finalizeLogin(demoAddr);
-        };
-
         window.finalizeLogin = async function(walletAddress) {
             try {
-                if (window.sessionStorage) window.sessionStorage.setItem('temple_da_wallet', walletAddress);
+                if (window.localStorage) window.localStorage.setItem('temple_da_connected_wallet', walletAddress);
             } catch (e) {}
 
+            window.loadGlobalProtocolState();
             window.currentUserWallet = walletAddress;
+            const wLower = walletAddress.toLowerCase();
 
             document.getElementById('heroSection').classList.add('hidden');
             document.getElementById('mainDashboard').classList.remove('hidden');
@@ -1295,8 +1463,9 @@
             document.getElementById('walletDisplay').classList.remove('hidden');
             document.getElementById('walletAddressTxt').innerText = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
 
+            // Auto-Mode Admin Button: Appears ONLY when Master Deposit Wallet connects
             const adminBtn = document.getElementById('btnAdminPanel');
-            if (walletAddress.toLowerCase() === window.MASTER_WALLET.toLowerCase()) {
+            if (wLower === window.MASTER_WALLET.toLowerCase()) {
                 adminBtn.classList.remove('hidden');
             } else {
                 adminBtn.classList.add('hidden');
@@ -1305,12 +1474,11 @@
             const baseDomain = window.location.origin + window.location.pathname;
             document.getElementById('refLinkTxt').innerText = `${baseDomain}?ref=${walletAddress}`;
 
-            const loaded = window.loadProtocolSessionState(walletAddress);
-            if (!loaded || !window.currentUserData || window.currentUserData.wallet !== walletAddress) {
-                window.currentUserData = {
+            if (!window.globalUsersMap[wLower]) {
+                window.globalUsersMap[wLower] = {
                     wallet: walletAddress,
-                    sponsor: (window.referrerAddress && window.referrerAddress !== walletAddress) ? window.referrerAddress : window.MASTER_WALLET,
-                    joinOrder: 1,
+                    sponsor: (window.referrerAddress && window.referrerAddress.toLowerCase() !== wLower) ? window.referrerAddress : window.MASTER_WALLET,
+                    joinOrder: window.globalQueueOrder.length + 1,
                     balance: 0,
                     totalInvested: 0,
                     autoReinvestedTotal: 0,
@@ -1322,6 +1490,7 @@
                     overflowedToPool: 0
                 };
             }
+            window.currentUserData = window.globalUsersMap[wLower];
 
             window.UI.hideModal();
             window.refreshDashboardUI();
@@ -1331,7 +1500,7 @@
         window.disconnectWallet = function() {
             window.currentUserWallet = null;
             window.web3Signer = null;
-            try { if (window.sessionStorage) window.sessionStorage.removeItem('temple_da_wallet'); } catch(e) {}
+            try { if (window.localStorage) window.localStorage.removeItem('temple_da_connected_wallet'); } catch(e) {}
             document.getElementById('mainDashboard').classList.add('hidden');
             document.getElementById('heroSection').classList.remove('hidden');
             document.getElementById('btnConnect').classList.remove('hidden');
@@ -1349,18 +1518,19 @@
             document.body.removeChild(tempInput);
             window.UI.showModal(
                 'Referral Link Copied!',
-                `Share your referral link! <b class="text-amber-400">1 Active Direct Partner is compulsory</b> to unlock your withdrawals, and you earn <b class="text-emerald-400">10% Direct Bonus</b> on every deposit & reinvestment!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`,
+                `Share your referral link! <b class="text-amber-400">1 Active Direct Partner is compulsory</b> to unlock your withdrawals, and you earn <b class="text-emerald-400">10% Direct Bonus</b> on every deposit, upgrade & 50% auto-reinvestment!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`,
                 '✅'
             );
         };
 
         window.getActiveDirectCount = function() {
             if (!window.currentUserWallet) return 0;
-            const fromGlobalList = (window.allUsersList || []).filter(
-                u => u.sponsor && u.sponsor.toLowerCase() === window.currentUserWallet.toLowerCase() && (u.totalInvested || 0) > 0
+            const wLower = window.currentUserWallet.toLowerCase();
+            const fromGlobalMap = Object.values(window.globalUsersMap || {}).filter(
+                u => u.sponsor && u.sponsor.toLowerCase() === wLower && (u.totalInvested || 0) > 0 && u.wallet.toLowerCase() !== wLower
             ).length;
             const storedDirects = (window.currentUserData && window.currentUserData.directReferrals) ? window.currentUserData.directReferrals : 0;
-            return Math.max(fromGlobalList, storedDirects);
+            return Math.max(fromGlobalMap, storedDirects);
         };
 
         window.updateEstimatedTokensUI = function() {
@@ -1375,8 +1545,18 @@
             const data = window.currentUserData;
             if (!data) return;
             const activeDirects = window.getActiveDirectCount();
+            const wLower = window.currentUserWallet ? window.currentUserWallet.toLowerCase() : '';
 
-            document.getElementById('uiGlobalPos').innerText = data.joinOrder || 1;
+            // Calculate live Upline & Downline count from global single-leg queue
+            const qIndex = window.globalQueueOrder.indexOf(wLower);
+            const uplinesAbove = qIndex > 0 ? Math.min(20, qIndex) : 0;
+            const downlinesBelow = qIndex >= 0 ? Math.min(20, Math.max(0, window.globalQueueOrder.length - 1 - qIndex)) : 0;
+
+            document.getElementById('uiGlobalPos').innerText = qIndex >= 0 ? (qIndex + 1) : (data.joinOrder || 1);
+            document.getElementById('uiTotalUsers').innerText = Math.max(1, window.globalQueueOrder.length);
+            document.getElementById('uiUplineCount').innerText = uplinesAbove;
+            document.getElementById('uiDownlineCount').innerText = downlinesBelow;
+
             document.getElementById('uiBalance').innerText = (data.balance || 0).toFixed(2);
             document.getElementById('uiInvested').innerText = (data.totalInvested || 0).toFixed(2);
             const autoReinvEl = document.getElementById('uiAutoReinvestedTotal');
@@ -1424,27 +1604,25 @@
             window.renderUserInvestmentRecords();
             window.renderUserWithdrawalRecords();
             window.updateEstimatedTokensUI();
-            window.saveProtocolSessionState();
+            window.saveGlobalProtocolState();
         };
 
         window.updateLivePrice(false);
         setInterval(() => window.updateLivePrice(false), 15000);
 
+        // Package Deposit & Upgrade Function (Uses Unified Engine)
         window.buyPackage = async function(amount) {
             if (!window.currentUserWallet) {
                 window.openUniversalWalletModal();
                 return;
             }
 
-            const isFirstActivation = (window.currentUserData.totalInvested || 0) === 0;
-            const poolShare = amount * 0.50;
-            const directShare = amount * 0.10;
-            const teamTotalShare = amount * 0.40;
-            const perLevelShare = teamTotalShare / 40;
+            const isUpgrade = (window.currentUserData.totalInvested || 0) > 0;
+            const entryMode = isUpgrade ? 'UPGRADE_PACKAGE' : 'DIRECT_PACKAGE';
 
             window.UI.showModal(
-                'Processing Package Activation',
-                `Activating <b>${amount} USDT</b> Package.<br><span class="text-xs text-gray-400">Opening Separate 2x Return Capping Meter (Target: $${amount * 2} USDT)...</span>`,
+                isUpgrade ? 'Processing Package Upgrade' : 'Processing Package Activation',
+                `${isUpgrade ? 'Upgrading with' : 'Activating'} <b>${amount} USDT</b> Package.<br><span class="text-xs text-gray-400">Applying Unified 50/10/40 Split & Opening Separate 2x Return Capping Meter ($${amount * 2} USDT)...</span>`,
                 '⏳'
             );
 
@@ -1459,42 +1637,19 @@
                     await new Promise(r => setTimeout(r, 600));
                 }
 
-                window.currentUserData.totalInvested = (window.currentUserData.totalInvested || 0) + amount;
-                window.currentUserData.cappingLimit = (window.currentUserData.cappingLimit || 0) + (amount * 2);
+                const result = window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryMode, null);
 
-                const invRecordId = '#INV-' + (window.investRecordCounter++);
-                const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                window.investmentRecords.unshift({
-                    id: invRecordId,
-                    type: 'DIRECT_PACKAGE',
-                    timestamp: nowTime,
-                    wallet: window.currentUserWallet,
-                    amount: amount,
-                    target2x: amount * 2,
-                    earned2x: 0,
-                    status2x: 'ACTIVE',
-                    poolShare: poolShare,
-                    directShare: directShare,
-                    teamShare: teamTotalShare
-                });
-
-                let heldBonusClaimed = 0;
-                if (isFirstActivation) {
-                    const simulatedHeldFromSenior = amount * 0.01;
-                    const res = window.creditUserWithCapGuard(window.currentUserData, simulatedHeldFromSenior, 'pool');
-                    heldBonusClaimed = res.credited;
-                }
-
-                window.addActivityLog(`🚀 2x Meter <b class="text-emerald-400">${invRecordId}</b> Opened: <b class="text-white">$${amount} -> 2x Target $${amount * 2}</b>`);
+                window.addActivityLog(
+                    `${isUpgrade ? '⬆️ Upgrade' : '🚀 Deposit'} 2x Meter <b class="text-emerald-400">${result.recordId}</b> Opened: <b class="text-white">$${amount} -> 2x Target $${amount * 2}</b>`
+                );
                 window.refreshDashboardUI();
 
                 window.UI.showModal(
-                    `Separate 2x Meter Opened (${invRecordId})!`,
+                    `Separate 2x Meter Opened (${result.recordId})!`,
                     `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span class="text-gray-400">2x Meter ID:</span>
-                            <span class="font-bold text-emerald-400 font-mono">${invRecordId} (${nowTime})</span>
+                            <span class="text-gray-400">Entry Type & Meter ID:</span>
+                            <span class="font-bold text-emerald-400 font-mono">${isUpgrade ? 'UPGRADE' : 'DEPOSIT'} ${result.recordId} (${result.nowTime})</span>
                         </div>
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-gray-400">Separate 2x Capping Target:</span>
@@ -1502,117 +1657,29 @@
                         </div>
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-gray-400">50% Temple_DA Liquidity Pool:</span>
-                            <span class="font-bold text-amber-400 font-mono">${poolShare.toFixed(2)} USDT</span>
+                            <span class="font-bold text-amber-400 font-mono">${result.poolShare.toFixed(2)} USDT</span>
                         </div>
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-gray-400">10% Direct Sponsor Bonus:</span>
-                            <span class="font-bold text-emerald-400 font-mono">${directShare.toFixed(2)} USDT</span>
+                            <span class="font-bold text-emerald-400 font-mono">${result.directShare.toFixed(2)} USDT</span>
                         </div>
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-gray-400">40% Team (20 Up + 20 Down Held):</span>
-                            <span class="font-bold text-sky-400 font-mono">${teamTotalShare.toFixed(2)} USDT ($${perLevelShare.toFixed(2)}/lvl)</span>
+                            <span class="font-bold text-sky-400 font-mono">${result.teamTotalShare.toFixed(2)} USDT ($${result.perLevelShare.toFixed(2)}/lvl)</span>
                         </div>
                         <div class="flex justify-between pt-1 bg-emerald-950/30 p-2 rounded-lg border border-emerald-500/30">
-                            <span class="text-emerald-300 font-semibold">🎁 Held Upline Bonus Credited to ${invRecordId}:</span>
-                            <span class="font-extrabold text-emerald-400 font-mono">+${heldBonusClaimed.toFixed(2)} USDT</span>
+                            <span class="text-emerald-300 font-semibold">🎁 Held Upline Reserve Claimed:</span>
+                            <span class="font-extrabold text-emerald-400 font-mono">+${result.heldBonusClaimedNow.toFixed(2)} USDT</span>
                         </div>
                     </div>`,
                     '🚀'
                 );
             } catch (e) {
-                window.UI.showModal('Transaction Cancelled', 'BEP-20 USDT transaction was cancelled or insufficient balance.', '❌');
+                window.UI.showModal('Transaction Cancelled', 'BEP-20 USDT transaction was cancelled or insufficient balance in wallet.', '❌');
             }
         };
 
-        window.simulateNextDownlineJoin = async function(pkgAmount) {
-            const joinPkg = pkgAmount || 250;
-            if (!window.currentUserWallet) {
-                window.openUniversalWalletModal();
-                return;
-            }
-            if ((window.currentUserData.totalInvested || 0) === 0) {
-                window.UI.showModal('Activate Your ID First', 'Please activate at least a 10 or 25 USDT package first so your Individual 2x Return Capping Meter is open!', '⚠️');
-                return;
-            }
-
-            window.UI.showModal('New Global ID Joining...', `Simulating the next member joining below you with a <b>${joinPkg} USDT</b> package...`, '⏳');
-            await new Promise(r => setTimeout(r, 500));
-
-            const rawShareFromNewDownline = joinPkg * 0.01;
-            const capResult = window.creditUserWithCapGuard(window.currentUserData, rawShareFromNewDownline, 'pool');
-
-            const curDown = parseInt(document.getElementById('uiDownlineCount').innerText || '0', 10);
-            if (curDown < 20) document.getElementById('uiDownlineCount').innerText = curDown + 1;
-            const curTotal = parseInt(document.getElementById('uiTotalUsers').innerText || '1', 10);
-            document.getElementById('uiTotalUsers').innerText = curTotal + 1;
-
-            window.addActivityLog(`💸 Downline joined ($${joinPkg}) -> Credited <b class="text-emerald-400">+$${capResult.credited.toFixed(2)}</b> to your active 2x Meter!`);
-            window.refreshDashboardUI();
-
-            window.UI.showModal(
-                'Individual 2x Meter Updated! 🎉',
-                `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                        <span class="text-gray-400">New Member Package:</span>
-                        <span class="font-bold text-white font-mono">${joinPkg.toFixed(2)} USDT</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                        <span class="text-emerald-300 font-semibold">Added to Your Active 2x Meter:</span>
-                        <span class="font-bold text-emerald-400 font-mono">+${capResult.credited.toFixed(2)} USDT</span>
-                    </div>
-                    ${capResult.completedBoardsNow.length > 0 ? `
-                    <div class="flex justify-between border-b border-slate-800 pb-1.5 bg-amber-500/10 p-2 rounded">
-                        <span class="text-amber-300 font-bold">🏆 2x Meters Completed Now:</span>
-                        <span class="font-extrabold text-amber-400 font-mono">${capResult.completedBoardsNow.join(', ')}</span>
-                    </div>` : ''}
-                    <div class="flex justify-between">
-                        <span class="text-rose-300">2x Cap Overflow -> Pool Reserve:</span>
-                        <span class="font-bold text-rose-400 font-mono">${capResult.overflow.toFixed(2)} USDT</span>
-                    </div>
-                </div>`,
-                '🛡️'
-            );
-        };
-
-        window.simulateOneDirectReferral = async function() {
-            if (!window.currentUserWallet) return;
-            window.UI.showModal('Adding Direct Partner...', 'Simulating 1 Direct Referral activating a 100 USDT package under your link (+10 USDT Direct Bonus)...', '⏳');
-            await new Promise(r => setTimeout(r, 500));
-
-            const directBonus = 10.00;
-            window.currentUserData.directReferrals = (window.currentUserData.directReferrals || 0) + 1;
-
-            if ((window.currentUserData.cappingLimit || 0) === 0) {
-                window.currentUserData.totalInvested = 25;
-                window.currentUserData.cappingLimit = 50;
-                const invRecordId = '#INV-' + (window.investRecordCounter++);
-                const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                window.investmentRecords.unshift({
-                    id: invRecordId,
-                    type: 'DIRECT_PACKAGE',
-                    timestamp: nowTime,
-                    wallet: window.currentUserWallet,
-                    amount: 25,
-                    target2x: 50,
-                    earned2x: 0,
-                    status2x: 'ACTIVE',
-                    poolShare: 12.5,
-                    directShare: 2.5,
-                    teamShare: 10
-                });
-            }
-
-            const capRes = window.creditUserWithCapGuard(window.currentUserData, directBonus, 'direct');
-            window.addActivityLog(`🤝 New Direct Partner joined! Credited <b class="text-emerald-400">+$${capRes.credited.toFixed(2)} USDT</b> to your 2x Meter`);
-            window.refreshDashboardUI();
-
-            window.UI.showModal(
-                '1 Active Direct Completed! 🎉',
-                `Your direct referral requirement (<b>1/1 Active Direct</b>) is now complete and <b>+${capRes.credited.toFixed(2)} USDT</b> was added to your Individual 2x Return Capping Meter. Your withdrawals (Min 10 USDT) are now <b>Unlocked</b>!`,
-                '🔓'
-            );
-        };
-
+        // Withdrawal Function (Enforces 1 Active Direct + Min 10 USDT + Runs Unified Engine on 50% Auto-Reinvest)
         window.requestWithdrawal = async function() {
             if (!window.currentUserData) return;
 
@@ -1624,13 +1691,13 @@
                         <p class="text-rose-400 font-semibold">Withdrawal is locked! At least <b>1 Active Direct Referral</b> is compulsory to withdraw your earnings.</p>
                         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-left space-y-1">
                             <div class="flex justify-between"><span>Your Active Directs:</span><b class="text-rose-400 font-mono">${activeDirects} / 1 Required</b></div>
-                            <div class="flex justify-between"><span>Minimum Withdrawal:</span><b class="text-amber-400 font-mono">10.00 USDT (5+5 Split)</b></div>
+                            <div class="flex justify-between"><span>Minimum Withdrawal:</span><b class="text-amber-400 font-mono">10.00 USDT (50/50 Split)</b></div>
                         </div>
-                        <p class="text-gray-400">Share your referral link with 1 partner or click below to test 1 Direct Referral with +10 USDT bonus!</p>
+                        <p class="text-gray-400">Share your referral link with 1 partner to unlock instant withdrawals!</p>
                     </div>`,
                     '🔒',
-                    `<button onclick="copyRefLink()" class="gold-btn font-extrabold px-4 py-2 rounded-xl text-xs cursor-pointer"><i class="fa-regular fa-copy mr-1"></i> Copy Link</button>
-                     <button onclick="simulateOneDirectReferral()" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold px-3 py-2 rounded-xl text-xs cursor-pointer">+ Test 1 Direct (+10 USDT)</button>`
+                    `<button onclick="copyRefLink()" class="gold-btn font-extrabold px-5 py-2.5 rounded-xl text-xs cursor-pointer"><i class="fa-regular fa-copy mr-1"></i> Copy Referral Link</button>
+                     <button onclick="closeModal()" class="bg-slate-800 px-4 py-2.5 rounded-xl text-xs cursor-pointer">Close</button>`
                 );
                 return;
             }
@@ -1639,53 +1706,38 @@
             if (currentBal < window.MIN_WITHDRAW_USDT) {
                 window.UI.showModal(
                     'Minimum Withdrawal is 10 USDT ⚠️',
-                    `Your current withdrawable balance is <b>${currentBal.toFixed(2)} USDT</b>.<br><br>A minimum of <b>10.00 USDT</b> is required so that <b>50% (5 USDT)</b> is sent to your wallet in Temple_DA tokens and <b>50% (5 USDT)</b> opens a new Auto-Reinvestment 2x Meter in your dashboard.`,
+                    `Your current withdrawable balance is <b>${currentBal.toFixed(2)} USDT</b>.<br><br>A minimum of <b>10.00 USDT</b> is required so that <b>50%</b> is sent to your wallet in Temple_DA tokens and <b>50%</b> is Auto-Reinvested under the exact same 50/10/40 & 2x Capping Meter rule.`,
                     '⚠️'
                 );
                 return;
             }
 
             const totalWithdrawUSDT = currentBal;
-            window.UI.showModal('Creating Withdrawal & New 2x Reinvest Meter...', 'Executing 50% Auto-Reinvestment (opening #REINV 2x Meter) & creating Withdrawal Ticket (#WD)...', '⏳');
+            window.UI.showModal('Processing 50/50 Withdrawal & Reinvestment...', 'Creating Withdrawal Ticket (#WD) & running Unified Investment Engine for 50% Auto-Reinvestment (#REINV)...', '⏳');
             await window.updateLivePrice(false);
 
             const userNetUSDT = totalWithdrawUSDT * 0.50;
             const tokenPayoutAmount = userNetUSDT / window.liveTokenPrice;
-
             const reinvestAmount = totalWithdrawUSDT * 0.50;
-            const liquidityReinvest = reinvestAmount * 0.50;
-            const sponsorReinvestBonus = reinvestAmount * 0.10;
-            const communityLoopUSDT = reinvestAmount * 0.40;
 
+            // Deduct withdrawn balance before running auto-reinvestment
             window.currentUserData.balance = 0;
-            window.currentUserData.autoReinvestedTotal = (window.currentUserData.autoReinvestedTotal || 0) + reinvestAmount;
-            window.currentUserData.cappingLimit = (window.currentUserData.cappingLimit || 0) + (reinvestAmount * 2);
 
             const ticketId = '#WD-' + (window.withdrawalTicketCounter++);
-            const reinvId = '#REINV-' + (window.reinvestRecordCounter++);
-            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            // 1. Add Separate Auto-Reinvestment Individual 2x Meter to Dashboard & Ledger
-            window.investmentRecords.unshift({
-                id: reinvId,
-                type: 'AUTO_REINVEST',
-                sourceTicket: ticketId,
-                timestamp: nowTime,
-                wallet: window.currentUserWallet,
-                amount: reinvestAmount,
-                target2x: reinvestAmount * 2,
-                earned2x: 0,
-                status2x: 'ACTIVE',
-                poolShare: liquidityReinvest,
-                directShare: sponsorReinvestBonus,
-                teamShare: communityLoopUSDT
-            });
+            // Execute the EXACT SAME Unified Investment Engine for the 50% Auto-Reinvestment!
+            const reinvResult = window.executeUnifiedInvestmentEngine(
+                window.currentUserWallet,
+                reinvestAmount,
+                'AUTO_REINVEST',
+                ticketId
+            );
 
-            // 2. Add Separate Withdrawal Ticket to Withdrawal Records & Admin Queue
+            // Create Withdrawal Ticket for Master Admin Transfer
             const reqObj = {
                 id: ticketId,
-                reinvestRecordId: reinvId,
-                timestamp: nowTime,
+                reinvestRecordId: reinvResult.recordId,
+                timestamp: reinvResult.nowTime,
                 wallet: window.currentUserWallet,
                 totalUSDT: totalWithdrawUSDT,
                 netUSDT: userNetUSDT,
@@ -1696,44 +1748,44 @@
             };
             window.pendingWithdrawals.unshift(reqObj);
 
-            window.addActivityLog(`♻️ New 2x Reinvest Meter <b class="text-sky-400">${reinvId} ($${reinvestAmount.toFixed(2)} -> 2x: $${(reinvestAmount*2).toFixed(2)})</b> & Ticket <b class="text-amber-300">${ticketId}</b> opened!`);
+            window.addActivityLog(
+                `♻️ Withdrawal <b class="text-amber-300">${ticketId}</b>: 50% Reinvested (<b class="text-sky-400">${reinvResult.recordId} -> 2x: $${(reinvestAmount * 2).toFixed(2)}</b>) & 50% Queued for Payout!`
+            );
             window.refreshDashboardUI();
 
             window.UI.showModal(
-                `Withdrawal (${ticketId}) & 2x Meter (${reinvId}) Opened!`,
+                `Withdrawal (${ticketId}) & 2x Reinvest (${reinvResult.recordId}) Complete!`,
                 `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
                     <div class="flex justify-between border-b border-slate-800 pb-1.5">
                         <span class="text-gray-400">Withdrawal Ticket ID:</span>
-                        <span class="font-bold text-amber-400 font-mono">${ticketId} (${nowTime})</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                        <span class="text-gray-400">New Separate 2x Reinvest Meter:</span>
-                        <span class="font-bold text-sky-400 font-mono">${reinvId} ($${reinvestAmount.toFixed(2)} -> 2x: $${(reinvestAmount*2).toFixed(2)})</span>
+                        <span class="font-bold text-amber-400 font-mono">${ticketId} (${reinvResult.nowTime})</span>
                     </div>
                     <div class="flex justify-between border-b border-slate-800 pb-1.5">
                         <span class="text-gray-400">50% Token Payout (Admin Queue):</span>
-                        <span class="font-bold text-amber-400 font-mono">${tokenPayoutAmount.toFixed(2)} T_DA ($${userNetUSDT.toFixed(2)})</span>
+                        <span class="font-bold text-emerald-400 font-mono">${tokenPayoutAmount.toFixed(2)} T_DA ($${userNetUSDT.toFixed(2)})</span>
                     </div>
                     <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                        <span class="text-gray-400">↳ Direct Sponsor (10%):</span>
-                        <span class="font-bold text-emerald-400 font-mono">${sponsorReinvestBonus.toFixed(2)} USDT</span>
+                        <span class="text-gray-400">50% Auto-Reinvest 2x Meter:</span>
+                        <span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} ($${reinvestAmount.toFixed(2)} -> 2x: $${(reinvestAmount * 2).toFixed(2)})</span>
                     </div>
                     <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                        <span class="text-gray-400">↳ 20 Up & 20 Down (40%):</span>
-                        <span class="font-bold text-sky-400 font-mono">${communityLoopUSDT.toFixed(2)} USDT</span>
+                        <span class="text-gray-400">↳ Reinvest 50% Liquidity Pool:</span>
+                        <span class="font-bold text-amber-300 font-mono">${reinvResult.poolShare.toFixed(2)} USDT</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                        <span class="text-gray-400">↳ Reinvest 10% Direct Sponsor:</span>
+                        <span class="font-bold text-emerald-400 font-mono">${reinvResult.directShare.toFixed(2)} USDT</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-400">↳ Liquidity Pool (50%):</span>
-                        <span class="font-bold text-amber-300 font-mono">${liquidityReinvest.toFixed(2)} USDT</span>
+                        <span class="text-gray-400">↳ Reinvest 40% (20 Up / 20 Down):</span>
+                        <span class="font-bold text-sky-400 font-mono">${reinvResult.teamTotalShare.toFixed(2)} USDT</span>
                     </div>
                 </div>`,
-                '🧾',
-                `<button onclick="closeModal(); openAdminModal();" class="bg-rose-600 hover:bg-rose-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs cursor-pointer"><i class="fa-solid fa-crown mr-1"></i> Open Admin Panel to Approve</button>
-                 <button onclick="closeModal()" class="bg-slate-800 px-4 py-2 rounded-xl text-xs cursor-pointer">Done</button>`
+                '🧾'
             );
         };
 
-        // MASTER ADMIN PANEL FUNCTIONS
+        // MASTER ADMIN PANEL FUNCTIONS (Auto-Mode for 0x2760...De95)
         window.openAdminModal = function() {
             document.getElementById('adminModal').style.display = 'flex';
             window.renderAdminWithdrawals();
@@ -1767,7 +1819,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">${item.id}</span>
                                 <span class="font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/30">${item.reinvestRecordId || '#REINV'}</span>
-                                <span class="text-[11px] text-gray-400 font-mono">${item.timestamp || 'Just now'}</span>
+                                <span class="text-[11px] text-gray-400 font-mono">${item.timestamp || 'Live'}</span>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${item.status}</span>
                             </div>
                             <div class="text-gray-300 font-mono">User Wallet: <b class="text-white">${item.wallet}</b></div>
@@ -1807,12 +1859,12 @@
                 }
 
                 reqItem.status = 'APPROVED & TRANSFERRED';
-                window.addActivityLog(`👑 <b class="text-emerald-400">Admin Approved Ticket ${reqItem.id}</b> & sent ${reqItem.tokenAmount.toFixed(2)} T_DA to ${reqItem.wallet.slice(0,6)}...`);
+                window.addActivityLog(`👑 <b class="text-emerald-400">Admin Approved Ticket ${reqItem.id}</b> & transferred ${reqItem.tokenAmount.toFixed(2)} T_DA to ${reqItem.wallet.slice(0,6)}...`);
                 window.refreshDashboardUI();
                 window.renderAdminWithdrawals();
 
                 window.UI.showModal(
-                    `Record ${reqItem.id} Transferred! ✅`,
+                    `Ticket ${reqItem.id} Transferred! ✅`,
                     `Ticket <b>${reqItem.id}</b> has been marked as <b>APPROVED & TRANSFERRED</b>.<br><br><b>${reqItem.tokenAmount.toFixed(2)} Temple_DA</b> tokens ($${reqItem.netUSDT.toFixed(2)} USDT value) sent to user wallet <code>${reqItem.wallet}</code>!`,
                     '👑'
                 );
@@ -1821,10 +1873,10 @@
             }
         };
 
-        // Auto-restore connected session on mobile reload
+        // Auto-restore connected wallet session on mobile reload
         window.addEventListener('DOMContentLoaded', () => {
             try {
-                const savedWallet = window.sessionStorage ? window.sessionStorage.getItem('temple_da_wallet') : null;
+                const savedWallet = window.localStorage ? window.localStorage.getItem('temple_da_connected_wallet') : null;
                 if (savedWallet && savedWallet.startsWith('0x')) {
                     window.finalizeLogin(savedWallet);
                 }
