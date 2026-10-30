@@ -201,6 +201,11 @@
             <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="Temple_DA Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
         </div>
 
+        <div id="heroReferralNoticeBox" class="hidden inline-flex items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-4 py-2 rounded-full text-xs text-emerald-300 font-semibold mb-4 shadow-lg">
+            <i class="fa-solid fa-handshake text-amber-400"></i>
+            <span>Referred by Sponsor: <b id="heroSponsorAddrTxt" class="font-mono text-white">0x...</b> (No auto-charge. Connect wallet & choose any package below!)</span>
+        </div>
+
         <div class="inline-flex items-center gap-2 bg-slate-900/90 border border-amber-500/30 px-4 py-1.5 rounded-full text-xs text-amber-300 font-medium mb-5">
             <i class="fa-solid fa-shield-halved text-emerald-400"></i>
             <span>Packages: 10 USDT to 5,000 USDT • Unified 2x Return Capping Meter Per Entry</span>
@@ -622,8 +627,14 @@
         window.heldDownlineReserves = []; // { sourceWallet, joinOrder, perSlotAmount, claimedByWallets: [] }
         window.investRecordCounter = 1001;
         window.reinvestRecordCounter = 2001;
+        window.allUsersList = [];
+        window.investmentRecords = [];  // Cleared fresh
+        window.pendingWithdrawals = []; // Cleared fresh
+        window.heldDownlineReserves = []; // Cleared fresh
+        window.investRecordCounter = 1001;
+        window.reinvestRecordCounter = 2001;
         window.withdrawalTicketCounter = 3001;
-        window.protocolOverflowReserve = 0;
+        window.protocolOverflowReserve = 0; // Reset to 0
         window.referrerAddress = window.MASTER_WALLET;
         window.web3Provider = null;
         window.web3Signer = null;
@@ -641,16 +652,22 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('ref') && urlParams.get('ref').startsWith('0x')) {
                 window.referrerAddress = urlParams.get('ref').trim();
+                window.addEventListener('DOMContentLoaded', () => {
+                    const noticeBox = document.getElementById('heroReferralNoticeBox');
+                    const sponsorTxt = document.getElementById('heroSponsorAddrTxt');
+                    if (noticeBox && sponsorTxt) {
+                        sponsorTxt.innerText = window.referrerAddress.slice(0, 6) + "..." + window.referrerAddress.slice(-4);
+                        noticeBox.classList.remove('hidden');
+                        noticeBox.classList.add('inline-flex');
+                    }
+                });
             }
         } catch (e) {}
 
-        // Persistent LocalStorage Sync (Never loses data on mobile refresh)
+        // Fresh Start Sync (Clears previous cached state)
         window.saveGlobalProtocolState = function() {
             try {
                 if (!window.localStorage) return;
-                if (window.currentUserWallet && window.currentUserData) {
-                    window.globalUsersMap[window.currentUserWallet.toLowerCase()] = window.currentUserData;
-                }
                 const payload = {
                     globalUsersMap: window.globalUsersMap,
                     globalQueueOrder: window.globalQueueOrder,
@@ -669,20 +686,8 @@
         window.loadGlobalProtocolState = function() {
             try {
                 if (!window.localStorage) return;
-                const raw = window.localStorage.getItem(window.STORAGE_KEY_GLOBAL);
-                if (!raw) return;
-                const parsed = JSON.parse(raw);
-                if (parsed) {
-                    window.globalUsersMap = parsed.globalUsersMap || {};
-                    window.globalQueueOrder = parsed.globalQueueOrder || [];
-                    window.investmentRecords = parsed.investmentRecords || [];
-                    window.pendingWithdrawals = parsed.pendingWithdrawals || [];
-                    window.heldDownlineReserves = parsed.heldDownlineReserves || [];
-                    window.investRecordCounter = parsed.investRecordCounter || 1001;
-                    window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
-                    window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
-                    window.protocolOverflowReserve = parsed.protocolOverflowReserve || 0;
-                }
+                // Fresh reset requested: clear old storage on fresh boot
+                window.localStorage.removeItem(window.STORAGE_KEY_GLOBAL);
             } catch (e) {}
         };
         window.loadGlobalProtocolState();
