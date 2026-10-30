@@ -81,7 +81,7 @@
         @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     </style>
 
-    <!-- Multi-Path Smart Logo Resolver -->
+    <!-- Multi-Path Smart Logo Resolver (temple_logo.png.png) -->
     <script>
         window.TEMPLE_LOGO_PATHS = [
             "temple_logo.png.png", "/temple_logo.png.png", "../temple_logo.png.png", "./temple_logo.png.png",
@@ -170,6 +170,12 @@
                 </div>
             </div>
 
+            <!-- Open Registration Form Button -->
+            <button id="btnNavRegister" onclick="openRegistrationModalManual()" class="bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold py-2.5 px-3.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i>
+                <span class="hidden sm:inline">Register</span>
+            </button>
+
             <!-- Connect Wallet Button -->
             <button id="btnConnect" onclick="handleDirectConnectClick()" class="gold-btn font-bold py-2.5 px-4 sm:px-6 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-wallet"></i>
@@ -194,9 +200,10 @@
             <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="Temple_DA Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
         </div>
 
-        <div id="heroReferralNoticeBox" class="hidden inline-flex items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-4 py-2 rounded-full text-xs text-emerald-300 font-semibold mb-4 shadow-lg">
+        <!-- Shown ONLY when opened via an actual ?ref=0x... link -->
+        <div id="heroReferralNoticeBox" class="hidden items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-4 py-2 rounded-full text-xs text-emerald-300 font-semibold mb-4 shadow-lg">
             <i class="fa-solid fa-handshake text-amber-400"></i>
-            <span>Invited by Sponsor: <b id="heroSponsorAddrTxt" class="font-mono text-white">0x...</b> (Registration Form Opens on Connect!)</span>
+            <span>Referral Link Active! Sponsor: <b id="heroSponsorAddrTxt" class="font-mono text-white">0x...</b></span>
         </div>
 
         <div class="inline-flex items-center gap-2 bg-slate-900/90 border border-amber-500/30 px-4 py-1.5 rounded-full text-xs text-amber-300 font-medium mb-5">
@@ -214,7 +221,10 @@
 
         <div class="flex flex-wrap justify-center gap-4 mb-12">
             <button onclick="handleDirectConnectClick()" class="gold-btn font-extrabold py-4 px-8 rounded-2xl text-base sm:text-lg transition-transform hover:scale-105 flex items-center gap-3 cursor-pointer">
-                <i class="fa-solid fa-bolt"></i> Register & Connect BEP-20 Wallet
+                <i class="fa-solid fa-bolt"></i> Connect BEP-20 Wallet
+            </button>
+            <button onclick="openRegistrationModalManual()" class="glass-card border-amber-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-amber-300 hover:text-white flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i> New Member Registration
             </button>
             <a href="https://pancakeswap.finance/swap?outputCurrency=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1" target="_blank" class="glass-card px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-gray-200 hover:text-white flex items-center gap-2">
                 <i class="fa-solid fa-chart-pie text-amber-400"></i> View on PancakeSwap
@@ -266,7 +276,7 @@
                     </div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-white">Temple_DA Cloud Command Center</h2>
                     <p class="text-xs sm:text-sm text-gray-400 mt-1">
-                        Sponsored by: <span id="uiSponsorDisplay" class="font-mono text-amber-300 font-semibold">--</span> • Live synced across all devices via Firebase Cloud
+                        Direct Sponsor: <span id="uiSponsorDisplay" class="font-mono text-amber-300 font-semibold">Direct / None</span> • Live synced across all devices via Firebase Cloud
                     </p>
                 </div>
 
@@ -477,9 +487,13 @@
         </div>
     </main>
 
-    <!-- REGISTRATION FORM MODAL (Opens Automatically on Referral Link / New Wallet Connect) -->
+    <!-- REGISTRATION FORM MODAL (Opens Automatically when visiting via Referral Link or New Wallet Connect) -->
     <div id="registrationModal" class="fixed inset-0 bg-black/85 z-[120] hidden items-center justify-center p-4 backdrop-blur-md">
         <div class="modal-enter glass-panel w-full max-w-lg rounded-2xl p-6 border border-amber-400/50 relative">
+            <button onclick="closeRegistrationModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-2xl">
                     <i class="fa-solid fa-user-plus"></i>
@@ -502,13 +516,21 @@
                 </div>
 
                 <div>
-                    <label class="block text-gray-300 font-semibold mb-1">Your Connected BEP-20 Wallet Address</label>
-                    <input id="regWalletInput" type="text" readonly class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-amber-300">
+                    <label class="block text-gray-300 font-semibold mb-1">Your BEP-20 Wallet Address *</label>
+                    <div class="flex gap-2">
+                        <input id="regWalletInput" type="text" readonly placeholder="Click Connect Wallet ->" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-amber-300">
+                        <button type="button" onclick="connectWalletForRegistrationForm()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shrink-0 cursor-pointer">
+                            <i class="fa-solid fa-wallet mr-1"></i> Connect
+                        </button>
+                    </div>
                 </div>
 
                 <div>
-                    <label class="block text-gray-300 font-semibold mb-1">Sponsor BEP-20 Wallet Address</label>
-                    <input id="regSponsorInput" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-sky-400 focus:outline-none focus:border-amber-400">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-gray-300 font-semibold">Sponsor BEP-20 Wallet Address (Optional)</label>
+                        <span id="regSponsorBadge" class="text-[10px] text-gray-400">Leave blank if joining directly</span>
+                    </div>
+                    <input id="regSponsorInput" type="text" placeholder="0x... Sponsor Address (Optional)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-sky-400 focus:outline-none focus:border-amber-400">
                 </div>
 
                 <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-gray-400 space-y-1">
@@ -649,7 +671,6 @@
         const auth = getAuth(fbApp);
         signInAnonymously(auth).catch(() => {});
 
-        // Dedicated Cloud Node for Infinity Pool so existing app data remains untouched
         const CLOUD_NODE = "infinity_pool_v1/state";
         window.STORAGE_KEY_GLOBAL = "temple_da_cloud_backup_v1";
 
@@ -675,38 +696,100 @@
         window.withdrawalTicketCounter = 3001;
         window.protocolOverflowReserve = 0;
 
-        window.referrerAddress = window.MASTER_WALLET;
+        // STRICT REFERRAL HANDLING: No auto-referral unless URL explicitly has ?ref=0x...
+        window.urlReferrerAddress = "";
         window.hasReferralParamInUrl = false;
         window.web3Provider = null;
         window.web3Signer = null;
 
-        // 1. Capture Referral Link (?ref=0x...) & Persist Sponsor
         try {
+            // Clear any old cached sponsor so it never shows automatically without a referral link
+            localStorage.removeItem('temple_da_saved_sponsor');
+
             const urlParams = new URLSearchParams(window.location.search);
             const hashParams = new URLSearchParams((window.location.hash.split('?')[1]) || '');
             const refFromUrl = urlParams.get('ref') || hashParams.get('ref');
 
             if (refFromUrl && refFromUrl.trim().startsWith('0x') && refFromUrl.trim().length === 42) {
-                window.referrerAddress = refFromUrl.trim();
+                window.urlReferrerAddress = refFromUrl.trim();
                 window.hasReferralParamInUrl = true;
-                localStorage.setItem('temple_da_saved_sponsor', window.referrerAddress);
-            } else {
-                const savedSponsor = localStorage.getItem('temple_da_saved_sponsor');
-                if (savedSponsor && savedSponsor.startsWith('0x') && savedSponsor.length === 42) {
-                    window.referrerAddress = savedSponsor;
-                }
-            }
 
-            if (window.referrerAddress && window.referrerAddress.toLowerCase() !== window.MASTER_WALLET.toLowerCase()) {
                 const noticeBox = document.getElementById('heroReferralNoticeBox');
                 const sponsorTxt = document.getElementById('heroSponsorAddrTxt');
                 if (noticeBox && sponsorTxt) {
-                    sponsorTxt.innerText = window.referrerAddress.slice(0, 6) + "..." + window.referrerAddress.slice(-4);
+                    sponsorTxt.innerText = window.urlReferrerAddress.slice(0, 6) + "..." + window.urlReferrerAddress.slice(-4);
                     noticeBox.classList.remove('hidden');
                     noticeBox.classList.add('inline-flex');
                 }
+
+                // Automatically open the Registration Form when someone visits via a referral link!
+                setTimeout(() => {
+                    window.openRegistrationModalWithSponsor(window.urlReferrerAddress);
+                }, 400);
             }
         } catch (e) {}
+
+        window.closeRegistrationModal = function() {
+            document.getElementById('registrationModal').style.display = 'none';
+        };
+
+        window.openRegistrationModalManual = function() {
+            const sponsorInp = document.getElementById('regSponsorInput');
+            const sponsorBadge = document.getElementById('regSponsorBadge');
+            if (window.hasReferralParamInUrl && window.urlReferrerAddress) {
+                sponsorInp.value = window.urlReferrerAddress;
+                sponsorInp.readOnly = true;
+                if (sponsorBadge) {
+                    sponsorBadge.innerText = "Locked via Referral Link ✓";
+                    sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+                }
+            } else {
+                sponsorInp.value = "";
+                sponsorInp.readOnly = false;
+                if (sponsorBadge) {
+                    sponsorBadge.innerText = "Optional (Leave blank if joining directly)";
+                    sponsorBadge.className = "text-[10px] text-gray-400";
+                }
+            }
+            document.getElementById('registrationModal').style.display = 'flex';
+        };
+
+        window.openRegistrationModalWithSponsor = function(sponsorAddr) {
+            const sponsorInp = document.getElementById('regSponsorInput');
+            const sponsorBadge = document.getElementById('regSponsorBadge');
+            if (sponsorInp) {
+                sponsorInp.value = sponsorAddr || "";
+                sponsorInp.readOnly = Boolean(sponsorAddr);
+            }
+            if (sponsorBadge && sponsorAddr) {
+                sponsorBadge.innerText = "Locked via Referral Link ✓";
+                sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+            }
+            document.getElementById('registrationModal').style.display = 'flex';
+        };
+
+        window.connectWalletForRegistrationForm = async function() {
+            const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+            if (!eth) {
+                window.openUniversalWalletModal();
+                return;
+            }
+            try {
+                await window.ensureBSCNetwork(eth);
+                const accounts = await eth.request({ method: 'eth_requestAccounts' });
+                if (accounts && accounts.length > 0) {
+                    document.getElementById('regWalletInput').value = accounts[0];
+                    // If already registered, log them straight in!
+                    const wLower = accounts[0].toLowerCase();
+                    if (window.globalUsersMap && window.globalUsersMap[wLower]) {
+                        window.closeRegistrationModal();
+                        window.finalizeLogin(accounts[0]);
+                    }
+                }
+            } catch (err) {
+                window.UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️');
+            }
+        };
 
         // 2. Apply Cloud Snapshot to Memory & Refresh UI
         window.applyStateSnapshot = function(parsed) {
@@ -802,14 +885,13 @@
             window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
         };
 
-        // 5. Live PancakeSwap Pool Price Engine (On-Chain + Firebase Config + DexScreener)
+        // 5. Live PancakeSwap Pool Price Engine
         window.updateLivePrice = async function(manualSpin) {
             const icon = document.getElementById('refreshPriceIcon');
             if (manualSpin && icon) icon.classList.add('fa-spin');
 
             let priceFound = 0;
 
-            // Check if Admin set an override in Firebase config/temple_DAPrice
             try {
                 const cfgSnap = await get(ref(db, "config/temple_DAPrice"));
                 if (cfgSnap.exists() && parseFloat(cfgSnap.val()) > 0) {
@@ -817,7 +899,6 @@
                 }
             } catch (e) {}
 
-            // Direct On-Chain PancakeSwap Pair Reader
             if (!priceFound && typeof ethers !== 'undefined') {
                 const PAIR_ABI = [
                     "function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast)",
@@ -846,7 +927,6 @@
                 }
             }
 
-            // DexScreener Fallback
             if (!priceFound) {
                 try {
                     const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${window.TEMPLE_DA_POOL_CONTRACT}`);
@@ -943,7 +1023,7 @@
             }
         };
 
-        // 7. Check Cloud Registration or Open Registration Form
+        // 7. Check Cloud Registration or Open Clean Registration Form
         window.checkRegistrationAndProceed = async function(walletAddr) {
             try {
                 const cloudSnap = await get(ref(db, CLOUD_NODE));
@@ -959,7 +1039,7 @@
                     wallet: walletAddr,
                     name: "Master Admin",
                     phone: "Admin",
-                    sponsor: window.MASTER_WALLET,
+                    sponsor: "",
                     registeredAt: Date.now(),
                     balance: 0,
                     totalInvested: 0,
@@ -974,12 +1054,27 @@
             }
 
             if (!window.globalUsersMap[wLower]) {
-                // New user! Open Registration Form Modal with Sponsor pre-filled
+                // New user! Open Registration Form Modal
                 document.getElementById('regWalletInput').value = walletAddr;
-                const defaultSponsor = (window.referrerAddress && window.referrerAddress.toLowerCase() !== wLower)
-                    ? window.referrerAddress
-                    : window.MASTER_WALLET;
-                document.getElementById('regSponsorInput').value = defaultSponsor;
+                const sponsorInp = document.getElementById('regSponsorInput');
+                const sponsorBadge = document.getElementById('regSponsorBadge');
+
+                // Only pre-fill sponsor if user actually came via ?ref=0x...
+                if (window.hasReferralParamInUrl && window.urlReferrerAddress && window.urlReferrerAddress.toLowerCase() !== wLower) {
+                    sponsorInp.value = window.urlReferrerAddress;
+                    sponsorInp.readOnly = true;
+                    if (sponsorBadge) {
+                        sponsorBadge.innerText = "Locked via Referral Link ✓";
+                        sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+                    }
+                } else {
+                    sponsorInp.value = "";
+                    sponsorInp.readOnly = false;
+                    if (sponsorBadge) {
+                        sponsorBadge.innerText = "Optional (Leave blank if joining directly)";
+                        sponsorBadge.className = "text-[10px] text-gray-400";
+                    }
+                }
                 document.getElementById('registrationModal').style.display = 'flex';
             } else {
                 window.finalizeLogin(walletAddr);
@@ -990,14 +1085,21 @@
             const nameInput = document.getElementById('regFullNameInput').value.trim();
             const phoneInput = document.getElementById('regPhoneInput').value.trim();
             const walletAddr = document.getElementById('regWalletInput').value.trim();
-            let sponsorAddr = document.getElementById('regSponsorInput').value.trim() || window.MASTER_WALLET;
+            let sponsorAddr = document.getElementById('regSponsorInput').value.trim();
 
             if (!nameInput) {
                 window.UI.showModal('Full Name Required', 'Please enter your Full Name or Username to complete registration.', '⚠️');
                 return;
             }
-            if (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase()) {
-                sponsorAddr = window.MASTER_WALLET;
+            if (!walletAddr || !walletAddr.startsWith('0x') || walletAddr.length !== 42) {
+                window.UI.showModal('Connect BEP-20 Wallet First', 'Please click the <b>Connect</b> button inside the registration form to link your BEP-20 wallet address.', '⚠️');
+                return;
+            }
+
+            // If user entered an invalid sponsor or their own wallet, clear it
+            if (sponsorAddr && (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase())) {
+                window.UI.showModal('Invalid Sponsor Address', 'Please enter a valid BEP-20 Sponsor Wallet Address (0x...) or leave it blank.', '⚠️');
+                return;
             }
 
             const wLower = walletAddr.toLowerCase();
@@ -1005,7 +1107,7 @@
                 wallet: walletAddr,
                 name: nameInput,
                 phone: phoneInput || "",
-                sponsor: sponsorAddr,
+                sponsor: sponsorAddr || "",
                 registeredAt: Date.now(),
                 balance: 0,
                 totalInvested: 0,
@@ -1020,9 +1122,11 @@
             document.getElementById('registrationModal').style.display = 'none';
             await window.saveGlobalProtocolState();
             window.finalizeLogin(walletAddr);
+
+            const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
             window.UI.showModal(
                 'Registration Successful! 🎉',
-                `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on Firebase Cloud under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>.<br>Select any package below (starting from 10 USDT) to activate your Global Single-Leg position and open your 2x Return Capping Meter!`,
+                `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on Firebase Cloud ${sponsorText}.<br>Select any package below (starting from 10 USDT) to activate your Global Single-Leg position and open your 2x Return Capping Meter!`,
                 '✅'
             );
         };
@@ -1035,6 +1139,8 @@
             document.getElementById('mainDashboard').classList.remove('hidden');
             document.getElementById('mainDashboard').classList.add('flex');
             document.getElementById('btnConnect').classList.add('hidden');
+            const regBtn = document.getElementById('btnNavRegister');
+            if (regBtn) regBtn.classList.add('hidden');
             document.getElementById('walletDisplay').classList.remove('hidden');
             document.getElementById('walletAddressTxt').innerText = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
 
@@ -1058,6 +1164,8 @@
             document.getElementById('mainDashboard').classList.add('hidden');
             document.getElementById('heroSection').classList.remove('hidden');
             document.getElementById('btnConnect').classList.remove('hidden');
+            const regBtn = document.getElementById('btnNavRegister');
+            if (regBtn) regBtn.classList.remove('hidden');
             document.getElementById('walletDisplay').classList.add('hidden');
             document.getElementById('btnAdminPanel').classList.add('hidden');
         };
@@ -1072,7 +1180,7 @@
             document.body.removeChild(tempInput);
             window.UI.showModal(
                 'Referral Link Copied!',
-                `Share this link with your partners! When they open it and connect their BEP-20 wallet, the <b>Registration Form</b> will automatically open with your address locked as their Sponsor!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`,
+                `Share this link with your partners! When they open it, the <b>Registration Form</b> will automatically pop up with your wallet locked as their Sponsor!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`,
                 '✅'
             );
         };
@@ -1085,7 +1193,6 @@
                 return { credited: 0, overflow: rawAmount };
             }
 
-            // Find all active 2x meters belonging to this user in chronological order (oldest first)
             const userChronologicalRecords = [...(window.investmentRecords || [])]
                 .reverse()
                 .filter(r => r.wallet && r.wallet.toLowerCase() === targetWalletLower);
@@ -1144,19 +1251,16 @@
             }
             userObj.cappingLimit = Number(((userObj.cappingLimit || 0) + (amount * 2)).toFixed(4));
 
-            // Add to Global Single-Leg Queue ONLY when paid/active
             if (!window.globalQueueOrder.includes(wLower)) {
                 window.globalQueueOrder.push(wLower);
             }
             const myQueueIndex = window.globalQueueOrder.indexOf(wLower);
 
-            // Unified 50% Pool / 10% Direct Sponsor / 40% (20 Up + 20 Down) Breakdown
             const poolShare = Number((amount * 0.50).toFixed(4));
             const directShare = Number((amount * 0.10).toFixed(4));
             const teamTotalShare = Number((amount * 0.40).toFixed(4));
-            const perLevelShare = Number((amount * 0.01).toFixed(4)); // 1% each to 20 Up & 20 Down
+            const perLevelShare = Number((amount * 0.01).toFixed(4));
 
-            // Create Separate Individual 2x Return Capping Meter Record
             let recordId = '';
             if (entryType === 'AUTO_REINVEST') {
                 recordId = '#REINV-' + (window.reinvestRecordCounter++);
@@ -1182,8 +1286,8 @@
                 teamShare: teamTotalShare
             });
 
-            // A. Credit 10% Direct Sponsor Bonus
-            const sponsorLower = (userObj.sponsor || window.MASTER_WALLET).toLowerCase();
+            // A. Credit 10% Direct Sponsor Bonus (if user has a valid sponsor)
+            const sponsorLower = (userObj.sponsor || '').toLowerCase();
             if (sponsorLower && sponsorLower !== wLower && window.globalUsersMap[sponsorLower]) {
                 window.creditUserWithCapGuard(sponsorLower, directShare, 'direct');
             } else {
@@ -1208,7 +1312,6 @@
                     const downWalletLower = window.globalQueueOrder[downIdx];
                     window.creditUserWithCapGuard(downWalletLower, perLevelShare, 'pool');
                 } else {
-                    // Hold this 1% share for the future member who lands at targetQueueIndex = downIdx
                     window.heldDownlineReserves.push({
                         fromWallet: walletAddr,
                         targetQueueIndex: downIdx,
@@ -1218,7 +1321,7 @@
                 }
             }
 
-            // D. If this user just joined the queue for the first time, claim any Held Reserves waiting for their Queue Index!
+            // D. Claim Held Reserves waiting for this Queue Index on first activation
             let heldClaimedTotal = 0;
             if (isFirstActivation) {
                 for (const item of window.heldDownlineReserves) {
@@ -1324,7 +1427,7 @@
             }
         };
 
-        // 11. Withdrawal Engine (Min 10 USDT, 1 Active Direct Compulsory, 50% Token Payout + 50% Unified Auto-Reinvestment)
+        // 11. Withdrawal Engine
         window.getActiveDirectCount = function() {
             if (!window.currentUserWallet) return 0;
             const wLower = window.currentUserWallet.toLowerCase();
@@ -1368,7 +1471,6 @@
             const ticketId = '#WD-' + (window.withdrawalTicketCounter++);
             const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-            // Execute Unified 50/10/40 Engine + Open Separate 2x Meter for the 50% Auto-Reinvestment!
             const reinvResult = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, reinvestUSDT, 'AUTO_REINVEST', ticketId);
 
             window.pendingWithdrawals.unshift({
@@ -1433,7 +1535,9 @@
             const totalActiveInQueue = window.globalQueueOrder.length;
 
             document.getElementById('uiMemberName').innerText = data.name || "Verified Member";
-            document.getElementById('uiSponsorDisplay').innerText = data.sponsor ? (data.sponsor.slice(0, 6) + "..." + data.sponsor.slice(-4)) : "Master";
+            document.getElementById('uiSponsorDisplay').innerText = (data.sponsor && data.sponsor.startsWith('0x'))
+                ? (data.sponsor.slice(0, 6) + "..." + data.sponsor.slice(-4))
+                : "Direct (No Sponsor)";
             document.getElementById('uiGlobalPos').innerText = qIndex >= 0 ? (qIndex + 1) : "Inactive (Deposit to Join Queue)";
 
             document.getElementById('uiBalance').innerText = Number(data.balance || 0).toFixed(2);
@@ -1660,7 +1764,7 @@
             });
         };
 
-        // 13. Master Admin Dashboard (Total Registrations, Active Members, Total Volume & On-Chain T_DA Payout Approval)
+        // 13. Master Admin Dashboard
         window.openAdminModal = function() {
             document.getElementById('adminModal').style.display = 'flex';
             window.renderAdminDashboardData();
