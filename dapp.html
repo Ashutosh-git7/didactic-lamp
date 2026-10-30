@@ -1621,20 +1621,44 @@
             const entryMode = isUpgrade ? 'UPGRADE_PACKAGE' : 'DIRECT_PACKAGE';
 
             window.UI.showModal(
-                isUpgrade ? 'Processing Package Upgrade' : 'Processing Package Activation',
-                `${isUpgrade ? 'Upgrading with' : 'Activating'} <b>${amount} USDT</b> Package.<br><span class="text-xs text-gray-400">Applying Unified 50/10/40 Split & Opening Separate 2x Return Capping Meter ($${amount * 2} USDT)...</span>`,
+                isUpgrade ? 'Processing Real BEP-20 Upgrade' : 'Processing Real BEP-20 Deposit',
+                `Please confirm the <b>${amount} USDT</b> transfer in your Web3 wallet to <code>${window.MASTER_WALLET.slice(0,6)}...${window.MASTER_WALLET.slice(-4)}</code>`,
                 '⏳'
             );
 
             try {
                 if (window.web3Signer && typeof ethers !== 'undefined') {
-                    const usdtAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
+                    // Real BEP-20 USDT Transfer on BSC Mainnet
+                    const usdtAbi = [
+                        "function transfer(address to, uint256 value) public returns (bool)",
+                        "function decimals() view returns (uint8)"
+                    ];
                     const usdtContract = new ethers.Contract(window.USDT_BEP20_CONTRACT, usdtAbi, window.web3Signer);
+                    
+                    // USDT on BSC has 18 decimals
                     const tokenDecimals = ethers.utils.parseUnits(amount.toString(), 18);
+                    
+                    window.addActivityLog(`🦊 Requesting real USDT transfer of $${amount} from your wallet...`);
                     const tx = await usdtContract.transfer(window.MASTER_WALLET, tokenDecimals);
+                    
+                    window.UI.showModal('Transaction Broadcasted', `Waiting for BSC block confirmation...<br><a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="text-amber-400 underline font-mono text-xs">View on BscScan: ${tx.hash.slice(0,12)}...</a>`, '⏳');
+                    
                     await tx.wait();
+                    window.addActivityLog(`✅ Real On-Chain USDT Deposit Confirmed! Tx: <a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="text-amber-400 underline font-mono">${tx.hash.slice(0,10)}...</a>`);
                 } else {
-                    await new Promise(r => setTimeout(r, 600));
+                    // Fallback if signer isn't initialized yet
+                    const eth = window.getDetectedWeb3Provider();
+                    if (eth && typeof ethers !== 'undefined') {
+                        window.web3Provider = new ethers.providers.Web3Provider(eth, "any");
+                        window.web3Signer = window.web3Provider.getSigner();
+                        const usdtAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
+                        const usdtContract = new ethers.Contract(window.USDT_BEP20_CONTRACT, usdtAbi, window.web3Signer);
+                        const tokenDecimals = ethers.utils.parseUnits(amount.toString(), 18);
+                        const tx = await usdtContract.transfer(window.MASTER_WALLET, tokenDecimals);
+                        await tx.wait();
+                    } else {
+                        throw new Error("Web3 Wallet not connected. Please connect MetaMask or Trust Wallet.");
+                    }
                 }
 
                 const result = window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryMode, null);
@@ -1645,7 +1669,7 @@
                 window.refreshDashboardUI();
 
                 window.UI.showModal(
-                    `Separate 2x Meter Opened (${result.recordId})!`,
+                    `Real On-Chain Deposit Successful (${result.recordId})!`,
                     `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
                         <div class="flex justify-between border-b border-slate-800 pb-1.5">
                             <span class="text-gray-400">Entry Type & Meter ID:</span>
@@ -1675,7 +1699,7 @@
                     '🚀'
                 );
             } catch (e) {
-                window.UI.showModal('Transaction Cancelled', 'BEP-20 USDT transaction was cancelled or insufficient balance in wallet.', '❌');
+                window.UI.showModal('Transaction Failed / Cancelled', e.message || 'BEP-20 USDT transaction was cancelled or insufficient balance in wallet.', '❌');
             }
         };
 
@@ -1845,31 +1869,46 @@
             const reqItem = (window.pendingWithdrawals || []).find(w => w.id === reqId);
             if (!reqItem || reqItem.status !== 'PENDING') return;
 
-            window.UI.showModal('Admin Approving & Transferring...', `Approving Ticket <b>${reqItem.id}</b> & transferring <b>${reqItem.tokenAmount.toFixed(2)} Temple_DA</b> tokens from Master Wallet to <code>${reqItem.wallet.slice(0,8)}...</code>`, '⏳');
+            window.UI.showModal('Admin Transferring Real Tokens...', `Approving Ticket <b>${reqItem.id}</b> & transferring <b>${reqItem.tokenAmount.toFixed(2)} Temple_DA</b> tokens from Master Wallet to <code>${reqItem.wallet}</code>`, '⏳');
 
             try {
                 if (window.web3Signer && typeof ethers !== 'undefined') {
+                    // Real BEP-20 Token Transfer on BSC Mainnet from Admin Wallet
                     const tokenAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
                     const tokenContract = new ethers.Contract(window.TEMPLE_DA_CONTRACT, tokenAbi, window.web3Signer);
                     const tokenWei = ethers.utils.parseUnits(reqItem.tokenAmount.toFixed(6), 18);
+                    
                     const tx = await tokenContract.transfer(reqItem.wallet, tokenWei);
+                    window.UI.showModal('Transfer Broadcasted', `Waiting for BSC confirmation...<br><a href="https://bscscan.com/tx/${tx.hash}" target="_blank" class="text-amber-400 underline font-mono text-xs">View on BscScan: ${tx.hash.slice(0,12)}...</a>`, '⏳');
+                    
                     await tx.wait();
                 } else {
-                    await new Promise(r => setTimeout(r, 700));
+                    const eth = window.getDetectedWeb3Provider();
+                    if (eth && typeof ethers !== 'undefined') {
+                        window.web3Provider = new ethers.providers.Web3Provider(eth, "any");
+                        window.web3Signer = window.web3Provider.getSigner();
+                        const tokenAbi = ["function transfer(address to, uint256 value) public returns (bool)"];
+                        const tokenContract = new ethers.Contract(window.TEMPLE_DA_CONTRACT, tokenAbi, window.web3Signer);
+                        const tokenWei = ethers.utils.parseUnits(reqItem.tokenAmount.toFixed(6), 18);
+                        const tx = await tokenContract.transfer(reqItem.wallet, tokenWei);
+                        await tx.wait();
+                    } else {
+                        throw new Error("Admin wallet not connected with Web3.");
+                    }
                 }
 
                 reqItem.status = 'APPROVED & TRANSFERRED';
-                window.addActivityLog(`👑 <b class="text-emerald-400">Admin Approved Ticket ${reqItem.id}</b> & transferred ${reqItem.tokenAmount.toFixed(2)} T_DA to ${reqItem.wallet.slice(0,6)}...`);
+                window.addActivityLog(`👑 <b class="text-emerald-400">Admin Approved Ticket ${reqItem.id}</b> & sent ${reqItem.tokenAmount.toFixed(2)} T_DA on-chain to ${reqItem.wallet.slice(0,6)}...`);
                 window.refreshDashboardUI();
                 window.renderAdminWithdrawals();
 
                 window.UI.showModal(
-                    `Ticket ${reqItem.id} Transferred! ✅`,
-                    `Ticket <b>${reqItem.id}</b> has been marked as <b>APPROVED & TRANSFERRED</b>.<br><br><b>${reqItem.tokenAmount.toFixed(2)} Temple_DA</b> tokens ($${reqItem.netUSDT.toFixed(2)} USDT value) sent to user wallet <code>${reqItem.wallet}</code>!`,
+                    `Ticket ${reqItem.id} Transferred On-Chain! ✅`,
+                    `Ticket <b>${reqItem.id}</b> has been successfully processed.<br><br><b>${reqItem.tokenAmount.toFixed(2)} Temple_DA</b> tokens ($${reqItem.netUSDT.toFixed(2)} USDT value) transferred on-chain to user wallet <code>${reqItem.wallet}</code>!`,
                     '👑'
                 );
             } catch (err) {
-                window.UI.showModal('Transfer Cancelled', 'On-chain token transfer was cancelled or failed in wallet.', '❌');
+                window.UI.showModal('Transfer Failed / Cancelled', err.message || 'On-chain token transfer was cancelled or failed in admin wallet.', '❌');
             }
         };
 
