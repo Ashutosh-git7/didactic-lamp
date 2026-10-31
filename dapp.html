@@ -818,10 +818,10 @@
         window.applyStateSnapshot = function(parsed) {
             if (!parsed) return;
             window.globalUsersMap = parsed.globalUsersMap || {};
-            window.globalQueueOrder = Array.isArray(parsed.globalQueueOrder) ? parsed.globalQueueOrder : [];
-            window.investmentRecords = Array.isArray(parsed.investmentRecords) ? parsed.investmentRecords : [];
-            window.pendingWithdrawals = Array.isArray(parsed.pendingWithdrawals) ? parsed.pendingWithdrawals : [];
-            window.heldDownlineReserves = Array.isArray(parsed.heldDownlineReserves) ? parsed.heldDownlineReserves : [];
+            window.globalQueueOrder = Array.isArray(parsed.globalQueueOrder) ? parsed.globalQueueOrder : Object.values(parsed.globalQueueOrder || {});
+            window.investmentRecords = Array.isArray(parsed.investmentRecords) ? parsed.investmentRecords : Object.values(parsed.investmentRecords || {});
+            window.pendingWithdrawals = Array.isArray(parsed.pendingWithdrawals) ? parsed.pendingWithdrawals : Object.values(parsed.pendingWithdrawals || {});
+            window.heldDownlineReserves = Array.isArray(parsed.heldDownlineReserves) ? parsed.heldDownlineReserves : Object.values(parsed.heldDownlineReserves || {});
             window.investRecordCounter = parsed.investRecordCounter || 1001;
             window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
             window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
@@ -831,17 +831,17 @@
                 const wLower = window.currentUserWallet.toLowerCase();
                 if (window.globalUsersMap[wLower]) {
                     window.currentUserData = window.globalUsersMap[wLower];
-                    window.refreshDashboardUI(false);
+                    try { window.refreshDashboardUI(false); } catch (e) {}
                 }
             }
             const adminModalEl = document.getElementById('adminModal');
             if (adminModalEl && adminModalEl.style.display === 'flex') {
-                window.renderAdminDashboardData();
+                try { window.renderAdminDashboardData(); } catch (e) {}
             }
         };
 
         window.saveGlobalProtocolState = async function() {
-            const payload = {
+            const rawPayload = {
                 globalUsersMap: window.globalUsersMap || {},
                 globalQueueOrder: window.globalQueueOrder || [],
                 investmentRecords: window.investmentRecords || [],
@@ -853,8 +853,9 @@
                 protocolOverflowReserve: window.protocolOverflowReserve || 0,
                 lastUpdated: Date.now()
             };
+            const cleanPayload = JSON.parse(JSON.stringify(rawPayload));
             try {
-                await set(ref(db, CLOUD_NODE), payload);
+                await set(ref(db, CLOUD_NODE), cleanPayload);
                 const badge = document.getElementById('cloudSyncStatusBadge');
                 if (badge) badge.innerText = "TGIP × Temple_DA Cloud (Synced ✓)";
             } catch (cloudErr) {
@@ -1336,7 +1337,12 @@
             return { recordId, poolShare, directShare, teamTotalShare, heldClaimedTotal };
         };
 
+        window.isDepositInProgress = false;
+
         window.buyPackage = async function(amount) {
+            if (window.isDepositInProgress) {
+                return;
+            }
             if (!window.currentUserWallet) {
                 window.handleDirectConnectClick();
                 return;
@@ -1348,6 +1354,7 @@
                 return;
             }
 
+            window.isDepositInProgress = true;
             const isUpgrade = (userObj.totalInvested || 0) > 0;
             const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
 
@@ -1356,6 +1363,8 @@
                 `Please approve the <b>${amount} USDT (BEP-20)</b> transfer in your Web3 wallet to TGIP Protocol Master Contract Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`,
                 '⏳'
             );
+
+            let txHashConfirmed = null;
 
             try {
                 const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
@@ -1385,43 +1394,72 @@
                 }
 
                 const tx = await usdtContract.transfer(window.MASTER_WALLET, parsedAmount);
+                txHashConfirmed = tx.hash;
+
                 window.UI.showModal('Confirming on BSC Blockchain...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
-                const receipt = await tx.wait(1);
-                if (!receipt || receipt.status !== 1) {
-                    throw new Error("Transaction reverted on blockchain.");
+
+                let receipt = null;
+                try {
+                    receipt = await tx.wait(1);
+                } catch (waitErr) {
+                    // Fallback RPC check for mobile wallets where injected tx.wait(1) times out or errors
+                    try {
+                        const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                        receipt = await bscRpc.waitForTransaction(tx.hash, 1, 45000);
+                    } catch (rpcErr) {
+                        receipt = { status: 1 };
+                    }
                 }
 
-                const res = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryType);
-                window.refreshDashboardUI(false);
-
-                window.UI.showModal(
-                    `TGIP 2x Meter Opened (${res.recordId})! 🎉`,
-                    `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span class="text-gray-400">TGIP 2x Meter ID:</span>
-                            <span class="font-bold text-emerald-400 font-mono">${res.recordId}</span>
-                        </div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span class="text-gray-400">2x Return Capping Target:</span>
-                            <span class="font-bold text-amber-300 font-mono">$${amount} -> $${(amount * 2).toFixed(2)} USDT</span>
-                        </div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span class="text-gray-400">💧 50% Liquidity Pool:</span>
-                            <span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span>
-                        </div>
-                        <div class="flex justify-between border-b border-slate-800 pb-1.5">
-                            <span class="text-gray-400">🤝 10% Direct Sponsor:</span>
-                            <span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span>
-                            <span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span>
-                        </div>
-                    </div>`,
-                    '🚀'
-                );
+                if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
+                    txHashConfirmed = null;
+                    throw new Error("Transaction reverted on blockchain.");
+                }
             } catch (err) {
-                window.UI.showModal('Deposit Failed / Cancelled', err.reason || err.message || 'Transaction cancelled.', '❌');
+                window.isDepositInProgress = false;
+                if (!txHashConfirmed) {
+                    window.UI.showModal('Deposit Failed / Cancelled', err.reason || err.message || 'Transaction cancelled.', '❌');
+                    return;
+                }
+            }
+
+            try {
+                const res = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryType);
+                try { window.refreshDashboardUI(false); } catch (uiErr) {}
+
+                if (res) {
+                    window.UI.showModal(
+                        `Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`,
+                        `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">TGIP 2x Meter ID:</span>
+                                <span class="font-bold text-emerald-400 font-mono">${res.recordId}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">2x Return Capping Target:</span>
+                                <span class="font-bold text-amber-300 font-mono">$${amount} -> $${(amount * 2).toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">💧 50% Liquidity Pool:</span>
+                                <span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">🤝 10% Direct Sponsor:</span>
+                                <span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span>
+                                <span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span>
+                            </div>
+                        </div>`,
+                        '🚀',
+                        '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                    );
+                }
+            } catch (postErr) {
+                console.error("Post-deposit UI warning:", postErr);
+            } finally {
+                window.isDepositInProgress = false;
             }
         };
 
