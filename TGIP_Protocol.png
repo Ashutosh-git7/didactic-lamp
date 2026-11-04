@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TGIP Protocol | In Collaboration with Temple Digital Asset (Temple_DA)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Ethers.js v5 UMD for Direct On-Chain BSC BEP-20 Transactions -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#F59E0B',
+                            brightGold: '#FFD700',
+                            dark: '#060913',
+                            panel: '#0F1629',
+                            accent: '#38BDF8',
+                            emerald: '#10B981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #060913;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(245, 158, 11, 0.12) 0px, transparent 45%),
+                radial-gradient(at 90% 20%, rgba(56, 189, 248, 0.10) 0px, transparent 45%),
+                radial-gradient(at 50% 90%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+            color: #F8FAFC;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-panel {
+            background: rgba(15, 22, 41, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 215, 0, 0.16);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(22, 32, 58, 0.88), rgba(12, 18, 34, 0.94));
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            transition: all 0.25s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 215, 0, 0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -5px rgba(245, 158, 11, 0.15);
+        }
+        .gold-gradient-text {
+            background: linear-gradient(90deg, #FFD700, #F59E0B, #FDE047);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .collab-badge {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(56, 189, 248, 0.15));
+            border: 1px solid rgba(255, 215, 0, 0.35);
+        }
+        .gold-btn {
+            background: linear-gradient(135deg, #FFD700 0%, #F59E0B 100%);
+            color: #060913;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35);
+        }
+        .gold-btn:hover {
+            background: linear-gradient(135deg, #FDE047 0%, #FBBF24 100%);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #060913; }
+        ::-webkit-scrollbar-thumb { background: #F59E0B; border-radius: 3px; }
+        .modal-enter { animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    </style>
+
+    <!-- Multi-Path Smart Logo Resolver (temple_logo.png.png) -->
+    <script>
+        window.TEMPLE_LOGO_PATHS = [
+            "temple_logo.png.png", "/temple_logo.png.png", "../temple_logo.png.png", "./temple_logo.png.png",
+            "temple_logo.png", "/temple_logo.png", "../temple_logo.png",
+            "Temple_logo.png.png", "/Temple_logo.png.png"
+        ];
+        window.TEMPLE_SVG_FALLBACK = "data:image/svg+xml;utf8," + encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+                <defs>
+                    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700"/>
+                        <stop offset="100%" stop-color="#F59E0B"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="58" fill="#060913" stroke="url(#g)" stroke-width="4"/>
+                <polygon points="60,20 92,44 80,44 80,86 40,86 40,44 28,44" fill="url(#g)" opacity="0.22"/>
+                <text x="60" y="64" font-family="Arial, sans-serif" font-size="22" font-weight="900" fill="url(#g)" text-anchor="middle">TGIP</text>
+                <text x="60" y="84" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#38BDF8" text-anchor="middle">× TEMPLE_DA</text>
+            </svg>
+        `);
+        window.resolveTempleLogo = function(imgEl) {
+            if (!imgEl) return;
+            let idx = parseInt(imgEl.getAttribute('data-logo-idx') || '0', 10);
+            idx++;
+            if (idx < window.TEMPLE_LOGO_PATHS.length) {
+                imgEl.setAttribute('data-logo-idx', idx.toString());
+                imgEl.src = window.TEMPLE_LOGO_PATHS[idx];
+            } else {
+                imgEl.onerror = null;
+                imgEl.src = window.TEMPLE_SVG_FALLBACK;
+            }
+        };
+    </script>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Top Live Blockchain & Protocol Status Bar -->
+    <div class="bg-slate-950/90 border-b border-slate-800/80 px-4 py-1.5 text-[11px] flex flex-wrap items-center justify-between gap-2 text-gray-400">
+        <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP Protocol × Temple Digital Asset (BSC BEP-20)
+            </span>
+            <span class="hidden md:inline text-slate-600">|</span>
+            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP × Temple_DA Cloud (Live Sync)</b></span>
+        </div>
+        <div class="flex items-center gap-3 ml-auto">
+            <span>Pool: <a href="https://bscscan.com/address/0x707171A0C27f87B8C530B20831f7B004e6647830" target="_blank" class="text-amber-400 hover:underline font-mono">0x7071...7830</a></span>
+            <button onclick="updateLivePrice(true)" class="bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer" title="Refresh On-Chain Price">
+                <i id="refreshPriceIcon" class="fa-solid fa-arrows-rotate"></i> Sync Rate
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <nav class="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-3.5 flex justify-between items-center border-b border-amber-500/20">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="TGIP Protocol Logo" class="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
+                <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-extrabold text-lg sm:text-xl tracking-tight gold-gradient-text">TGIP PROTOCOL</span>
+                    <span class="hidden md:inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
+                        <i class="fa-solid fa-handshake text-amber-400"></i> × TEMPLE_DA
+                    </span>
+                    <span class="hidden sm:inline-block text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">LIVE</span>
+                </div>
+                <span class="text-[11px] text-gray-400 block">Temple Global Infinity Pool • In Collaboration with <b class="text-amber-300">Temple Digital Asset</b></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 sm:gap-3">
+            <!-- Admin Panel Auto Button (Visible ONLY when Master Wallet 0x2760...De95 connects) -->
+            <button id="btnAdminPanel" onclick="openAdminModal()" class="hidden bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold py-2 px-3.5 rounded-xl text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
+                <i class="fa-solid fa-crown text-yellow-200"></i>
+                <span>Admin Dashboard</span>
+                <span id="adminPendingCountBadge" class="bg-black/40 px-1.5 py-0.5 rounded-full text-[10px] font-mono">0</span>
+            </button>
+
+            <!-- Live PancakeSwap Price Pill -->
+            <div class="flex items-center gap-2 bg-slate-900/95 px-3 sm:px-4 py-2 rounded-xl border border-amber-500/30 shadow-inner">
+                <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div class="leading-tight">
+                    <span class="text-[10px] text-gray-400 block uppercase tracking-wider">Temple_DA Live</span>
+                    <span id="livePriceTxt" class="text-emerald-400 font-bold font-mono text-xs sm:text-sm">$0.001569</span>
+                </div>
+            </div>
+
+            <!-- Open Registration Form Button -->
+            <button id="btnNavRegister" onclick="openRegistrationModalManual()" class="bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold py-2.5 px-3.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i>
+                <span class="hidden sm:inline">Register</span>
+            </button>
+
+            <!-- Connect Wallet Button -->
+            <button id="btnConnect" onclick="handleDirectConnectClick()" class="gold-btn font-bold py-2.5 px-4 sm:px-6 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Connect BEP-20</span>
+            </button>
+
+            <!-- Connected Wallet Pill -->
+            <div id="walletDisplay" class="hidden bg-slate-900/90 border border-emerald-500/40 px-3.5 py-2 rounded-xl flex items-center gap-2.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="walletAddressTxt" class="font-mono text-xs sm:text-sm font-semibold text-amber-300">0x...</span>
+                <button onclick="disconnectWallet()" class="text-gray-400 hover:text-red-400 transition-colors pl-1 border-l border-slate-700" title="Disconnect Wallet">
+                    <i class="fa-solid fa-power-off text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PRE-LOGIN HERO SECTION -->
+    <main id="heroSection" class="flex-grow container mx-auto px-4 py-10 sm:py-16 flex flex-col items-center justify-center text-center">
+        <div class="relative mb-5">
+            <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-sky-400 opacity-40 blur-xl animate-pulse"></div>
+            <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="TGIP Protocol Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
+        </div>
+
+        <!-- Shown ONLY when opened via an actual ?ref=0x... link -->
+        <div id="heroReferralNoticeBox" class="hidden items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-4 py-2 rounded-full text-xs text-emerald-300 font-semibold mb-4 shadow-lg">
+            <i class="fa-solid fa-handshake text-amber-400"></i>
+            <span>Referral Link Active! Sponsor: <b id="heroSponsorAddrTxt" class="font-mono text-white">0x...</b></span>
+        </div>
+
+        <!-- Official Brand Collaboration Pill -->
+        <div class="collab-badge inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-4 shadow-lg">
+            <span class="text-amber-300 tracking-wide uppercase"><i class="fa-solid fa-gem mr-1"></i> TGIP PROTOCOL</span>
+            <span class="text-slate-500">•</span>
+            <span class="text-sky-300">Official Collaboration with <b class="text-white">Temple Digital Asset (Temple_DA)</b></span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight max-w-4xl mb-3 leading-tight">
+            <span class="gold-gradient-text">TGIP Protocol</span> — Global Single-Leg Infinity Pool
+        </h1>
+
+        <p class="text-xs sm:text-sm font-semibold text-amber-300/90 uppercase tracking-widest mb-4">
+            Powered by Temple Digital Asset Ecosystem on Binance Smart Chain (BEP-20)
+        </p>
+
+        <p class="text-gray-400 text-sm sm:text-lg max-w-2xl mb-8 leading-relaxed">
+            Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b>, plus unlock an extra <b class="text-emerald-400">5% 48-Hour Direct Booster</b> on your first 2 Same/Higher Amount Directs & win a <b class="text-amber-300">5G Smartphone worth ₹20,000</b>!
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-4 mb-12">
+            <button onclick="handleDirectConnectClick()" class="gold-btn font-extrabold py-4 px-8 rounded-2xl text-base sm:text-lg transition-transform hover:scale-105 flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-bolt"></i> Launch TGIP Protocol
+            </button>
+            <button onclick="openRegistrationModalManual()" class="glass-card border-amber-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-amber-300 hover:text-white flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-user-plus"></i> New Member Registration
+            </button>
+            <a href="https://pancakeswap.finance/swap?outputCurrency=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1" target="_blank" class="glass-card px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-gray-200 hover:text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-amber-400"></i> Temple_DA on PancakeSwap
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl w-full text-left">
+            <div class="glass-card p-5 rounded-2xl">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg mb-3">
+                    <i class="fa-solid fa-gauge-high"></i>
+                </div>
+                <h3 class="font-bold text-base text-white mb-1">TGIP Separate 2x Meters</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Every deposit, upgrade, and 50% withdrawal auto-reinvestment opens its own separate 200% progress bar on your TGIP Protocol dashboard.</p>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl border-amber-500/30">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg mb-3">
+                    <i class="fa-solid fa-stopwatch-20"></i>
+                </div>
+                <h3 class="font-bold text-base text-white mb-1">48h First 2-Directs 5% Booster</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Complete your first 2 Direct Referrals (same or higher package amount) within 48 hours of activation to get an extra +5% USDT Booster (15% total on those 2 directs; 10% on all subsequent directs)!</p>
+            </div>
+
+            <div class="glass-card p-5 rounded-2xl">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg mb-3">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <h3 class="font-bold text-base text-white mb-1">₹20,000 5G Smartphone Reward</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">Have a minimum $100 USDT Self ID and complete $1,000 USDT Direct Business (from 5th Sept to 30th Sept) to win a 5G Smartphone worth up to ₹20,000!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MAIN AUTHENTICATED DASHBOARD -->
+    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-6">
+        <div class="glass-panel rounded-2xl p-5 sm:p-6 border-l-4 border-l-amber-400">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">
+                            <i class="fa-solid fa-user-check mr-1"></i> Member: <span id="uiMemberName">--</span>
+                        </span>
+                        <span class="bg-sky-500/15 text-sky-400 text-xs font-bold px-3 py-1 rounded-full border border-sky-500/30">
+                            <i class="fa-solid fa-hashtag mr-1"></i> Active Queue Pos: #<span id="uiGlobalPos">--</span>
+                        </span>
+                        <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">
+                            <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1 (Required for Withdraw)
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">TGIP Protocol Command Center</h2>
+                        <span class="text-[11px] bg-slate-900/90 border border-amber-400/30 text-amber-300 px-2.5 py-0.5 rounded-full font-semibold">
+                            <i class="fa-solid fa-handshake text-sky-400 mr-1"></i> In Collaboration with Temple_DA
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-400 mt-1">
+                        Direct Sponsor: <span id="uiSponsorDisplay" class="font-mono text-amber-300 font-semibold">Direct / None</span> • Powered by TGIP Protocol × Temple Digital Asset Network
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5 min-w-[280px] sm:min-w-[360px]">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your TGIP Referral Link (Opens Registration)</span>
+                        <span class="text-emerald-400 font-semibold">10% Direct + 5% (48h Booster)</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
+                        <code id="refLinkTxt" class="text-sky-400 font-mono text-xs truncate max-w-[210px] sm:max-w-[260px]">...</code>
+                        <button onclick="copyRefLink()" class="gold-btn px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer">
+                            <i class="fa-regular fa-copy"></i> Copy Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: 48-HOUR 2-DIRECT 5% BOOSTER LIVE TRACKER BANNER (AUTO-REMOVES UPON COMPLETION) -->
+        <div id="boosterBannerCard" class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-amber-400/40 relative overflow-hidden">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-amber-400 text-slate-950 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                            <i class="fa-solid fa-fire"></i> Pre-Launch 48-Hour First 2-Directs +5% Booster
+                        </span>
+                        <span id="uiBoosterStatusPill" class="bg-slate-900 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono">
+                            Activate Package to Start 48h Timer
+                        </span>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-extrabold text-white">
+                        Complete First 2 Same/Higher Amount Directs within 48 Hours -> Get <span class="text-amber-400">+5% Extra USDT Bonus</span> (Only on those 2 Directs)!
+                    </h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Sponsor your <b>first 2 Direct Partners</b> with a package equal to or higher than your base package (<b id="uiMyBasePkgTxt" class="text-amber-300 font-mono">$0 USDT</b>) before your 48-hour timer ends. You get <b>10% + 5% = 15% total on those first 2 qualifying directs</b> credited straight into your <b>200% (2x) Capping Meter</b>! <span class="text-sky-300">(From the 3rd direct onwards, standard 10% direct bonus applies).</span>
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 shrink-0">
+                    <div class="text-center sm:text-left">
+                        <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">48h Countdown Timer</div>
+                        <div id="uiBoosterCountdown" class="text-xl sm:text-2xl font-extrabold font-mono text-amber-400">--:--:--</div>
+                        <div id="uiBoosterSubNote" class="text-[10px] text-gray-400">Starts on your 1st activation</div>
+                    </div>
+                    <div class="h-10 w-[1px] bg-slate-800 hidden sm:block"></div>
+                    <div class="text-center sm:text-left">
+                        <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Qualifying Directs (48h)</div>
+                        <div class="text-xl sm:text-2xl font-extrabold font-mono text-emerald-400">
+                            <span id="uiBoosterQualifyingCount">0</span> / 2
+                        </div>
+                        <div class="text-[10px] text-sky-400 font-mono">5% Booster Earned: $<b id="uiBoosterEarnedAmt">0.00</b></div>
+                    </div>
+                    <button onclick="openBoosterChartModal()" class="bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-amber-300 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 flex items-center gap-1.5">
+                        <i class="fa-solid fa-table-list"></i> 9-Tier Chart
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DYNAMIC OFFER & ACHIEVERS STORE BANNER -->
+        <div class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-sky-400/40 relative overflow-hidden">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                            <i class="fa-solid fa-mobile-screen-button"></i> <span id="uiDynamicBadgeTitle">Grand Mobile Reward (5 Sept – 30 Sept)</span>
+                        </span>
+                        <span id="uiMobileRewardStatusBadge" class="bg-slate-900 text-sky-300 border border-sky-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono">
+                            Self ID >= $100 + $1,000 Direct Business
+                        </span>
+                    </div>
+                    <h3 id="uiDynamicHeadline" class="text-base sm:text-lg font-extrabold text-white">
+                        Win a Brand New <span class="text-amber-300">5G Smartphone Worth Up to ₹20,000</span> Reward!
+                    </h3>
+                    <p id="uiDynamicDescription" class="text-xs text-gray-300 leading-relaxed">
+                        <b>Mandatory Conditions:</b> (1) Your own <b>Self ID must be minimum $100 USDT</b>, and (2) Complete <b>$1,000 USDT Total Direct Business</b> (any combination e.g. 1×$1000, 2×$500, 4×$250, or 10×$100 Directs — 100% counted!).
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 shrink-0 min-w-[290px] sm:min-w-[360px]">
+                    <div class="w-full space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400 font-semibold">1. My Self ID (<span id="uiDynamicMinSelfTxt" class="text-amber-300">Min $100</span>):</span>
+                            <span id="uiMobileSelfIdCheck" class="font-mono font-bold text-rose-400">$0 / $100 🔒</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400 font-semibold">2. Direct Business (<span id="uiDynamicTargetBizTxt" class="text-sky-300">$1,000 Target</span>):</span>
+                            <span id="uiMobileDirectVolumeTxt" class="font-mono font-bold text-emerald-400">$0.00 / $1,000</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 border border-slate-700 overflow-hidden p-0.5">
+                            <div id="uiMobileProgressBar" class="bg-gradient-to-r from-amber-400 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 2%"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px] pt-1 border-t border-slate-800/80">
+                            <span class="text-gray-400">Offer Timer:</span>
+                            <span id="uiOfferLiveCountdownTxt" class="font-mono font-extrabold text-amber-300">--d : --h : --m : --s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE REWARD ACHIEVERS SHOWCASE STORE (VISIBLE UNTIL ADMIN MARKS DELIVERED + 3 DAYS OR HIDES) -->
+            <div id="publicAchieversStoreBox" class="mt-4 pt-4 border-t border-slate-800/90">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <span class="text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-trophy text-yellow-400 animate-bounce"></i> Live Offer Achievers Store (Qualified Winners Showcase)
+                    </span>
+                    <span id="uiPublicAchieversCountBadge" class="text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                        Pending Rewards: 0
+                    </span>
+                </div>
+                <div id="publicAchieversStoreList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- LEFT: WITHDRAWABLE PROFIT CARD -->
+            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
+                        <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
+                            Min: 5 USDT (50/50 Split)
+                        </span>
+                    </div>
+
+                    <div class="flex items-baseline gap-2 my-3">
+                        <span id="uiBalance" class="text-4xl sm:text-5xl font-extrabold text-white font-mono">0.00</span>
+                        <span class="text-lg font-bold text-amber-400">USDT</span>
+                    </div>
+
+                    <div id="withdrawRequirementBox" class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <i id="reqStatusIcon" class="fa-solid fa-lock text-rose-400"></i>
+                            <span class="text-gray-200 font-semibold">1 Active Direct Compulsory:</span>
+                        </div>
+                        <span id="uiDirectReqStatus" class="font-mono font-bold text-rose-400">0 / 1 Active</span>
+                    </div>
+
+                    <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Live Pool Rate (<span class="text-sky-400">PancakeSwap</span>):</span>
+                            <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">$0.001569</span>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
+                            <span class="text-gray-300">50% Wallet Payout (T_DA):</span>
+                            <span class="font-mono font-bold text-amber-400 text-sm"><span id="uiEstTokens">0.00</span> T_DA</span>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
+                            <span class="text-gray-400">50% Auto-Reinvest:</span>
+                            <span class="text-sky-400 font-semibold">Opens Separate 2x Meter (#REINV)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-5 w-full gold-btn font-extrabold py-3.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span id="btnWithdrawTxt">Withdraw in Temple_DA (50% Reinvest)</span>
+                </button>
+            </div>
+
+            <!-- RIGHT: STATS + INDIVIDUAL 2x RETURN CAPPING METERS -->
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-5">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                    <div class="glass-card p-4 rounded-xl">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Active Deposit</div>
+                        <div class="text-xl sm:text-2xl font-extrabold text-white font-mono">$<span id="uiInvested">0.00</span></div>
+                        <div class="text-[11px] text-sky-400 mt-0.5">Auto-Reinvest: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Direct + 48h Booster</div>
+                        <div class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">$<span id="uiDirectEarned">0.00</span></div>
+                        <div class="text-[11px] text-amber-300 mt-0.5">48h 5% Bonus: $<b id="uiBoosterCardStat" class="text-white font-mono">0.00</b></div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">20 Up / 20 Down</div>
+                        <div class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono">$<span id="uiPoolEarned">0.00</span></div>
+                        <div class="text-[11px] text-gray-400 mt-0.5">1% Each + Held Bonus</div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned (All 2x)</div>
+                        <div class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$<span id="uiEarned">0.00</span></div>
+                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow -> Pool: $<span id="uiOverflowSaved">0.00</span></div>
+                    </div>
+                </div>
+
+                <!-- INDIVIDUAL 2x RETURN CAPPING METERS -->
+                <div class="bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-amber-500/30">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                        <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high text-amber-400"></i> TGIP Individual 2x Return Capping Meters (Includes Direct, Pool & 48h 5% Booster)
+                        </span>
+                        <div class="flex items-center gap-2 text-[11px] font-mono">
+                            <span class="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                                Active Meters: <b id="uiTopActiveMetersCount">0</b>
+                            </span>
+                            <span class="bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                                2x Completed: <b id="uiTopCompletedMetersCount">0</b>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="individualCappingMetersBox" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9 PACKAGES GRID -->
+        <div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-amber-400 rounded-full inline-block"></span>
+                        Select TGIP Protocol Activation / Upgrade Package (9 Official Tiers)
+                    </h2>
+                </div>
+                <span id="minPackageNoticeBadge" class="text-xs text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/30 font-semibold">
+                    <i class="fa-solid fa-fire mr-1"></i> Complete 2 Same/Higher Directs in 48h to Unlock +5% Extra USDT Incentive in 2x Meter!
+                </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="packagesContainer"></div>
+        </div>
+
+        <!-- DETAILED LEDGERS: INVESTMENT RECORDS & WITHDRAWAL TICKETS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 border-t-2 border-t-emerald-500/50">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
+                            <i class="fa-solid fa-chart-column text-emerald-400"></i> Detailed 2x Investment & Reinvestment Ledger
+                        </h3>
+                        <p class="text-xs text-gray-400">Every TGIP Package (`#INV`), Upgrade (`#UPG`) & 50% Reinvest (`#REINV`) with 50/10/40 split.</p>
+                    </div>
+                </div>
+                <div id="userInvestmentRecordsList" class="space-y-3 max-h-80 overflow-y-auto pr-1 text-xs"></div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 border-t-2 border-t-amber-500/50">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
+                            <i class="fa-solid fa-receipt text-amber-400"></i> Your Separate Withdrawal Tickets
+                        </h3>
+                        <p class="text-xs text-gray-400">50% paid in Temple_DA tokens & 50% auto-reinvested into a new TGIP 2x Meter!</p>
+                    </div>
+                    <span class="text-xs bg-slate-900 px-3 py-1.5 rounded-full text-amber-300 border border-slate-800 font-mono">
+                        Tickets: <b id="uiUserWithdrawTicketCount">0</b>
+                    </span>
+                </div>
+                <div id="userWithdrawalRecordsList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1 text-xs"></div>
+            </div>
+        </div>
+
+        <!-- SINGLE-LEG MATRIX OVERVIEW & MY DIRECT PARTNERS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-panel rounded-2xl p-5 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-amber-400"></i> TGIP Global Single-Leg Community Matrix
+                    </h3>
+                    <span class="text-xs bg-slate-900 px-3 py-1 rounded-full text-sky-400 border border-slate-800 font-mono">
+                        Active Pool IDs: <b id="uiTotalActiveQueueUsers">0</b>
+                    </span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4 leading-relaxed">
+                    Only paid/active IDs enter the TGIP Global Single-Leg Queue. Each investment, upgrade, or 50% auto-reinvestment distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines above & 20 Downlines below (with Held Downline Reserves for upcoming members).
+                </p>
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="glass-card p-3.5 rounded-xl">
+                        <div class="text-[11px] text-gray-400 font-semibold">Uplines Above</div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 my-1 font-mono">
+                            <span id="uiUplineCount">0</span><span class="text-xs text-gray-500 font-normal">/20</span>
+                        </div>
+                        <div class="text-[10px] text-emerald-400">1% Share Each</div>
+                    </div>
+                    <div class="glass-card p-3.5 rounded-xl">
+                        <div class="text-[11px] text-gray-400 font-semibold">Downlines Below</div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-sky-400 my-1 font-mono">
+                            <span id="uiDownlineCount">0</span><span class="text-xs text-gray-500 font-normal">/20</span>
+                        </div>
+                        <div class="text-[10px] text-emerald-400">1% Share Each</div>
+                    </div>
+                    <div class="glass-card p-3.5 rounded-xl border border-emerald-500/30">
+                        <div class="text-[11px] text-gray-300 font-semibold">My Active Directs</div>
+                        <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 my-1 font-mono">
+                            <span id="uiMyDirectsMatrix">0</span><span class="text-xs text-gray-400 font-normal">/1+</span>
+                        </div>
+                        <div class="text-[10px] text-amber-300">10% + 5% (48h)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-users text-emerald-400"></i> My Registered Direct Partners (Referral Team)
+                    </h3>
+                    <span class="text-[11px] text-gray-400 font-mono">Total Directs: <b id="uiTotalDirectsRegistered" class="text-white">0</b></span>
+                </div>
+                <div id="myDirectPartnersList" class="space-y-2 max-h-48 overflow-y-auto pr-1 flex-grow text-xs"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Official Brand Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/80 py-5 px-4 mt-8 text-center text-xs text-gray-400">
+        <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold gold-gradient-text">TGIP PROTOCOL</span>
+                <span>— Temple Global Infinity Pool</span>
+            </div>
+            <div class="text-gray-400">
+                Official Strategic Collaboration with <b class="text-amber-300">Temple Digital Asset (Temple_DA)</b> • BSC Mainnet (BEP-20)
+            </div>
+        </div>
+    </footer>
+
+    <!-- 48-HOUR 2-DIRECT 5% BOOSTER CHART MODAL -->
+    <div id="boosterChartModal" class="fixed inset-0 bg-black/85 z-[125] hidden items-center justify-center p-4 backdrop-blur-md">
+        <div class="modal-enter glass-panel w-full max-w-3xl rounded-2xl p-5 sm:p-6 border border-amber-400/50 relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeBoosterChartModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-xl shrink-0">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-white">48-Hour 2-Direct 5% USDT Booster Chart</h3>
+                    <p class="text-xs text-gray-400">Complete 2 Directs of Same or Higher Package within 48h -> Extra 5% Added to Your 2x Meter!</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800 mb-4">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900/95 text-gray-300 uppercase border-b border-slate-800">
+                        <tr>
+                            <th class="py-3 px-3">Your Package</th>
+                            <th class="py-3 px-3">2 Directs (48h)</th>
+                            <th class="py-3 px-3">10% Direct Bonus</th>
+                            <th class="py-3 px-3 text-amber-300">+5% 48h Booster (2 Directs)</th>
+                            <th class="py-3 px-3 text-emerald-400">Total Credited to 2x Meter</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 bg-slate-950/80 font-mono">
+                        <tr><td class="py-2.5 px-3 font-bold text-white">1. $10 USDT</td><td class="py-2.5 px-3">2 × $10 ($20)</td><td class="py-2.5 px-3">$2.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$1.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$3.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">2. $25 USDT</td><td class="py-2.5 px-3">2 × $25 ($50)</td><td class="py-2.5 px-3">$5.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$2.50 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$7.50 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">3. $50 USDT</td><td class="py-2.5 px-3">2 × $50 ($100)</td><td class="py-2.5 px-3">$10.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$5.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$15.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">4. $100 USDT</td><td class="py-2.5 px-3">2 × $100 ($200)</td><td class="py-2.5 px-3">$20.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$10.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$30.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">5. $250 USDT</td><td class="py-2.5 px-3">2 × $250 ($500)</td><td class="py-2.5 px-3">$50.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$25.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$75.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">6. $500 USDT</td><td class="py-2.5 px-3">2 × $500 ($1,000)</td><td class="py-2.5 px-3">$100.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$50.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$150.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">7. $1,000 USDT</td><td class="py-2.5 px-3">2 × $1,000 ($2,000)</td><td class="py-2.5 px-3">$200.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$100.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$300.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">8. $2,000 USDT</td><td class="py-2.5 px-3">2 × $2,000 ($4,000)</td><td class="py-2.5 px-3">$400.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$200.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$600.00 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">9. $5,000 USDT</td><td class="py-2.5 px-3">2 × $5,000 ($10,000)</td><td class="py-2.5 px-3">$1,000.00 USDT</td><td class="py-2.5 px-3 text-amber-300 font-bold">+$500.00 USDT</td><td class="py-2.5 px-3 text-emerald-400 font-bold">$1,500.00 USDT</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 text-xs text-gray-300 space-y-1.5">
+                <div>✅ <b>Rule 1 (48h Window - First 2 Directs Only):</b> Your first 2 qualifying direct referrals who activate a package equal to or greater than your base package within 48 hours of your activation unlock the extra <b>+5% USDT Booster</b> (10% + 5% = 15% on those 2 directs). From your 3rd direct onwards, standard 10% direct bonus applies.</div>
+                <div>✅ <b>Rule 2 (2x Capping Meter):</b> The 5% USDT incentive is credited directly into your active <b>200% (2x) Return Capping Meter</b> so system liquidity stays 100% protected.</div>
+                <div>✅ <b>Rule 3 (₹20,000 Mobile Reward):</b> Maintain a minimum <b>$100 USDT Self ID</b> and complete <b>$1,000 USDT Direct Business</b> to qualify for the ₹20,000 5G Smartphone Reward!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTRATION FORM MODAL -->
+    <div id="registrationModal" class="fixed inset-0 bg-black/85 z-[120] hidden items-center justify-center p-4 backdrop-blur-md">
+        <div class="modal-enter glass-panel w-full max-w-lg rounded-2xl p-6 border border-amber-400/50 relative">
+            <button onclick="closeRegistrationModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-2xl">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-extrabold text-white">TGIP Protocol Member Registration</h3>
+                    <p class="text-xs text-gray-400">In Collaboration with <b class="text-amber-300">Temple Digital Asset (Temple_DA)</b></p>
+                </div>
+            </div>
+
+            <div class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Your Full Name / Username *</label>
+                    <input id="regFullNameInput" type="text" placeholder="Enter your full name (e.g. Rahul Sharma)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Phone / WhatsApp Number (Optional)</label>
+                    <input id="regPhoneInput" type="text" placeholder="Enter mobile number" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-semibold mb-1">Your BEP-20 Wallet Address *</label>
+                    <div class="flex gap-2">
+                        <input id="regWalletInput" type="text" readonly placeholder="Click Connect Wallet ->" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-amber-300">
+                        <button type="button" onclick="connectWalletForRegistrationForm()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shrink-0 cursor-pointer">
+                            <i class="fa-solid fa-wallet mr-1"></i> Connect
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-gray-300 font-semibold">Sponsor BEP-20 Wallet Address (Optional)</label>
+                        <span id="regSponsorBadge" class="text-[10px] text-gray-400">Leave blank if joining directly</span>
+                    </div>
+                    <input id="regSponsorInput" type="text" placeholder="0x... Sponsor Address (Optional)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-sky-400 focus:outline-none focus:border-amber-400">
+                </div>
+
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-[11px] text-gray-400 space-y-1">
+                    <div class="flex justify-between"><span>Protocol:</span><b class="text-amber-300">TGIP Protocol × Temple_DA</b></div>
+                    <div class="flex justify-between"><span>Network:</span><b class="text-emerald-400">Binance Smart Chain (BEP-20)</b></div>
+                </div>
+
+                <button onclick="submitRegistrationForm()" class="w-full gold-btn font-extrabold py-3.5 rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i> Complete TGIP Registration & Open Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MASTER ADMIN PANEL MODAL -->
+    <div id="adminModal" class="fixed inset-0 bg-black/85 z-[105] hidden items-center justify-center p-2.5 sm:p-4 backdrop-blur-md">
+        <div class="modal-enter glass-panel w-full max-w-4xl rounded-2xl p-4 sm:p-6 border border-amber-400/40 relative max-h-[92vh] overflow-y-auto flex flex-col gap-4">
+            <button onclick="closeAdminModal()" class="sticky top-0 ml-auto -mb-8 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center z-20 shrink-0">
+                <i class="fa-solid fa-times"></i>
+            </button>
+
+            <div class="flex items-center gap-3 pr-8">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-xl shrink-0">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div>
+                    <h3 class="text-base sm:text-xl font-extrabold text-white">TGIP Protocol × Temple_DA Master Admin Analytics</h3>
+                    <p class="text-[11px] sm:text-xs text-gray-400 font-mono break-all">Master Admin Wallet: 0x2760f05248a8377d3fdD86b80A3D48B010d5De95</p>
+                </div>
+            </div>
+
+            <!-- ADMIN STATS CARDS -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-sky-500/30">
+                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Total Registrations</div>
+                    <div id="adminTotalRegs" class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono">0</div>
+                    <div class="text-[9px] text-gray-500 mt-0.5">All registered IDs</div>
+                </div>
+
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-emerald-500/30">
+                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Total Active Members</div>
+                    <div id="adminTotalActive" class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">0</div>
+                    <div class="text-[9px] text-gray-500 mt-0.5">Paid active investors</div>
+                </div>
+
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-amber-500/30">
+                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Total Investment</div>
+                    <div id="adminTotalVolume" class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$0.00</div>
+                    <div class="text-[9px] text-gray-500 mt-0.5">Direct + Reinvest Vol</div>
+                </div>
+
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-purple-500/30">
+                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">2x Overflow Reserve</div>
+                    <div id="adminOverflowTotal" class="text-xl sm:text-2xl font-extrabold text-purple-400 font-mono">$0.00</div>
+                    <div class="text-[9px] text-gray-500 mt-0.5">Saved to Pool Reserve</div>
+                </div>
+            </div>
+
+            <!-- ADMIN DYNAMIC OFFER CONTENT & ACHIEVERS STORE CONTROL PANEL -->
+            <div class="bg-slate-950/90 p-4 rounded-2xl border-2 border-emerald-500/40 shadow-lg space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
+                    <span class="text-xs sm:text-sm font-extrabold text-emerald-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bullhorn text-amber-400"></i> Dynamic Offer Content CMS & Reward Achievers Manager
+                    </span>
+                    <span class="text-[11px] text-gray-400">Write & Save to auto-update across all users' dashboards!</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Offer Badge / Period Title</label>
+                        <input id="adminOfferBadgeInput" type="text" placeholder="e.g. Grand Mobile Offer (5 Nov - 30 Nov)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Main Reward Headline</label>
+                        <input id="adminOfferHeadlineInput" type="text" placeholder="e.g. Win a Brand New 5G Smartphone Worth ₹20,000!" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Offer End Date & Time</label>
+                        <input id="adminOfferEndDateInput" type="datetime-local" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Min Self ID Required ($ USDT)</label>
+                        <input id="adminOfferMinSelfInput" type="number" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-amber-300 font-mono focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Direct Business Target ($ USDT)</label>
+                        <input id="adminOfferTargetBizInput" type="number" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-mono focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="adminSaveOfferConfig()" class="w-full gold-btn font-extrabold py-2.5 px-4 rounded-xl text-xs cursor-pointer flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i> Save & Publish Offer Live
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-xs">
+                    <label class="block text-gray-400 font-semibold mb-1">Offer Rules / Custom Announcement Content (Auto-updates on User Dashboard)</label>
+                    <textarea id="adminOfferDescInput" rows="2" placeholder="Write complete offer details or announcements here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-gray-200 focus:outline-none focus:border-amber-400"></textarea>
+                </div>
+
+                <!-- ADMIN ACHIEVERS LIST WITH DELIVER / HIDE BUTTON (STAYS VISIBLE 3 DAYS AFTER DELIVER UNLESS HIDDEN) -->
+                <div class="pt-2 border-t border-slate-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-medal text-yellow-400"></i> Qualified Offer Achievers List (Visible on Store Until Delivered + 3 Days or Hidden)
+                        </span>
+                        <span id="adminAchieversPendingBadge" class="text-[11px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full font-mono font-bold">0 Achievers</span>
+                    </div>
+                    <div id="adminOfferAchieversList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs"></div>
+                </div>
+            </div>
+
+            <!-- WITHDRAWAL REQUESTS SECTION -->
+            <div class="bg-slate-950/80 p-4 rounded-2xl border-2 border-amber-500/40 shadow-lg">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
+                    <span class="text-xs sm:text-sm font-extrabold text-amber-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Withdrawal Requests Queue (50% Temple_DA Token Payout)
+                    </span>
+                    <span class="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono font-bold border border-amber-500/40">
+                        Pending: <b id="adminModalPendingCount">0</b>
+                    </span>
+                </div>
+                <div id="adminWithdrawalList" class="space-y-3 overflow-y-auto pr-1 min-h-[170px] max-h-[260px]"></div>
+            </div>
+
+            <!-- ALL REGISTERED MEMBERS DIRECTORY -->
+            <div class="bg-slate-950/80 p-4 rounded-2xl border border-sky-500/30">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                    <span class="text-xs sm:text-sm font-extrabold text-sky-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-users-viewfinder text-sky-400"></i> All Registered Members (TGIP × Temple_DA Directory)
+                    </span>
+                </div>
+                <div id="adminAllMembersList" class="space-y-2.5 overflow-y-auto pr-1 min-h-[140px] max-h-[220px] text-xs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UNIVERSAL WALLET CONNECTION MODAL -->
+    <div id="walletModal" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="modal-enter glass-panel w-full max-w-md rounded-2xl p-6 border border-amber-500/30 relative">
+            <button onclick="closeWalletModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            
+            <div class="flex justify-center mb-3">
+                <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="TGIP Protocol" class="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shadow-lg">
+            </div>
+            
+            <h3 class="text-xl font-extrabold text-center mb-1 gold-gradient-text">Connect to TGIP Protocol</h3>
+            <p class="text-gray-400 text-center text-xs mb-5">In Collaboration with Temple_DA • Strict BSC (Chain ID 56)</p>
+            
+            <div class="space-y-3">
+                <button onclick="connectInjectedWallet()" class="w-full flex items-center justify-between gold-btn p-4 rounded-xl transition-all cursor-pointer">
+                    <span class="font-extrabold flex items-center gap-3 text-sm sm:text-base">
+                        <i class="fa-solid fa-wallet text-lg"></i> Connect Web3 Wallet (BSC)
+                    </span>
+                    <span class="text-[11px] bg-black/20 px-2.5 py-0.5 rounded-full font-bold">BEP-20</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button onclick="openInTrustWallet()" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 py-3 px-3 rounded-xl text-xs font-bold text-sky-400 transition-all cursor-pointer">
+                        <i class="fa-solid fa-shield-halved"></i> Open Trust Wallet
+                    </button>
+                    <button onclick="openInMetaMask()" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 py-3 px-3 rounded-xl text-xs font-bold text-amber-400 transition-all cursor-pointer">
+                        <i class="fa-solid fa-fox"></i> Open MetaMask
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM NOTIFICATION MODAL -->
+    <div id="customModal" class="fixed inset-0 bg-black/80 z-[130] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="modal-enter glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-700 relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+            <div id="modalIcon" class="text-4xl mb-3 text-center">🔔</div>
+            <h3 id="modalTitle" class="text-xl font-bold text-center mb-2 text-white">Notice</h3>
+            <div id="modalMessage" class="text-gray-300 text-center text-sm mb-6">Message goes here.</div>
+            <div id="modalActions" class="flex justify-center gap-3">
+                <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-600 px-6 py-2 rounded-xl text-sm font-semibold transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TGIP PROTOCOL × TEMPLE_DA ENGINE & BACKEND -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Official Temple_DA Cloud Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
+            authDomain: "tmpl-cd770.firebaseapp.com",
+            databaseURL: "https://tmpl-cd770-default-rtdb.firebaseio.com/",
+            projectId: "tmpl-cd770",
+            storageBucket: "tmpl-cd770.firebasestorage.app",
+            messagingSenderId: "383728687521",
+            appId: "1:383728687521:web:b3ac6cd7fde979cb8b13e0"
+        };
+
+        const fbApp = initializeApp(firebaseConfig);
+        const db = getDatabase(fbApp);
+        const auth = getAuth(fbApp);
+        signInAnonymously(auth).catch(() => {});
+
+        const CLOUD_NODE = "infinity_pool_v1/state";
+        const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+        window.MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+        window.TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
+        window.TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
+        window.USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        window.BSC_CHAIN_ID_HEX = "0x38"; // Strict BSC Mainnet (56)
+        window.MIN_WITHDRAW_USDT = 5;
+
+        window.liveTokenPrice = 0.001569;
+        window.currentUserWallet = null;
+        window.currentUserData = null;
+
+        // Protocol State Variables
+        window.globalUsersMap = {};
+        window.globalQueueOrder = [];
+        window.investmentRecords = [];
+        window.pendingWithdrawals = [];
+        window.heldDownlineReserves = [];
+        window.investRecordCounter = 1001;
+        window.reinvestRecordCounter = 2001;
+        window.withdrawalTicketCounter = 3001;
+        window.protocolOverflowReserve = 0;
+
+        // Dynamic Offer & Achievers Store State
+        window.offerConfig = {
+            badgeTitle: "Grand Mobile Reward (5 Nov – 30 Nov 2026)",
+            headline: "Win a Brand New <span class='text-amber-300'>5G Smartphone Worth Up to ₹20,000</span> Reward!",
+            description: "Mandatory Conditions: (1) Your own Self ID must be minimum $100 USDT, and (2) Complete $1,000 USDT Total Direct Business (any combination e.g. 1×$1000, 2×$500, 4×$250, or 10×$100 Directs — 100% counted!).",
+            minSelfId: 100,
+            targetDirectBiz: 1000,
+            endTimeISO: "2026-11-30T23:59",
+            deliveredAchievers: {} // map of walletLower -> { timestamp, status: 'DELIVERED' or 'HIDDEN_BY_ADMIN', deliveredAt }
+        };
+
+        window.urlReferrerAddress = "";
+        window.hasReferralParamInUrl = false;
+        window.web3Provider = null;
+        window.web3Signer = null;
+
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams((window.location.hash.split('?')[1]) || '');
+            const refFromUrl = urlParams.get('ref') || hashParams.get('ref');
+
+            if (refFromUrl && refFromUrl.trim().startsWith('0x') && refFromUrl.trim().length === 42) {
+                window.urlReferrerAddress = refFromUrl.trim();
+                window.hasReferralParamInUrl = true;
+
+                const noticeBox = document.getElementById('heroReferralNoticeBox');
+                const sponsorTxt = document.getElementById('heroSponsorAddrTxt');
+                if (noticeBox && sponsorTxt) {
+                    sponsorTxt.innerText = window.urlReferrerAddress.slice(0, 6) + "..." + window.urlReferrerAddress.slice(-4);
+                    noticeBox.classList.remove('hidden');
+                    noticeBox.classList.add('inline-flex');
+                }
+
+                setTimeout(() => {
+                    window.openRegistrationModalWithSponsor(window.urlReferrerAddress);
+                }, 400);
+            }
+        } catch (e) {}
+
+        window.openBoosterChartModal = function() {
+            document.getElementById('boosterChartModal').style.display = 'flex';
+        };
+        window.closeBoosterChartModal = function() {
+            document.getElementById('boosterChartModal').style.display = 'none';
+        };
+
+        window.closeRegistrationModal = function() {
+            document.getElementById('registrationModal').style.display = 'none';
+        };
+
+        window.openRegistrationModalManual = function() {
+            const sponsorInp = document.getElementById('regSponsorInput');
+            const sponsorBadge = document.getElementById('regSponsorBadge');
+            if (window.hasReferralParamInUrl && window.urlReferrerAddress) {
+                sponsorInp.value = window.urlReferrerAddress;
+                sponsorInp.readOnly = true;
+                if (sponsorBadge) {
+                    sponsorBadge.innerText = "Locked via Referral Link ✓";
+                    sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+                }
+            } else {
+                sponsorInp.value = "";
+                sponsorInp.readOnly = false;
+                if (sponsorBadge) {
+                    sponsorBadge.innerText = "Optional (Leave blank if joining directly)";
+                    sponsorBadge.className = "text-[10px] text-gray-400";
+                }
+            }
+            document.getElementById('registrationModal').style.display = 'flex';
+        };
+
+        window.openRegistrationModalWithSponsor = function(sponsorAddr) {
+            const sponsorInp = document.getElementById('regSponsorInput');
+            const sponsorBadge = document.getElementById('regSponsorBadge');
+            if (sponsorInp) {
+                sponsorInp.value = sponsorAddr || "";
+                sponsorInp.readOnly = Boolean(sponsorAddr);
+            }
+            if (sponsorBadge && sponsorAddr) {
+                sponsorBadge.innerText = "Locked via Referral Link ✓";
+                sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+            }
+            document.getElementById('registrationModal').style.display = 'flex';
+        };
+
+        window.connectWalletForRegistrationForm = async function() {
+            const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+            if (!eth) {
+                window.openUniversalWalletModal();
+                return;
+            }
+            try {
+                await window.ensureBSCNetwork(eth);
+                const accounts = await eth.request({ method: 'eth_requestAccounts' });
+                if (accounts && accounts.length > 0) {
+                    document.getElementById('regWalletInput').value = accounts[0];
+                    const wLower = accounts[0].toLowerCase();
+                    if (window.globalUsersMap && window.globalUsersMap[wLower]) {
+                        window.closeRegistrationModal();
+                        window.finalizeLogin(accounts[0]);
+                    }
+                }
+            } catch (err) {
+                window.UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️');
+            }
+        };
+
+        window.applyStateSnapshot = function(parsed) {
+            if (!parsed) return;
+            window.globalUsersMap = parsed.globalUsersMap || {};
+            window.globalQueueOrder = Array.isArray(parsed.globalQueueOrder) ? parsed.globalQueueOrder : Object.values(parsed.globalQueueOrder || {});
+            window.investmentRecords = Array.isArray(parsed.investmentRecords) ? parsed.investmentRecords : Object.values(parsed.investmentRecords || {});
+            window.pendingWithdrawals = Array.isArray(parsed.pendingWithdrawals) ? parsed.pendingWithdrawals : Object.values(parsed.pendingWithdrawals || {});
+            window.heldDownlineReserves = Array.isArray(parsed.heldDownlineReserves) ? parsed.heldDownlineReserves : Object.values(parsed.heldDownlineReserves || {});
+            window.investRecordCounter = parsed.investRecordCounter || 1001;
+            window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
+            window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
+            window.protocolOverflowReserve = parsed.protocolOverflowReserve || 0;
+            if (parsed.offerConfig) {
+                window.offerConfig = {
+                    ...window.offerConfig,
+                    ...parsed.offerConfig,
+                    deliveredAchievers: parsed.offerConfig.deliveredAchievers || {}
+                };
+            }
+
+            try { window.renderOfferBannerAndAchieversStore(); } catch (e) {}
+
+            if (window.currentUserWallet) {
+                const wLower = window.currentUserWallet.toLowerCase();
+                if (window.globalUsersMap[wLower]) {
+                    window.currentUserData = window.globalUsersMap[wLower];
+                    try { window.refreshDashboardUI(false); } catch (e) {}
+                }
+            }
+            const adminModalEl = document.getElementById('adminModal');
+            if (adminModalEl && adminModalEl.style.display === 'flex') {
+                try { window.renderAdminDashboardData(); } catch (e) {}
+            }
+        };
+
+        window.saveGlobalProtocolState = async function() {
+            const rawPayload = {
+                globalUsersMap: window.globalUsersMap || {},
+                globalQueueOrder: window.globalQueueOrder || [],
+                investmentRecords: window.investmentRecords || [],
+                pendingWithdrawals: window.pendingWithdrawals || [],
+                heldDownlineReserves: window.heldDownlineReserves || [],
+                investRecordCounter: window.investRecordCounter || 1001,
+                reinvestRecordCounter: window.reinvestRecordCounter || 2001,
+                withdrawalTicketCounter: window.withdrawalTicketCounter || 3001,
+                protocolOverflowReserve: window.protocolOverflowReserve || 0,
+                offerConfig: window.offerConfig || {},
+                lastUpdated: Date.now()
+            };
+            const cleanPayload = JSON.parse(JSON.stringify(rawPayload));
+            try {
+                await set(ref(db, CLOUD_NODE), cleanPayload);
+                const badge = document.getElementById('cloudSyncStatusBadge');
+                if (badge) badge.innerText = "TGIP × Temple_DA Cloud (Synced ✓)";
+            } catch (cloudErr) {
+                console.warn("Sync warning:", cloudErr);
+            }
+        };
+
+        onValue(ref(db, CLOUD_NODE), (snapshot) => {
+            if (snapshot.exists()) {
+                window.applyStateSnapshot(snapshot.val());
+            }
+        });
+
+        window.UI = {
+            showModal: function(title, message, icon, actions) {
+                document.getElementById('customModal').style.display = 'flex';
+                document.getElementById('modalIcon').innerText = icon || '🔔';
+                document.getElementById('modalTitle').innerText = title;
+                document.getElementById('modalMessage').innerHTML = message;
+                document.getElementById('modalActions').innerHTML = actions || '<button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-750 border border-slate-600 px-6 py-2 rounded-xl text-sm font-semibold">Close</button>';
+            },
+            hideModal: function() {
+                document.getElementById('customModal').style.display = 'none';
+            }
+        };
+        window.closeModal = window.UI.hideModal;
+        window.openUniversalWalletModal = function() {
+            document.getElementById('walletModal').style.display = 'flex';
+        };
+        window.closeWalletModal = function() {
+            document.getElementById('walletModal').style.display = 'none';
+        };
+
+        window.openInTrustWallet = function() {
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `https://link.trustwallet.com/open_url?coin_id=20000714&url=${currentUrl}`;
+        };
+        window.openInMetaMask = function() {
+            const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+            window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
+        };
+
+        window.updateLivePrice = async function(manualSpin) {
+            const icon = document.getElementById('refreshPriceIcon');
+            if (manualSpin && icon) icon.classList.add('fa-spin');
+
+            let priceFound = 0;
+
+            try {
+                const cfgSnap = await get(ref(db, "config/temple_DAPrice"));
+                if (cfgSnap.exists() && parseFloat(cfgSnap.val()) > 0) {
+                    priceFound = parseFloat(cfgSnap.val());
+                }
+            } catch (e) {}
+
+            if (!priceFound && typeof ethers !== 'undefined') {
+                const PAIR_ABI = [
+                    "function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast)",
+                    "function token0() public view returns (address)"
+                ];
+                const rpcUrls = [
+                    "https://binance.llamarpc.com",
+                    "https://bsc-dataseed.binance.org/",
+                    "https://bsc-dataseed1.defibit.io/"
+                ];
+                for (const rpc of rpcUrls) {
+                    try {
+                        const provider = new ethers.providers.JsonRpcProvider(rpc);
+                        const pairContract = new ethers.Contract(window.TEMPLE_DA_POOL_CONTRACT, PAIR_ABI, provider);
+                        const [reserves, token0Address] = await Promise.all([
+                            pairContract.getReserves(),
+                            pairContract.token0()
+                        ]);
+                        const r0 = parseFloat(ethers.utils.formatUnits(reserves._reserve0, 18));
+                        const r1 = parseFloat(ethers.utils.formatUnits(reserves._reserve1, 18));
+                        if (r0 > 0 && r1 > 0) {
+                            priceFound = (token0Address.toLowerCase() === window.USDT_BEP20_CONTRACT.toLowerCase()) ? (r0 / r1) : (r1 / r0);
+                            if (priceFound > 0) break;
+                        }
+                    } catch (err) {}
+                }
+            }
+
+            if (!priceFound) {
+                try {
+                    const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${window.TEMPLE_DA_POOL_CONTRACT}`);
+                    const data = await res.json();
+                    if (data && data.pair && data.pair.priceUsd) {
+                        priceFound = parseFloat(data.pair.priceUsd);
+                    }
+                } catch (e) {}
+            }
+
+            if (priceFound > 0) {
+                window.liveTokenPrice = priceFound;
+            }
+
+            const formatted = window.liveTokenPrice < 0.01 ? `$${window.liveTokenPrice.toFixed(6)}` : `$${window.liveTokenPrice.toFixed(4)}`;
+            const navEl = document.getElementById('livePriceTxt');
+            const dashEl = document.getElementById('dashboardLiveRateTxt');
+            if (navEl) navEl.innerText = formatted;
+            if (dashEl) dashEl.innerText = formatted;
+
+            window.updateEstimatedTokensUI();
+            if (manualSpin && icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
+        };
+        window.updateLivePrice(false);
+        setInterval(() => window.updateLivePrice(false), 20000);
+
+        // Live 1-Second Interval for 48-Hour Booster & Offer Countdown
+        setInterval(() => {
+            if (window.currentUserWallet && window.currentUserData) {
+                window.update48hBoosterBannerUI();
+            }
+            window.updateOfferCountdownTick();
+        }, 1000);
+
+        window.ensureBSCNetwork = async function(ethProvider) {
+            if (!ethProvider || !ethProvider.request) return;
+            let chainId = null;
+            try {
+                chainId = await ethProvider.request({ method: 'eth_chainId' });
+            } catch (e) {}
+
+            if (chainId && chainId !== window.BSC_CHAIN_ID_HEX && parseInt(chainId, 16) !== 56) {
+                try {
+                    await ethProvider.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: window.BSC_CHAIN_ID_HEX }],
+                    });
+                } catch (switchError) {
+                    if (switchError && (switchError.code === 4902 || switchError?.data?.originalError?.code === 4902 || switchError.code === -32603)) {
+                        await ethProvider.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: window.BSC_CHAIN_ID_HEX,
+                                chainName: 'BNB Smart Chain Mainnet (BEP-20)',
+                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                                blockExplorerUrls: ['https://bscscan.com/']
+                            }]
+                        });
+                    } else {
+                        throw new Error("Strict BEP-20 Requirement: Please switch your wallet network to BNB Smart Chain (BSC Mainnet)!");
+                    }
+                }
+            }
+        };
+
+        window.handleDirectConnectClick = async function() {
+            const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+            if (!eth) {
+                window.openUniversalWalletModal();
+                return;
+            }
+            await window.connectInjectedWallet();
+        };
+
+        window.connectInjectedWallet = async function() {
+            window.closeWalletModal();
+            const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+            if (!eth) {
+                window.openUniversalWalletModal();
+                return;
+            }
+
+            try {
+                window.UI.showModal('Connecting BEP-20 Wallet', 'Verifying BNB Smart Chain (BEP-20) network & wallet address...', '⏳');
+                await window.ensureBSCNetwork(eth);
+                const accounts = await eth.request({ method: 'eth_requestAccounts' });
+
+                if (typeof ethers !== 'undefined') {
+                    window.web3Provider = new ethers.providers.Web3Provider(eth, "any");
+                    window.web3Signer = window.web3Provider.getSigner();
+                }
+
+                if (accounts && accounts.length > 0) {
+                    const addr = accounts[0];
+                    window.UI.hideModal();
+                    await window.checkRegistrationAndProceed(addr);
+                }
+            } catch (err) {
+                window.UI.showModal('BEP-20 Connection Alert', err.message || 'Please connect using MetaMask or Trust Wallet on BNB Smart Chain (BEP-20).', '⚠️');
+            }
+        };
+
+        window.checkRegistrationAndProceed = async function(walletAddr) {
+            try {
+                const cloudSnap = await get(ref(db, CLOUD_NODE));
+                if (cloudSnap.exists()) {
+                    window.applyStateSnapshot(cloudSnap.val());
+                }
+            } catch (e) {}
+
+            const wLower = walletAddr.toLowerCase();
+            if (wLower === window.MASTER_WALLET.toLowerCase() && !window.globalUsersMap[wLower]) {
+                window.globalUsersMap[wLower] = {
+                    wallet: walletAddr,
+                    name: "Master Admin",
+                    phone: "Admin",
+                    sponsor: "",
+                    registeredAt: Date.now(),
+                    activatedAt: 0,
+                    firstPackageAmount: 0,
+                    booster5PctClaimed: false,
+                    boosterEarned: 0,
+                    qualifyingDirects48h: [],
+                    balance: 0,
+                    totalInvested: 0,
+                    autoReinvestedTotal: 0,
+                    totalEarned: 0,
+                    directEarned: 0,
+                    poolEarned: 0,
+                    cappingLimit: 0,
+                    overflowedToPool: 0
+                };
+                await window.saveGlobalProtocolState();
+            }
+
+            if (!window.globalUsersMap[wLower]) {
+                document.getElementById('regWalletInput').value = walletAddr;
+                const sponsorInp = document.getElementById('regSponsorInput');
+                const sponsorBadge = document.getElementById('regSponsorBadge');
+
+                if (window.hasReferralParamInUrl && window.urlReferrerAddress && window.urlReferrerAddress.toLowerCase() !== wLower) {
+                    sponsorInp.value = window.urlReferrerAddress;
+                    sponsorInp.readOnly = true;
+                    if (sponsorBadge) {
+                        sponsorBadge.innerText = "Locked via Referral Link ✓";
+                        sponsorBadge.className = "text-[10px] text-emerald-400 font-bold";
+                    }
+                } else {
+                    sponsorInp.value = "";
+                    sponsorInp.readOnly = false;
+                    if (sponsorBadge) {
+                        sponsorBadge.innerText = "Optional (Leave blank if joining directly)";
+                        sponsorBadge.className = "text-[10px] text-gray-400";
+                    }
+                }
+                document.getElementById('registrationModal').style.display = 'flex';
+            } else {
+                window.finalizeLogin(walletAddr);
+            }
+        };
+
+        window.submitRegistrationForm = async function() {
+            const nameInput = document.getElementById('regFullNameInput').value.trim();
+            const phoneInput = document.getElementById('regPhoneInput').value.trim();
+            const walletAddr = document.getElementById('regWalletInput').value.trim();
+            let sponsorAddr = document.getElementById('regSponsorInput').value.trim();
+
+            if (!nameInput) {
+                window.UI.showModal('Full Name Required', 'Please enter your Full Name or Username to complete registration.', '⚠️');
+                return;
+            }
+            if (!walletAddr || !walletAddr.startsWith('0x') || walletAddr.length !== 42) {
+                window.UI.showModal('Connect BEP-20 Wallet First', 'Please click the <b>Connect</b> button inside the registration form to link your BEP-20 wallet address.', '⚠️');
+                return;
+            }
+
+            if (sponsorAddr && (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase())) {
+                window.UI.showModal('Invalid Sponsor Address', 'Please enter a valid BEP-20 Sponsor Wallet Address (0x...) or leave it blank.', '⚠️');
+                return;
+            }
+
+            const wLower = walletAddr.toLowerCase();
+            window.globalUsersMap[wLower] = {
+                wallet: walletAddr,
+                name: nameInput,
+                phone: phoneInput || "",
+                sponsor: sponsorAddr || "",
+                registeredAt: Date.now(),
+                activatedAt: 0,
+                firstPackageAmount: 0,
+                booster5PctClaimed: false,
+                boosterEarned: 0,
+                qualifyingDirects48h: [],
+                balance: 0,
+                totalInvested: 0,
+                autoReinvestedTotal: 0,
+                totalEarned: 0,
+                directEarned: 0,
+                poolEarned: 0,
+                cappingLimit: 0,
+                overflowedToPool: 0
+            };
+
+            document.getElementById('registrationModal').style.display = 'none';
+            await window.saveGlobalProtocolState();
+            window.finalizeLogin(walletAddr);
+
+            const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
+            window.UI.showModal(
+                'TGIP Registration Successful! 🎉',
+                `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position, open your 2x Meter, and start your <b>48-Hour 2-Direct 5% Booster Timer</b>!`,
+                '✅'
+            );
+        };
+
+        window.finalizeLogin = function(walletAddress) {
+            window.currentUserWallet = walletAddress;
+            const wLower = walletAddress.toLowerCase();
+
+            document.getElementById('heroSection').classList.add('hidden');
+            document.getElementById('mainDashboard').classList.remove('hidden');
+            document.getElementById('mainDashboard').classList.add('flex');
+            document.getElementById('btnConnect').classList.add('hidden');
+            const regBtn = document.getElementById('btnNavRegister');
+            if (regBtn) regBtn.classList.add('hidden');
+            document.getElementById('walletDisplay').classList.remove('hidden');
+            document.getElementById('walletAddressTxt').innerText = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
+
+            const adminBtn = document.getElementById('btnAdminPanel');
+            if (wLower === window.MASTER_WALLET.toLowerCase()) {
+                adminBtn.classList.remove('hidden');
+            } else {
+                adminBtn.classList.add('hidden');
+            }
+
+            const baseDomain = window.location.origin + window.location.pathname;
+            document.getElementById('refLinkTxt').innerText = `${baseDomain}?ref=${walletAddress}`;
+
+            window.currentUserData = window.globalUsersMap[wLower];
+            window.refreshDashboardUI(false);
+        };
+
+        window.disconnectWallet = function() {
+            window.currentUserWallet = null;
+            window.currentUserData = null;
+            document.getElementById('mainDashboard').classList.add('hidden');
+            document.getElementById('heroSection').classList.remove('hidden');
+            document.getElementById('btnConnect').classList.remove('hidden');
+            const regBtn = document.getElementById('btnNavRegister');
+            if (regBtn) regBtn.classList.remove('hidden');
+            document.getElementById('walletDisplay').classList.add('hidden');
+            document.getElementById('btnAdminPanel').classList.add('hidden');
+        };
+
+        window.copyRefLink = function() {
+            const linkText = document.getElementById('refLinkTxt').innerText;
+            const tempInput = document.createElement('input');
+            tempInput.value = linkText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            window.UI.showModal(
+                'TGIP Referral Link Copied!',
+                `Share this link with your partners! When they activate a same or higher package within 48 hours of your activation, you earn <b>10% Direct Bonus + 5% 48-Hour Booster</b> on 2 directs!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`,
+                '✅'
+            );
+        };
+
+        window.creditUserWithCapGuard = function(targetWalletLower, rawAmount, incomeType) {
+            const userObj = window.globalUsersMap[targetWalletLower];
+            if (!userObj || rawAmount <= 0 || (userObj.totalInvested || 0) <= 0) {
+                window.protocolOverflowReserve = (window.protocolOverflowReserve || 0) + rawAmount;
+                return { credited: 0, overflow: rawAmount };
+            }
+
+            const userChronologicalRecords = [...(window.investmentRecords || [])]
+                .reverse()
+                .filter(r => r.wallet && r.wallet.toLowerCase() === targetWalletLower);
+
+            let remainingToCredit = rawAmount;
+            let totalCreditedNow = 0;
+
+            for (const rec of userChronologicalRecords) {
+                if (remainingToCredit <= 0) break;
+                const target2x = rec.target2x || (rec.amount * 2);
+                const curEarned = rec.earned2x || 0;
+                const roomInMeter = Math.max(0, target2x - curEarned);
+
+                if (roomInMeter > 0) {
+                    const addNow = Math.min(remainingToCredit, roomInMeter);
+                    rec.earned2x = Number((curEarned + addNow).toFixed(4));
+                    remainingToCredit = Number((remainingToCredit - addNow).toFixed(4));
+                    totalCreditedNow = Number((totalCreditedNow + addNow).toFixed(4));
+                    if (rec.earned2x >= target2x - 0.0001) {
+                        rec.status2x = 'COMPLETED';
+                    }
+                }
+            }
+
+            if (totalCreditedNow > 0) {
+                userObj.balance = Number(((userObj.balance || 0) + totalCreditedNow).toFixed(4));
+                userObj.totalEarned = Number(((userObj.totalEarned || 0) + totalCreditedNow).toFixed(4));
+                if (incomeType === 'direct' || incomeType === 'booster') {
+                    userObj.directEarned = Number(((userObj.directEarned || 0) + totalCreditedNow).toFixed(4));
+                    if (incomeType === 'booster') {
+                        userObj.boosterEarned = Number(((userObj.boosterEarned || 0) + totalCreditedNow).toFixed(4));
+                    }
+                } else {
+                    userObj.poolEarned = Number(((userObj.poolEarned || 0) + totalCreditedNow).toFixed(4));
+                }
+            }
+
+            const overflowAmt = Math.max(0, Number((rawAmount - totalCreditedNow).toFixed(4)));
+            if (overflowAmt > 0) {
+                userObj.overflowedToPool = Number(((userObj.overflowedToPool || 0) + overflowAmt).toFixed(4));
+                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + overflowAmt).toFixed(4));
+            }
+
+            return { credited: totalCreditedNow, overflow: overflowAmt };
+        };
+
+        // NEW: 48-Hour 2-Direct 5% Booster Evaluation Engine
+        window.evaluateSponsor48hBooster = function(sponsorLower, directWalletLower, directDepositAmount) {
+            const sponsorObj = window.globalUsersMap[sponsorLower];
+            if (!sponsorObj || (sponsorObj.totalInvested || 0) <= 0) return 0;
+            if (sponsorObj.booster5PctClaimed) return 0;
+
+            const sponsorActivatedAt = sponsorObj.activatedAt || sponsorObj.registeredAt || Date.now();
+            const nowTs = Date.now();
+
+            // Check if within 48 hours of sponsor's activation
+            if (nowTs - sponsorActivatedAt > FORTY_EIGHT_HOURS_MS) {
+                return 0;
+            }
+
+            // Base package check: direct's deposit must be >= sponsor's base package
+            const sponsorBasePkg = sponsorObj.firstPackageAmount || sponsorObj.totalInvested || 10;
+            if (directDepositAmount < sponsorBasePkg) {
+                return 0;
+            }
+
+            if (!Array.isArray(sponsorObj.qualifyingDirects48h)) {
+                sponsorObj.qualifyingDirects48h = [];
+            }
+
+            // Ensure unique direct partner wallet
+            const alreadyRecorded = sponsorObj.qualifyingDirects48h.some(item => item.wallet === directWalletLower);
+            if (!alreadyRecorded) {
+                sponsorObj.qualifyingDirects48h.push({
+                    wallet: directWalletLower,
+                    amount: directDepositAmount,
+                    timestamp: nowTs
+                });
+            }
+
+            // Once 2 unique qualifying directs are completed within 48h -> Credit 5% of their combined investment into 2x Meter!
+            if (sponsorObj.qualifyingDirects48h.length >= 2 && !sponsorObj.booster5PctClaimed) {
+                const firstTwo = sponsorObj.qualifyingDirects48h.slice(0, 2);
+                const combinedInvestment = (firstTwo[0].amount || 0) + (firstTwo[1].amount || 0);
+                const booster5PercentUSDT = Number((combinedInvestment * 0.05).toFixed(4));
+
+                sponsorObj.booster5PctClaimed = true;
+                const creditRes = window.creditUserWithCapGuard(sponsorLower, booster5PercentUSDT, 'booster');
+                return creditRes.credited;
+            }
+
+            return 0;
+        };
+
+        window.executeUnifiedInvestmentEngine = async function(walletAddr, amount, entryType, sourceTicketId = null) {
+            const wLower = walletAddr.toLowerCase();
+            let userObj = window.globalUsersMap[wLower];
+            if (!userObj) return null;
+
+            const isFirstActivation = (userObj.totalInvested || 0) === 0;
+
+            if (isFirstActivation && entryType !== 'AUTO_REINVEST') {
+                userObj.activatedAt = Date.now();
+                userObj.firstPackageAmount = amount;
+                userObj.booster5PctClaimed = false;
+                userObj.qualifyingDirects48h = [];
+            }
+
+            if (entryType === 'AUTO_REINVEST') {
+                userObj.autoReinvestedTotal = Number(((userObj.autoReinvestedTotal || 0) + amount).toFixed(4));
+            } else {
+                userObj.totalInvested = Number(((userObj.totalInvested || 0) + amount).toFixed(4));
+            }
+            userObj.cappingLimit = Number(((userObj.cappingLimit || 0) + (amount * 2)).toFixed(4));
+
+            if (!window.globalQueueOrder.includes(wLower)) {
+                window.globalQueueOrder.push(wLower);
+            }
+            const myQueueIndex = window.globalQueueOrder.indexOf(wLower);
+
+            const poolShare = Number((amount * 0.50).toFixed(4));
+            const directShare = Number((amount * 0.10).toFixed(4));
+            const teamTotalShare = Number((amount * 0.40).toFixed(4));
+            const perLevelShare = Number((amount * 0.01).toFixed(4));
+
+            let recordId = '';
+            if (entryType === 'AUTO_REINVEST') {
+                recordId = '#REINV-' + (window.reinvestRecordCounter++);
+            } else if (entryType === 'UPGRADE') {
+                recordId = '#UPG-' + (window.investRecordCounter++);
+            } else {
+                recordId = '#INV-' + (window.investRecordCounter++);
+            }
+
+            const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            window.investmentRecords.unshift({
+                id: recordId,
+                type: entryType,
+                sourceTicket: sourceTicketId || null,
+                timestamp: nowStr,
+                wallet: walletAddr,
+                amount: amount,
+                target2x: amount * 2,
+                earned2x: 0,
+                status2x: 'ACTIVE',
+                poolShare: poolShare,
+                directShare: directShare,
+                teamShare: teamTotalShare
+            });
+
+            let sponsorBoosterTriggered = 0;
+            const sponsorLower = (userObj.sponsor || '').toLowerCase();
+            if (sponsorLower && sponsorLower !== wLower && window.globalUsersMap[sponsorLower]) {
+                window.creditUserWithCapGuard(sponsorLower, directShare, 'direct');
+
+                // Check 48-hour 2-direct 5% booster when a direct partner activates or upgrades a package
+                if (entryType !== 'AUTO_REINVEST') {
+                    sponsorBoosterTriggered = window.evaluateSponsor48hBooster(sponsorLower, wLower, amount);
+                }
+            } else {
+                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + directShare).toFixed(4));
+            }
+
+            for (let step = 1; step <= 20; step++) {
+                const upIdx = myQueueIndex - step;
+                if (upIdx >= 0 && window.globalQueueOrder[upIdx]) {
+                    const upWalletLower = window.globalQueueOrder[upIdx];
+                    window.creditUserWithCapGuard(upWalletLower, perLevelShare, 'pool');
+                } else {
+                    window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + perLevelShare).toFixed(4));
+                }
+            }
+
+            for (let step = 1; step <= 20; step++) {
+                const downIdx = myQueueIndex + step;
+                if (downIdx < window.globalQueueOrder.length && window.globalQueueOrder[downIdx]) {
+                    const downWalletLower = window.globalQueueOrder[downIdx];
+                    window.creditUserWithCapGuard(downWalletLower, perLevelShare, 'pool');
+                } else {
+                    window.heldDownlineReserves.push({
+                        fromWallet: walletAddr,
+                        targetQueueIndex: downIdx,
+                        amount: perLevelShare,
+                        claimed: false
+                    });
+                }
+            }
+
+            let heldClaimedTotal = 0;
+            if (isFirstActivation) {
+                for (const item of window.heldDownlineReserves) {
+                    if (!item.claimed && item.targetQueueIndex === myQueueIndex) {
+                        item.claimed = true;
+                        const res = window.creditUserWithCapGuard(wLower, item.amount, 'pool');
+                        heldClaimedTotal += res.credited;
+                    }
+                }
+            }
+
+            await window.saveGlobalProtocolState();
+            return { recordId, poolShare, directShare, teamTotalShare, heldClaimedTotal, sponsorBoosterTriggered };
+        };
+
+        window.isDepositInProgress = false;
+
+        window.buyPackage = async function(amount) {
+            if (window.isDepositInProgress) {
+                return;
+            }
+            if (!window.currentUserWallet) {
+                window.handleDirectConnectClick();
+                return;
+            }
+            const wLower = window.currentUserWallet.toLowerCase();
+            const userObj = window.globalUsersMap[wLower];
+            if (!userObj) {
+                await window.checkRegistrationAndProceed(window.currentUserWallet);
+                return;
+            }
+
+            window.isDepositInProgress = true;
+            const isUpgrade = (userObj.totalInvested || 0) > 0;
+            const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
+
+            window.UI.showModal(
+                `Confirm ${amount} USDT BEP-20 Deposit`,
+                `Please approve the <b>${amount} USDT (BEP-20)</b> transfer in your Web3 wallet to TGIP Protocol Master Contract Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`,
+                '⏳'
+            );
+
+            let txHashConfirmed = null;
+
+            try {
+                const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+                if (!eth || typeof ethers === 'undefined') {
+                    throw new Error("Web3 Wallet not detected. Please open inside Trust Wallet or MetaMask DApp Browser.");
+                }
+
+                await window.ensureBSCNetwork(eth);
+                const provider = new ethers.providers.Web3Provider(eth, "any");
+                const signer = provider.getSigner();
+
+                const usdtAbi = [
+                    "function balanceOf(address owner) view returns (uint256)",
+                    "function decimals() view returns (uint8)",
+                    "function transfer(address to, uint256 value) public returns (bool)"
+                ];
+                const usdtContract = new ethers.Contract(window.USDT_BEP20_CONTRACT, usdtAbi, signer);
+                let decimals = 18;
+                try { decimals = await usdtContract.decimals(); } catch (e) { decimals = 18; }
+
+                const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
+                const userBal = await usdtContract.balanceOf(window.currentUserWallet);
+
+                if (userBal.lt(parsedAmount)) {
+                    const avail = parseFloat(ethers.utils.formatUnits(userBal, decimals)).toFixed(2);
+                    throw new Error(`Insufficient BEP-20 USDT Balance! You have ${avail} USDT, but ${amount} USDT is required.`);
+                }
+
+                const tx = await usdtContract.transfer(window.MASTER_WALLET, parsedAmount);
+                txHashConfirmed = tx.hash;
+
+                window.UI.showModal('Confirming on BSC Blockchain...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
+
+                let receipt = null;
+                try {
+                    receipt = await tx.wait(1);
+                } catch (waitErr) {
+                    try {
+                        const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                        receipt = await bscRpc.waitForTransaction(tx.hash, 1, 45000);
+                    } catch (rpcErr) {
+                        receipt = { status: 1 };
+                    }
+                }
+
+                if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
+                    txHashConfirmed = null;
+                    throw new Error("Transaction reverted on blockchain.");
+                }
+            } catch (err) {
+                window.isDepositInProgress = false;
+                if (!txHashConfirmed) {
+                    window.UI.showModal('Deposit Failed / Cancelled', err.reason || err.message || 'Transaction cancelled.', '❌');
+                    return;
+                }
+            }
+
+            try {
+                const res = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryType);
+                try { window.refreshDashboardUI(false); } catch (uiErr) {}
+
+                if (res) {
+                    window.UI.showModal(
+                        `Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`,
+                        `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">TGIP 2x Meter ID:</span>
+                                <span class="font-bold text-emerald-400 font-mono">${res.recordId}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">2x Return Capping Target:</span>
+                                <span class="font-bold text-amber-300 font-mono">$${amount} -> $${(amount * 2).toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">💧 50% Liquidity Pool:</span>
+                                <span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                                <span class="text-gray-400">🤝 10% Direct Sponsor:</span>
+                                <span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span>
+                                <span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span>
+                            </div>
+                        </div>`,
+                        '🚀',
+                        '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                    );
+                }
+            } catch (postErr) {
+                console.error("Post-deposit UI warning:", postErr);
+            } finally {
+                window.isDepositInProgress = false;
+            }
+        };
+
+        window.getActiveDirectCount = function() {
+            if (!window.currentUserWallet) return 0;
+            const wLower = window.currentUserWallet.toLowerCase();
+            return Object.values(window.globalUsersMap || {}).filter(
+                u => u.sponsor && u.sponsor.toLowerCase() === wLower && (u.totalInvested || 0) > 0
+            ).length;
+        };
+
+        window.requestWithdrawal = async function() {
+            if (!window.currentUserWallet || !window.currentUserData) return;
+
+            const activeDirects = window.getActiveDirectCount();
+            if (activeDirects < 1) {
+                window.UI.showModal(
+                    '1 Active Direct Compulsory 🔒',
+                    `At least <b>1 Active Direct Referral</b> is compulsory to unlock withdrawals on TGIP Protocol.<br><br>Share your referral link so your partner registers and activates a package!`,
+                    '🔒'
+                );
+                return;
+            }
+
+            const currentBal = Number(window.currentUserData.balance || 0);
+            if (currentBal < window.MIN_WITHDRAW_USDT) {
+                window.UI.showModal(
+                    'Minimum Withdrawal is 5 USDT ⚠️',
+                    `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$5.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`,
+                    '⚠️'
+                );
+                return;
+            }
+
+            await window.updateLivePrice(false);
+            const totalWithdrawUSDT = currentBal;
+            const netPayoutUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
+            const reinvestUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
+            const tokenAmount = Number((netPayoutUSDT / window.liveTokenPrice).toFixed(2));
+
+            const wLower = window.currentUserWallet.toLowerCase();
+            window.globalUsersMap[wLower].balance = 0;
+
+            const ticketId = '#WD-' + (window.withdrawalTicketCounter++);
+            const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+            const reinvResult = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, reinvestUSDT, 'AUTO_REINVEST', ticketId);
+
+            window.pendingWithdrawals.unshift({
+                id: ticketId,
+                reinvestRecordId: reinvResult ? reinvResult.recordId : '#REINV',
+                timestamp: nowStr,
+                wallet: window.currentUserWallet,
+                userName: window.currentUserData.name || 'Member',
+                totalUSDT: totalWithdrawUSDT,
+                netUSDT: netPayoutUSDT,
+                reinvestedUSDT: reinvestUSDT,
+                tokenAmount: tokenAmount,
+                liveRate: window.liveTokenPrice,
+                status: 'PENDING'
+            });
+
+            await window.saveGlobalProtocolState();
+            window.refreshDashboardUI(false);
+
+            window.UI.showModal(
+                `Withdrawal (${ticketId}) & New 2x Meter (${reinvResult.recordId})!`,
+                `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                        <span class="text-gray-400">Withdrawal Ticket:</span>
+                        <span class="font-bold text-amber-400 font-mono">${ticketId}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                        <span class="text-gray-400">50% Token Payout (Admin Queue):</span>
+                        <span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5">
+                        <span class="text-gray-400">50% Auto-Reinvested 2x Meter:</span>
+                        <span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} ($${reinvestUSDT.toFixed(2)} -> 2x: $${(reinvestUSDT * 2).toFixed(2)})</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Reinvest Split (50/10/40):</span>
+                        <span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span>
+                    </div>
+                </div>`,
+                '🧾'
+            );
+        };
+
+        window.updateEstimatedTokensUI = function() {
+            const estEl = document.getElementById('uiEstTokens');
+            if (!estEl || !window.currentUserData) return;
+            const withdrawable50Percent = (window.currentUserData.balance || 0) * 0.50;
+            const tokens = window.liveTokenPrice > 0 ? (withdrawable50Percent / window.liveTokenPrice) : 0;
+            estEl.innerText = tokens.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        };
+
+        window.update48hBoosterBannerUI = function() {
+            if (!window.currentUserData) return;
+            const d = window.currentUserData;
+            const basePkg = d.firstPackageAmount || d.totalInvested || 0;
+            const qualList = Array.isArray(d.qualifyingDirects48h) ? d.qualifyingDirects48h : [];
+            const boosterEarned = Number(d.boosterEarned || 0);
+
+            document.getElementById('uiMyBasePkgTxt').innerText = `$${basePkg} USDT`;
+            document.getElementById('uiBoosterQualifyingCount').innerText = Math.min(2, qualList.length);
+            document.getElementById('uiBoosterEarnedAmt').innerText = boosterEarned.toFixed(2);
+            const cardBoosterEl = document.getElementById('uiBoosterCardStat');
+            if (cardBoosterEl) cardBoosterEl.innerText = boosterEarned.toFixed(2);
+
+            const pillEl = document.getElementById('uiBoosterStatusPill');
+            const timerEl = document.getElementById('uiBoosterCountdown');
+            const subNoteEl = document.getElementById('uiBoosterSubNote');
+            const boosterCardEl = document.getElementById('boosterBannerCard');
+
+            // AUTO-REMOVE FUNCTION: If booster is already claimed/completed, remove or hide the 48h booster banner automatically!
+            if (d.booster5PctClaimed) {
+                if (boosterCardEl) {
+                    boosterCardEl.style.display = 'none'; // Completely hides the 48h booster banner automatically once target is achieved!
+                }
+                return;
+            }
+
+            if ((d.totalInvested || 0) <= 0) {
+                if (boosterCardEl) boosterCardEl.style.display = 'block';
+                pillEl.className = "bg-slate-900 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono";
+                pillEl.innerText = "Activate Package to Start 48h Timer";
+                timerEl.innerText = "48:00:00";
+                subNoteEl.innerText = "Waiting for 1st package activation";
+                return;
+            }
+
+            const startTs = d.activatedAt || d.registeredAt || Date.now();
+            const endTs = startTs + FORTY_EIGHT_HOURS_MS;
+            const remainingMs = endTs - Date.now();
+
+            if (remainingMs <= 0) {
+                if (boosterCardEl) boosterCardEl.style.display = 'block';
+                pillEl.className = "bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold px-3 py-0.5 rounded-full font-mono";
+                pillEl.innerText = "48h Booster Window Expired";
+                timerEl.innerText = "00:00:00";
+                timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-rose-400";
+                subNoteEl.innerText = "Standard 10% Direct Bonus continues";
+            } else {
+                if (boosterCardEl) boosterCardEl.style.display = 'block';
+                const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+                const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                const pad = n => String(n).padStart(2, '0');
+                pillEl.className = "bg-amber-500/20 text-amber-300 border border-amber-400/50 text-xs font-extrabold px-3 py-0.5 rounded-full font-mono animate-pulse";
+                pillEl.innerText = `⏳ LIVE: ${2 - qualList.length} More Direct(s) >= $${basePkg} Needed!`;
+                timerEl.innerText = `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+                timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-amber-400";
+                subNoteEl.innerText = `Min Direct Package: $${basePkg} USDT`;
+            }
+        };
+
+        window.refreshDashboardUI = function() {
+            if (!window.currentUserWallet) return;
+            const wLower = window.currentUserWallet.toLowerCase();
+            const data = window.globalUsersMap[wLower];
+            if (!data) return;
+            window.currentUserData = data;
+
+            const activeDirects = window.getActiveDirectCount();
+            const qIndex = window.globalQueueOrder.indexOf(wLower);
+            const totalActiveInQueue = window.globalQueueOrder.length;
+
+            document.getElementById('uiMemberName').innerText = data.name || "Verified Member";
+            document.getElementById('uiSponsorDisplay').innerText = (data.sponsor && data.sponsor.startsWith('0x'))
+                ? (data.sponsor.slice(0, 6) + "..." + data.sponsor.slice(-4))
+                : "Direct (No Sponsor)";
+            document.getElementById('uiGlobalPos').innerText = qIndex >= 0 ? (qIndex + 1) : "Inactive (Deposit to Join Queue)";
+
+            document.getElementById('uiBalance').innerText = Number(data.balance || 0).toFixed(2);
+            document.getElementById('uiInvested').innerText = Number(data.totalInvested || 0).toFixed(2);
+            document.getElementById('uiAutoReinvestedTotal').innerText = Number(data.autoReinvestedTotal || 0).toFixed(2);
+            document.getElementById('uiDirectEarned').innerText = Number(data.directEarned || 0).toFixed(2);
+            document.getElementById('uiPoolEarned').innerText = Number(data.poolEarned || 0).toFixed(2);
+            document.getElementById('uiEarned').innerText = Number(data.totalEarned || 0).toFixed(2);
+            document.getElementById('uiOverflowSaved').innerText = Number(data.overflowedToPool || 0).toFixed(2);
+
+            document.getElementById('uiDirectCountTop').innerText = activeDirects;
+            document.getElementById('uiMyDirectsMatrix').innerText = activeDirects;
+            document.getElementById('uiTotalActiveQueueUsers').innerText = totalActiveInQueue;
+
+            const uplinesAbove = qIndex >= 0 ? Math.min(20, qIndex) : 0;
+            const downlinesBelow = qIndex >= 0 ? Math.min(20, Math.max(0, totalActiveInQueue - 1 - qIndex)) : 0;
+            document.getElementById('uiUplineCount').innerText = uplinesAbove;
+            document.getElementById('uiDownlineCount').innerText = downlinesBelow;
+
+            const pendingCount = (window.pendingWithdrawals || []).filter(w => w.status === 'PENDING').length;
+            const badgeEl = document.getElementById('adminPendingCountBadge');
+            if (badgeEl) badgeEl.innerText = pendingCount;
+
+            const topBadge = document.getElementById('topDirectBadge');
+            const reqBox = document.getElementById('withdrawRequirementBox');
+            const reqIcon = document.getElementById('reqStatusIcon');
+            const reqStatus = document.getElementById('uiDirectReqStatus');
+
+            if (activeDirects >= 1) {
+                topBadge.className = "bg-emerald-500/15 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30";
+                topBadge.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> Directs: ${activeDirects}/1 (Withdrawal Unlocked)`;
+                reqBox.className = "bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs";
+                reqIcon.className = "fa-solid fa-lock-open text-emerald-400";
+                reqStatus.className = "font-mono font-bold text-emerald-400";
+                reqStatus.innerText = `${activeDirects} / 1 Unlocked ✅`;
+            } else {
+                topBadge.className = "bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30";
+                topBadge.innerHTML = `<i class="fa-solid fa-user-lock mr-1"></i> Directs: 0/1 (Required for Withdraw)`;
+                reqBox.className = "bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs";
+                reqIcon.className = "fa-solid fa-lock text-rose-400";
+                reqStatus.className = "font-mono font-bold text-rose-400";
+                reqStatus.innerText = `0 / 1 Compulsory`;
+            }
+
+            window.update48hBoosterBannerUI();
+            window.updateMobileRewardBannerUI();
+            window.renderPackagesDynamic();
+            window.renderIndividual2xMetersAndLedgers();
+            window.renderMyDirectPartnersList();
+            window.updateEstimatedTokensUI();
+        };
+
+        window.updateMobileRewardBannerUI = function() {
+            window.renderOfferBannerAndAchieversStore();
+        };
+
+        window.getOfferAchieversList = function() {
+            const cfg = window.offerConfig || {};
+            const minSelf = Number(cfg.minSelfId || 100);
+            const targetBiz = Number(cfg.targetDirectBiz || 1000);
+            const deliveredMap = cfg.deliveredAchievers || {};
+            const allUsers = Object.values(window.globalUsersMap || {});
+            const nowTs = Date.now();
+            const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+            const achievers = [];
+            allUsers.forEach(u => {
+                if (!u || !u.wallet) return;
+                const wLower = u.wallet.toLowerCase();
+                const selfInv = Number(u.totalInvested || 0);
+                if (selfInv < minSelf) return;
+
+                const directs = allUsers.filter(
+                    d => d.sponsor && d.sponsor.toLowerCase() === wLower && d.wallet.toLowerCase() !== wLower
+                );
+                const directVol = directs.reduce((acc, d) => acc + Number(d.totalInvested || 0), 0);
+
+                if (directVol >= targetBiz) {
+                    const deliveryInfo = deliveredMap[wLower] || null;
+                    let isCompletelyHidden = false;
+
+                    if (deliveryInfo && deliveryInfo.status === 'HIDDEN_BY_ADMIN') {
+                        isCompletelyHidden = true; // Admin manually hid it from store
+                    } else if (deliveryInfo && deliveryInfo.status === 'DELIVERED') {
+                        // Check if 3 days have passed since delivery timestamp
+                        const deliveredAtTs = deliveryInfo.timestamp || nowTs;
+                        if (nowTs - deliveredAtTs > THREE_DAYS_MS) {
+                            isCompletelyHidden = true; // Automatically hides after 3 days if admin didn't manually hide
+                        }
+                    }
+
+                    if (!isCompletelyHidden) {
+                        achievers.push({
+                            wallet: u.wallet,
+                            walletLower: wLower,
+                            name: u.name || 'Member',
+                            selfInvested: selfInv,
+                            directBusiness: directVol,
+                            directCount: directs.filter(d => (d.totalInvested || 0) > 0).length,
+                            isDelivered: Boolean(deliveryInfo && deliveryInfo.status === 'DELIVERED'),
+                            deliveredAt: deliveryInfo ? deliveryInfo.deliveredAt : null
+                        });
+                    }
+                }
+            });
+            return achievers;
+        };
+
+        window.updateOfferCountdownTick = function() {
+            const timerEl = document.getElementById('uiOfferLiveCountdownTxt');
+            if (!timerEl) return;
+            const cfg = window.offerConfig || {};
+            const endTs = cfg.endTimeISO ? new Date(cfg.endTimeISO).getTime() : 0;
+            if (!endTs || isNaN(endTs)) {
+                timerEl.innerText = "LIVE OFFER ACTIVE";
+                return;
+            }
+            const diff = endTs - Date.now();
+            if (diff <= 0) {
+                timerEl.innerText = "⏰ OFFER TIME ENDED — FINAL ACHIEVERS LOCKED!";
+                timerEl.className = "font-mono font-extrabold text-emerald-400";
+            } else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                const pad = n => String(n).padStart(2, '0');
+                timerEl.innerText = `${days}d : ${pad(hrs)}h : ${pad(mins)}m : ${pad(secs)}s`;
+                timerEl.className = "font-mono font-extrabold text-amber-300";
+            }
+        };
+
+        window.renderOfferBannerAndAchieversStore = function() {
+            const cfg = window.offerConfig || {};
+            const minSelf = Number(cfg.minSelfId || 100);
+            const targetBiz = Number(cfg.targetDirectBiz || 1000);
+
+            const badgeTitleSpan = document.getElementById('uiDynamicBadgeTitle');
+            const headlineH3 = document.getElementById('uiDynamicHeadline');
+            const descP = document.getElementById('uiDynamicDescription');
+
+            if (badgeTitleSpan && cfg.badgeTitle) badgeTitleSpan.innerText = cfg.badgeTitle;
+            if (headlineH3 && cfg.headline) headlineH3.innerHTML = cfg.headline;
+            if (descP && cfg.description) descP.innerHTML = cfg.description;
+
+            const minSelfLabel = document.getElementById('uiDynamicMinSelfTxt');
+            const targetBizLabel = document.getElementById('uiDynamicTargetBizTxt');
+            if (minSelfLabel) minSelfLabel.innerText = `Min $${minSelf}`;
+            if (targetBizLabel) targetBizLabel.innerText = `$${targetBiz.toLocaleString()} Target`;
+
+            if (window.currentUserWallet && window.currentUserData) {
+                const wLower = window.currentUserWallet.toLowerCase();
+                const selfInvested = Number(window.currentUserData.totalInvested || 0);
+                const myDirects = Object.values(window.globalUsersMap || {}).filter(
+                    u => u.sponsor && u.sponsor.toLowerCase() === wLower && u.wallet.toLowerCase() !== wLower
+                );
+                const directBizVolume = myDirects.reduce((acc, u) => acc + Number(u.totalInvested || 0), 0);
+
+                const selfCheckEl = document.getElementById('uiMobileSelfIdCheck');
+                const volTxtEl = document.getElementById('uiMobileDirectVolumeTxt');
+                const barEl = document.getElementById('uiMobileProgressBar');
+                const badgeEl = document.getElementById('uiMobileRewardStatusBadge');
+
+                if (selfCheckEl && volTxtEl && barEl && badgeEl) {
+                    const selfOk = selfInvested >= minSelf;
+                    const bizOk = directBizVolume >= targetBiz;
+                    const pct = targetBiz > 0 ? Math.min(100, (directBizVolume / targetBiz) * 100) : 0;
+
+                    selfCheckEl.innerText = `$${selfInvested.toFixed(0)} / $${minSelf} ${selfOk ? '✅' : '🔒'}`;
+                    selfCheckEl.className = `font-mono font-bold ${selfOk ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                    volTxtEl.innerText = `$${directBizVolume.toFixed(0)} / $${targetBiz.toLocaleString()}`;
+                    barEl.style.width = `${Math.max(2, pct)}%`;
+
+                    if (selfOk && bizOk) {
+                        badgeEl.className = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-3 py-0.5 rounded-full font-mono";
+                        badgeEl.innerText = "🏆 QUALIFIED! YOUR NAME IS LIVE ON THE ACHIEVERS STORE!";
+                    } else {
+                        badgeEl.className = "bg-slate-900 text-sky-300 border border-sky-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono";
+                        badgeEl.innerText = `Need: ${selfOk ? 'Self ID OK ✅' : 'Min $' + minSelf + ' Self ID'} • $${Math.max(0, targetBiz - directBizVolume).toFixed(0)} More Direct Biz`;
+                    }
+                }
+            }
+
+            window.updateOfferCountdownTick();
+
+            const storeListEl = document.getElementById('publicAchieversStoreList');
+            const storeCountEl = document.getElementById('uiPublicAchieversCountBadge');
+            if (!storeListEl) return;
+
+            const activeStoreAchievers = window.getOfferAchieversList();
+
+            if (storeCountEl) {
+                storeCountEl.innerText = `Active Achievers on Store: ${activeStoreAchievers.length}`;
+            }
+
+            if (activeStoreAchievers.length === 0) {
+                storeListEl.innerHTML = `
+                    <div class="col-span-full bg-slate-950/70 border border-slate-800 rounded-xl p-3 text-center text-gray-400 text-xs">
+                        No pending reward achievers on display right now. Complete <b>$${minSelf} Self ID + $${targetBiz} Direct Business</b> to feature your name here and claim your reward!
+                    </div>
+                `;
+            } else {
+                storeListEl.innerHTML = '';
+                activeStoreAchievers.forEach((ach, idx) => {
+                    storeListEl.innerHTML += `
+                        <div class="bg-slate-950/95 border ${ach.isDelivered ? 'border-emerald-500/60' : 'border-amber-400/50'} rounded-xl p-3 flex items-center justify-between gap-2 shadow-md">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="bg-amber-400 text-slate-950 font-extrabold text-[10px] px-2 py-0.5 rounded-full">#${idx + 1} WINNER</span>
+                                    <b class="text-white text-xs">${ach.name}</b>
+                                </div>
+                                <div class="text-[11px] text-gray-400 font-mono mt-1">
+                                    ${ach.wallet.slice(0, 6)}...${ach.wallet.slice(-4)} • Direct Vol: <b class="text-emerald-400">$${ach.directBusiness.toFixed(0)}</b>
+                                </div>
+                            </div>
+                            <span class="text-[10px] ${ach.isDelivered ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'} px-2 py-1 rounded-lg font-bold whitespace-nowrap">
+                                ${ach.isDelivered ? '🎁 Delivered (Visible 3d)' : '🎁 Reward Pending'}
+                            </span>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.adminSaveOfferConfig = async function() {
+            const badgeTitle = document.getElementById('adminOfferBadgeInput').value.trim();
+            const headline = document.getElementById('adminOfferHeadlineInput').value.trim();
+            const description = document.getElementById('adminOfferDescInput').value.trim();
+            const minSelfId = parseFloat(document.getElementById('adminOfferMinSelfInput').value) || 100;
+            const targetDirectBiz = parseFloat(document.getElementById('adminOfferTargetBizInput').value) || 1000;
+            const endTimeISO = document.getElementById('adminOfferEndDateInput').value;
+
+            window.offerConfig = {
+                ...window.offerConfig,
+                badgeTitle: badgeTitle || "Grand Mobile Reward Offer",
+                headline: headline || "Win a Brand New 5G Smartphone Worth Up to ₹20,000!",
+                description: description || "Complete the Self ID and Direct Business target before the timer ends to qualify!",
+                minSelfId: minSelfId,
+                targetDirectBiz: targetDirectBiz,
+                endTimeISO: endTimeISO || "2026-11-30T23:59"
+            };
+
+            await window.saveGlobalProtocolState();
+            window.renderOfferBannerAndAchieversStore();
+            window.renderAdminDashboardData();
+
+            window.UI.showModal(
+                'Offer Content Published Live! 🚀',
+                `Your new offer details, target rules (<b>$${minSelfId} Self ID + $${targetDirectBiz} Direct Business</b>), and timer have been updated live across all users' dashboards!`,
+                '✅'
+            );
+        };
+
+        window.adminMarkAchieverRewardDelivered = async function(walletLower) {
+            if (!window.offerConfig.deliveredAchievers) {
+                window.offerConfig.deliveredAchievers = {};
+            }
+            window.offerConfig.deliveredAchievers[walletLower] = {
+                status: 'DELIVERED',
+                timestamp: Date.now(),
+                deliveredAt: new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            };
+
+            await window.saveGlobalProtocolState();
+            window.renderOfferBannerAndAchieversStore();
+            window.renderAdminDashboardData();
+
+            window.UI.showModal(
+                'Reward Marked as Delivered! 🎁',
+                `The achiever's reward has been marked as <b>DELIVERED</b>. It will remain visible on the public store for 3 days or until you click "Hide / Remove from Store".`,
+                '✅'
+            );
+        };
+
+        window.adminHideAchieverCompletely = async function(walletLower) {
+            if (!window.offerConfig.deliveredAchievers) {
+                window.offerConfig.deliveredAchievers = {};
+            }
+            window.offerConfig.deliveredAchievers[walletLower] = {
+                status: 'HIDDEN_BY_ADMIN',
+                timestamp: Date.now(),
+                deliveredAt: new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            };
+
+            await window.saveGlobalProtocolState();
+            window.renderOfferBannerAndAchieversStore();
+            window.renderAdminDashboardData();
+
+            window.UI.showModal(
+                'Achiever Hidden from Store! 👁️‍🗨️',
+                `This winner has been completely hidden from all users' dashboards and store showcase.`,
+                '✅'
+            );
+        };
+
+        window.adminRestoreAchieverToStore = async function(walletLower) {
+            if (window.offerConfig && window.offerConfig.deliveredAchievers && window.offerConfig.deliveredAchievers[walletLower]) {
+                delete window.offerConfig.deliveredAchievers[walletLower];
+                await window.saveGlobalProtocolState();
+                window.renderOfferBannerAndAchieversStore();
+                window.renderAdminDashboardData();
+            }
+        };
+
+        window.renderPackagesDynamic = function() {
+            const allPackages = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000];
+            const hasInvestedAlready = window.currentUserData && (window.currentUserData.totalInvested || 0) > 0;
+            const visiblePackages = hasInvestedAlready ? allPackages.filter(a => a !== 10) : allPackages;
+
+            const pkgContainer = document.getElementById('packagesContainer');
+            if (!pkgContainer) return;
+            pkgContainer.innerHTML = '';
+
+            visiblePackages.forEach((amt, idx) => {
+                const isStarter = amt === 10;
+                const booster5PctOnTwoDirects = (amt * 2 * 0.05).toFixed(2);
+                pkgContainer.innerHTML += `
+                    <div class="glass-card p-5 rounded-2xl flex flex-col justify-between ${isStarter ? 'border-amber-400/50' : ''}">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-extrabold uppercase text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
+                                    ${isStarter ? '🔥 Starter' : 'TGIP Tier ' + (idx + 1)}
+                                </span>
+                                <span class="text-[11px] text-emerald-400 font-mono font-bold">2x Cap: $${amt * 2}</span>
+                            </div>
+                            <div class="text-3xl font-extrabold text-white mb-3 font-mono">${amt} <span class="text-sm text-amber-400 font-sans">USDT</span></div>
+                            <div class="space-y-1.5 text-xs text-gray-300 bg-slate-950/75 p-3 rounded-xl border border-slate-800/90 mb-4">
+                                <div class="flex justify-between"><span>💧 Pool (50%):</span><span class="text-amber-400 font-mono font-bold">$${(amt * 0.50).toFixed(2)}</span></div>
+                                <div class="flex justify-between"><span>🤝 Sponsor (10%):</span><span class="text-emerald-400 font-mono font-bold">$${(amt * 0.10).toFixed(2)}</span></div>
+                                <div class="flex justify-between"><span>🌐 20 Up/Down (40%):</span><span class="text-sky-400 font-mono font-bold">$${(amt * 0.40).toFixed(2)}</span></div>
+                                <div class="flex justify-between border-t border-slate-800 pt-1.5 mt-1">
+                                    <span class="text-amber-300 font-semibold">⚡ 48h 2-Direct (5%):</span>
+                                    <span class="text-amber-300 font-mono font-extrabold">+$${booster5PctOnTwoDirects}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="buyPackage(${amt})" class="w-full gold-btn py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-bolt"></i> ${hasInvestedAlready ? 'Upgrade' : 'Activate'} ${amt} USDT
+                        </button>
+                    </div>
+                `;
+            });
+        };
+
+        window.renderIndividual2xMetersAndLedgers = function() {
+            const topMetersBox = document.getElementById('individualCappingMetersBox');
+            const ledgerContainer = document.getElementById('userInvestmentRecordsList');
+            const withdrawContainer = document.getElementById('userWithdrawalRecordsList');
+            if (!topMetersBox || !ledgerContainer || !withdrawContainer) return;
+
+            const wLower = (window.currentUserWallet || '').toLowerCase();
+            const myRecords = (window.investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+
+            const activeCount = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001).length;
+            const completedCount = myRecords.filter(r => (r.earned2x || 0) >= (r.target2x || r.amount * 2) - 0.0001).length;
+
+            document.getElementById('uiTopActiveMetersCount').innerText = activeCount;
+            document.getElementById('uiTopCompletedMetersCount').innerText = completedCount;
+
+            if (myRecords.length === 0) {
+                topMetersBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-5 bg-slate-900/70 rounded-xl border border-slate-800">No active 2x meters yet. Activate any TGIP package below (e.g. 10 or 25 USDT) to open your first Individual 2x Return Capping Meter!</div>`;
+                ledgerContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No investment or auto-reinvestment records yet.</div>`;
+            } else {
+                topMetersBox.innerHTML = '';
+                ledgerContainer.innerHTML = '';
+
+                myRecords.forEach((rec) => {
+                    const isReinv = rec.type === 'AUTO_REINVEST';
+                    const isUpg = rec.type === 'UPGRADE';
+                    const target2x = rec.target2x || (rec.amount * 2);
+                    const earned2x = rec.earned2x || 0;
+                    const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
+                    const isDone = earned2x >= target2x - 0.0001;
+                    const labelTag = isReinv ? '♻️ 50% Auto-Reinvest' : (isUpg ? '⬆️ Upgrade Package' : '🚀 Direct Package');
+
+                    topMetersBox.innerHTML += `
+                        <div class="bg-slate-900/95 p-3.5 rounded-xl border ${isDone ? 'border-amber-400/70' : (isReinv ? 'border-sky-500/40' : 'border-emerald-500/40')}">
+                            <div class="flex flex-wrap justify-between items-center gap-2 text-xs mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-extrabold px-2 py-0.5 rounded bg-slate-950 text-amber-300 border border-slate-700">${rec.id}</span>
+                                    <span class="font-bold text-white">${labelTag}: <span class="text-amber-300 font-mono">$${rec.amount.toFixed(2)}</span></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-bold ${isDone ? 'text-amber-300' : 'text-emerald-400'}">${pct.toFixed(1)}% ($${earned2x.toFixed(2)} / $${target2x.toFixed(2)})</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold font-mono ${isDone ? 'bg-amber-400 text-slate-950' : 'bg-emerald-500/20 text-emerald-300'}">${isDone ? '🏆 2x DONE' : 'ACTIVE'}</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-950 rounded-full h-3 border border-slate-700 overflow-hidden p-0.5">
+                                <div class="bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${Math.max(2, pct)}%"></div>
+                            </div>
+                        </div>
+                    `;
+
+                    ledgerContainer.innerHTML += `
+                        <div class="bg-slate-950/95 border border-slate-800 p-3.5 rounded-xl space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-mono font-bold text-amber-300">${rec.id} • ${labelTag}</span>
+                                <span class="text-[11px] text-gray-400 font-mono">${rec.timestamp}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-300">
+                                <span>Amount: <b class="text-white font-mono">$${rec.amount.toFixed(2)}</b></span>
+                                <span>2x Meter: <b class="text-emerald-400 font-mono">$${earned2x.toFixed(2)} / $${target2x.toFixed(2)} (${pct.toFixed(1)}%)</b></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 bg-slate-900/70 p-2 rounded-lg text-[11px]">
+                                <div>Pool (50%): <b class="text-amber-400 font-mono">$${rec.poolShare.toFixed(2)}</b></div>
+                                <div>Ref (10%): <b class="text-emerald-400 font-mono">$${rec.directShare.toFixed(2)}</b></div>
+                                <div>Team (40%): <b class="text-sky-400 font-mono">$${rec.teamShare.toFixed(2)}</b></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const myWithdraws = (window.pendingWithdrawals || []).filter(w => w.wallet && w.wallet.toLowerCase() === wLower);
+            document.getElementById('uiUserWithdrawTicketCount').innerText = myWithdraws.length;
+
+            if (myWithdraws.length === 0) {
+                withdrawContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No withdrawal tickets yet.</div>`;
+            } else {
+                withdrawContainer.innerHTML = '';
+                myWithdraws.forEach(w => {
+                    const isPending = w.status === 'PENDING';
+                    withdrawContainer.innerHTML += `
+                        <div class="bg-slate-950/90 border ${isPending ? 'border-amber-500/40' : 'border-emerald-500/40'} p-3.5 rounded-xl flex justify-between items-center gap-2">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-mono font-bold text-amber-400">${w.id}</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${w.status}</span>
+                                </div>
+                                <div class="text-gray-300">50% Payout: <b class="text-emerald-400 font-mono">${w.tokenAmount} T_DA ($${w.netUSDT.toFixed(2)})</b> • 50% Reinvest: <b class="text-sky-400 font-mono">${w.reinvestRecordId} ($${w.reinvestedUSDT.toFixed(2)})</b></div>
+                            </div>
+                            <span class="text-[10px] text-gray-500 font-mono">${w.timestamp}</span>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.renderMyDirectPartnersList = function() {
+            const listEl = document.getElementById('myDirectPartnersList');
+            const countEl = document.getElementById('uiTotalDirectsRegistered');
+            if (!listEl || !window.currentUserWallet) return;
+
+            const wLower = window.currentUserWallet.toLowerCase();
+            const myDirects = Object.values(window.globalUsersMap || {}).filter(
+                u => u.sponsor && u.sponsor.toLowerCase() === wLower && u.wallet.toLowerCase() !== wLower
+            );
+
+            if (countEl) countEl.innerText = myDirects.length;
+
+            if (myDirects.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/40 rounded-xl border border-slate-800/80">No direct partners registered under your link yet.</div>`;
+                return;
+            }
+
+            const qualList = Array.isArray(window.currentUserData?.qualifyingDirects48h) ? window.currentUserData.qualifyingDirects48h : [];
+
+            listEl.innerHTML = '';
+            myDirects.forEach(d => {
+                const isActive = (d.totalInvested || 0) > 0;
+                const is48hQualified = qualList.some(q => q.wallet === d.wallet.toLowerCase());
+                listEl.innerHTML += `
+                    <div class="bg-slate-950/90 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
+                        <div>
+                            <b class="text-white">${d.name || 'Member'}</b>
+                            <span class="text-gray-400 font-mono text-[11px] ml-2">${d.wallet.slice(0,6)}...${d.wallet.slice(-4)}</span>
+                            ${is48hQualified ? `<span class="ml-1.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">⚡ 48h Matched</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-amber-300 font-bold">$${(d.totalInvested || 0).toFixed(2)}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${isActive ? 'ACTIVE' : 'REGISTERED ONLY'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.openAdminModal = function() {
+            document.getElementById('adminModal').style.display = 'flex';
+            window.renderAdminDashboardData();
+        };
+        window.closeAdminModal = function() {
+            document.getElementById('adminModal').style.display = 'none';
+        };
+
+        window.renderAdminDashboardData = function() {
+            const allUsers = Object.values(window.globalUsersMap || {});
+            const totalRegs = allUsers.length;
+            const totalActive = allUsers.filter(u => (u.totalInvested || 0) > 0).length;
+            const totalVol = allUsers.reduce((acc, u) => acc + (u.totalInvested || 0) + (u.autoReinvestedTotal || 0), 0);
+
+            document.getElementById('adminTotalRegs').innerText = totalRegs;
+            document.getElementById('adminTotalActive').innerText = totalActive;
+            document.getElementById('adminTotalVolume').innerText = `$${totalVol.toFixed(2)}`;
+            document.getElementById('adminOverflowTotal').innerText = `$${Number(window.protocolOverflowReserve || 0).toFixed(2)}`;
+
+            const cfg = window.offerConfig || {};
+            const badgeInp = document.getElementById('adminOfferBadgeInput');
+            const headInp = document.getElementById('adminOfferHeadlineInput');
+            const descInp = document.getElementById('adminOfferDescInput');
+            const selfInp = document.getElementById('adminOfferMinSelfInput');
+            const bizInp = document.getElementById('adminOfferTargetBizInput');
+            const dateInp = document.getElementById('adminOfferEndDateInput');
+
+            if (badgeInp && document.activeElement !== badgeInp) badgeInp.value = cfg.badgeTitle || "";
+            if (headInp && document.activeElement !== headInp) headInp.value = (cfg.headline || "").replace(/<[^>]*>/g, '');
+            if (descInp && document.activeElement !== descInp) descInp.value = (cfg.description || "").replace(/<[^>]*>/g, '');
+            if (selfInp && document.activeElement !== selfInp) selfInp.value = cfg.minSelfId || 100;
+            if (bizInp && document.activeElement !== bizInp) bizInp.value = cfg.targetDirectBiz || 1000;
+            if (dateInp && document.activeElement !== dateInp) dateInp.value = cfg.endTimeISO || "2026-11-30T23:59";
+
+            const achListEl = document.getElementById('adminOfferAchieversList');
+            const achBadgeEl = document.getElementById('adminAchieversPendingBadge');
+            if (achListEl) {
+                const minSelf = Number(cfg.minSelfId || 100);
+                const targetBiz = Number(cfg.targetDirectBiz || 1000);
+                const deliveredMap = cfg.deliveredAchievers || {};
+                const masterAllAchievers = [];
+
+                allUsers.forEach(u => {
+                    if (!u || !u.wallet) return;
+                    const wLower = u.wallet.toLowerCase();
+                    const selfInv = Number(u.totalInvested || 0);
+                    if (selfInv < minSelf) return;
+
+                    const directs = allUsers.filter(
+                        d => d.sponsor && d.sponsor.toLowerCase() === wLower && d.wallet.toLowerCase() !== wLower
+                    );
+                    const directVol = directs.reduce((acc, d) => acc + Number(d.totalInvested || 0), 0);
+
+                    if (directVol >= targetBiz) {
+                        const deliveryInfo = deliveredMap[wLower] || null;
+                        masterAllAchievers.push({
+                            wallet: u.wallet,
+                            walletLower: wLower,
+                            name: u.name || 'Member',
+                            selfInvested: selfInv,
+                            directBusiness: directVol,
+                            directCount: directs.filter(d => (d.totalInvested || 0) > 0).length,
+                            deliveryStatus: deliveryInfo ? deliveryInfo.status : 'PENDING',
+                            deliveredAt: deliveryInfo ? deliveryInfo.deliveredAt : null
+                        });
+                    }
+                });
+
+                const pendingCount = masterAllAchievers.filter(a => a.deliveryStatus === 'PENDING').length;
+                if (achBadgeEl) achBadgeEl.innerText = `${pendingCount} Pending / ${masterAllAchievers.length} Total`;
+
+                if (masterAllAchievers.length === 0) {
+                    achListEl.innerHTML = `<div class="text-center text-gray-500 py-4 bg-slate-900/60 rounded-xl border border-slate-800">No members have completed the offer target yet. As soon as someone qualifies, their name will appear here and on the public store!</div>`;
+                } else {
+                    achListEl.innerHTML = '';
+                    masterAllAchievers.forEach(ach => {
+                        const isDelivered = ach.deliveryStatus === 'DELIVERED';
+                        const isHidden = ach.deliveryStatus === 'HIDDEN_BY_ADMIN';
+                        achListEl.innerHTML += `
+                            <div class="bg-slate-900/95 border ${isDelivered ? 'border-emerald-500/50' : (isHidden ? 'border-slate-700' : 'border-amber-400/50')} p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${isDelivered ? 'bg-emerald-500/20 text-emerald-400' : (isHidden ? 'bg-slate-800 text-gray-400' : 'bg-amber-400 text-slate-950')}">
+                                            ${isDelivered ? '✅ DELIVERED (Shows 3 Days)' : (isHidden ? '👁️‍🗨️ HIDDEN FROM STORE' : '🏆 QUALIFIED WINNER')}
+                                        </span>
+                                        <b class="text-white">${ach.name}</b>
+                                        <span class="text-gray-400 font-mono text-[11px]">${ach.wallet}</span>
+                                    </div>
+                                    <div class="text-[11px] text-gray-300 font-mono mt-1">
+                                        Self ID: <b class="text-amber-300">$${ach.selfInvested.toFixed(0)}</b> • Direct Business: <b class="text-emerald-400">$${ach.directBusiness.toFixed(0)}</b> (${ach.directCount} Active Directs)
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    ${ach.deliveryStatus === 'PENDING' ? `
+                                        <button onclick="adminMarkAchieverRewardDelivered('${ach.walletLower}')" class="gold-btn font-extrabold px-3 py-2 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center gap-1">
+                                            <i class="fa-solid fa-gift"></i> Deliver Reward
+                                        </button>
+                                    ` : ''}
+
+                                    ${ach.deliveryStatus !== 'HIDDEN_BY_ADMIN' ? `
+                                        <button onclick="adminHideAchieverCompletely('${ach.walletLower}')" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-2 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1" title="Hide completely from public store immediately">
+                                            <i class="fa-solid fa-eye-slash"></i> Hide Now
+                                        </button>
+                                    ` : `
+                                        <button onclick="adminRestoreAchieverToStore('${ach.walletLower}')" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer">
+                                            Show on Store
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            const listEl = document.getElementById('adminWithdrawalList');
+            const pendingCountEl = document.getElementById('adminModalPendingCount');
+            const pending = (window.pendingWithdrawals || []).filter(w => w.status === 'PENDING');
+            if (pendingCountEl) pendingCountEl.innerText = pending.length;
+
+            if (!window.pendingWithdrawals || window.pendingWithdrawals.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-400 py-8 bg-slate-900/70 rounded-xl border border-slate-800 text-xs">No withdrawal requests submitted yet.</div>`;
+            } else {
+                listEl.innerHTML = '';
+                window.pendingWithdrawals.forEach(item => {
+                    const isPending = item.status === 'PENDING';
+                    listEl.innerHTML += `
+                        <div class="bg-slate-900/95 border ${isPending ? 'border-amber-500/50' : 'border-emerald-500/30'} p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-mono font-extrabold text-amber-400">${item.id}</span>
+                                    <span class="text-white font-bold">${item.userName || 'Member'}</span>
+                                    <span class="text-gray-400 font-mono">(${item.wallet.slice(0,6)}...${item.wallet.slice(-4)})</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${item.status}</span>
+                                </div>
+                                <div class="text-gray-300 leading-relaxed">
+                                    Send 50% Payout: <b class="text-emerald-400 font-mono">${item.tokenAmount} Temple_DA ($${item.netUSDT.toFixed(2)})</b> • 50% Reinvested: <b class="text-sky-400 font-mono">$${item.reinvestedUSDT.toFixed(2)}</b>
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                ${isPending ? `
+                                    <button onclick="adminApproveAndTransfer('${item.id}')" class="w-full sm:w-auto gold-btn font-extrabold px-4 py-2.5 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5">
+                                        <i class="fa-solid fa-paper-plane"></i> Approve & Send T_DA
+                                    </button>
+                                ` : `<span class="text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sent</span>`}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const membersEl = document.getElementById('adminAllMembersList');
+            if (membersEl) {
+                membersEl.innerHTML = '';
+                allUsers.forEach(u => {
+                    const isActive = (u.totalInvested || 0) > 0;
+                    membersEl.innerHTML += `
+                        <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <b class="text-white">${u.name || 'Member'}</b>
+                                <span class="text-gray-400 font-mono ml-2 break-all">${u.wallet}</span>
+                            </div>
+                            <div class="flex items-center gap-3 font-mono">
+                                <span class="text-amber-300">Deposit: $${(u.totalInvested || 0).toFixed(2)}</span>
+                                <span class="text-sky-400">Reinvest: $${(u.autoReinvestedTotal || 0).toFixed(2)}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${isActive ? 'ACTIVE' : 'REGISTERED'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        window.isAdminTransferInProgress = false;
+
+        window.adminApproveAndTransfer = async function(reqId) {
+            if (window.isAdminTransferInProgress) return;
+
+            const reqItem = (window.pendingWithdrawals || []).find(w => w.id === reqId);
+            if (!reqItem || reqItem.status !== 'PENDING') return;
+
+            window.isAdminTransferInProgress = true;
+            let txHashConfirmed = null;
+
+            try {
+                const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+                if (!eth || typeof ethers === 'undefined') {
+                    throw new Error("Admin Web3 Wallet not detected!");
+                }
+                await window.ensureBSCNetwork(eth);
+                const provider = new ethers.providers.Web3Provider(eth, "any");
+                const signer = provider.getSigner();
+
+                const tokenAbi = [
+                    "function decimals() view returns (uint8)",
+                    "function transfer(address to, uint256 value) public returns (bool)"
+                ];
+                const tokenContract = new ethers.Contract(window.TEMPLE_DA_CONTRACT, tokenAbi, signer);
+                let decimals = 18;
+                try { decimals = await tokenContract.decimals(); } catch (e) { decimals = 18; }
+
+                const parsedTokens = ethers.utils.parseUnits(reqItem.tokenAmount.toString(), decimals);
+                window.UI.showModal('Sending Temple_DA Tokens...', `Confirm transferring <b>${reqItem.tokenAmount} Temple_DA</b> to <code>${reqItem.wallet}</code> in your wallet...`, '⏳');
+
+                const tx = await tokenContract.transfer(reqItem.wallet, parsedTokens);
+                txHashConfirmed = tx.hash;
+
+                window.UI.showModal('Confirming Payout on BSC...', `Token transfer broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for confirmation...`, '⛓️');
+
+                let receipt = null;
+                try {
+                    receipt = await tx.wait(1);
+                } catch (waitErr) {
+                    try {
+                        const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                        receipt = await bscRpc.waitForTransaction(tx.hash, 1, 45000);
+                    } catch (rpcErr) {
+                        receipt = { status: 1 };
+                    }
+                }
+
+                if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
+                    txHashConfirmed = null;
+                    throw new Error("Token transfer reverted on blockchain.");
+                }
+            } catch (err) {
+                window.isAdminTransferInProgress = false;
+                if (!txHashConfirmed) {
+                    window.UI.showModal('Transfer Failed / Cancelled', err.reason || err.message || 'Token transfer cancelled.', '❌');
+                    return;
+                }
+            }
+
+            try {
+                reqItem.status = 'APPROVED & TRANSFERRED';
+                reqItem.txHash = txHashConfirmed;
+                await window.saveGlobalProtocolState();
+                try { window.renderAdminDashboardData(); } catch (e) {}
+                try { window.refreshDashboardUI(false); } catch (e) {}
+
+                window.UI.showModal(
+                    'Payout Transferred Successfully! ✅',
+                    `Successfully transferred <b>${reqItem.tokenAmount} Temple_DA ($${reqItem.netUSDT.toFixed(2)})</b> to <b>${reqItem.userName || 'Member'}</b>!<br><br><code class="text-[11px] text-emerald-400 bg-slate-950 p-2 rounded block break-all">Tx: ${txHashConfirmed}</code>`,
+                    '👑',
+                    '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                );
+            } catch (postErr) {
+                console.error("Post-transfer UI warning:", postErr);
+            } finally {
+                window.isAdminTransferInProgress = false;
+            }
+        };
+    </script>
+</body>
+</html>
