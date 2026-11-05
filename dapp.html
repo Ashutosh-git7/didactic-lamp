@@ -818,6 +818,65 @@
         window.BSC_CHAIN_ID_HEX = "0x38"; // Strict BSC Mainnet (56)
         window.MIN_WITHDRAW_USDT = 3;
 
+        // ============================================================================
+        // LIVE TELEGRAM BOT NOTIFICATION ENGINE (TGIP Protocol Transaction Proof)
+        // ============================================================================
+        window.TELEGRAM_BOT_TOKEN = "9222873980:AAHDiO3ygth3EHgWLbPIUcSo4sVslrrWfQ8";
+        window.TELEGRAM_CHAT_ID = "-1003612949068";
+
+        window.sendTelegramAlert = async function(actionType, userWallet, amount, txHash, extraDetails = "") {
+            const shortWallet = (userWallet && userWallet.length >= 10)
+                ? `${userWallet.substring(0, 6)}...${userWallet.substring(userWallet.length - 4)}`
+                : "Member Wallet";
+
+            const wLower = (userWallet || "").toLowerCase();
+            const userObj = (window.globalUsersMap && window.globalUsersMap[wLower]) ? window.globalUsersMap[wLower] : null;
+            const memberName = (userObj && userObj.name) ? userObj.name : "TGIP Investor";
+
+            let emoji = '🚀';
+            if (actionType.includes('Deposit') || actionType.includes('Activation')) emoji = '📥';
+            if (actionType.includes('Upgrade')) emoji = '⭐';
+            if (actionType.includes('Withdrawal')) emoji = '📤';
+            if (actionType.includes('Reinvestment')) emoji = '🔄';
+            if (actionType.includes('Registration')) emoji = '👤';
+            if (actionType.includes('Payout')) emoji = '✅';
+
+            let txLine = "";
+            if (txHash && txHash.startsWith("0x")) {
+                txLine = `🔗 [Verify on BscScan](https://bscscan.com/tx/${txHash})\n`;
+            } else if (txHash) {
+                txLine = `🧾 *Record ID:* \`${txHash}\`\n`;
+            }
+
+            let extraLine = extraDetails ? `${extraDetails}\n` : "";
+
+            const message = `${emoji} *TGIP Protocol Live Transaction* ${emoji}\n\n` +
+                            `🔹 *Action:* ${actionType}\n` +
+                            `👤 *Member:* ${memberName} (\`${shortWallet}\`)\n` +
+                            `💰 *Amount:* $${amount} USDT\n` +
+                            extraLine +
+                            txLine +
+                            `⏱ *Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST\n\n` +
+                            `🌐 *Join & Earn:* [tgip.templeda.com](https://tgip.templeda.com)`;
+
+            const url = `https://api.telegram.org/bot${window.TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: window.TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: 'Markdown',
+                        disable_web_page_preview: true
+                    })
+                });
+            } catch (error) {
+                console.warn("Telegram Notification Warning:", error);
+            }
+        };
+
         window.liveTokenPrice = 0.001569;
         window.currentUserWallet = null;
         window.currentUserData = null;
@@ -1260,6 +1319,16 @@
             await window.saveGlobalProtocolState();
             window.finalizeLogin(walletAddr);
 
+            // Live Telegram Alert for New Member Registration
+            const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
+            window.sendTelegramAlert(
+                'New Member Registration',
+                walletAddr,
+                '0 (Registered)',
+                '',
+                `🤝 *Sponsor:* \`${shortSponsor}\``
+            );
+
             const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
             window.UI.showModal(
                 'TGIP Registration Successful! 🎉',
@@ -1622,6 +1691,12 @@
                 try { window.refreshDashboardUI(false); } catch (uiErr) {}
 
                 if (res) {
+                    // Send Live Telegram Notification for Deposit or Upgrade
+                    const actionTitle = isUpgrade ? `Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
+                    const extraInfo = `🎯 *2x Capping Meter:* $${(amount * 2).toFixed(2)} USDT\n` +
+                                      `💧 *50% Pool:* $${res.poolShare.toFixed(2)} | 🤝 *10% Direct:* $${res.directShare.toFixed(2)} | 🌐 *40% Matrix:* $${res.teamTotalShare.toFixed(2)}`;
+                    window.sendTelegramAlert(actionTitle, window.currentUserWallet, amount, txHashConfirmed, extraInfo);
+
                     window.UI.showModal(
                         `Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`,
                         `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
@@ -1718,6 +1793,17 @@
 
             await window.saveGlobalProtocolState();
             window.refreshDashboardUI(false);
+
+            // Send Live Telegram Notification for Withdrawal & 50% Auto-Reinvestment
+            const withdrawExtra = `🪙 *50% Token Payout:* ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` +
+                                  `🔄 *50% Auto-Reinvested:* $${reinvestUSDT.toFixed(2)} (${reinvResult ? reinvResult.recordId : '#REINV'} -> 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
+            window.sendTelegramAlert(
+                `Withdrawal & 50% Reinvestment (${ticketId})`,
+                window.currentUserWallet,
+                totalWithdrawUSDT.toFixed(2),
+                ticketId,
+                withdrawExtra
+            );
 
             window.UI.showModal(
                 `Withdrawal (${ticketId}) & New 2x Meter (${reinvResult.recordId})!`,
@@ -2183,6 +2269,17 @@
                 await window.saveGlobalProtocolState();
                 try { window.renderAdminDashboardData(); } catch (e) {}
                 try { window.refreshDashboardUI(false); } catch (e) {}
+
+                // Send Live Telegram Notification for Approved Token Payout
+                const payoutExtra = `🪙 *Tokens Sent:* ${reqItem.tokenAmount} Temple_DA\n` +
+                                    `🧾 *Withdrawal Ticket:* \`${reqItem.id}\``;
+                window.sendTelegramAlert(
+                    `Withdrawal Payout Sent (${reqItem.id})`,
+                    reqItem.wallet,
+                    reqItem.netUSDT.toFixed(2),
+                    txHashConfirmed,
+                    payoutExtra
+                );
 
                 window.UI.showModal(
                     'Payout Transferred Successfully! ✅',
