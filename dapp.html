@@ -85,12 +85,10 @@
         @keyframes popIn { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     </style>
 
-    <!-- Multi-Path Smart Logo Resolver (temple_logo.png.png) -->
+    <!-- Multi-Path Smart Logo Resolver -->
     <script>
         window.TGIP_LOGO_PATHS = [
-            "TGIP.png", "/TGIP.png", "../TGIP.png", "./TGIP.png",
-            "TGIP.png", "/TGIP.png", "../TGIP.png",
-            "TGIP.png", "/TGIP.png"
+            "TGIP.png", "/TGIP.png", "../TGIP.png", "./TGIP.png"
         ];
         window.TGIP_SVG_FALLBACK = "data:image/svg+xml;utf8," + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
@@ -118,6 +116,8 @@
                 imgEl.src = window.TGIP_SVG_FALLBACK;
             }
         };
+        // Alias to support both resolveTGIPLogo and resolveTempleLogo calls seamlessly
+        window.resolveTempleLogo = window.resolveTGIPLogo;
     </script>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -239,6 +239,9 @@
             <button onclick="openRegistrationModalManual()" class="glass-card border-amber-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-amber-300 hover:text-white flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-user-plus"></i> New Member Registration
             </button>
+            <button onclick="openBoosterChartModal()" class="glass-card border-emerald-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-emerald-300 hover:text-white flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-fire text-amber-400"></i> 48h 5% Booster Chart
+            </button>
             <a href="https://pancakeswap.finance/swap?outputCurrency=0x50BE31cAAB627ee8F98374d33b0454a8269A79e1" target="_blank" class="glass-card px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-gray-200 hover:text-white flex items-center gap-2">
                 <i class="fa-solid fa-chart-pie text-amber-400"></i> Temple_DA on PancakeSwap
             </a>
@@ -313,7 +316,7 @@
             </div>
         </div>
 
-        <!-- NEW: 48-HOUR 2-DIRECT 5% BOOSTER LIVE TRACKER BANNER -->
+        <!-- 48-HOUR 2-DIRECT 5% BOOSTER LIVE TRACKER BANNER -->
         <div class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-amber-400/40 relative overflow-hidden">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div class="space-y-1.5">
@@ -326,7 +329,7 @@
                         </span>
                     </div>
                     <h3 class="text-base sm:text-lg font-extrabold text-white">
-                        Complete 2 Same/Higher Amount Directs within 48 Hours -> Get <span class="text-amber-400">+5% Extra USDT Incentive</span> in Your 2x Meter!
+                        Complete 2 Same/Higher Amount Directs within 48 Hours &rarr; Get <span class="text-amber-400">+5% Extra USDT Incentive</span> in Your 2x Meter!
                     </h3>
                     <p class="text-xs text-gray-300 leading-relaxed">
                         Sponsor <b>2 Direct Partners</b> with a package equal to or higher than your base package (<b id="uiMyBasePkgTxt" class="text-amber-300 font-mono">$0 USDT</b>) before the 48-hour timer ends. You will receive <b>5% of both directs' investment in USDT</b> credited straight into your <b>200% (2x) Capping Meter</b> (withdraws as <b>Temple_DA</b> with the 50% reinvestment rule)!
@@ -361,7 +364,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
                         <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
-                            Min: 5 USDT (50/50 Split)
+                            Min: 3 USDT (50/50 Split)
                         </span>
                     </div>
 
@@ -424,7 +427,7 @@
                     <div class="glass-card p-4 rounded-xl">
                         <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned (All 2x)</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$<span id="uiEarned">0.00</span></div>
-                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow -> Pool: $<span id="uiOverflowSaved">0.00</span></div>
+                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow &rarr; Pool: $<span id="uiOverflowSaved">0.00</span></div>
                     </div>
                 </div>
 
@@ -572,7 +575,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg sm:text-xl font-extrabold text-white">48-Hour 2-Direct 5% USDT Booster Chart</h3>
-                    <p class="text-xs text-gray-400">Complete 2 Directs of Same or Higher Package within 48h -> Extra 5% Added to Your 2x Meter!</p>
+                    <p class="text-xs text-gray-400">Complete 2 Directs of Same or Higher Package within 48h &rarr; Extra 5% Added to Your 2x Meter!</p>
                 </div>
             </div>
 
@@ -640,7 +643,7 @@
                 <div>
                     <label class="block text-gray-300 font-semibold mb-1">Your BEP-20 Wallet Address *</label>
                     <div class="flex gap-2">
-                        <input id="regWalletInput" type="text" readonly placeholder="Click Connect Wallet ->" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-amber-300">
+                        <input id="regWalletInput" type="text" readonly placeholder="Click Connect Wallet &rarr;" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs font-mono text-amber-300">
                         <button type="button" onclick="connectWalletForRegistrationForm()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shrink-0 cursor-pointer">
                             <i class="fa-solid fa-wallet mr-1"></i> Connect
                         </button>
@@ -744,7 +747,7 @@
             </button>
             
             <div class="flex justify-center mb-3">
-                <img src="temple_logo.png.png" data-logo-idx="0" onerror="window.resolveTempleLogo(this)" alt="TGIP Protocol" class="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shadow-lg">
+                <img src="TGIP.png" data-logo-idx="0" onerror="window.resolveTGIPLogo(this)" alt="TGIP Protocol" class="w-16 h-16 rounded-full object-cover border-2 border-amber-400 shadow-lg">
             </div>
             
             <h3 class="text-xl font-extrabold text-center mb-1 gold-gradient-text">Connect to TGIP Protocol</h3>
@@ -813,7 +816,7 @@
         window.TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         window.USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
         window.BSC_CHAIN_ID_HEX = "0x38"; // Strict BSC Mainnet (56)
-        window.MIN_WITHDRAW_USDT = 5;
+        window.MIN_WITHDRAW_USDT = 3;
 
         window.liveTokenPrice = 0.001569;
         window.currentUserWallet = null;
@@ -1372,7 +1375,7 @@
             return { credited: totalCreditedNow, overflow: overflowAmt };
         };
 
-        // NEW: 48-Hour 2-Direct 5% Booster Evaluation Engine
+        // 48-Hour 2-Direct 5% Booster Evaluation Engine
         window.evaluateSponsor48hBooster = function(sponsorLower, directWalletLower, directDepositAmount) {
             const sponsorObj = window.globalUsersMap[sponsorLower];
             if (!sponsorObj || (sponsorObj.totalInvested || 0) <= 0) return 0;
@@ -1628,7 +1631,7 @@
                             </div>
                             <div class="flex justify-between border-b border-slate-800 pb-1.5">
                                 <span class="text-gray-400">2x Return Capping Target:</span>
-                                <span class="font-bold text-amber-300 font-mono">$${amount} -> $${(amount * 2).toFixed(2)} USDT</span>
+                                <span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span>
                             </div>
                             <div class="flex justify-between border-b border-slate-800 pb-1.5">
                                 <span class="text-gray-400">💧 50% Liquidity Pool:</span>
@@ -1678,8 +1681,8 @@
             const currentBal = Number(window.currentUserData.balance || 0);
             if (currentBal < window.MIN_WITHDRAW_USDT) {
                 window.UI.showModal(
-                    'Minimum Withdrawal is 5 USDT ⚠️',
-                    `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$5.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`,
+                    'Minimum Withdrawal is 3 USDT ⚠️',
+                    `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$3.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`,
                     '⚠️'
                 );
                 return;
@@ -1729,7 +1732,7 @@
                     </div>
                     <div class="flex justify-between border-b border-slate-800 pb-1.5">
                         <span class="text-gray-400">50% Auto-Reinvested 2x Meter:</span>
-                        <span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} ($${reinvestUSDT.toFixed(2)} -> 2x: $${(reinvestUSDT * 2).toFixed(2)})</span>
+                        <span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} ($${reinvestUSDT.toFixed(2)} &rarr; 2x: $${(reinvestUSDT * 2).toFixed(2)})</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-400">Reinvest Split (50/10/40):</span>
@@ -1751,7 +1754,7 @@
         window.update48hBoosterBannerUI = function() {
             if (!window.currentUserData) return;
             const d = window.currentUserData;
-            const basePkg = d.firstPackageAmount || d.totalInvested || 0;
+            const basePkg = d.firstPackageAmount || d.totalInvested || 10;
             const qualList = Array.isArray(d.qualifyingDirects48h) ? d.qualifyingDirects48h : [];
             const boosterEarned = Number(d.boosterEarned || 0);
 
@@ -1765,14 +1768,6 @@
             const timerEl = document.getElementById('uiBoosterCountdown');
             const subNoteEl = document.getElementById('uiBoosterSubNote');
 
-            if ((d.totalInvested || 0) <= 0) {
-                pillEl.className = "bg-slate-900 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono";
-                pillEl.innerText = "Activate Package to Start 48h Timer";
-                timerEl.innerText = "48:00:00";
-                subNoteEl.innerText = "Waiting for 1st package activation";
-                return;
-            }
-
             if (d.booster5PctClaimed) {
                 pillEl.className = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-3 py-0.5 rounded-full font-mono";
                 pillEl.innerText = "🏆 5% BOOSTER ACHIEVED & CREDITED TO 2x METER!";
@@ -1782,7 +1777,8 @@
                 return;
             }
 
-            const startTs = d.activatedAt || d.registeredAt || Date.now();
+            // Simple Registration-start Timer (as originally requested)
+            const startTs = d.registeredAt || d.activatedAt || Date.now();
             const endTs = startTs + FORTY_EIGHT_HOURS_MS;
             const remainingMs = endTs - Date.now();
 
