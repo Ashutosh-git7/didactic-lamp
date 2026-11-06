@@ -78,6 +78,15 @@
             background: linear-gradient(135deg, #FDE047 0%, #FBBF24 100%);
             box-shadow: 0 6px 25px rgba(255, 215, 0, 0.5);
         }
+        .tg-btn {
+            background: linear-gradient(135deg, #0088cc 0%, #229ED9 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 18px rgba(34, 158, 217, 0.35);
+        }
+        .tg-btn:hover {
+            background: linear-gradient(135deg, #229ED9 0%, #38BDF8 100%);
+            box-shadow: 0 6px 24px rgba(56, 189, 248, 0.55);
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #060913; }
         ::-webkit-scrollbar-thumb { background: #F59E0B; border-radius: 3px; }
@@ -116,58 +125,72 @@
                 imgEl.src = window.TGIP_SVG_FALLBACK;
             }
         };
-        // Alias to support both resolveTGIPLogo and resolveTempleLogo calls seamlessly
         window.resolveTempleLogo = window.resolveTGIPLogo;
     </script>
 </head>
 <body class="min-h-screen flex flex-col relative overflow-x-hidden">
 
     <!-- Top Live Blockchain & Protocol Status Bar -->
-    <div class="bg-slate-950/90 border-b border-slate-800/80 px-4 py-1.5 text-[11px] flex flex-wrap items-center justify-between gap-2 text-gray-400">
-        <div class="flex items-center gap-3">
+    <div class="bg-slate-950/90 border-b border-slate-800/80 px-3 sm:px-4 py-1.5 text-[11px] flex flex-wrap items-center justify-between gap-2 text-gray-400">
+        <div class="flex items-center gap-2 sm:gap-3">
             <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP Protocol × Temple Digital Asset (BSC BEP-20)
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP × Temple_DA (BEP-20)
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
             <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP × Temple_DA Cloud (Live Sync)</b></span>
         </div>
-        <div class="flex items-center gap-3 ml-auto">
-            <span>Pool: <a href="https://bscscan.com/address/0x707171A0C27f87B8C530B20831f7B004e6647830" target="_blank" class="text-amber-400 hover:underline font-mono">0x7071...7830</a></span>
+        <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+            <!-- Mobile Live Rate Badge inside Top Bar so Navbar stays clean -->
+            <span class="flex sm:hidden items-center gap-1 text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-amber-500/30">
+                T_DA: <b id="mobileTopLivePriceTxt">$0.001569</b>
+            </span>
+            <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded transition-colors">
+                <i class="fa-brands fa-telegram"></i> <span class="hidden xs:inline">Live Proof</span> Group
+            </a>
+            <span class="hidden sm:inline">Pool: <a href="https://bscscan.com/address/0x707171A0C27f87B8C530B20831f7B004e6647830" target="_blank" class="text-amber-400 hover:underline font-mono">0x7071...7830</a></span>
             <button onclick="updateLivePrice(true)" class="bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer" title="Refresh On-Chain Price">
-                <i id="refreshPriceIcon" class="fa-solid fa-arrows-rotate"></i> Sync Rate
+                <i id="refreshPriceIcon" class="fa-solid fa-arrows-rotate"></i> <span class="hidden sm:inline">Sync Rate</span>
             </button>
         </div>
     </div>
 
-    <!-- Main Navigation Header -->
-    <nav class="glass-panel sticky top-0 z-50 px-4 sm:px-6 py-3.5 flex justify-between items-center border-b border-amber-500/20">
-        <div class="flex items-center gap-3">
-            <div class="relative">
-                <img src="TGIP.png" data-logo-idx="0" onerror="window.resolveTGIPLogo(this)" alt="TGIP Protocol Logo" class="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
-                <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+    <!-- Main Navigation Header (Optimized for Mobile & Desktop so Connect BEP-20 is ALWAYS clearly visible) -->
+    <nav class="glass-panel sticky top-0 z-50 px-3 sm:px-6 py-3 flex justify-between items-center gap-2 border-b border-amber-500/20">
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="relative shrink-0">
+                <img src="TGIP.png" data-logo-idx="0" onerror="window.resolveTGIPLogo(this)" alt="TGIP Protocol Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
+                <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
             </div>
-            <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-extrabold text-lg sm:text-xl tracking-tight gold-gradient-text">TGIP PROTOCOL</span>
+            <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-extrabold text-base sm:text-xl tracking-tight gold-gradient-text truncate">TGIP PROTOCOL</span>
                     <span class="hidden md:inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">
                         <i class="fa-solid fa-handshake text-amber-400"></i> × TEMPLE_DA
                     </span>
                     <span class="hidden sm:inline-block text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">LIVE</span>
                 </div>
-                <span class="text-[11px] text-gray-400 block">Temple Global Infinity Pool • In Collaboration with <b class="text-amber-300">Temple Digital Asset</b></span>
+                <span class="text-[10px] sm:text-[11px] text-gray-400 block truncate">Temple Global Infinity Pool • <b class="text-amber-300">Temple_DA</b></span>
             </div>
         </div>
 
-        <div class="flex items-center gap-2.5 sm:gap-3">
-            <!-- Admin Panel Auto Button (Visible ONLY when Master Wallet 0x2760...De95 connects) -->
-            <button id="btnAdminPanel" onclick="openAdminModal()" class="hidden bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold py-2 px-3.5 rounded-xl text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
+        <!-- Right Side Action Buttons (Never overflows or hides Connect BEP-20) -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <!-- Admin Panel Auto Button -->
+            <button id="btnAdminPanel" onclick="openAdminModal()" class="hidden bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold py-2 px-2.5 sm:px-3.5 rounded-xl text-xs shadow-lg flex items-center gap-1.5 cursor-pointer border border-amber-300/40 shrink-0">
                 <i class="fa-solid fa-crown text-yellow-200"></i>
-                <span>Admin Dashboard</span>
+                <span class="hidden md:inline">Admin</span>
                 <span id="adminPendingCountBadge" class="bg-black/40 px-1.5 py-0.5 rounded-full text-[10px] font-mono">0</span>
             </button>
 
-            <!-- Live PancakeSwap Price Pill -->
-            <div class="flex items-center gap-2 bg-slate-900/95 px-3 sm:px-4 py-2 rounded-xl border border-amber-500/30 shadow-inner">
+            <!-- Join Telegram Button in Navbar (Desktop/Tablet) -->
+            <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="hidden md:flex tg-btn font-bold py-2.5 px-3.5 rounded-xl text-xs sm:text-sm transition-all items-center gap-1.5 cursor-pointer shrink-0" title="Join TGIP Protocol Live Transaction Proof Telegram Group">
+                <i class="fa-brands fa-telegram text-base"></i>
+                <span class="hidden lg:inline">Join Telegram</span>
+            </a>
+
+            <!-- Live PancakeSwap Price Pill (Desktop/Tablet) -->
+            <div class="hidden sm:flex items-center gap-2 bg-slate-900/95 px-3 sm:px-4 py-2 rounded-xl border border-amber-500/30 shadow-inner shrink-0">
                 <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs">
                     <i class="fa-solid fa-coins"></i>
                 </div>
@@ -178,19 +201,19 @@
             </div>
 
             <!-- Open Registration Form Button -->
-            <button id="btnNavRegister" onclick="openRegistrationModalManual()" class="bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold py-2.5 px-3.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5 cursor-pointer">
+            <button id="btnNavRegister" onclick="openRegistrationModalManual()" class="bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-bold py-2 sm:py-2.5 px-2.5 sm:px-3.5 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0" title="New Member Registration">
                 <i class="fa-solid fa-user-plus"></i>
                 <span class="hidden sm:inline">Register</span>
             </button>
 
-            <!-- Connect Wallet Button -->
-            <button id="btnConnect" onclick="handleDirectConnectClick()" class="gold-btn font-bold py-2.5 px-4 sm:px-6 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer">
+            <!-- Connect Wallet Button (Prominent & Always Visible on Mobile & Desktop) -->
+            <button id="btnConnect" onclick="handleDirectConnectClick()" class="gold-btn font-extrabold py-2 sm:py-2.5 px-3.5 sm:px-6 rounded-xl text-xs sm:text-sm transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 whitespace-nowrap">
                 <i class="fa-solid fa-wallet"></i>
                 <span>Connect BEP-20</span>
             </button>
 
             <!-- Connected Wallet Pill -->
-            <div id="walletDisplay" class="hidden bg-slate-900/90 border border-emerald-500/40 px-3.5 py-2 rounded-xl flex items-center gap-2.5">
+            <div id="walletDisplay" class="hidden bg-slate-900/90 border border-emerald-500/40 px-2.5 sm:px-3.5 py-2 rounded-xl flex items-center gap-2 shrink-0">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span id="walletAddressTxt" class="font-mono text-xs sm:text-sm font-semibold text-amber-300">0x...</span>
                 <button onclick="disconnectWallet()" class="text-gray-400 hover:text-red-400 transition-colors pl-1 border-l border-slate-700" title="Disconnect Wallet">
@@ -207,13 +230,11 @@
             <img src="TGIP.png" data-logo-idx="0" onerror="window.resolveTGIPLogo(this)" alt="TGIP Protocol Logo" class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-2 border-amber-400 shadow-2xl">
         </div>
 
-        <!-- Shown ONLY when opened via an actual ?ref=0x... link -->
         <div id="heroReferralNoticeBox" class="hidden items-center gap-2 bg-emerald-950/80 border border-emerald-500/40 px-4 py-2 rounded-full text-xs text-emerald-300 font-semibold mb-4 shadow-lg">
             <i class="fa-solid fa-handshake text-amber-400"></i>
             <span>Referral Link Active! Sponsor: <b id="heroSponsorAddrTxt" class="font-mono text-white">0x...</b></span>
         </div>
 
-        <!-- Official Brand Collaboration Pill -->
         <div class="collab-badge inline-flex flex-wrap items-center justify-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-4 shadow-lg">
             <span class="text-amber-300 tracking-wide uppercase"><i class="fa-solid fa-gem mr-1"></i> TGIP PROTOCOL</span>
             <span class="text-slate-500">•</span>
@@ -232,13 +253,16 @@
             Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b>, plus unlock an extra <b class="text-emerald-400">5% 48-Hour Direct Booster</b> on completing 2 Same/Higher Amount Directs!
         </p>
 
-        <div class="flex flex-wrap justify-center gap-4 mb-12">
+        <div class="flex flex-wrap justify-center gap-4 mb-10">
             <button onclick="handleDirectConnectClick()" class="gold-btn font-extrabold py-4 px-8 rounded-2xl text-base sm:text-lg transition-transform hover:scale-105 flex items-center gap-3 cursor-pointer">
                 <i class="fa-solid fa-bolt"></i> Launch TGIP Protocol
             </button>
             <button onclick="openRegistrationModalManual()" class="glass-card border-amber-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-amber-300 hover:text-white flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-user-plus"></i> New Member Registration
             </button>
+            <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="tg-btn font-extrabold py-4 px-7 rounded-2xl text-sm sm:text-base transition-transform hover:scale-105 flex items-center gap-2.5 cursor-pointer">
+                <i class="fa-brands fa-telegram text-xl"></i> Join Live Proof Telegram Group
+            </a>
             <button onclick="openBoosterChartModal()" class="glass-card border-emerald-500/40 px-6 py-4 rounded-2xl text-sm sm:text-base font-bold text-emerald-300 hover:text-white flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-fire text-amber-400"></i> 48h 5% Booster Chart
             </button>
@@ -316,6 +340,27 @@
             </div>
         </div>
 
+        <!-- OFFICIAL TELEGRAM TRANSACTION PROOF BANNER IN DASHBOARD -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-sky-500/40 bg-gradient-to-r from-sky-950/40 via-slate-900/90 to-amber-950/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 text-2xl shrink-0 shadow-lg">
+                    <i class="fa-brands fa-telegram"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm sm:text-base font-extrabold text-white">TGIP Protocol Live Transaction Proof Group</span>
+                        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">24/7 Live Bot</span>
+                    </div>
+                    <p class="text-xs text-gray-300 mt-0.5">
+                        Watch real-time Deposits, Package Upgrades, 50% Reinvestments & Temple_DA Payouts live on our official Telegram community!
+                    </p>
+                </div>
+            </div>
+            <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="tg-btn font-extrabold py-3 px-6 rounded-xl text-xs sm:text-sm transition-transform hover:scale-105 flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center">
+                <i class="fa-brands fa-telegram text-base"></i> Join Telegram Group Now
+            </a>
+        </div>
+
         <!-- 48-HOUR 2-DIRECT 5% BOOSTER LIVE TRACKER BANNER -->
         <div class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-amber-400/40 relative overflow-hidden">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -358,7 +403,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- LEFT: WITHDRAWABLE PROFIT CARD -->
             <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
                 <div>
                     <div class="flex justify-between items-center mb-2">
@@ -403,7 +447,6 @@
                 </button>
             </div>
 
-            <!-- RIGHT: STATS + INDIVIDUAL 2x RETURN CAPPING METERS -->
             <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-5">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                     <div class="glass-card p-4 rounded-xl">
@@ -431,7 +474,6 @@
                     </div>
                 </div>
 
-                <!-- INDIVIDUAL 2x RETURN CAPPING METERS -->
                 <div class="bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-amber-500/30">
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                         <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
@@ -452,7 +494,6 @@
             </div>
         </div>
 
-        <!-- 9 PACKAGES GRID -->
         <div>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div>
@@ -468,7 +509,6 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="packagesContainer"></div>
         </div>
 
-        <!-- DETAILED LEDGERS: INVESTMENT RECORDS & WITHDRAWAL TICKETS -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="glass-panel rounded-2xl p-5 sm:p-6 border-t-2 border-t-emerald-500/50">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -498,7 +538,6 @@
             </div>
         </div>
 
-        <!-- SINGLE-LEG MATRIX OVERVIEW & MY DIRECT PARTNERS -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="glass-panel rounded-2xl p-5 sm:p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -556,11 +595,21 @@
                 <span class="font-extrabold gold-gradient-text">TGIP PROTOCOL</span>
                 <span>— Temple Global Infinity Pool</span>
             </div>
-            <div class="text-gray-400">
-                Official Strategic Collaboration with <b class="text-amber-300">Temple Digital Asset (Temple_DA)</b> • BSC Mainnet (BEP-20)
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1.5">
+                    <i class="fa-brands fa-telegram text-sm"></i> Join Official Telegram Community
+                </a>
+                <span class="text-slate-600 hidden sm:inline">|</span>
+                <span>Official Strategic Collaboration with <b class="text-amber-300">Temple Digital Asset (Temple_DA)</b> • BSC Mainnet (BEP-20)</span>
             </div>
         </div>
     </footer>
+
+    <!-- Floating Quick-Join Telegram Button (Bottom Right) -->
+    <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="fixed bottom-5 right-5 z-[90] tg-btn px-4 py-3 rounded-full font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-2xl border border-sky-300/40 transition-transform hover:scale-105">
+        <i class="fa-brands fa-telegram text-xl"></i>
+        <span>Live Proof Group</span>
+    </a>
 
     <!-- 48-HOUR 2-DIRECT 5% BOOSTER CHART MODAL -->
     <div id="boosterChartModal" class="fixed inset-0 bg-black/85 z-[125] hidden items-center justify-center p-4 backdrop-blur-md">
@@ -687,7 +736,6 @@
                 </div>
             </div>
 
-            <!-- ADMIN STATS CARDS -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
                 <div class="bg-slate-950/90 p-3 rounded-xl border border-sky-500/30">
                     <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Total Registrations</div>
@@ -714,7 +762,6 @@
                 </div>
             </div>
 
-            <!-- WITHDRAWAL REQUESTS SECTION -->
             <div class="bg-slate-950/80 p-4 rounded-2xl border-2 border-amber-500/40 shadow-lg">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
                     <span class="text-xs sm:text-sm font-extrabold text-amber-300 flex items-center gap-1.5">
@@ -727,7 +774,6 @@
                 <div id="adminWithdrawalList" class="space-y-3 overflow-y-auto pr-1 min-h-[170px] max-h-[260px]"></div>
             </div>
 
-            <!-- ALL REGISTERED MEMBERS DIRECTORY -->
             <div class="bg-slate-950/80 p-4 rounded-2xl border border-sky-500/30">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                     <span class="text-xs sm:text-sm font-extrabold text-sky-300 flex items-center gap-1.5">
@@ -792,7 +838,6 @@
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // Official Temple_DA Cloud Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBZh-Wg8JK5x4kBCag8zxDXw-eVY_LZmUw",
             authDomain: "tmpl-cd770.firebaseapp.com",
@@ -815,14 +860,13 @@
         window.TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
         window.TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         window.USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
-        window.BSC_CHAIN_ID_HEX = "0x38"; // Strict BSC Mainnet (56)
+        window.BSC_CHAIN_ID_HEX = "0x38";
         window.MIN_WITHDRAW_USDT = 3;
 
-        // ============================================================================
-        // LIVE TELEGRAM BOT NOTIFICATION ENGINE (TGIP Protocol Transaction Proof)
-        // ============================================================================
+        // TELEGRAM BOT & GROUP CONFIGURATION
         window.TELEGRAM_BOT_TOKEN = "9222873980:AAHDiO3ygth3EHgWLbPIUcSo4sVslrrWfQ8";
         window.TELEGRAM_CHAT_ID = "-1003612949068";
+        window.TELEGRAM_GROUP_INVITE = "https://t.me/+3SrEDfLpD6ozMDI9";
 
         window.sendTelegramAlert = async function(actionType, userWallet, amount, txHash, extraDetails = "") {
             const shortWallet = (userWallet && userWallet.length >= 10)
@@ -857,7 +901,8 @@
                             extraLine +
                             txLine +
                             `⏱ *Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST\n\n` +
-                            `🌐 *Join & Earn:* [tgip.templeda.com](https://tgip.templeda.com)`;
+                            `🌐 *Website:* [tgip.templeda.com](https://tgip.templeda.com)\n` +
+                            `📢 *Live Proof Group:* [Join Telegram](${window.TELEGRAM_GROUP_INVITE})`;
 
             const url = `https://api.telegram.org/bot${window.TELEGRAM_BOT_TOKEN}/sendMessage`;
 
@@ -881,7 +926,6 @@
         window.currentUserWallet = null;
         window.currentUserData = null;
 
-        // Protocol State Variables
         window.globalUsersMap = {};
         window.globalQueueOrder = [];
         window.investmentRecords = [];
@@ -1128,8 +1172,10 @@
 
             const formatted = window.liveTokenPrice < 0.01 ? `$${window.liveTokenPrice.toFixed(6)}` : `$${window.liveTokenPrice.toFixed(4)}`;
             const navEl = document.getElementById('livePriceTxt');
+            const mobTopEl = document.getElementById('mobileTopLivePriceTxt');
             const dashEl = document.getElementById('dashboardLiveRateTxt');
             if (navEl) navEl.innerText = formatted;
+            if (mobTopEl) mobTopEl.innerText = formatted;
             if (dashEl) dashEl.innerText = formatted;
 
             window.updateEstimatedTokensUI();
@@ -1138,7 +1184,6 @@
         window.updateLivePrice(false);
         setInterval(() => window.updateLivePrice(false), 20000);
 
-        // Live 1-Second Interval for 48-Hour Booster Countdown
         setInterval(() => {
             if (window.currentUserWallet && window.currentUserData) {
                 window.update48hBoosterBannerUI();
@@ -1319,7 +1364,6 @@
             await window.saveGlobalProtocolState();
             window.finalizeLogin(walletAddr);
 
-            // Live Telegram Alert for New Member Registration
             const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
             window.sendTelegramAlert(
                 'New Member Registration',
@@ -1332,7 +1376,7 @@
             const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
             window.UI.showModal(
                 'TGIP Registration Successful! 🎉',
-                `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position, open your 2x Meter, and start your <b>48-Hour 2-Direct 5% Booster Timer</b>!`,
+                `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position, open your 2x Meter, and start your <b>48-Hour 2-Direct 5% Booster Timer</b>!<br><br><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`,
                 '✅'
             );
         };
@@ -1444,7 +1488,6 @@
             return { credited: totalCreditedNow, overflow: overflowAmt };
         };
 
-        // 48-Hour 2-Direct 5% Booster Evaluation Engine
         window.evaluateSponsor48hBooster = function(sponsorLower, directWalletLower, directDepositAmount) {
             const sponsorObj = window.globalUsersMap[sponsorLower];
             if (!sponsorObj || (sponsorObj.totalInvested || 0) <= 0) return 0;
@@ -1453,12 +1496,10 @@
             const sponsorActivatedAt = sponsorObj.activatedAt || sponsorObj.registeredAt || Date.now();
             const nowTs = Date.now();
 
-            // Check if within 48 hours of sponsor's activation
             if (nowTs - sponsorActivatedAt > FORTY_EIGHT_HOURS_MS) {
                 return 0;
             }
 
-            // Base package check: direct's deposit must be >= sponsor's base package
             const sponsorBasePkg = sponsorObj.firstPackageAmount || sponsorObj.totalInvested || 10;
             if (directDepositAmount < sponsorBasePkg) {
                 return 0;
@@ -1468,7 +1509,6 @@
                 sponsorObj.qualifyingDirects48h = [];
             }
 
-            // Ensure unique direct partner wallet
             const alreadyRecorded = sponsorObj.qualifyingDirects48h.some(item => item.wallet === directWalletLower);
             if (!alreadyRecorded) {
                 sponsorObj.qualifyingDirects48h.push({
@@ -1478,7 +1518,6 @@
                 });
             }
 
-            // Once 2 unique qualifying directs are completed within 48h -> Credit 5% of their combined investment into 2x Meter!
             if (sponsorObj.qualifyingDirects48h.length >= 2 && !sponsorObj.booster5PctClaimed) {
                 const firstTwo = sponsorObj.qualifyingDirects48h.slice(0, 2);
                 const combinedInvestment = (firstTwo[0].amount || 0) + (firstTwo[1].amount || 0);
@@ -1548,14 +1587,11 @@
                 teamShare: teamTotalShare
             });
 
-            let sponsorBoosterTriggered = 0;
             const sponsorLower = (userObj.sponsor || '').toLowerCase();
             if (sponsorLower && sponsorLower !== wLower && window.globalUsersMap[sponsorLower]) {
                 window.creditUserWithCapGuard(sponsorLower, directShare, 'direct');
-
-                // Check 48-hour 2-direct 5% booster when a direct partner activates or upgrades a package
                 if (entryType !== 'AUTO_REINVEST') {
-                    sponsorBoosterTriggered = window.evaluateSponsor48hBooster(sponsorLower, wLower, amount);
+                    window.evaluateSponsor48hBooster(sponsorLower, wLower, amount);
                 }
             } else {
                 window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + directShare).toFixed(4));
@@ -1586,27 +1622,23 @@
                 }
             }
 
-            let heldClaimedTotal = 0;
             if (isFirstActivation) {
                 for (const item of window.heldDownlineReserves) {
                     if (!item.claimed && item.targetQueueIndex === myQueueIndex) {
                         item.claimed = true;
-                        const res = window.creditUserWithCapGuard(wLower, item.amount, 'pool');
-                        heldClaimedTotal += res.credited;
+                        window.creditUserWithCapGuard(wLower, item.amount, 'pool');
                     }
                 }
             }
 
             await window.saveGlobalProtocolState();
-            return { recordId, poolShare, directShare, teamTotalShare, heldClaimedTotal, sponsorBoosterTriggered };
+            return { recordId, poolShare, directShare, teamTotalShare };
         };
 
         window.isDepositInProgress = false;
 
         window.buyPackage = async function(amount) {
-            if (window.isDepositInProgress) {
-                return;
-            }
+            if (window.isDepositInProgress) return;
             if (!window.currentUserWallet) {
                 window.handleDirectConnectClick();
                 return;
@@ -1623,8 +1655,8 @@
             const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
 
             window.UI.showModal(
-                `Confirm ${amount} USDT BEP-20 Deposit`,
-                `Please approve the <b>${amount} USDT (BEP-20)</b> transfer in your Web3 wallet to TGIP Protocol Master Contract Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`,
+                `Confirm ${amount} USDT Deposit`,
+                `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`,
                 '⏳'
             );
 
@@ -1691,7 +1723,6 @@
                 try { window.refreshDashboardUI(false); } catch (uiErr) {}
 
                 if (res) {
-                    // Send Live Telegram Notification for Deposit or Upgrade
                     const actionTitle = isUpgrade ? `Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
                     const extraInfo = `🎯 *2x Capping Meter:* $${(amount * 2).toFixed(2)} USDT\n` +
                                       `💧 *50% Pool:* $${res.poolShare.toFixed(2)} | 🤝 *10% Direct:* $${res.directShare.toFixed(2)} | 🌐 *40% Matrix:* $${res.teamTotalShare.toFixed(2)}`;
@@ -1722,7 +1753,10 @@
                             </div>
                         </div>`,
                         '🚀',
-                        '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                        `<div class="flex flex-wrap justify-center gap-2">
+                            <a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a>
+                            <button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button>
+                        </div>`
                     );
                 }
             } catch (postErr) {
@@ -1794,7 +1828,6 @@
             await window.saveGlobalProtocolState();
             window.refreshDashboardUI(false);
 
-            // Send Live Telegram Notification for Withdrawal & 50% Auto-Reinvestment
             const withdrawExtra = `🪙 *50% Token Payout:* ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` +
                                   `🔄 *50% Auto-Reinvested:* $${reinvestUSDT.toFixed(2)} (${reinvResult ? reinvResult.recordId : '#REINV'} -> 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
             window.sendTelegramAlert(
@@ -1825,7 +1858,11 @@
                         <span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span>
                     </div>
                 </div>`,
-                '🧾'
+                '🧾',
+                `<div class="flex flex-wrap justify-center gap-2">
+                    <a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a>
+                    <button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button>
+                </div>`
             );
         };
 
@@ -1863,7 +1900,6 @@
                 return;
             }
 
-            // Simple Registration-start Timer (as originally requested)
             const startTs = d.registeredAt || d.activatedAt || Date.now();
             const endTs = startTs + FORTY_EIGHT_HOURS_MS;
             const remainingMs = endTs - Date.now();
@@ -2270,7 +2306,6 @@
                 try { window.renderAdminDashboardData(); } catch (e) {}
                 try { window.refreshDashboardUI(false); } catch (e) {}
 
-                // Send Live Telegram Notification for Approved Token Payout
                 const payoutExtra = `🪙 *Tokens Sent:* ${reqItem.tokenAmount} Temple_DA\n` +
                                     `🧾 *Withdrawal Ticket:* \`${reqItem.id}\``;
                 window.sendTelegramAlert(
