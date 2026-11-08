@@ -771,7 +771,30 @@
                 </div>
             </div>
 
-            <div class="bg-slate-950/80 p-4 rounded-2xl border-2 border-amber-500/40 shadow-lg">
+            <!-- NEW ROYALTY CLUBS LIVE REPORT IN ADMIN PANEL -->
+            <div class="bg-gradient-to-r from-emerald-950/40 to-slate-900 border border-emerald-500/30 p-4 rounded-2xl mb-1 shadow-lg">
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-emerald-500/20">
+                    <span class="text-xs sm:text-sm font-extrabold text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-crown text-amber-400"></i> Royalty Clubs Live Report (Real-time 5% Split)
+                    </span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-gray-400 uppercase font-semibold">Active Apex (3%)</div>
+                        <div id="adminActiveApex" class="text-xl font-extrabold text-amber-300 font-mono mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-gray-400 uppercase font-semibold">Active Titan (2%)</div>
+                        <div id="adminActiveTitan" class="text-xl font-extrabold text-emerald-300 font-mono mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800">
+                        <div class="text-[10px] text-gray-400 uppercase font-semibold">Total Distributed</div>
+                        <div id="adminTotalClubPaid" class="text-xl font-extrabold text-sky-400 font-mono mt-1">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-950/80 p-4 rounded-2xl border-2 border-amber-500/40 shadow-lg mt-2">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
                     <span class="text-xs sm:text-sm font-extrabold text-amber-300 flex items-center gap-1.5">
                         <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Withdrawal Requests Queue (50% Temple_DA Token Payout)
@@ -2467,6 +2490,28 @@
             document.getElementById('adminTotalActive').innerText = totalActive;
             document.getElementById('adminTotalVolume').innerText = `$${totalVol.toFixed(2)}`;
             document.getElementById('adminOverflowTotal').innerText = `$${Number(window.protocolOverflowReserve || 0).toFixed(2)}`;
+
+            // --- ROYALTY CLUBS LIVE REPORT DATA CALCULATION ---
+            let activeApexCount = 0;
+            let activeTitanCount = 0;
+            let totalClubPaidOut = 0;
+
+            allUsers.forEach(u => {
+                if (u.clubStatus === "ACTIVE") {
+                    if (u.apexActive) activeApexCount++;
+                    if (u.titanActive) activeTitanCount++;
+                }
+                totalClubPaidOut += (u.clubEarned || 0);
+            });
+
+            const adminApexEl = document.getElementById('adminActiveApex');
+            const adminTitanEl = document.getElementById('adminActiveTitan');
+            const adminClubPaidEl = document.getElementById('adminTotalClubPaid');
+            
+            if (adminApexEl) adminApexEl.innerText = activeApexCount;
+            if (adminTitanEl) adminTitanEl.innerText = activeTitanCount;
+            if (adminClubPaidEl) adminClubPaidEl.innerText = `$${totalClubPaidOut.toFixed(2)}`;
+            // --------------------------------------------------
 
             const listEl = document.getElementById('adminWithdrawalList');
             const pendingCountEl = document.getElementById('adminModalPendingCount');
