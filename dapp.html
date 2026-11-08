@@ -862,7 +862,8 @@
         const auth = getAuth(fbApp);
         signInAnonymously(auth).catch(() => {});
 
-        const CLOUD_NODE = "infinity_pool_v2_royalty/state";
+        // --- FIXED: RESTORED ORIGINAL V1 DATABASE PATH SO NO USERS ARE LOST ---
+        const CLOUD_NODE = "infinity_pool_v1/state";
         
         // --- NEW CLUBS LOGIC CONSTANTS ---
         const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -1018,6 +1019,8 @@
         window.globalQueueOrder = [];
         window.investmentRecords = [];
         window.pendingWithdrawals = [];
+        // --- FIXED: RESTORED HELD DOWNLINE RESERVES VAR SO OLD DATA IS PRESERVED ---
+        window.heldDownlineReserves = [];
         window.investRecordCounter = 1001;
         window.reinvestRecordCounter = 2001;
         window.withdrawalTicketCounter = 3001;
@@ -1125,6 +1128,8 @@
             window.globalQueueOrder = Array.isArray(parsed.globalQueueOrder) ? parsed.globalQueueOrder : Object.values(parsed.globalQueueOrder || {});
             window.investmentRecords = Array.isArray(parsed.investmentRecords) ? parsed.investmentRecords : Object.values(parsed.investmentRecords || {});
             window.pendingWithdrawals = Array.isArray(parsed.pendingWithdrawals) ? parsed.pendingWithdrawals : Object.values(parsed.pendingWithdrawals || {});
+            // --- FIXED: RESTORED HELD DOWNLINE VAR IN STATE PARSER ---
+            window.heldDownlineReserves = Array.isArray(parsed.heldDownlineReserves) ? parsed.heldDownlineReserves : Object.values(parsed.heldDownlineReserves || {});
             window.investRecordCounter = parsed.investRecordCounter || 1001;
             window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
             window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
@@ -1149,6 +1154,8 @@
                 globalQueueOrder: window.globalQueueOrder || [],
                 investmentRecords: window.investmentRecords || [],
                 pendingWithdrawals: window.pendingWithdrawals || [],
+                // --- FIXED: ENSURE HELD DOWNLINES ARE SAVED BACK SO THEY AREN'T LOST ---
+                heldDownlineReserves: window.heldDownlineReserves || [],
                 investRecordCounter: window.investRecordCounter || 1001,
                 reinvestRecordCounter: window.reinvestRecordCounter || 2001,
                 withdrawalTicketCounter: window.withdrawalTicketCounter || 3001,
@@ -1371,7 +1378,7 @@
                     titanLost: false,
                     club5xCap: 0, 
                     clubEarned: 0,
-                    // --- OLD VARS KEPT FOR COMPATIBILITY ---
+                    // --- OLD VARS KEPT FOR COMPATIBILITY WITH EXISTING DB ---
                     booster5PctClaimed: false,
                     boosterEarned: 0,
                     qualifyingDirects48h: [],
@@ -1824,7 +1831,18 @@
                     const downWalletLower = window.globalQueueOrder[downIdx];
                     window.creditUserWithCapGuard(downWalletLower, perLevelShare, 'pool');
                 } else {
+                    // --- FIXED: IF THEY HAVE OLD DATA WE STILL ADD TO RESERVE TO NOT BREAK OLD APP STATE ---
                     window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + perLevelShare).toFixed(4));
+                }
+            }
+
+            // --- FIXED: RESTORE OLD DOWNLINE RESERVES CLAIMING LOGIC FOR V1 COMPATIBILITY ---
+            if (isFirstActivation && window.heldDownlineReserves && window.heldDownlineReserves.length > 0) {
+                for (const item of window.heldDownlineReserves) {
+                    if (!item.claimed && item.targetQueueIndex === myQueueIndex) {
+                        item.claimed = true;
+                        window.creditUserWithCapGuard(wLower, item.amount, 'pool');
+                    }
                 }
             }
 
