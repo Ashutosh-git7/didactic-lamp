@@ -299,7 +299,7 @@
                             <i class="fa-solid fa-user-check mr-1"></i> Member: <span id="uiMemberName">--</span>
                         </span>
                         <span class="bg-sky-500/15 text-sky-400 text-xs font-bold px-3 py-1 rounded-full border border-sky-500/30">
-                            <i class="fa-solid fa-hashtag mr-1"></i> Active Queue Pos: #<span id="uiGlobalPos">--</span>
+                            <i class="fa-solid fa-hashtag mr-1"></i> Active Queue Pos (Main + Clones): <span id="uiGlobalPos">--</span>
                         </span>
                         <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">
                             <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1 (Required for Withdraw)
@@ -566,6 +566,22 @@
                         </div>
                         <div class="text-[10px] text-amber-300">10% Direct Bonus</div>
                     </div>
+                </div>
+
+                <!-- My Active Queue Positions (Main ID + Clone IDs) Display Box -->
+                <div class="mt-4 bg-slate-950/90 border border-sky-500/30 rounded-xl p-3.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <span class="text-xs font-extrabold text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-clone text-sky-400"></i> My Active Global Queue Positions (Main ID + Clone IDs)
+                        </span>
+                        <span class="text-[11px] font-mono bg-sky-500/15 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30">
+                            Total Active IDs: <b id="uiMyCloneCountBadge">0</b>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mb-2.5">
+                        Every Upgrade (<b class="text-amber-300">#UPG</b>) & 50% Auto-Reinvestment (<b class="text-sky-300">#REINV</b>) places a new Clone ID at the bottom of the Global Queue. All 20 Up / 20 Down income from every Clone ID credits directly to your Main ID!
+                    </p>
+                    <div id="uiMyQueuePositionsList" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
@@ -933,8 +949,11 @@
                 : (window.currentUserData && window.currentUserWallet && window.currentUserWallet.toLowerCase() === wLower ? window.currentUserData : null);
             const rawName = (userObj && userObj.name) ? userObj.name : "TGIP Associate";
             const memberName = window.escapeHtmlTelegram(rawName);
-            const qIdx = (window.globalQueueOrder || []).indexOf(wLower);
-            const queueBadge = qIdx >= 0 ? ` (Pool ID #${qIdx + 1})` : "";
+            const myPositions = [];
+            (window.globalQueueOrder || []).forEach((addr, idx) => {
+                if (addr && addr.toLowerCase() === wLower) myPositions.push(`#${idx + 1}`);
+            });
+            const queueBadge = myPositions.length > 0 ? ` (Pool Pos: ${myPositions.join(', ')})` : "";
 
             let emoji = '🚀';
             if (actionType.includes('Deposit') || actionType.includes('Activation')) emoji = '📥';
@@ -1063,6 +1082,56 @@
             } catch (err) { window.UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️'); }
         };
 
+        // --- RETROACTIVE & LIVE CLONE QUEUE SYNCHRONIZER FOR EXISTING & NEW ASSOCIATES ---
+        window.syncRetroactiveClonePositions = function() {
+            if (!Array.isArray(window.globalQueueOrder)) window.globalQueueOrder = [];
+            if (!Array.isArray(window.investmentRecords)) window.investmentRecords = [];
+
+            // Chronological order (oldest to newest)
+            const chronologicalRecords = [...window.investmentRecords].reverse();
+
+            // Count how many times each wallet already appears in globalQueueOrder
+            const existingOccurrences = {};
+            window.globalQueueOrder.forEach((w) => {
+                if (!w) return;
+                const wl = w.toLowerCase();
+                existingOccurrences[wl] = (existingOccurrences[wl] || 0) + 1;
+            });
+
+            // Count how many records each wallet has processed so far in chronological order
+            const processedCountByWallet = {};
+            let modified = false;
+
+            chronologicalRecords.forEach((rec, idx) => {
+                if (!rec || !rec.wallet) return;
+                const wl = rec.wallet.toLowerCase();
+                processedCountByWallet[wl] = (processedCountByWallet[wl] || 0) + 1;
+                const currentCountForUser = processedCountByWallet[wl];
+
+                // If this record (whether #INV, #UPG, or #REINV) does not yet have a corresponding slot in globalQueueOrder, append it at the bottom
+                if (currentCountForUser > (existingOccurrences[wl] || 0)) {
+                    window.globalQueueOrder.push(wl);
+                    existingOccurrences[wl] = (existingOccurrences[wl] || 0) + 1;
+                    rec.queuePosition = window.globalQueueOrder.length;
+                    modified = true;
+                } else if (!rec.queuePosition) {
+                    // Assign matching N-th occurrence queue position to existing record for display
+                    let nth = 0;
+                    for (let q = 0; q < window.globalQueueOrder.length; q++) {
+                        if ((window.globalQueueOrder[q] || '').toLowerCase() === wl) {
+                            nth++;
+                            if (nth === currentCountForUser) {
+                                rec.queuePosition = q + 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+
+            return modified;
+        };
+
         // --- OPTIMIZED DB SYNC (PREVENTS HANGING) ---
         let dbSyncTimeout = null;
         window.applyStateSnapshot = function(parsed) {
@@ -1076,6 +1145,12 @@
             window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
             window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
             window.protocolOverflowReserve = parsed.protocolOverflowReserve || 0;
+
+            // Ensure existing associates' past upgrades & 50% reinvestments also have their Clone IDs in the queue
+            const wasRetroactivelyUpdated = window.syncRetroactiveClonePositions();
+            if (wasRetroactivelyUpdated) {
+                window.saveGlobalProtocolState();
+            }
 
             if (window.currentUserWallet) {
                 const wLower = window.currentUserWallet.toLowerCase();
@@ -1354,7 +1429,7 @@
             window.UI.showModal('TGIP Referral Link Copied!', `Share this link with your partners! When they activate a package, you earn <b>10% Direct Bonus</b> + help qualify for your 7-Day Club targets!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`, '✅');
         };
 
-        window.creditUserWithCapGuard = function(targetWalletLower, rawAmount, incomeType) {
+        window.creditUserWithCapGuard = function(targetWalletLower, rawAmount, incomeType, specificQueuePosNumber = null) {
             const userObj = window.globalUsersMap[targetWalletLower];
             if (!userObj || rawAmount <= 0 || (userObj.totalInvested || 0) <= 0) {
                 window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + rawAmount).toFixed(4));
@@ -1368,18 +1443,52 @@
             let remainingToCredit = rawAmount;
             let totalCreditedNow = 0;
 
-            for (const rec of userChronologicalRecords) {
-                if (remainingToCredit <= 0) break;
-                const target2x = rec.target2x || (rec.amount * 2);
-                const curEarned = rec.earned2x || 0;
-                const roomInMeter = Math.max(0, target2x - curEarned);
+            // IF THIS IS 20 UP / 20 DOWN SINGLE-LEG POOL INCOME FOR A SPECIFIC QUEUE POSITION (#Pos),
+            // CREDIT ONLY THAT EXACT POSITION'S 2x CAPPING METER!
+            if (specificQueuePosNumber !== null && specificQueuePosNumber !== undefined) {
+                let targetRec = userChronologicalRecords.find(r => Number(r.queuePosition) === Number(specificQueuePosNumber));
+                if (!targetRec) {
+                    // Fallback: match by N-th occurrence of this wallet in globalQueueOrder
+                    let nthIndex = 0;
+                    for (let q = 0; q < (window.globalQueueOrder || []).length; q++) {
+                        if ((window.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
+                            if ((q + 1) === Number(specificQueuePosNumber)) {
+                                targetRec = userChronologicalRecords[nthIndex];
+                                break;
+                            }
+                            nthIndex++;
+                        }
+                    }
+                }
 
-                if (roomInMeter > 0) {
-                    const addNow = Math.min(remainingToCredit, roomInMeter);
-                    rec.earned2x = Number((curEarned + addNow).toFixed(4));
-                    remainingToCredit = Number((remainingToCredit - addNow).toFixed(4));
-                    totalCreditedNow = Number((totalCreditedNow + addNow).toFixed(4));
-                    if (rec.earned2x >= target2x - 0.0001) rec.status2x = 'COMPLETED';
+                if (targetRec) {
+                    const target2x = targetRec.target2x || (targetRec.amount * 2);
+                    const curEarned = targetRec.earned2x || 0;
+                    const roomInMeter = Math.max(0, target2x - curEarned);
+
+                    if (roomInMeter > 0) {
+                        const addNow = Math.min(remainingToCredit, roomInMeter);
+                        targetRec.earned2x = Number((curEarned + addNow).toFixed(4));
+                        remainingToCredit = Number((remainingToCredit - addNow).toFixed(4));
+                        totalCreditedNow = Number((totalCreditedNow + addNow).toFixed(4));
+                        if (targetRec.earned2x >= target2x - 0.0001) targetRec.status2x = 'COMPLETED';
+                    }
+                }
+            } else {
+                // Direct (10%) & Royalty Club (5%) income fills active meters in chronological order up to their 2x cap
+                for (const rec of userChronologicalRecords) {
+                    if (remainingToCredit <= 0) break;
+                    const target2x = rec.target2x || (rec.amount * 2);
+                    const curEarned = rec.earned2x || 0;
+                    const roomInMeter = Math.max(0, target2x - curEarned);
+
+                    if (roomInMeter > 0) {
+                        const addNow = Math.min(remainingToCredit, roomInMeter);
+                        rec.earned2x = Number((curEarned + addNow).toFixed(4));
+                        remainingToCredit = Number((remainingToCredit - addNow).toFixed(4));
+                        totalCreditedNow = Number((totalCreditedNow + addNow).toFixed(4));
+                        if (rec.earned2x >= target2x - 0.0001) rec.status2x = 'COMPLETED';
+                    }
                 }
             }
 
@@ -1396,6 +1505,37 @@
                 window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + overflowAmt).toFixed(4));
             }
             return { credited: totalCreditedNow, overflow: overflowAmt };
+        };
+
+        // HELPER: CHECK IF A SPECIFIC QUEUE POSITION (#Pos) STILL HAS ROOM IN ITS 2x METER (FOR DYNAMIC COMPRESSION)
+        window.isQueuePositionActiveFor2x = function(posNumber) {
+            const qIdx = posNumber - 1;
+            if (qIdx < 0 || qIdx >= (window.globalQueueOrder || []).length) return false;
+            const targetWalletLower = (window.globalQueueOrder[qIdx] || '').toLowerCase();
+            if (!targetWalletLower || !window.globalUsersMap[targetWalletLower]) return false;
+
+            const userChronologicalRecords = [...(window.investmentRecords || [])]
+                .reverse()
+                .filter(r => r.wallet && r.wallet.toLowerCase() === targetWalletLower);
+
+            let targetRec = userChronologicalRecords.find(r => Number(r.queuePosition) === Number(posNumber));
+            if (!targetRec) {
+                let nthIndex = 0;
+                for (let q = 0; q < (window.globalQueueOrder || []).length; q++) {
+                    if ((window.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
+                        if ((q + 1) === Number(posNumber)) {
+                            targetRec = userChronologicalRecords[nthIndex];
+                            break;
+                        }
+                        nthIndex++;
+                    }
+                }
+            }
+
+            if (!targetRec) return false;
+            const target2x = targetRec.target2x || (targetRec.amount * 2);
+            const curEarned = targetRec.earned2x || 0;
+            return (target2x - curEarned) > 0.0001;
         };
 
         window.updateMyProgressionTier = function(wLower) {
@@ -1484,8 +1624,18 @@
             
             userObj.cappingLimit = Number(((userObj.cappingLimit || 0) + (amount * 2)).toFixed(4));
 
-            if (!window.globalQueueOrder.includes(wLower)) window.globalQueueOrder.push(wLower);
-            const myQueueIndex = window.globalQueueOrder.indexOf(wLower);
+            // EVERY NEW ACTIVATION (#INV), UPGRADE (#UPG), OR 50% REINVESTMENT (#REINV) ADDS A NEW CLONE ID AT THE BOTTOM OF THE GLOBAL QUEUE
+            let myQueueIndex = -1;
+            if (entryType === 'UPGRADE' || entryType === 'AUTO_REINVEST') {
+                window.globalQueueOrder.push(wLower);
+                myQueueIndex = window.globalQueueOrder.length - 1;
+            } else {
+                if (!window.globalQueueOrder.includes(wLower)) {
+                    window.globalQueueOrder.push(wLower);
+                }
+                myQueueIndex = window.globalQueueOrder.lastIndexOf(wLower);
+            }
+            const assignedQueuePosNumber = myQueueIndex + 1;
 
             const poolShare = Number((amount * 0.45).toFixed(4));
             const apexShare = Number((amount * 0.03).toFixed(4));
@@ -1502,6 +1652,7 @@
             const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
             window.investmentRecords.unshift({
                 id: recordId, type: entryType, sourceTicket: sourceTicketId || null, timestamp: nowStr, wallet: walletAddr, amount: amount,
+                queuePosition: assignedQueuePosNumber,
                 target2x: amount * 2, earned2x: 0, status2x: 'ACTIVE', poolShare: poolShare, directShare: directShare, teamShare: teamTotalShare
             });
 
@@ -1516,23 +1667,45 @@
                 window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + directShare).toFixed(4));
             }
 
-            for (let step = 1; step <= 20; step++) {
-                const upIdx = myQueueIndex - step;
-                if (upIdx >= 0 && window.globalQueueOrder[upIdx]) window.creditUserWithCapGuard(window.globalQueueOrder[upIdx], perLevelShare, 'pool');
-                else window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + perLevelShare).toFixed(4));
+            // DYNAMIC COMPRESSION FOR 20 UPLINES ABOVE (SKIPS 2x COMPLETED POSITIONS TO PAY NEXT ACTIVE POSITIONS)
+            let uplinesPaid = 0;
+            let searchUpIdx = myQueueIndex - 1;
+            while (uplinesPaid < 20 && searchUpIdx >= 0) {
+                const candidatePosNum = searchUpIdx + 1;
+                const candidateWallet = window.globalQueueOrder[searchUpIdx];
+                if (candidateWallet && window.isQueuePositionActiveFor2x(candidatePosNum)) {
+                    window.creditUserWithCapGuard(candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                    uplinesPaid++;
+                }
+                searchUpIdx--;
+            }
+            if (uplinesPaid < 20) {
+                const unallocatedUpShare = Number(((20 - uplinesPaid) * perLevelShare).toFixed(4));
+                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + unallocatedUpShare).toFixed(4));
             }
 
-            for (let step = 1; step <= 20; step++) {
-                const downIdx = myQueueIndex + step;
-                if (downIdx < window.globalQueueOrder.length && window.globalQueueOrder[downIdx]) window.creditUserWithCapGuard(window.globalQueueOrder[downIdx], perLevelShare, 'pool');
-                else window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + perLevelShare).toFixed(4));
+            // DYNAMIC COMPRESSION FOR 20 DOWNLINES BELOW (SKIPS 2x COMPLETED POSITIONS TO PAY NEXT ACTIVE POSITIONS)
+            let downlinesPaid = 0;
+            let searchDownIdx = myQueueIndex + 1;
+            while (downlinesPaid < 20 && searchDownIdx < window.globalQueueOrder.length) {
+                const candidatePosNum = searchDownIdx + 1;
+                const candidateWallet = window.globalQueueOrder[searchDownIdx];
+                if (candidateWallet && window.isQueuePositionActiveFor2x(candidatePosNum)) {
+                    window.creditUserWithCapGuard(candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                    downlinesPaid++;
+                }
+                searchDownIdx++;
+            }
+            if (downlinesPaid < 20) {
+                const unallocatedDownShare = Number(((20 - downlinesPaid) * perLevelShare).toFixed(4));
+                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + unallocatedDownShare).toFixed(4));
             }
 
-            if (isFirstActivation && window.heldDownlineReserves && window.heldDownlineReserves.length > 0) {
+            if (window.heldDownlineReserves && window.heldDownlineReserves.length > 0) {
                 for (const item of window.heldDownlineReserves) {
                     if (!item.claimed && item.targetQueueIndex === myQueueIndex) {
                         item.claimed = true;
-                        window.creditUserWithCapGuard(wLower, item.amount, 'pool');
+                        window.creditUserWithCapGuard(wLower, item.amount, 'pool', myQueueIndex + 1);
                     }
                 }
             }
@@ -1565,7 +1738,7 @@
             } else window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + titanShare).toFixed(4));
 
             await window.saveGlobalProtocolState();
-            return { recordId, poolShare, directShare, teamTotalShare };
+            return { recordId, poolShare, directShare, teamTotalShare, queuePosition: assignedQueuePosNumber };
         };
 
         window.isDepositInProgress = false;
@@ -1638,9 +1811,9 @@
 
                 if (res) {
                     const actionTitle = isUpgrade ? `Associate Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
-                    const extraInfoHtml = `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
+                    const extraInfoHtml = `🔢 <b>New Queue Position:</b> #${res.queuePosition} (${isUpgrade ? 'Clone ID Added at Bottom' : 'Main Pool ID'})\n` + `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
                     await window.sendTelegramAlert(actionTitle, window.currentUserWallet, amount, txHashConfirmed, extraInfoHtml);
-                    window.UI.showModal(`Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+                    window.UI.showModal(`Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
                 }
             } catch (postErr) {} finally { window.isDepositInProgress = false; }
         };
@@ -1678,9 +1851,9 @@
             await window.saveGlobalProtocolState();
             window.refreshDashboardUI();
 
-            const withdrawExtraHtml = `🪙 <b>50% Token Payout:</b> ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` + `🔄 <b>50% Auto-Reinvested:</b> $${reinvestUSDT.toFixed(2)} (${reinvResult ? reinvResult.recordId : '#REINV'} &rarr; 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
+            const withdrawExtraHtml = `🪙 <b>50% Token Payout:</b> ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` + `🔄 <b>50% Auto-Reinvested:</b> $${reinvestUSDT.toFixed(2)} (${reinvResult ? reinvResult.recordId : '#REINV'} &rarr; Clone Pos #${reinvResult ? reinvResult.queuePosition : '--'}, 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
             await window.sendTelegramAlert(`Associate Withdrawal & 50% Reinvestment (${ticketId})`, window.currentUserWallet, totalWithdrawUSDT.toFixed(2), ticketId, withdrawExtraHtml);
-            window.UI.showModal(`Withdrawal (${ticketId}) & New 2x Meter (${reinvResult.recordId})!`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">Withdrawal Ticket:</span><span class="font-bold text-amber-400 font-mono">${ticketId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Token Payout (Admin Queue):</span><span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Auto-Reinvested 2x Meter:</span><span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} ($${reinvestUSDT.toFixed(2)} &rarr; 2x: $${(reinvestUSDT * 2).toFixed(2)})</span></div><div class="flex justify-between"><span class="text-gray-400">Reinvest Split (45/10/40):</span><span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span></div></div>`, '🧾', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+            window.UI.showModal(`Withdrawal (${ticketId}) & New Clone 2x Meter (${reinvResult.recordId})!`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">Withdrawal Ticket:</span><span class="font-bold text-amber-400 font-mono">${ticketId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Token Payout (Admin Queue):</span><span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Auto-Reinvested Clone ID:</span><span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} (Pos #${reinvResult.queuePosition} • 2x: $${(reinvestUSDT * 2).toFixed(2)})</span></div><div class="flex justify-between"><span class="text-gray-400">Reinvest Split (45/10/40):</span><span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span></div></div>`, '🧾', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
         };
 
         window.updateEstimatedTokensUI = function() {
@@ -1778,11 +1951,52 @@
             const qIndex = window.globalQueueOrder.indexOf(wLower);
             const totalActiveInQueue = window.globalQueueOrder.length;
 
+            // Find all active queue positions (Main ID + Clone IDs) for this user
+            const myAllPositions = [];
+            (window.globalQueueOrder || []).forEach((addr, idx) => {
+                if (addr && addr.toLowerCase() === wLower) {
+                    myAllPositions.push(idx + 1);
+                }
+            });
+
             document.getElementById('uiMemberName').innerText = data.name || "Verified Member";
             document.getElementById('uiSponsorDisplay').innerText = (data.sponsor && data.sponsor.startsWith('0x'))
                 ? (data.sponsor.slice(0, 6) + "..." + data.sponsor.slice(-4))
                 : "Direct (No Sponsor)";
-            document.getElementById('uiGlobalPos').innerText = qIndex >= 0 ? (qIndex + 1) : "Inactive (Deposit to Join Queue)";
+            document.getElementById('uiGlobalPos').innerText = myAllPositions.length > 0
+                ? myAllPositions.map(p => `#${p}`).join(', ')
+                : "Inactive (Deposit to Join Queue)";
+
+            // Render detailed badges inside My Active Global Queue Positions Box
+            const cloneBadgeEl = document.getElementById('uiMyCloneCountBadge');
+            const posListEl = document.getElementById('uiMyQueuePositionsList');
+            if (cloneBadgeEl) cloneBadgeEl.innerText = myAllPositions.length;
+            if (posListEl) {
+                if (myAllPositions.length === 0) {
+                    posListEl.innerHTML = `<span class="text-gray-500 text-xs">No active positions yet. Activate a package to get your Main Queue Position!</span>`;
+                } else {
+                    const userChronoRecs = [...(window.investmentRecords || [])]
+                        .reverse()
+                        .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+                    posListEl.innerHTML = myAllPositions.map((posNum, idx) => {
+                        const isMain = idx === 0;
+                        const recMatch = userChronoRecs.find(r => Number(r.queuePosition) === Number(posNum)) || userChronoRecs[idx];
+                        const earned = recMatch ? Number(recMatch.earned2x || 0) : 0;
+                        const target = recMatch ? Number(recMatch.target2x || (recMatch.amount * 2) || 0) : 0;
+                        const isDone = target > 0 && earned >= target - 0.0001;
+                        const recLabel = recMatch
+                            ? `${recMatch.id} ($${earned.toFixed(2)}/$${target.toFixed(2)} ${isDone ? '✓ 2x DONE' : 'Active'})`
+                            : (isMain ? 'Main ID' : `Clone #${idx}`);
+                        return `
+                            <div class="px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-1.5 ${isDone ? 'bg-amber-500/10 border-amber-400/60 text-amber-300' : (isMain ? 'bg-emerald-500/15 border-emerald-400/50 text-emerald-300' : 'bg-sky-500/15 border-sky-400/50 text-sky-300')}">
+                                <span class="font-extrabold text-white">#Pos-${posNum}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 font-bold">${isMain ? '👑 MAIN ID' : `🔄 CLONE #${idx}`}</span>
+                                <span class="text-[10px] text-gray-200">${recLabel}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
 
             document.getElementById('uiBalance').innerText = Number(data.balance || 0).toFixed(2);
             document.getElementById('uiInvested').innerText = Number(data.totalInvested || 0).toFixed(2);
@@ -1898,13 +2112,15 @@
                     const target2x = rec.target2x || (rec.amount * 2); const earned2x = rec.earned2x || 0;
                     const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
                     const isDone = earned2x >= target2x - 0.0001;
-                    const labelTag = isReinv ? '♻️ 50% Auto-Reinvest' : (isUpg ? '⬆️ Upgrade Package' : '🚀 Direct Package');
+                    const labelTag = isReinv ? '♻️ 50% Auto-Reinvest (Clone ID)' : (isUpg ? '⬆️ Upgrade Package (Clone ID)' : '🚀 Direct Package (Main ID)');
+                    const posBadgeHtml = rec.queuePosition ? `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono text-[10px] font-extrabold">#Pos-${rec.queuePosition}</span>` : '';
 
                     metersHtml += `
                         <div class="bg-slate-900/95 p-3.5 rounded-xl border ${isDone ? 'border-amber-400/70' : (isReinv ? 'border-sky-500/40' : 'border-emerald-500/40')}">
                             <div class="flex flex-wrap justify-between items-center gap-2 text-xs mb-1.5">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-mono font-extrabold px-2 py-0.5 rounded bg-slate-950 text-amber-300 border border-slate-700">${rec.id}</span>
+                                    ${posBadgeHtml}
                                     <span class="font-bold text-white">${labelTag}: <span class="text-amber-300 font-mono">$${rec.amount.toFixed(2)}</span></span>
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -1920,8 +2136,11 @@
 
                     ledgerHtml += `
                         <div class="bg-slate-950/95 border border-slate-800 p-3.5 rounded-xl space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="font-mono font-bold text-amber-300">${rec.id} • ${labelTag}</span>
+                            <div class="flex justify-between items-center flex-wrap gap-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-mono font-bold text-amber-300">${rec.id} • ${labelTag}</span>
+                                    ${posBadgeHtml}
+                                </div>
                                 <span class="text-[11px] text-gray-400 font-mono">${rec.timestamp}</span>
                             </div>
                             <div class="flex justify-between text-gray-300">
