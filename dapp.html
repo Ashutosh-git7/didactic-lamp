@@ -137,7 +137,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP × Temple_DA (BEP-20)
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
-            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP Auto-Correct Balance Guard (Live ✓)</b></span>
+            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP Incremental Catchup Guard (Live Sync ✓)</b></span>
         </div>
         <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <span class="flex sm:hidden items-center gap-1 text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-amber-500/30">
@@ -243,7 +243,7 @@
         </p>
 
         <p class="text-gray-400 text-sm sm:text-lg max-w-2xl mb-8 leading-relaxed">
-            Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> with <b class="text-emerald-400">Exact Auto-Correct Balance Guard & Real-Time Profits</b>!
+            Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> with <b class="text-emerald-400">Incremental Catchup Guard & Real-Time Profits</b>!
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 mb-10">
@@ -508,7 +508,7 @@
                         <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
                             <i class="fa-solid fa-chart-column text-emerald-400"></i> Detailed 2x Investment & Reinvestment Ledger
                         </h3>
-                        <p class="text-xs text-gray-400">Every TGIP Package (`#INV`), Upgrade (`#UPG`) & 50% Reinvest (`#REINV`) with Exact Auto-Correct Routing.</p>
+                        <p class="text-xs text-gray-400">Every TGIP Package (`#INV`), Upgrade (`#UPG`) & 50% Reinvest (`#REINV`) with Incremental Catchup Routing.</p>
                     </div>
                 </div>
                 <div id="userInvestmentRecordsList" class="space-y-3 max-h-80 overflow-y-auto pr-1 text-xs"></div>
@@ -541,7 +541,7 @@
                     </span>
                 </div>
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    Only paid/active IDs enter the TGIP Global Single-Leg Queue. Each investment, upgrade, or 50% auto-reinvestment instantly distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines above & 20 Downlines below with exact precision.
+                    Only paid/active IDs enter the TGIP Global Single-Leg Queue. Each investment, upgrade, or 50% auto-reinvestment instantly distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines above & 20 Downlines below with incremental catchup.
                 </p>
                 <div class="grid grid-cols-3 gap-3 text-center">
                     <div class="glass-card p-3.5 rounded-xl">
@@ -870,7 +870,7 @@
         </div>
     </div>
 
-    <!-- TGIP PROTOCOL × TEMPLE_DA AUTO-CORRECT BALANCE GUARD BACKEND -->
+    <!-- TGIP PROTOCOL × TEMPLE_DA INCREMENTAL CATCHUP GUARD BACKEND -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -1005,7 +1005,7 @@
         window.testTelegramBotConnection = async function() {
             if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
             UI.showModal('Sending Test Alert...', 'Sending a live verification message to the TGIP Protocol Telegram Group...', '✈️');
-            const ok = await sendTelegramAlert('System Live Bot Verification ✓', currentUserWallet || MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> Auto-Correct Balance Guard Connected!`);
+            const ok = await sendTelegramAlert('System Live Bot Verification ✓', currentUserWallet || MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> Incremental Catchup Flow Connected!`);
             if (ok) UI.showModal('Telegram Bot Connected! ✅', `Live test message delivered to the official Telegram group!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold"><i class="fa-brands fa-telegram"></i> Open Telegram Group</a>`, '🎉');
             else UI.showModal('Bot Check Notice', 'Please verify your internet connection or bot admin permissions in the Telegram group.', '⚠️');
         };
@@ -1018,7 +1018,7 @@
             for (const rec of [...records].reverse()) {
                 const typeLabel = rec.type === 'AUTO_REINVEST' ? `50% Auto-Reinvestment (${rec.id})` : (rec.type === 'UPGRADE' ? `Associate Package Upgrade (${rec.id})` : `Associate Package Deposit (${rec.id})`);
                 const extraHtml = `🎯 <b>2x Capping Meter:</b> $${(rec.target2x || rec.amount * 2).toFixed(2)} USDT\n` +
-                                  `💧 <b>45% Pool:</b> $${(rec.poolShare || (rec.amount * 0.45)).toFixed(2)} | 🤝 <b>10% Direct:</b> $${(rec.directShare || (rec.amount * 0.1)).toFixed(2)} | 🌐 <b>40% Matrix:</b> $${(rec.teamShare || (rec.amount * 0.4)).toFixed(2)}`;
+                                  `💧 <b>45% Pool:</b> $${(rec.poolShare || (rec.amount * 0.45)).toFixed(2)} | 🤝 <b>10% Direct:</b> $${(rec.directShare || (rec.amount * 0.1)).toFixed(2)} | 🌐 <b>40% Catchup Matrix:</b> $${(rec.teamShare || (rec.amount * 0.4)).toFixed(2)}`;
                 await sendTelegramAlert(typeLabel, rec.wallet, rec.amount.toFixed(2), rec.id, extraHtml);
             }
             UI.showModal('Synced to Telegram! ✅', `Latest ${records.length} associate records have been posted to your Telegram group!`, '🚀');
@@ -1112,50 +1112,26 @@
                 } else if (!rec.queuePosition) {
                     let nth = 0;
                     for (let q = 0; q < stateObj.globalQueueOrder.length; q++) {
-        // --- ROBUST AUTO-CORRECT RECALCULATION ENGINE (WITH EXACT DIRECT BONUS & MATRIX SPLIT) ---
-        function runAutoCorrectRecalculation(stateObj) {
-            if (!stateObj.globalUsersMap) return;
-
-            // 1. Reset cumulative user counters to 0 before rebuilding from exact records
-            Object.keys(stateObj.globalUsersMap).forEach(wLower => {
-                const u = stateObj.globalUsersMap[wLower];
-                if (!u) return;
-                u.balance = 0;
-                u.totalEarned = 0;
-                u.directEarned = 0;
-                u.poolEarned = 0;
-                u.clubEarned = 0;
-                if (Array.isArray(stateObj.investmentRecords)) {
-                    stateObj.investmentRecords.forEach(rec => {
-                        if (rec && rec.wallet && rec.wallet.toLowerCase() === wLower) {
-                            rec.earned2x = 0;
-                            rec.status2x = 'ACTIVE';
-                            rec.creditedPositions = {};
-                            rec.creditedJoinerPositions = {};
+                        if ((stateObj.globalQueueOrder[q] || '').toLowerCase() === wl) {
+                            nth++;
+                            if (nth === currentCountForUser) {
+                                rec.queuePosition = q + 1;
+                                break;
+                            }
                         }
-                    });
-                }
-            });
-
-            // 2. Re-run precise chronological distribution across all records
-            if (!Array.isArray(stateObj.investmentRecords) || stateObj.investmentRecords.length === 0) return;
-            const chronologicalRecords = [...stateObj.investmentRecords].reverse();
-
-            chronologicalRecords.forEach(rec => {
-                if (!rec || !rec.wallet) return;
-
-                // 2A. Direct Sponsor Bonus (10%) credit check
-                const txnWalletLower = rec.wallet.toLowerCase();
-                const txnUserObj = stateObj.globalUsersMap[txnWalletLower];
-                if (txnUserObj && txnUserObj.sponsor && rec.type !== 'AUTO_REINVEST') {
-                    const sponsorLower = txnUserObj.sponsor.toLowerCase();
-                    if (sponsorLower && sponsorLower !== txnWalletLower && stateObj.globalUsersMap[sponsorLower]) {
-                        const directShare = Number((rec.amount * 0.10).toFixed(4));
-                        creditUserWithCapGuardOnState(stateObj, sponsorLower, directShare, 'direct');
                     }
                 }
+            });
+            return modified;
+        }
 
-                if (!rec.queuePosition) return;
+        // --- STRICT INCREMENTAL CATCHUP SYNC GUARD (PREVENTS DOUBLE ADDITION) ---
+        function runAutomaticCatchupSync(stateObj) {
+            if (!Array.isArray(stateObj.globalQueueOrder) || stateObj.globalQueueOrder.length === 0) return;
+            if (!Array.isArray(stateObj.investmentRecords)) return;
+
+            stateObj.investmentRecords.forEach((rec) => {
+                if (!rec || !rec.wallet || !rec.queuePosition) return;
                 const txnQueueIdx = Number(rec.queuePosition) - 1;
                 const perLevelShare = Number(((rec.amount * 0.40) / 40).toFixed(4)) || Number((rec.amount * 0.01).toFixed(4));
 
@@ -1229,7 +1205,7 @@
                 lastUpdated: p.lastUpdated || Date.now()
             };
             syncRetroactiveClonePositionsOnState(norm);
-            runAutoCorrectRecalculation(norm);
+            runAutomaticCatchupSync(norm);
             return norm;
         }
 
@@ -1252,7 +1228,7 @@
                     });
                     mutatorFn(fallback);
                     syncRetroactiveClonePositionsOnState(fallback);
-                    runAutoCorrectRecalculation(fallback);
+                    runAutomaticCatchupSync(fallback);
                     fallback.lastUpdated = Date.now();
                     finalState = JSON.parse(JSON.stringify(fallback));
                     return finalState;
@@ -1260,7 +1236,7 @@
                 const stateObj = normalizeStateObject(currentData);
                 mutatorFn(stateObj);
                 syncRetroactiveClonePositionsOnState(stateObj);
-                runAutoCorrectRecalculation(stateObj);
+                runAutomaticCatchupSync(stateObj);
                 stateObj.lastUpdated = Date.now();
                 finalState = JSON.parse(JSON.stringify(stateObj));
                 return finalState;
@@ -1269,7 +1245,7 @@
                 applyStateSnapshot(finalState);
             }
             const badge = document.getElementById('cloudSyncStatusBadge');
-            if (badge) badge.innerText = "TGIP Auto-Correct Balance Guard (Synced ✓)";
+            if (badge) badge.innerText = "TGIP Incremental Catchup Guard (Synced ✓)";
         }
 
         let dbSyncTimeout = null;
@@ -1538,7 +1514,7 @@
             UI.showModal('TGIP Referral Link Copied!', `Share this link with your partners! When they activate a package, you earn <b>10% Direct Bonus</b> + help qualify for your 7-Day Club targets!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`, '✅');
         };
 
-        // --- EXACT AUTO-CORRECT CREDIT GUARD (STRICT DUPLICATE PREVENTION) ---
+        // --- STRICT INCREMENTAL CREDIT GUARD (ENSURES ONLY DELTA IS ADDED) ---
         function creditUserWithCapGuardOnState(state, targetWalletLower, rawAmount, incomeType, specificQueuePosNumber = null) {
             const userObj = state.globalUsersMap[targetWalletLower];
             if (!userObj || rawAmount <= 0 || (userObj.totalInvested || 0) <= 0) {
@@ -1789,10 +1765,57 @@
                 state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + directShare).toFixed(4));
             }
 
-            // RUN AUTO-CORRECT RECALCULATION TO ACCURATELY UPDATE ALL BALANCES
-            runAutoCorrectRecalculation(state);
+            // 2. INSTANT 20 UPLINES ABOVE MATRIX PROFIT FLOW (WITH DYNAMIC COMPRESSION)
+            let uplinesPaid = 0;
+            let searchUpIdx = myQueueIndex - 1;
+            while (uplinesPaid < 20 && searchUpIdx >= 0) {
+                const candidatePosNum = searchUpIdx + 1;
+                const candidateWallet = state.globalQueueOrder[searchUpIdx];
+                if (candidateWallet && isQueuePositionActiveFor2xOnState(state, candidatePosNum)) {
+                    creditUserWithCapGuardOnState(state, candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                    uplinesPaid++;
+                }
+                searchUpIdx--;
+            }
+            if (uplinesPaid < 20) {
+                const unallocatedUpShare = Number(((20 - uplinesPaid) * perLevelShare).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedUpShare).toFixed(4));
+            }
 
-            // 2. INSTANT ROYALTY CLUBS DISTRIBUTION (3% APEX + 2% TITAN)
+            // 3. INSTANT 20 DOWNLINES BELOW MATRIX PROFIT FLOW (WITH DYNAMIC COMPRESSION)
+            let downlinesPaid = 0;
+            let searchDownIdx = myQueueIndex + 1;
+            while (downlinesPaid < 20 && searchDownIdx < state.globalQueueOrder.length) {
+                const candidatePosNum = searchDownIdx + 1;
+                const candidateWallet = state.globalQueueOrder[searchDownIdx];
+                if (candidateWallet && isQueuePositionActiveFor2xOnState(state, candidatePosNum)) {
+                    creditUserWithCapGuardOnState(state, candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                    downlinesPaid++;
+                }
+                searchDownIdx++;
+            }
+            if (downlinesPaid < 20) {
+                const unallocatedDownShare = Number(((20 - downlinesPaid) * perLevelShare).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedDownShare).toFixed(4));
+            }
+
+            // 4. BI-DIRECTIONAL IMMEDIATE REVERSE FLOW: GIVE THE NEW JOINER THEIR 20 LEVELS UPWARD PROFITS TOO!
+            let newJoinerUplinesPaid = 0;
+            let reverseUpIdx = myQueueIndex - 1;
+            while (newJoinerUplinesPaid < 20 && reverseUpIdx >= 0) {
+                const reversePosNum = reverseUpIdx + 1;
+                const reverseWallet = state.globalQueueOrder[reverseUpIdx];
+                if (reverseWallet && isQueuePositionActiveFor2xOnState(state, reversePosNum)) {
+                    creditUserWithCapGuardOnState(state, wLower, perLevelShare, 'pool', assignedQueuePosNumber);
+                    newJoinerUplinesPaid++;
+                }
+                reverseUpIdx--;
+            }
+
+            // RUN INCREMENTAL CATCHUP SYNC ACROSS ALL RECORDS
+            runAutomaticCatchupSync(state);
+
+            // 5. INSTANT ROYALTY CLUBS DISTRIBUTION (3% APEX + 2% TITAN)
             const now = Date.now();
             let apexMembers = []; let titanMembers = [];
 
@@ -1847,7 +1870,7 @@
             const isUpgrade = (userObj.totalInvested || 0) > 0;
             const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
 
-            UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target) with Exact Auto-Correct Profits!</span>`, '⏳');
+            UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target) with Incremental Catchup Profits!</span>`, '⏳');
 
             let txHashConfirmed = null;
             try {
@@ -1876,7 +1899,7 @@
                 }
                 txHashConfirmed = tx.hash;
 
-                UI.showModal('Confirming on BSC Blockchain & Recalculating Profits...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
+                UI.showModal('Confirming on BSC Blockchain & Distributing Incremental Profits...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
 
                 let receipt = null;
                 try { receipt = await tx.wait(1); } 
@@ -1913,9 +1936,9 @@
 
                 if (res) {
                     const actionTitle = isUpgrade ? `Associate Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
-                    const extraInfoHtml = `🔢 <b>New Queue Position:</b> #${res.queuePosition} (${isUpgrade ? 'Clone ID Added at Bottom' : 'Main Pool ID'})\n` + `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
+                    const extraInfoHtml = `🔢 <b>New Queue Position:</b> #${res.queuePosition} (${isUpgrade ? 'Clone ID Added at Bottom' : 'Main Pool ID'})\n` + `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Catchup Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
                     await sendTelegramAlert(actionTitle, currentUserWallet, amount, txHashConfirmed, extraInfoHtml);
-                    UI.showModal(`Deposit Successful! Profits Recalculated (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT (Auto-Corrected)</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+                    UI.showModal(`Deposit Successful! Incremental Profits Credited (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT (Incremental Sync)</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
                 }
             } catch (postErr) {} finally { isDepositInProgress = false; }
         };
