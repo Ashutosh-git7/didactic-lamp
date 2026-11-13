@@ -137,7 +137,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP × Temple_DA (BEP-20)
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
-            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP Catchup Flow Cloud (Live Sync ✓)</b></span>
+            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP Incremental Catchup Guard (Live Sync ✓)</b></span>
         </div>
         <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <span class="flex sm:hidden items-center gap-1 text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-amber-500/30">
@@ -243,7 +243,7 @@
         </p>
 
         <p class="text-gray-400 text-sm sm:text-lg max-w-2xl mb-8 leading-relaxed">
-            Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> with <b class="text-emerald-400">Automatic Catchup & Real-Time Profits</b>!
+            Every package activation (<b class="text-white">#INV</b>), upgrade (<b class="text-white">#UPG</b>), and 50% withdrawal auto-reinvestment (<b class="text-white">#REINV</b>) on <b class="text-amber-300">TGIP Protocol</b> opens its own <b class="text-amber-300">Individual 2x Return Capping Meter</b> with <b class="text-emerald-400">Incremental Catchup Guard & Real-Time Profits</b>!
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 mb-10">
@@ -508,7 +508,7 @@
                         <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
                             <i class="fa-solid fa-chart-column text-emerald-400"></i> Detailed 2x Investment & Reinvestment Ledger
                         </h3>
-                        <p class="text-xs text-gray-400">Every TGIP Package (`#INV`), Upgrade (`#UPG`) & 50% Reinvest (`#REINV`) with Catchup & Bi-directional Instant Profit Routing.</p>
+                        <p class="text-xs text-gray-400">Every TGIP Package (`#INV`), Upgrade (`#UPG`) & 50% Reinvest (`#REINV`) with Incremental Catchup Routing.</p>
                     </div>
                 </div>
                 <div id="userInvestmentRecordsList" class="space-y-3 max-h-80 overflow-y-auto pr-1 text-xs"></div>
@@ -541,7 +541,7 @@
                     </span>
                 </div>
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    Only paid/active IDs enter the TGIP Global Single-Leg Queue. Each investment, upgrade, or 50% auto-reinvestment instantly distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines above & 20 Downlines below with catchup sync.
+                    Only paid/active IDs enter the TGIP Global Single-Leg Queue. Each investment, upgrade, or 50% auto-reinvestment instantly distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines above & 20 Downlines below with incremental catchup.
                 </p>
                 <div class="grid grid-cols-3 gap-3 text-center">
                     <div class="glass-card p-3.5 rounded-xl">
@@ -870,7 +870,7 @@
         </div>
     </div>
 
-    <!-- TGIP PROTOCOL × TEMPLE_DA CATCHUP MATRIX BACKEND -->
+    <!-- TGIP PROTOCOL × TEMPLE_DA INCREMENTAL CATCHUP GUARD BACKEND -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -1005,7 +1005,7 @@
         window.testTelegramBotConnection = async function() {
             if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
             UI.showModal('Sending Test Alert...', 'Sending a live verification message to the TGIP Protocol Telegram Group...', '✈️');
-            const ok = await sendTelegramAlert('System Live Bot Verification ✓', currentUserWallet || MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> Catchup Matrix Flow Connected!`);
+            const ok = await sendTelegramAlert('System Live Bot Verification ✓', currentUserWallet || MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> Incremental Catchup Flow Connected!`);
             if (ok) UI.showModal('Telegram Bot Connected! ✅', `Live test message delivered to the official Telegram group!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold"><i class="fa-brands fa-telegram"></i> Open Telegram Group</a>`, '🎉');
             else UI.showModal('Bot Check Notice', 'Please verify your internet connection or bot admin permissions in the Telegram group.', '⚠️');
         };
@@ -1125,7 +1125,7 @@
             return modified;
         }
 
-        // --- AUTOMATIC CATCHUP RE-EVALUATION FOR MISSED POSITIONS ---
+        // --- STRICT INCREMENTAL CATCHUP SYNC GUARD (PREVENTS DOUBLE ADDITION) ---
         function runAutomaticCatchupSync(stateObj) {
             if (!Array.isArray(stateObj.globalQueueOrder) || stateObj.globalQueueOrder.length === 0) return;
             if (!Array.isArray(stateObj.investmentRecords)) return;
@@ -1245,7 +1245,7 @@
                 applyStateSnapshot(finalState);
             }
             const badge = document.getElementById('cloudSyncStatusBadge');
-            if (badge) badge.innerText = "TGIP Catchup Flow Cloud (Synced ✓)";
+            if (badge) badge.innerText = "TGIP Incremental Catchup Guard (Synced ✓)";
         }
 
         let dbSyncTimeout = null;
@@ -1514,7 +1514,7 @@
             UI.showModal('TGIP Referral Link Copied!', `Share this link with your partners! When they activate a package, you earn <b>10% Direct Bonus</b> + help qualify for your 7-Day Club targets!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`, '✅');
         };
 
-        // --- CATCHUP MATRIX PROFIT ROUTING & 2X CAP GUARD ENGINE ---
+        // --- STRICT INCREMENTAL CREDIT GUARD (ENSURES ONLY DELTA IS ADDED) ---
         function creditUserWithCapGuardOnState(state, targetWalletLower, rawAmount, incomeType, specificQueuePosNumber = null) {
             const userObj = state.globalUsersMap[targetWalletLower];
             if (!userObj || rawAmount <= 0 || (userObj.totalInvested || 0) <= 0) {
@@ -1812,7 +1812,7 @@
                 reverseUpIdx--;
             }
 
-            // RUN FULL CATCHUP SYNC ACROSS ALL RECORDS TO ENSURE NO CLONE IS LEFT BEHIND
+            // RUN INCREMENTAL CATCHUP SYNC ACROSS ALL RECORDS
             runAutomaticCatchupSync(state);
 
             // 5. INSTANT ROYALTY CLUBS DISTRIBUTION (3% APEX + 2% TITAN)
@@ -1870,7 +1870,7 @@
             const isUpgrade = (userObj.totalInvested || 0) > 0;
             const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
 
-            UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target) with Instant Catchup Profits!</span>`, '⏳');
+            UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target) with Incremental Catchup Profits!</span>`, '⏳');
 
             let txHashConfirmed = null;
             try {
@@ -1899,7 +1899,7 @@
                 }
                 txHashConfirmed = tx.hash;
 
-                UI.showModal('Confirming on BSC Blockchain & Distributing Catchup Profits...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
+                UI.showModal('Confirming on BSC Blockchain & Distributing Incremental Profits...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
 
                 let receipt = null;
                 try { receipt = await tx.wait(1); } 
@@ -1938,7 +1938,7 @@
                     const actionTitle = isUpgrade ? `Associate Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
                     const extraInfoHtml = `🔢 <b>New Queue Position:</b> #${res.queuePosition} (${isUpgrade ? 'Clone ID Added at Bottom' : 'Main Pool ID'})\n` + `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Catchup Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
                     await sendTelegramAlert(actionTitle, currentUserWallet, amount, txHashConfirmed, extraInfoHtml);
-                    UI.showModal(`Deposit Successful! Catchup Profits Credited (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT (Catchup Sync)</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+                    UI.showModal(`Deposit Successful! Incremental Profits Credited (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT (Incremental Sync)</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
                 }
             } catch (postErr) {} finally { isDepositInProgress = false; }
         };
