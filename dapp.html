@@ -1112,20 +1112,7 @@
                 } else if (!rec.queuePosition) {
                     let nth = 0;
                     for (let q = 0; q < stateObj.globalQueueOrder.length; q++) {
-                        if ((stateObj.globalQueueOrder[q] || '').toLowerCase() === wl) {
-                            nth++;
-                            if (nth === currentCountForUser) {
-                                rec.queuePosition = q + 1;
-                                break;
-                            }
-                        }
-                    }
-                }
-            });
-            return modified;
-        }
-
-        // --- ROBUST AUTO-CORRECT RECALCULATION ENGINE (FIXES INFLATED BALANCES AUTOMATICALLY) ---
+        // --- ROBUST AUTO-CORRECT RECALCULATION ENGINE (WITH EXACT DIRECT BONUS & MATRIX SPLIT) ---
         function runAutoCorrectRecalculation(stateObj) {
             if (!stateObj.globalUsersMap) return;
 
@@ -1155,7 +1142,20 @@
             const chronologicalRecords = [...stateObj.investmentRecords].reverse();
 
             chronologicalRecords.forEach(rec => {
-                if (!rec || !rec.wallet || !rec.queuePosition) return;
+                if (!rec || !rec.wallet) return;
+
+                // 2A. Direct Sponsor Bonus (10%) credit check
+                const txnWalletLower = rec.wallet.toLowerCase();
+                const txnUserObj = stateObj.globalUsersMap[txnWalletLower];
+                if (txnUserObj && txnUserObj.sponsor && rec.type !== 'AUTO_REINVEST') {
+                    const sponsorLower = txnUserObj.sponsor.toLowerCase();
+                    if (sponsorLower && sponsorLower !== txnWalletLower && stateObj.globalUsersMap[sponsorLower]) {
+                        const directShare = Number((rec.amount * 0.10).toFixed(4));
+                        creditUserWithCapGuardOnState(stateObj, sponsorLower, directShare, 'direct');
+                    }
+                }
+
+                if (!rec.queuePosition) return;
                 const txnQueueIdx = Number(rec.queuePosition) - 1;
                 const perLevelShare = Number(((rec.amount * 0.40) / 40).toFixed(4)) || Number((rec.amount * 0.01).toFixed(4));
 
