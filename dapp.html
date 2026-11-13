@@ -137,7 +137,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> TGIP × Temple_DA (BEP-20)
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
-            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP × Temple_DA Cloud (Live Sync)</b></span>
+            <span class="hidden md:inline">Secure Node: <b id="cloudSyncStatusBadge" class="text-sky-400 font-mono">TGIP × Temple_DA Cloud (Atomic Sync ✓)</b></span>
         </div>
         <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <!-- Mobile Live Rate Badge inside Top Bar so Navbar stays clean -->
@@ -370,7 +370,7 @@
                         7-Day Target: Complete 2 Directs at your current Tier (<b id="uiMyBasePkgTxt" class="text-emerald-400 font-mono">$0 USDT</b>) &rarr; Unlock <span class="text-amber-400">Up to 5% Global Pool!</span>
                     </h3>
                     <p class="text-xs text-gray-300 leading-relaxed max-w-3xl">
-                        <b>Apex (3% Pool):</b> Starts at $50. <b>Titan (2% Pool):</b> Upgrading to $150 total starts a *new* 7-day timer. (Fail Titan in 7 days = permanent Titan loss!). Each tier limits earnings to <b>5x your target</b>. Re-enter by upgrading to the next tier ($250, $500, up to $5,000)!
+                        <b>Apex (3% Pool):</b> Starts at $50. <b>Titan (2% Pool):</b> Upgrading to $150 total ($50 + $100 Upgrade) starts a *new* 7-day timer. (Fail Titan in 7 days = permanent Titan loss!). Each tier limits earnings to <b>5x your target</b>. Re-enter by upgrading to the next tier ($250, $500, up to $5,000)!
                     </p>
                 </div>
 
@@ -492,7 +492,7 @@
                 <div>
                     <h2 class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
                         <span class="w-1.5 h-6 bg-emerald-400 rounded-full inline-block"></span>
-                        Select TGIP Protocol Activation / Upgrade Package (9 Tiers)
+                        Select TGIP Protocol Activation / Upgrade Package (10 Tiers)
                     </h2>
                 </div>
                 <span id="minPackageNoticeBadge" class="text-xs text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/30 font-semibold">
@@ -649,7 +649,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-800/80 bg-slate-950/80 font-mono">
                         <tr><td class="py-2.5 px-3 font-bold text-white">1. $50 USDT</td><td class="py-2.5 px-3">2 × $50</td><td class="py-2.5 px-3 text-amber-300 font-bold">3% Apex Pool</td><td class="py-2.5 px-3 text-rose-400 font-bold">$250 USDT</td></tr>
-                        <tr><td class="py-2.5 px-3 font-bold text-white">2. $150 USDT</td><td class="py-2.5 px-3">2 × $150</td><td class="py-2.5 px-3 text-amber-300 font-bold">3% Apex + 2% Titan = 5%</td><td class="py-2.5 px-3 text-rose-400 font-bold">$750 USDT</td></tr>
+                        <tr><td class="py-2.5 px-3 font-bold text-white">2. $150 USDT ($50+$100)</td><td class="py-2.5 px-3">2 × $150</td><td class="py-2.5 px-3 text-amber-300 font-bold">3% Apex + 2% Titan = 5%</td><td class="py-2.5 px-3 text-rose-400 font-bold">$750 USDT</td></tr>
                         <tr><td class="py-2.5 px-3 font-bold text-white">3. $250 USDT</td><td class="py-2.5 px-3">2 × $250</td><td class="py-2.5 px-3 text-amber-300 font-bold">5% (If Titan Not Lost)</td><td class="py-2.5 px-3 text-rose-400 font-bold">$1,250 USDT</td></tr>
                         <tr><td class="py-2.5 px-3 font-bold text-white">4. $500 USDT</td><td class="py-2.5 px-3">2 × $500</td><td class="py-2.5 px-3 text-amber-300 font-bold">5% (If Titan Not Lost)</td><td class="py-2.5 px-3 text-rose-400 font-bold">$2,500 USDT</td></tr>
                         <tr><td class="py-2.5 px-3 font-bold text-white">5. $1,000 USDT</td><td class="py-2.5 px-3">2 × $1,000</td><td class="py-2.5 px-3 text-amber-300 font-bold">5% (If Titan Not Lost)</td><td class="py-2.5 px-3 text-rose-400 font-bold">$5,000 USDT</td></tr>
@@ -871,10 +871,10 @@
         </div>
     </div>
 
-    <!-- TGIP PROTOCOL × TEMPLE_DA ENGINE & BACKEND -->
+    <!-- TGIP PROTOCOL × TEMPLE_DA SECURE ATOMIC ENGINE & BACKEND -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -892,65 +892,89 @@
         const auth = getAuth(fbApp);
         signInAnonymously(auth).catch(() => {});
 
+        // EXACT SAME DATABASE NODE TO PRESERVE 100% EXISTING DATA
         const CLOUD_NODE = "infinity_pool_v1/state";
-        
         const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
         const CLUB_TIERS = [50, 150, 250, 500, 1000, 2000, 5000];
 
-        window.MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
-        window.TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
-        window.TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
-        window.USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
-        window.BSC_CHAIN_ID_HEX = "0x38";
-        window.MIN_WITHDRAW_USDT = 3;
+        // ENCAPSULATED PRIVATE CONSTANTS & STATE (Protected from Browser Console Manipulation)
+        const MASTER_WALLET = "0x2760f05248a8377d3fdD86b80A3D48B010d5De95";
+        const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
+        const TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
+        const USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const BSC_CHAIN_ID_HEX = "0x38";
+        const MIN_WITHDRAW_USDT = 3;
 
-        window.TELEGRAM_BOT_TOKEN = "9222873980:AAHDiO3ygth3EHgWLbPIUcSo4sVslrrWfQ8";
-        window.TELEGRAM_CHAT_ID = "-1003612949068";
-        window.TELEGRAM_GROUP_INVITE = "https://t.me/+3SrEDfLpD6ozMDI9";
+        // Encoded Telegram Credentials (Not exposed on window.*)
+        const _TG_K = atob("OTIyMjg3Mzk4MDpBQUhEaU8zeWd0aDNFSGdXTGJQSVVjU280c1ZzbHJyV2ZROA==");
+        const _TG_C = "-1003612949068";
+        const TELEGRAM_GROUP_INVITE = "https://t.me/+3SrEDfLpD6ozMDI9";
 
-        window.escapeHtmlTelegram = function(str) {
+        // Private Application State (Synced with Firebase)
+        let liveTokenPrice = 0.001569;
+        let currentUserWallet = null;
+        let currentUserData = null;
+
+        let globalUsersMap = {};
+        let globalQueueOrder = [];
+        let investmentRecords = [];
+        let pendingWithdrawals = [];
+        let heldDownlineReserves = [];
+        let processedTxHashes = {};
+        let investRecordCounter = 1001;
+        let reinvestRecordCounter = 2001;
+        let withdrawalTicketCounter = 3001;
+        let protocolOverflowReserve = 0;
+
+        let urlReferrerAddress = "";
+        let hasReferralParamInUrl = false;
+        let isDepositInProgress = false;
+        let isWithdrawalInProgress = false;
+        let isAdminTransferInProgress = false;
+
+        function escapeHtmlTelegram(str) {
             return String(str || '')
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
-        };
+        }
 
-        window.deliverTelegramMessageReliable = async function(htmlMessage) {
-            const baseApiUrl = `https://api.telegram.org/bot${window.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        async function deliverTelegramMessageReliable(htmlMessage) {
+            const baseApiUrl = `https://api.telegram.org/bot${_TG_K}/sendMessage`;
             try {
                 const res = await fetch(baseApiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: window.TELEGRAM_CHAT_ID, text: htmlMessage, parse_mode: 'HTML', disable_web_page_preview: true })
+                    body: JSON.stringify({ chat_id: _TG_C, text: htmlMessage, parse_mode: 'HTML', disable_web_page_preview: true })
                 });
                 const data = await res.json();
                 if (data && data.ok) return true;
             } catch (e) {}
             try {
-                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(window.TELEGRAM_CHAT_ID)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
+                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
                 const res2 = await fetch(qUrl, { method: 'GET' });
                 const data2 = await res2.json();
                 if (data2 && data2.ok) return true;
             } catch (e2) {}
             try {
-                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(window.TELEGRAM_CHAT_ID)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
+                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
                 await fetch(qUrl, { mode: 'no-cors' });
                 return true;
             } catch (e3) { return false; }
-        };
+        }
 
-        window.sendTelegramAlert = async function(actionType, userWallet, amount, txHash, extraDetailsHtml = "") {
+        async function sendTelegramAlert(actionType, userWallet, amount, txHash, extraDetailsHtml = "") {
             const shortWallet = (userWallet && userWallet.length >= 10)
                 ? `${userWallet.substring(0, 6)}...${userWallet.substring(userWallet.length - 4)}`
                 : "Member Wallet";
             const wLower = (userWallet || "").toLowerCase();
-            const userObj = (window.globalUsersMap && window.globalUsersMap[wLower])
-                ? window.globalUsersMap[wLower]
-                : (window.currentUserData && window.currentUserWallet && window.currentUserWallet.toLowerCase() === wLower ? window.currentUserData : null);
+            const userObj = (globalUsersMap && globalUsersMap[wLower])
+                ? globalUsersMap[wLower]
+                : (currentUserData && currentUserWallet && currentUserWallet.toLowerCase() === wLower ? currentUserData : null);
             const rawName = (userObj && userObj.name) ? userObj.name : "TGIP Associate";
-            const memberName = window.escapeHtmlTelegram(rawName);
+            const memberName = escapeHtmlTelegram(rawName);
             const myPositions = [];
-            (window.globalQueueOrder || []).forEach((addr, idx) => {
+            (globalQueueOrder || []).forEach((addr, idx) => {
                 if (addr && addr.toLowerCase() === wLower) myPositions.push(`#${idx + 1}`);
             });
             const queueBadge = myPositions.length > 0 ? ` (Pool Pos: ${myPositions.join(', ')})` : "";
@@ -968,59 +992,42 @@
             if (txHash && String(txHash).startsWith("0x")) {
                 txLine = `🔗 <a href="https://bscscan.com/tx/${txHash}">Verify Transaction on BscScan</a>\n`;
             } else if (txHash) {
-                txLine = `🧾 <b>Record ID:</b> <code>${window.escapeHtmlTelegram(txHash)}</code>\n`;
+                txLine = `🧾 <b>Record ID:</b> <code>${escapeHtmlTelegram(txHash)}</code>\n`;
             }
             const extraLine = extraDetailsHtml ? `${extraDetailsHtml}\n` : "";
             const timeStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
             const htmlMessage =
                 `${emoji} <b>TGIP Protocol × Temple_DA Live Proof</b> ${emoji}\n\n` +
-                `🔹 <b>Action:</b> ${window.escapeHtmlTelegram(actionType)}\n` +
+                `🔹 <b>Action:</b> ${escapeHtmlTelegram(actionType)}\n` +
                 `👤 <b>Associate:</b> ${memberName} (<code>${shortWallet}</code>)${queueBadge}\n` +
-                `💰 <b>Amount:</b> $${window.escapeHtmlTelegram(amount)} USDT\n` +
+                `💰 <b>Amount:</b> $${escapeHtmlTelegram(amount)} USDT\n` +
                 extraLine + txLine +
                 `⏱ <b>Time:</b> ${timeStr} IST\n\n` +
-                `📢 <a href="${window.TELEGRAM_GROUP_INVITE}">Join Official TGIP Live Proof Group</a>`;
-            return await window.deliverTelegramMessageReliable(htmlMessage);
-        };
+                `📢 <a href="${TELEGRAM_GROUP_INVITE}">Join Official TGIP Live Proof Group</a>`;
+            return await deliverTelegramMessageReliable(htmlMessage);
+        }
 
         window.testTelegramBotConnection = async function() {
-            window.UI.showModal('Sending Test Alert...', 'Sending a live verification message to the TGIP Protocol Telegram Group...', '✈️');
-            const ok = await window.sendTelegramAlert('System Live Bot Verification ✓', window.currentUserWallet || window.MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> All Royalty Clubs (Apex/Titan), Deposits, Upgrades & Withdrawals Connected!`);
-            if (ok) window.UI.showModal('Telegram Bot Connected! ✅', `Live test message delivered to the official Telegram group!<br><br><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold"><i class="fa-brands fa-telegram"></i> Open Telegram Group</a>`, '🎉');
-            else window.UI.showModal('Bot Check Notice', 'Please verify your internet connection or bot admin permissions in the Telegram group.', '⚠️');
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+            UI.showModal('Sending Test Alert...', 'Sending a live verification message to the TGIP Protocol Telegram Group...', '✈️');
+            const ok = await sendTelegramAlert('System Live Bot Verification ✓', currentUserWallet || MASTER_WALLET, '10.00', '#BOT-LIVE-OK', `✅ <b>Status:</b> All Royalty Clubs (Apex/Titan), Deposits, Upgrades & Withdrawals Connected!`);
+            if (ok) UI.showModal('Telegram Bot Connected! ✅', `Live test message delivered to the official Telegram group!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold"><i class="fa-brands fa-telegram"></i> Open Telegram Group</a>`, '🎉');
+            else UI.showModal('Bot Check Notice', 'Please verify your internet connection or bot admin permissions in the Telegram group.', '⚠️');
         };
 
         window.broadcastRecentAssociatesActivity = async function() {
-            const records = (window.investmentRecords || []).slice(0, 5);
-            if (records.length === 0) { window.UI.showModal('No Records Found', 'There are no investment records to sync yet.', 'ℹ️'); return; }
-            window.UI.showModal('Syncing Associates to Telegram...', `Broadcasting the latest ${records.length} associate transactions to the Telegram group...`, '⏳');
-            for (const rec of records.reverse()) {
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+            const records = (investmentRecords || []).slice(0, 5);
+            if (records.length === 0) { UI.showModal('No Records Found', 'There are no investment records to sync yet.', 'ℹ️'); return; }
+            UI.showModal('Syncing Associates to Telegram...', `Broadcasting the latest ${records.length} associate transactions to the Telegram group...`, '⏳');
+            for (const rec of [...records].reverse()) {
                 const typeLabel = rec.type === 'AUTO_REINVEST' ? `50% Auto-Reinvestment (${rec.id})` : (rec.type === 'UPGRADE' ? `Associate Package Upgrade (${rec.id})` : `Associate Package Deposit (${rec.id})`);
                 const extraHtml = `🎯 <b>2x Capping Meter:</b> $${(rec.target2x || rec.amount * 2).toFixed(2)} USDT\n` +
                                   `💧 <b>45% Pool:</b> $${(rec.poolShare || (rec.amount * 0.45)).toFixed(2)} | 🤝 <b>10% Direct:</b> $${(rec.directShare || (rec.amount * 0.1)).toFixed(2)} | 🌐 <b>40% Matrix:</b> $${(rec.teamShare || (rec.amount * 0.4)).toFixed(2)}`;
-                await window.sendTelegramAlert(typeLabel, rec.wallet, rec.amount.toFixed(2), rec.id, extraHtml);
+                await sendTelegramAlert(typeLabel, rec.wallet, rec.amount.toFixed(2), rec.id, extraHtml);
             }
-            window.UI.showModal('Synced to Telegram! ✅', `Latest ${records.length} associate records have been posted to your Telegram group!`, '🚀');
+            UI.showModal('Synced to Telegram! ✅', `Latest ${records.length} associate records have been posted to your Telegram group!`, '🚀');
         };
-
-        window.liveTokenPrice = 0.001569;
-        window.currentUserWallet = null;
-        window.currentUserData = null;
-
-        window.globalUsersMap = {};
-        window.globalQueueOrder = [];
-        window.investmentRecords = [];
-        window.pendingWithdrawals = [];
-        window.heldDownlineReserves = [];
-        window.investRecordCounter = 1001;
-        window.reinvestRecordCounter = 2001;
-        window.withdrawalTicketCounter = 3001;
-        window.protocolOverflowReserve = 0;
-
-        window.urlReferrerAddress = "";
-        window.hasReferralParamInUrl = false;
-        window.web3Provider = null;
-        window.web3Signer = null;
 
         // URL parsing for sponsor
         try {
@@ -1028,16 +1035,16 @@
             const hashParams = new URLSearchParams((window.location.hash.split('?')[1]) || '');
             const refFromUrl = urlParams.get('ref') || hashParams.get('ref');
             if (refFromUrl && refFromUrl.trim().startsWith('0x') && refFromUrl.trim().length === 42) {
-                window.urlReferrerAddress = refFromUrl.trim();
-                window.hasReferralParamInUrl = true;
+                urlReferrerAddress = refFromUrl.trim();
+                hasReferralParamInUrl = true;
                 const noticeBox = document.getElementById('heroReferralNoticeBox');
                 const sponsorTxt = document.getElementById('heroSponsorAddrTxt');
                 if (noticeBox && sponsorTxt) {
-                    sponsorTxt.innerText = window.urlReferrerAddress.slice(0, 6) + "..." + window.urlReferrerAddress.slice(-4);
+                    sponsorTxt.innerText = urlReferrerAddress.slice(0, 6) + "..." + urlReferrerAddress.slice(-4);
                     noticeBox.classList.remove('hidden');
                     noticeBox.classList.add('inline-flex');
                 }
-                setTimeout(() => { window.openRegistrationModalWithSponsor(window.urlReferrerAddress); }, 400);
+                setTimeout(() => { openRegistrationModalWithSponsor(urlReferrerAddress); }, 400);
             }
         } catch (e) {}
 
@@ -1048,8 +1055,8 @@
         window.openRegistrationModalManual = function() {
             const sponsorInp = document.getElementById('regSponsorInput');
             const sponsorBadge = document.getElementById('regSponsorBadge');
-            if (window.hasReferralParamInUrl && window.urlReferrerAddress) {
-                sponsorInp.value = window.urlReferrerAddress; sponsorInp.readOnly = true;
+            if (hasReferralParamInUrl && urlReferrerAddress) {
+                sponsorInp.value = urlReferrerAddress; sponsorInp.readOnly = true;
                 if (sponsorBadge) { sponsorBadge.innerText = "Locked via Referral Link ✓"; sponsorBadge.className = "text-[10px] text-emerald-400 font-bold"; }
             } else {
                 sponsorInp.value = ""; sponsorInp.readOnly = false;
@@ -1058,67 +1065,61 @@
             document.getElementById('registrationModal').style.display = 'flex';
         };
 
-        window.openRegistrationModalWithSponsor = function(sponsorAddr) {
+        function openRegistrationModalWithSponsor(sponsorAddr) {
             const sponsorInp = document.getElementById('regSponsorInput');
             const sponsorBadge = document.getElementById('regSponsorBadge');
             if (sponsorInp) { sponsorInp.value = sponsorAddr || ""; sponsorInp.readOnly = Boolean(sponsorAddr); }
             if (sponsorBadge && sponsorAddr) { sponsorBadge.innerText = "Locked via Referral Link ✓"; sponsorBadge.className = "text-[10px] text-emerald-400 font-bold"; }
             document.getElementById('registrationModal').style.display = 'flex';
-        };
+        }
 
         window.connectWalletForRegistrationForm = async function() {
             const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
             if (!eth) { window.openUniversalWalletModal(); return; }
             try {
-                await window.ensureBSCNetwork(eth);
+                await ensureBSCNetwork(eth);
                 const accounts = await eth.request({ method: 'eth_requestAccounts' });
                 if (accounts && accounts.length > 0) {
                     document.getElementById('regWalletInput').value = accounts[0];
                     const wLower = accounts[0].toLowerCase();
-                    if (window.globalUsersMap && window.globalUsersMap[wLower]) {
-                        window.closeRegistrationModal(); window.finalizeLogin(accounts[0]);
+                    if (globalUsersMap && globalUsersMap[wLower]) {
+                        window.closeRegistrationModal(); finalizeLogin(accounts[0]);
                     }
                 }
-            } catch (err) { window.UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️'); }
+            } catch (err) { UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️'); }
         };
 
         // --- RETROACTIVE & LIVE CLONE QUEUE SYNCHRONIZER FOR EXISTING & NEW ASSOCIATES ---
-        window.syncRetroactiveClonePositions = function() {
-            if (!Array.isArray(window.globalQueueOrder)) window.globalQueueOrder = [];
-            if (!Array.isArray(window.investmentRecords)) window.investmentRecords = [];
+        function syncRetroactiveClonePositionsOnState(stateObj) {
+            if (!Array.isArray(stateObj.globalQueueOrder)) stateObj.globalQueueOrder = [];
+            if (!Array.isArray(stateObj.investmentRecords)) stateObj.investmentRecords = [];
 
-            // Chronological order (oldest to newest)
-            const chronologicalRecords = [...window.investmentRecords].reverse();
-
-            // Count how many times each wallet already appears in globalQueueOrder
+            const chronologicalRecords = [...stateObj.investmentRecords].reverse();
             const existingOccurrences = {};
-            window.globalQueueOrder.forEach((w) => {
+            stateObj.globalQueueOrder.forEach((w) => {
                 if (!w) return;
                 const wl = w.toLowerCase();
                 existingOccurrences[wl] = (existingOccurrences[wl] || 0) + 1;
             });
 
-            // Count how many records each wallet has processed so far in chronological order
             const processedCountByWallet = {};
             let modified = false;
 
-            chronologicalRecords.forEach((rec, idx) => {
+            chronologicalRecords.forEach((rec) => {
                 if (!rec || !rec.wallet) return;
                 const wl = rec.wallet.toLowerCase();
                 processedCountByWallet[wl] = (processedCountByWallet[wl] || 0) + 1;
                 const currentCountForUser = processedCountByWallet[wl];
 
-                // If this record (whether #INV, #UPG, or #REINV) does not yet have a corresponding slot in globalQueueOrder, append it at the bottom
                 if (currentCountForUser > (existingOccurrences[wl] || 0)) {
-                    window.globalQueueOrder.push(wl);
+                    stateObj.globalQueueOrder.push(wl);
                     existingOccurrences[wl] = (existingOccurrences[wl] || 0) + 1;
-                    rec.queuePosition = window.globalQueueOrder.length;
+                    rec.queuePosition = stateObj.globalQueueOrder.length;
                     modified = true;
                 } else if (!rec.queuePosition) {
-                    // Assign matching N-th occurrence queue position to existing record for display
                     let nth = 0;
-                    for (let q = 0; q < window.globalQueueOrder.length; q++) {
-                        if ((window.globalQueueOrder[q] || '').toLowerCase() === wl) {
+                    for (let q = 0; q < stateObj.globalQueueOrder.length; q++) {
+                        if ((stateObj.globalQueueOrder[q] || '').toLowerCase() === wl) {
                             nth++;
                             if (nth === currentCountForUser) {
                                 rec.queuePosition = q + 1;
@@ -1128,74 +1129,103 @@
                     }
                 }
             });
-
             return modified;
-        };
+        }
 
-        // --- OPTIMIZED DB SYNC (PREVENTS HANGING) ---
-        let dbSyncTimeout = null;
-        window.applyStateSnapshot = function(parsed) {
-            if (!parsed) return;
-            window.globalUsersMap = parsed.globalUsersMap || {};
-            window.globalQueueOrder = Array.isArray(parsed.globalQueueOrder) ? parsed.globalQueueOrder : Object.values(parsed.globalQueueOrder || {});
-            window.investmentRecords = Array.isArray(parsed.investmentRecords) ? parsed.investmentRecords : Object.values(parsed.investmentRecords || {});
-            window.pendingWithdrawals = Array.isArray(parsed.pendingWithdrawals) ? parsed.pendingWithdrawals : Object.values(parsed.pendingWithdrawals || {});
-            window.heldDownlineReserves = Array.isArray(parsed.heldDownlineReserves) ? parsed.heldDownlineReserves : Object.values(parsed.heldDownlineReserves || {});
-            window.investRecordCounter = parsed.investRecordCounter || 1001;
-            window.reinvestRecordCounter = parsed.reinvestRecordCounter || 2001;
-            window.withdrawalTicketCounter = parsed.withdrawalTicketCounter || 3001;
-            window.protocolOverflowReserve = parsed.protocolOverflowReserve || 0;
+        function normalizeStateObject(raw) {
+            const p = raw || {};
+            return {
+                globalUsersMap: p.globalUsersMap || {},
+                globalQueueOrder: Array.isArray(p.globalQueueOrder) ? p.globalQueueOrder : Object.values(p.globalQueueOrder || {}),
+                investmentRecords: Array.isArray(p.investmentRecords) ? p.investmentRecords : Object.values(p.investmentRecords || {}),
+                pendingWithdrawals: Array.isArray(p.pendingWithdrawals) ? p.pendingWithdrawals : Object.values(p.pendingWithdrawals || {}),
+                heldDownlineReserves: Array.isArray(p.heldDownlineReserves) ? p.heldDownlineReserves : Object.values(p.heldDownlineReserves || {}),
+                processedTxHashes: p.processedTxHashes || {},
+                investRecordCounter: p.investRecordCounter || 1001,
+                reinvestRecordCounter: p.reinvestRecordCounter || 2001,
+                withdrawalTicketCounter: p.withdrawalTicketCounter || 3001,
+                protocolOverflowReserve: Number(p.protocolOverflowReserve || 0),
+                lastUpdated: p.lastUpdated || Date.now()
+            };
+        }
 
-            // Ensure existing associates' past upgrades & 50% reinvestments also have their Clone IDs in the queue
-            const wasRetroactivelyUpdated = window.syncRetroactiveClonePositions();
-            if (wasRetroactivelyUpdated) {
-                window.saveGlobalProtocolState();
+        // --- ATOMIC TRANSACTION MUTATOR (PREVENTS DATA LOSS & RACE CONDITIONS) ---
+        async function commitAtomicStateMutation(mutatorFn) {
+            const stateRef = ref(db, CLOUD_NODE);
+            let finalState = null;
+            await runTransaction(stateRef, (currentData) => {
+                if (currentData === null) {
+                    // In case local cache isn't warm yet, build from current in-memory state if present
+                    const fallback = normalizeStateObject({
+                        globalUsersMap,
+                        globalQueueOrder,
+                        investmentRecords,
+                        pendingWithdrawals,
+                        heldDownlineReserves,
+                        processedTxHashes,
+                        investRecordCounter,
+                        reinvestRecordCounter,
+                        withdrawalTicketCounter,
+                        protocolOverflowReserve
+                    });
+                    mutatorFn(fallback);
+                    fallback.lastUpdated = Date.now();
+                    finalState = JSON.parse(JSON.stringify(fallback));
+                    return finalState;
+                }
+                const stateObj = normalizeStateObject(currentData);
+                syncRetroactiveClonePositionsOnState(stateObj);
+                mutatorFn(stateObj);
+                stateObj.lastUpdated = Date.now();
+                finalState = JSON.parse(JSON.stringify(stateObj));
+                return finalState;
+            });
+            if (finalState) {
+                applyStateSnapshot(finalState);
             }
+            const badge = document.getElementById('cloudSyncStatusBadge');
+            if (badge) badge.innerText = "TGIP × Temple_DA Cloud (Atomic Sync ✓)";
+        }
 
-            if (window.currentUserWallet) {
-                const wLower = window.currentUserWallet.toLowerCase();
-                if (window.globalUsersMap[wLower]) {
-                    window.currentUserData = window.globalUsersMap[wLower];
-                    
-                    // DEBOUNCE UI REFRESH TO PREVENT HANGING ON MULTIPLE FIREBASE UPDATES
+        // --- OPTIMIZED DB SYNC (DEBOUNCED TO PREVENT UI FREEZING) ---
+        let dbSyncTimeout = null;
+        function applyStateSnapshot(parsed) {
+            if (!parsed) return;
+            const norm = normalizeStateObject(parsed);
+            syncRetroactiveClonePositionsOnState(norm);
+
+            globalUsersMap = norm.globalUsersMap;
+            globalQueueOrder = norm.globalQueueOrder;
+            investmentRecords = norm.investmentRecords;
+            pendingWithdrawals = norm.pendingWithdrawals;
+            heldDownlineReserves = norm.heldDownlineReserves;
+            processedTxHashes = norm.processedTxHashes;
+            investRecordCounter = norm.investRecordCounter;
+            reinvestRecordCounter = norm.reinvestRecordCounter;
+            withdrawalTicketCounter = norm.withdrawalTicketCounter;
+            protocolOverflowReserve = norm.protocolOverflowReserve;
+
+            if (currentUserWallet) {
+                const wLower = currentUserWallet.toLowerCase();
+                if (globalUsersMap[wLower]) {
+                    currentUserData = globalUsersMap[wLower];
                     if (dbSyncTimeout) clearTimeout(dbSyncTimeout);
                     dbSyncTimeout = setTimeout(() => {
-                        try { window.refreshDashboardUI(); } catch (e) {}
+                        try { refreshDashboardUI(); } catch (e) {}
                         const adminModalEl = document.getElementById('adminModal');
                         if (adminModalEl && adminModalEl.style.display === 'flex') {
-                            try { window.renderAdminDashboardData(); } catch (e) {}
+                            try { renderAdminDashboardData(); } catch (e) {}
                         }
-                    }, 200); 
+                    }, 180);
                 }
             }
-        };
-
-        window.saveGlobalProtocolState = async function() {
-            const rawPayload = {
-                globalUsersMap: window.globalUsersMap || {},
-                globalQueueOrder: window.globalQueueOrder || [],
-                investmentRecords: window.investmentRecords || [],
-                pendingWithdrawals: window.pendingWithdrawals || [],
-                heldDownlineReserves: window.heldDownlineReserves || [],
-                investRecordCounter: window.investRecordCounter || 1001,
-                reinvestRecordCounter: window.reinvestRecordCounter || 2001,
-                withdrawalTicketCounter: window.withdrawalTicketCounter || 3001,
-                protocolOverflowReserve: window.protocolOverflowReserve || 0,
-                lastUpdated: Date.now()
-            };
-            const cleanPayload = JSON.parse(JSON.stringify(rawPayload));
-            try {
-                await set(ref(db, CLOUD_NODE), cleanPayload);
-                const badge = document.getElementById('cloudSyncStatusBadge');
-                if (badge) badge.innerText = "TGIP × Temple_DA Cloud (Synced ✓)";
-            } catch (cloudErr) {}
-        };
+        }
 
         onValue(ref(db, CLOUD_NODE), (snapshot) => {
-            if (snapshot.exists()) window.applyStateSnapshot(snapshot.val());
+            if (snapshot.exists()) applyStateSnapshot(snapshot.val());
         });
 
-        window.UI = {
+        const UI = {
             showModal: function(title, message, icon, actions) {
                 document.getElementById('customModal').style.display = 'flex';
                 document.getElementById('modalIcon').innerText = icon || '🔔';
@@ -1205,7 +1235,7 @@
             },
             hideModal: function() { document.getElementById('customModal').style.display = 'none'; }
         };
-        window.closeModal = window.UI.hideModal;
+        window.closeModal = UI.hideModal;
         window.openUniversalWalletModal = function() { document.getElementById('walletModal').style.display = 'flex'; };
         window.closeWalletModal = function() { document.getElementById('walletModal').style.display = 'none'; };
 
@@ -1226,12 +1256,12 @@
                 for (const rpc of rpcUrls) {
                     try {
                         const provider = new ethers.providers.JsonRpcProvider(rpc);
-                        const pairContract = new ethers.Contract(window.TEMPLE_DA_POOL_CONTRACT, PAIR_ABI, provider);
+                        const pairContract = new ethers.Contract(TEMPLE_DA_POOL_CONTRACT, PAIR_ABI, provider);
                         const [reserves, token0Address] = await Promise.all([pairContract.getReserves(), pairContract.token0()]);
                         const r0 = parseFloat(ethers.utils.formatUnits(reserves._reserve0, 18));
                         const r1 = parseFloat(ethers.utils.formatUnits(reserves._reserve1, 18));
                         if (r0 > 0 && r1 > 0) {
-                            priceFound = (token0Address.toLowerCase() === window.USDT_BEP20_CONTRACT.toLowerCase()) ? (r0 / r1) : (r1 / r0);
+                            priceFound = (token0Address.toLowerCase() === USDT_BEP20_CONTRACT.toLowerCase()) ? (r0 / r1) : (r1 / r0);
                             if (priceFound > 0) break;
                         }
                     } catch (err) {}
@@ -1239,30 +1269,27 @@
             }
             if (!priceFound) {
                 try {
-                    const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${window.TEMPLE_DA_POOL_CONTRACT}`);
+                    const res = await fetch(`https://api.dexscreener.com/latest/dex/pairs/bsc/${TEMPLE_DA_POOL_CONTRACT}`);
                     const data = await res.json();
                     if (data && data.pair && data.pair.priceUsd) priceFound = parseFloat(data.pair.priceUsd);
                 } catch (e) {}
             }
-            if (priceFound > 0) window.liveTokenPrice = priceFound;
-            const formatted = window.liveTokenPrice < 0.01 ? `$${window.liveTokenPrice.toFixed(6)}` : `$${window.liveTokenPrice.toFixed(4)}`;
+            if (priceFound > 0) liveTokenPrice = priceFound;
+            const formatted = liveTokenPrice < 0.01 ? `$${liveTokenPrice.toFixed(6)}` : `$${liveTokenPrice.toFixed(4)}`;
             const navEl = document.getElementById('livePriceTxt'); const mobTopEl = document.getElementById('mobileTopLivePriceTxt'); const dashEl = document.getElementById('dashboardLiveRateTxt');
             if (navEl) navEl.innerText = formatted; if (mobTopEl) mobTopEl.innerText = formatted; if (dashEl) dashEl.innerText = formatted;
-            window.updateEstimatedTokensUI();
+            updateEstimatedTokensUI();
             if (manualSpin && icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
         };
         window.updateLivePrice(false);
-        setInterval(() => window.updateLivePrice(false), 20000);
+        setInterval(() => window.updateLivePrice(false), 25000);
 
-        // --- OPTIMIZED TIMER (DOES NOT HANG THE BROWSER) ---
-        window.updateClubTimerOnly = function() {
-            if (!window.currentUserData) return;
-            const u = window.currentUserData;
+        // --- ZERO-LAG TIMER (ONLY UPDATES TEXT NODE) ---
+        function updateClubTimerOnly() {
+            if (!currentUserData) return;
+            const u = currentUserData;
             const timerEl = document.getElementById('uiClubCountdown');
-            if (!timerEl) return;
-
-            // Only update clock if inactive
-            if (u.clubStatus !== "INACTIVE") return;
+            if (!timerEl || u.clubStatus !== "INACTIVE") return;
 
             const startTs = u.clubTimerStart || Date.now();
             const remainingMs = startTs + SEVEN_DAYS_MS - Date.now();
@@ -1277,28 +1304,26 @@
                 const pad = n => String(n).padStart(2, '0');
                 timerEl.innerText = `${days}d ${pad(hrs)}h ${pad(mins)}m ${pad(secs)}s`;
             }
-        };
+        }
 
         setInterval(() => {
-            if (window.currentUserWallet && window.currentUserData) {
-                window.updateClubTimerOnly(); // Just updates the clock text string, 0 performance impact
-            }
+            if (currentUserWallet && currentUserData) updateClubTimerOnly();
         }, 1000);
 
-        window.ensureBSCNetwork = async function(ethProvider) {
+        async function ensureBSCNetwork(ethProvider) {
             if (!ethProvider || !ethProvider.request) return;
             let chainId = null;
             try { chainId = await ethProvider.request({ method: 'eth_chainId' }); } catch (e) {}
-            if (chainId && chainId !== window.BSC_CHAIN_ID_HEX && parseInt(chainId, 16) !== 56) {
+            if (chainId && chainId !== BSC_CHAIN_ID_HEX && parseInt(chainId, 16) !== 56) {
                 try {
-                    await ethProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: window.BSC_CHAIN_ID_HEX }], });
+                    await ethProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BSC_CHAIN_ID_HEX }] });
                 } catch (switchError) {
                     if (switchError && (switchError.code === 4902 || switchError?.data?.originalError?.code === 4902 || switchError.code === -32603)) {
-                        await ethProvider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: window.BSC_CHAIN_ID_HEX, chainName: 'BNB Smart Chain Mainnet (BEP-20)', nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }, rpcUrls: ['https://bsc-dataseed.binance.org/'], blockExplorerUrls: ['https://bscscan.com/'] }] });
+                        await ethProvider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BSC_CHAIN_ID_HEX, chainName: 'BNB Smart Chain Mainnet (BEP-20)', nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }, rpcUrls: ['https://bsc-dataseed.binance.org/'], blockExplorerUrls: ['https://bscscan.com/'] }] });
                     } else { throw new Error("Strict BEP-20 Requirement: Please switch your wallet network to BNB Smart Chain (BSC Mainnet)!"); }
                 }
             }
-        };
+        }
 
         window.handleDirectConnectClick = async function() {
             const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
@@ -1311,43 +1336,42 @@
             const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
             if (!eth) { window.openUniversalWalletModal(); return; }
             try {
-                window.UI.showModal('Connecting BEP-20 Wallet', 'Verifying BNB Smart Chain (BEP-20) network & wallet address...', '⏳');
-                await window.ensureBSCNetwork(eth);
+                UI.showModal('Connecting BEP-20 Wallet', 'Verifying BNB Smart Chain (BEP-20) network & wallet address...', '⏳');
+                await ensureBSCNetwork(eth);
                 const accounts = await eth.request({ method: 'eth_requestAccounts' });
-                if (typeof ethers !== 'undefined') {
-                    window.web3Provider = new ethers.providers.Web3Provider(eth, "any");
-                    window.web3Signer = window.web3Provider.getSigner();
-                }
                 if (accounts && accounts.length > 0) {
                     const addr = accounts[0];
-                    window.UI.hideModal();
-                    await window.checkRegistrationAndProceed(addr);
+                    UI.hideModal();
+                    await checkRegistrationAndProceed(addr);
                 }
-            } catch (err) { window.UI.showModal('BEP-20 Connection Alert', err.message || 'Please connect using MetaMask or Trust Wallet on BNB Smart Chain (BEP-20).', '⚠️'); }
+            } catch (err) { UI.showModal('BEP-20 Connection Alert', err.message || 'Please connect using MetaMask or Trust Wallet on BNB Smart Chain (BEP-20).', '⚠️'); }
         };
 
-        window.checkRegistrationAndProceed = async function(walletAddr) {
+        async function checkRegistrationAndProceed(walletAddr) {
             try {
                 const cloudSnap = await get(ref(db, CLOUD_NODE));
-                if (cloudSnap.exists()) window.applyStateSnapshot(cloudSnap.val());
+                if (cloudSnap.exists()) applyStateSnapshot(cloudSnap.val());
             } catch (e) {}
 
             const wLower = walletAddr.toLowerCase();
-            if (wLower === window.MASTER_WALLET.toLowerCase() && !window.globalUsersMap[wLower]) {
-                window.globalUsersMap[wLower] = {
-                    wallet: walletAddr, name: "Master Admin", phone: "Admin", sponsor: "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
-                    progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
-                    booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
-                };
-                await window.saveGlobalProtocolState();
+            if (wLower === MASTER_WALLET.toLowerCase() && !globalUsersMap[wLower]) {
+                await commitAtomicStateMutation((state) => {
+                    if (!state.globalUsersMap[wLower]) {
+                        state.globalUsersMap[wLower] = {
+                            wallet: walletAddr, name: "Master Admin", phone: "Admin", sponsor: "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
+                            progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
+                            booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
+                        };
+                    }
+                });
             }
 
-            if (!window.globalUsersMap[wLower]) {
+            if (!globalUsersMap[wLower]) {
                 document.getElementById('regWalletInput').value = walletAddr;
                 const sponsorInp = document.getElementById('regSponsorInput');
                 const sponsorBadge = document.getElementById('regSponsorBadge');
-                if (window.hasReferralParamInUrl && window.urlReferrerAddress && window.urlReferrerAddress.toLowerCase() !== wLower) {
-                    sponsorInp.value = window.urlReferrerAddress; sponsorInp.readOnly = true;
+                if (hasReferralParamInUrl && urlReferrerAddress && urlReferrerAddress.toLowerCase() !== wLower) {
+                    sponsorInp.value = urlReferrerAddress; sponsorInp.readOnly = true;
                     if (sponsorBadge) { sponsorBadge.innerText = "Locked via Referral Link ✓"; sponsorBadge.className = "text-[10px] text-emerald-400 font-bold"; }
                 } else {
                     sponsorInp.value = ""; sponsorInp.readOnly = false;
@@ -1355,9 +1379,9 @@
                 }
                 document.getElementById('registrationModal').style.display = 'flex';
             } else {
-                window.finalizeLogin(walletAddr);
+                finalizeLogin(walletAddr);
             }
-        };
+        }
 
         window.submitRegistrationForm = async function() {
             const nameInput = document.getElementById('regFullNameInput').value.trim();
@@ -1365,29 +1389,32 @@
             const walletAddr = document.getElementById('regWalletInput').value.trim();
             let sponsorAddr = document.getElementById('regSponsorInput').value.trim();
 
-            if (!nameInput) { window.UI.showModal('Full Name Required', 'Please enter your Full Name or Username to complete registration.', '⚠️'); return; }
-            if (!walletAddr || !walletAddr.startsWith('0x') || walletAddr.length !== 42) { window.UI.showModal('Connect BEP-20 Wallet First', 'Please click the <b>Connect</b> button inside the registration form to link your BEP-20 wallet address.', '⚠️'); return; }
-            if (sponsorAddr && (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase())) { window.UI.showModal('Invalid Sponsor Address', 'Please enter a valid BEP-20 Sponsor Wallet Address (0x...) or leave it blank.', '⚠️'); return; }
+            if (!nameInput) { UI.showModal('Full Name Required', 'Please enter your Full Name or Username to complete registration.', '⚠️'); return; }
+            if (!walletAddr || !walletAddr.startsWith('0x') || walletAddr.length !== 42) { UI.showModal('Connect BEP-20 Wallet First', 'Please click the <b>Connect</b> button inside the registration form to link your BEP-20 wallet address.', '⚠️'); return; }
+            if (sponsorAddr && (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase())) { UI.showModal('Invalid Sponsor Address', 'Please enter a valid BEP-20 Sponsor Wallet Address (0x...) or leave it blank.', '⚠️'); return; }
 
             const wLower = walletAddr.toLowerCase();
-            window.globalUsersMap[wLower] = {
-                wallet: walletAddr, name: nameInput, phone: phoneInput || "", sponsor: sponsorAddr || "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
-                progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
-                booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
-            };
+            await commitAtomicStateMutation((state) => {
+                if (!state.globalUsersMap[wLower]) {
+                    state.globalUsersMap[wLower] = {
+                        wallet: walletAddr, name: nameInput, phone: phoneInput || "", sponsor: sponsorAddr || "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
+                        progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
+                        booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
+                    };
+                }
+            });
 
             document.getElementById('registrationModal').style.display = 'none';
-            await window.saveGlobalProtocolState();
-            window.finalizeLogin(walletAddr);
+            finalizeLogin(walletAddr);
 
             const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
-            await window.sendTelegramAlert('New Member Registration', walletAddr, '0 (Registered)', '', `🤝 <b>Sponsor:</b> <code>${shortSponsor}</code>`);
+            await sendTelegramAlert('New Member Registration', walletAddr, '0 (Registered)', '', `🤝 <b>Sponsor:</b> <code>${shortSponsor}</code>`);
             const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
-            window.UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position and start your <b>7-Day Royalty Club Timer</b>!<br><br><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
+            UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position and start your <b>7-Day Royalty Club Timer</b>!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
         };
 
-        window.finalizeLogin = function(walletAddress) {
-            window.currentUserWallet = walletAddress;
+        function finalizeLogin(walletAddress) {
+            currentUserWallet = walletAddress;
             const wLower = walletAddress.toLowerCase();
 
             document.getElementById('heroSection').classList.add('hidden');
@@ -1400,19 +1427,19 @@
             document.getElementById('walletAddressTxt').innerText = walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4);
 
             const adminBtn = document.getElementById('btnAdminPanel');
-            if (wLower === window.MASTER_WALLET.toLowerCase()) adminBtn.classList.remove('hidden');
+            if (wLower === MASTER_WALLET.toLowerCase()) adminBtn.classList.remove('hidden');
             else adminBtn.classList.add('hidden');
 
             const baseDomain = window.location.origin + window.location.pathname;
             document.getElementById('refLinkTxt').innerText = `${baseDomain}?ref=${walletAddress}`;
 
-            window.currentUserData = window.globalUsersMap[wLower];
-            window.refreshDashboardUI();
-        };
+            currentUserData = globalUsersMap[wLower];
+            refreshDashboardUI();
+        }
 
         window.disconnectWallet = function() {
-            window.currentUserWallet = null;
-            window.currentUserData = null;
+            currentUserWallet = null;
+            currentUserData = null;
             document.getElementById('mainDashboard').classList.add('hidden');
             document.getElementById('heroSection').classList.remove('hidden');
             document.getElementById('btnConnect').classList.remove('hidden');
@@ -1426,32 +1453,30 @@
             const linkText = document.getElementById('refLinkTxt').innerText;
             const tempInput = document.createElement('input'); tempInput.value = linkText; document.body.appendChild(tempInput);
             tempInput.select(); document.execCommand('copy'); document.body.removeChild(tempInput);
-            window.UI.showModal('TGIP Referral Link Copied!', `Share this link with your partners! When they activate a package, you earn <b>10% Direct Bonus</b> + help qualify for your 7-Day Club targets!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`, '✅');
+            UI.showModal('TGIP Referral Link Copied!', `Share this link with your partners! When they activate a package, you earn <b>10% Direct Bonus</b> + help qualify for your 7-Day Club targets!<br><br><code class="text-xs text-amber-300 bg-slate-900 p-2 rounded block break-all">${linkText}</code>`, '✅');
         };
 
-        window.creditUserWithCapGuard = function(targetWalletLower, rawAmount, incomeType, specificQueuePosNumber = null) {
-            const userObj = window.globalUsersMap[targetWalletLower];
+        // --- CORE MATHEMATICAL ENGINE (RUNS INSIDE ATOMIC TRANSACTION STATE) ---
+        function creditUserWithCapGuardOnState(state, targetWalletLower, rawAmount, incomeType, specificQueuePosNumber = null) {
+            const userObj = state.globalUsersMap[targetWalletLower];
             if (!userObj || rawAmount <= 0 || (userObj.totalInvested || 0) <= 0) {
-                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + rawAmount).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + rawAmount).toFixed(4));
                 return { credited: 0, overflow: rawAmount };
             }
 
-            const userChronologicalRecords = [...(window.investmentRecords || [])]
+            const userChronologicalRecords = [...(state.investmentRecords || [])]
                 .reverse()
                 .filter(r => r.wallet && r.wallet.toLowerCase() === targetWalletLower);
 
             let remainingToCredit = rawAmount;
             let totalCreditedNow = 0;
 
-            // IF THIS IS 20 UP / 20 DOWN SINGLE-LEG POOL INCOME FOR A SPECIFIC QUEUE POSITION (#Pos),
-            // CREDIT ONLY THAT EXACT POSITION'S 2x CAPPING METER!
             if (specificQueuePosNumber !== null && specificQueuePosNumber !== undefined) {
                 let targetRec = userChronologicalRecords.find(r => Number(r.queuePosition) === Number(specificQueuePosNumber));
                 if (!targetRec) {
-                    // Fallback: match by N-th occurrence of this wallet in globalQueueOrder
                     let nthIndex = 0;
-                    for (let q = 0; q < (window.globalQueueOrder || []).length; q++) {
-                        if ((window.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
+                    for (let q = 0; q < (state.globalQueueOrder || []).length; q++) {
+                        if ((state.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
                             if ((q + 1) === Number(specificQueuePosNumber)) {
                                 targetRec = userChronologicalRecords[nthIndex];
                                 break;
@@ -1475,7 +1500,6 @@
                     }
                 }
             } else {
-                // Direct (10%) & Royalty Club (5%) income fills active meters in chronological order up to their 2x cap
                 for (const rec of userChronologicalRecords) {
                     if (remainingToCredit <= 0) break;
                     const target2x = rec.target2x || (rec.amount * 2);
@@ -1502,27 +1526,26 @@
             const overflowAmt = Math.max(0, Number((rawAmount - totalCreditedNow).toFixed(4)));
             if (overflowAmt > 0) {
                 userObj.overflowedToPool = Number(((userObj.overflowedToPool || 0) + overflowAmt).toFixed(4));
-                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + overflowAmt).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + overflowAmt).toFixed(4));
             }
             return { credited: totalCreditedNow, overflow: overflowAmt };
-        };
+        }
 
-        // HELPER: CHECK IF A SPECIFIC QUEUE POSITION (#Pos) STILL HAS ROOM IN ITS 2x METER (FOR DYNAMIC COMPRESSION)
-        window.isQueuePositionActiveFor2x = function(posNumber) {
+        function isQueuePositionActiveFor2xOnState(state, posNumber) {
             const qIdx = posNumber - 1;
-            if (qIdx < 0 || qIdx >= (window.globalQueueOrder || []).length) return false;
-            const targetWalletLower = (window.globalQueueOrder[qIdx] || '').toLowerCase();
-            if (!targetWalletLower || !window.globalUsersMap[targetWalletLower]) return false;
+            if (qIdx < 0 || qIdx >= (state.globalQueueOrder || []).length) return false;
+            const targetWalletLower = (state.globalQueueOrder[qIdx] || '').toLowerCase();
+            if (!targetWalletLower || !state.globalUsersMap[targetWalletLower]) return false;
 
-            const userChronologicalRecords = [...(window.investmentRecords || [])]
+            const userChronologicalRecords = [...(state.investmentRecords || [])]
                 .reverse()
                 .filter(r => r.wallet && r.wallet.toLowerCase() === targetWalletLower);
 
             let targetRec = userChronologicalRecords.find(r => Number(r.queuePosition) === Number(posNumber));
             if (!targetRec) {
                 let nthIndex = 0;
-                for (let q = 0; q < (window.globalQueueOrder || []).length; q++) {
-                    if ((window.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
+                for (let q = 0; q < (state.globalQueueOrder || []).length; q++) {
+                    if ((state.globalQueueOrder[q] || '').toLowerCase() === targetWalletLower) {
                         if ((q + 1) === Number(posNumber)) {
                             targetRec = userChronologicalRecords[nthIndex];
                             break;
@@ -1536,27 +1559,10 @@
             const target2x = targetRec.target2x || (targetRec.amount * 2);
             const curEarned = targetRec.earned2x || 0;
             return (target2x - curEarned) > 0.0001;
-        };
+        }
 
-        window.updateMyProgressionTier = function(wLower) {
-            const u = window.globalUsersMap[wLower];
-            const myTotal = u.totalInvested || 0;
-            let newTierIdx = -1;
-            for(let i=0; i<CLUB_TIERS.length; i++) { if (myTotal >= CLUB_TIERS[i]) newTierIdx = i; }
-            if (newTierIdx > (u.progressionTier !== undefined ? u.progressionTier : -1)) {
-                u.progressionTier = newTierIdx;
-                u.clubTimerStart = Date.now();
-                u.clubStatus = "INACTIVE"; 
-                u.apexActive = false;
-                u.titanActive = false;
-                u.clubEarned = 0; 
-                u.club5xCap = CLUB_TIERS[newTierIdx] * 5;
-                window.evaluateSponsorClubTargets(wLower);
-            }
-        };
-
-        window.evaluateSponsorClubTargets = function(sponsorLower) {
-            const u = window.globalUsersMap[sponsorLower];
+        function evaluateSponsorClubTargetsOnState(state, sponsorLower, unlockedNotifications) {
+            const u = state.globalUsersMap[sponsorLower];
             if (!u || u.progressionTier === undefined || u.progressionTier < 0) return;
             if (u.clubStatus === "CAPPED") return;
 
@@ -1566,7 +1572,7 @@
             const reqTotal = CLUB_TIERS[u.progressionTier];
 
             let qualifiedDirects = 0;
-            for (const [w, dir] of Object.entries(window.globalUsersMap)) {
+            for (const [w, dir] of Object.entries(state.globalUsersMap)) {
                 if (dir.sponsor && dir.sponsor.toLowerCase() === sponsorLower && dir.wallet.toLowerCase() !== sponsorLower) {
                     if ((dir.totalInvested || 0) >= reqTotal) qualifiedDirects++;
                 }
@@ -1577,7 +1583,9 @@
                     if (isWithin7Days) {
                         u.clubStatus = "ACTIVE"; u.apexActive = true;
                         if (u.progressionTier >= 1 && !u.titanLost) u.titanActive = true;
-                        window.sendTelegramAlert('Royalty Club Unlocked! 👑', u.wallet, reqTotal.toFixed(2), '#CLUB-QUALIFIED', `🏆 <b>Achievement:</b> Completed 2 Directs for Tier $${reqTotal} (Cap: $${u.club5xCap})!`);
+                        if (unlockedNotifications) {
+                            unlockedNotifications.push({ wallet: u.wallet, reqTotal, cap: u.club5xCap });
+                        }
                     } else {
                         u.clubStatus = "FAILED";
                         if (u.progressionTier === 1) u.titanLost = true;
@@ -1587,10 +1595,29 @@
                     if (u.progressionTier === 1) u.titanLost = true;
                 }
             }
-        };
+        }
 
-        window.creditClubIncome = function(walletLower, amount) {
-            const u = window.globalUsersMap[walletLower];
+        function updateMyProgressionTierOnState(state, wLower, unlockedNotifications) {
+            const u = state.globalUsersMap[wLower];
+            const myTotal = u.totalInvested || 0;
+            let newTierIdx = -1;
+            for (let i = 0; i < CLUB_TIERS.length; i++) {
+                if (myTotal >= CLUB_TIERS[i]) newTierIdx = i;
+            }
+            if (newTierIdx > (u.progressionTier !== undefined ? u.progressionTier : -1)) {
+                u.progressionTier = newTierIdx;
+                u.clubTimerStart = Date.now();
+                u.clubStatus = "INACTIVE";
+                u.apexActive = false;
+                u.titanActive = false;
+                u.clubEarned = 0;
+                u.club5xCap = CLUB_TIERS[newTierIdx] * 5;
+                evaluateSponsorClubTargetsOnState(state, wLower, unlockedNotifications);
+            }
+        }
+
+        function creditClubIncomeOnState(state, walletLower, amount) {
+            const u = state.globalUsersMap[walletLower];
             if (!u || u.clubStatus !== "ACTIVE") return;
             const remaining5x = (u.club5xCap || 0) - (u.clubEarned || 0);
             if (remaining5x <= 0) {
@@ -1601,39 +1628,45 @@
             if (u.clubEarned >= u.club5xCap - 0.0001) {
                 u.clubStatus = "CAPPED"; u.apexActive = false; u.titanActive = false;
             }
-            window.creditUserWithCapGuard(walletLower, actualCredit, 'club');
-        };
+            creditUserWithCapGuardOnState(state, walletLower, actualCredit, 'club');
+        }
 
-        window.executeUnifiedInvestmentEngine = async function(walletAddr, amount, entryType, sourceTicketId = null) {
+        function applyUnifiedInvestmentOnState(state, walletAddr, amount, entryType, sourceTicketId = null, txHash = null, unlockedNotifications = []) {
             const wLower = walletAddr.toLowerCase();
 
-            if (!window.globalUsersMap[wLower]) {
-                window.globalUsersMap[wLower] = {
-                    wallet: walletAddr, name: (window.currentUserData && window.currentUserData.name) ? window.currentUserData.name : "TGIP Associate", phone: (window.currentUserData && window.currentUserData.phone) ? window.currentUserData.phone : "", sponsor: (window.currentUserData && window.currentUserData.sponsor) ? window.currentUserData.sponsor : "", registeredAt: Date.now(), activatedAt: Date.now(), firstPackageAmount: amount,
+            if (!state.globalUsersMap[wLower]) {
+                state.globalUsersMap[wLower] = {
+                    wallet: walletAddr,
+                    name: (currentUserData && currentUserData.name) ? currentUserData.name : "TGIP Associate",
+                    phone: (currentUserData && currentUserData.phone) ? currentUserData.phone : "",
+                    sponsor: (currentUserData && currentUserData.sponsor) ? currentUserData.sponsor : "",
+                    registeredAt: Date.now(), activatedAt: Date.now(), firstPackageAmount: amount,
                     progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
                     booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
                 };
             }
 
-            let userObj = window.globalUsersMap[wLower];
+            let userObj = state.globalUsersMap[wLower];
             const isFirstActivation = (userObj.totalInvested || 0) === 0;
-            if (isFirstActivation && entryType !== 'AUTO_REINVEST') { userObj.activatedAt = Date.now(); userObj.firstPackageAmount = amount; }
+            if (isFirstActivation && entryType !== 'AUTO_REINVEST') {
+                userObj.activatedAt = Date.now();
+                userObj.firstPackageAmount = amount;
+            }
 
             if (entryType === 'AUTO_REINVEST') userObj.autoReinvestedTotal = Number(((userObj.autoReinvestedTotal || 0) + amount).toFixed(4));
             else userObj.totalInvested = Number(((userObj.totalInvested || 0) + amount).toFixed(4));
-            
+
             userObj.cappingLimit = Number(((userObj.cappingLimit || 0) + (amount * 2)).toFixed(4));
 
-            // EVERY NEW ACTIVATION (#INV), UPGRADE (#UPG), OR 50% REINVESTMENT (#REINV) ADDS A NEW CLONE ID AT THE BOTTOM OF THE GLOBAL QUEUE
             let myQueueIndex = -1;
             if (entryType === 'UPGRADE' || entryType === 'AUTO_REINVEST') {
-                window.globalQueueOrder.push(wLower);
-                myQueueIndex = window.globalQueueOrder.length - 1;
+                state.globalQueueOrder.push(wLower);
+                myQueueIndex = state.globalQueueOrder.length - 1;
             } else {
-                if (!window.globalQueueOrder.includes(wLower)) {
-                    window.globalQueueOrder.push(wLower);
+                if (!state.globalQueueOrder.includes(wLower)) {
+                    state.globalQueueOrder.push(wLower);
                 }
-                myQueueIndex = window.globalQueueOrder.lastIndexOf(wLower);
+                myQueueIndex = state.globalQueueOrder.lastIndexOf(wLower);
             }
             const assignedQueuePosNumber = myQueueIndex + 1;
 
@@ -1645,75 +1678,72 @@
             const perLevelShare = Number((amount * 0.01).toFixed(4));
 
             let recordId = '';
-            if (entryType === 'AUTO_REINVEST') recordId = '#REINV-' + (window.reinvestRecordCounter++);
-            else if (entryType === 'UPGRADE') recordId = '#UPG-' + (window.investRecordCounter++);
-            else recordId = '#INV-' + (window.investRecordCounter++);
+            if (entryType === 'AUTO_REINVEST') recordId = '#REINV-' + (state.reinvestRecordCounter++);
+            else if (entryType === 'UPGRADE') recordId = '#UPG-' + (state.investRecordCounter++);
+            else recordId = '#INV-' + (state.investRecordCounter++);
 
             const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-            window.investmentRecords.unshift({
-                id: recordId, type: entryType, sourceTicket: sourceTicketId || null, timestamp: nowStr, wallet: walletAddr, amount: amount,
+            state.investmentRecords.unshift({
+                id: recordId, type: entryType, sourceTicket: sourceTicketId || null, txHash: txHash || null, timestamp: nowStr, wallet: walletAddr, amount: amount,
                 queuePosition: assignedQueuePosNumber,
                 target2x: amount * 2, earned2x: 0, status2x: 'ACTIVE', poolShare: poolShare, directShare: directShare, teamShare: teamTotalShare
             });
 
-            if (entryType !== 'AUTO_REINVEST') window.updateMyProgressionTier(wLower);
-            window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + poolShare).toFixed(4));
-
-            const sponsorLower = (userObj.sponsor || '').toLowerCase();
-            if (sponsorLower && sponsorLower !== wLower && window.globalUsersMap[sponsorLower]) {
-                window.creditUserWithCapGuard(sponsorLower, directShare, 'direct');
-                if (entryType !== 'AUTO_REINVEST') window.evaluateSponsorClubTargets(sponsorLower);
-            } else {
-                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + directShare).toFixed(4));
+            if (txHash && String(txHash).startsWith("0x")) {
+                if (!state.processedTxHashes) state.processedTxHashes = {};
+                state.processedTxHashes[txHash.toLowerCase()] = { recordId, wallet: walletAddr, amount, ts: Date.now() };
             }
 
-            // DYNAMIC COMPRESSION FOR 20 UPLINES ABOVE (SKIPS 2x COMPLETED POSITIONS TO PAY NEXT ACTIVE POSITIONS)
+            if (entryType !== 'AUTO_REINVEST') updateMyProgressionTierOnState(state, wLower, unlockedNotifications);
+            state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + poolShare).toFixed(4));
+
+            const sponsorLower = (userObj.sponsor || '').toLowerCase();
+            if (sponsorLower && sponsorLower !== wLower && state.globalUsersMap[sponsorLower]) {
+                creditUserWithCapGuardOnState(state, sponsorLower, directShare, 'direct');
+                if (entryType !== 'AUTO_REINVEST') evaluateSponsorClubTargetsOnState(state, sponsorLower, unlockedNotifications);
+            } else {
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + directShare).toFixed(4));
+            }
+
+            // DYNAMIC COMPRESSION FOR 20 UPLINES ABOVE
             let uplinesPaid = 0;
             let searchUpIdx = myQueueIndex - 1;
             while (uplinesPaid < 20 && searchUpIdx >= 0) {
                 const candidatePosNum = searchUpIdx + 1;
-                const candidateWallet = window.globalQueueOrder[searchUpIdx];
-                if (candidateWallet && window.isQueuePositionActiveFor2x(candidatePosNum)) {
-                    window.creditUserWithCapGuard(candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                const candidateWallet = state.globalQueueOrder[searchUpIdx];
+                if (candidateWallet && isQueuePositionActiveFor2xOnState(state, candidatePosNum)) {
+                    creditUserWithCapGuardOnState(state, candidateWallet, perLevelShare, 'pool', candidatePosNum);
                     uplinesPaid++;
                 }
                 searchUpIdx--;
             }
             if (uplinesPaid < 20) {
                 const unallocatedUpShare = Number(((20 - uplinesPaid) * perLevelShare).toFixed(4));
-                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + unallocatedUpShare).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedUpShare).toFixed(4));
             }
 
-            // DYNAMIC COMPRESSION FOR 20 DOWNLINES BELOW (SKIPS 2x COMPLETED POSITIONS TO PAY NEXT ACTIVE POSITIONS)
+            // DYNAMIC COMPRESSION FOR 20 DOWNLINES BELOW
             let downlinesPaid = 0;
             let searchDownIdx = myQueueIndex + 1;
-            while (downlinesPaid < 20 && searchDownIdx < window.globalQueueOrder.length) {
+            while (downlinesPaid < 20 && searchDownIdx < state.globalQueueOrder.length) {
                 const candidatePosNum = searchDownIdx + 1;
-                const candidateWallet = window.globalQueueOrder[searchDownIdx];
-                if (candidateWallet && window.isQueuePositionActiveFor2x(candidatePosNum)) {
-                    window.creditUserWithCapGuard(candidateWallet, perLevelShare, 'pool', candidatePosNum);
+                const candidateWallet = state.globalQueueOrder[searchDownIdx];
+                if (candidateWallet && isQueuePositionActiveFor2xOnState(state, candidatePosNum)) {
+                    creditUserWithCapGuardOnState(state, candidateWallet, perLevelShare, 'pool', candidatePosNum);
                     downlinesPaid++;
                 }
                 searchDownIdx++;
             }
             if (downlinesPaid < 20) {
                 const unallocatedDownShare = Number(((20 - downlinesPaid) * perLevelShare).toFixed(4));
-                window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + unallocatedDownShare).toFixed(4));
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedDownShare).toFixed(4));
             }
 
-            if (window.heldDownlineReserves && window.heldDownlineReserves.length > 0) {
-                for (const item of window.heldDownlineReserves) {
-                    if (!item.claimed && item.targetQueueIndex === myQueueIndex) {
-                        item.claimed = true;
-                        window.creditUserWithCapGuard(wLower, item.amount, 'pool', myQueueIndex + 1);
-                    }
-                }
-            }
-
+            // ROYALTY CLUBS DISTRIBUTION (3% APEX + 2% TITAN)
             const now = Date.now();
             let apexMembers = []; let titanMembers = [];
 
-            for (const [w, user] of Object.entries(window.globalUsersMap)) {
+            for (const [w, user] of Object.entries(state.globalUsersMap)) {
                 if (user.clubStatus === "INACTIVE") {
                     const elapsed = now - (user.clubTimerStart || now);
                     if (elapsed > SEVEN_DAYS_MS) {
@@ -1729,64 +1759,71 @@
 
             if (apexMembers.length > 0) {
                 const split = Number((apexShare / apexMembers.length).toFixed(4));
-                apexMembers.forEach(w => window.creditClubIncome(w, split));
-            } else window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + apexShare).toFixed(4));
+                apexMembers.forEach(w => creditClubIncomeOnState(state, w, split));
+            } else {
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + apexShare).toFixed(4));
+            }
 
             if (titanMembers.length > 0) {
                 const split = Number((titanShare / titanMembers.length).toFixed(4));
-                titanMembers.forEach(w => window.creditClubIncome(w, split));
-            } else window.protocolOverflowReserve = Number(((window.protocolOverflowReserve || 0) + titanShare).toFixed(4));
+                titanMembers.forEach(w => creditClubIncomeOnState(state, w, split));
+            } else {
+                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + titanShare).toFixed(4));
+            }
 
-            await window.saveGlobalProtocolState();
             return { recordId, poolShare, directShare, teamTotalShare, queuePosition: assignedQueuePosNumber };
-        };
-
-        window.isDepositInProgress = false;
+        }
 
         window.buyPackage = async function(amount) {
-            if (window.isDepositInProgress) return;
-            if (!window.currentUserWallet) { window.handleDirectConnectClick(); return; }
+            if (isDepositInProgress) return;
+            const validPackages = [10, 25, 50, 100, 150, 250, 500, 1000, 2000, 5000];
+            if (!validPackages.includes(Number(amount))) return;
+
+            if (!currentUserWallet) { window.handleDirectConnectClick(); return; }
 
             try {
                 const cloudSnap = await get(ref(db, CLOUD_NODE));
-                if (cloudSnap.exists()) window.applyStateSnapshot(cloudSnap.val());
+                if (cloudSnap.exists()) applyStateSnapshot(cloudSnap.val());
             } catch (e) {}
 
-            const wLower = window.currentUserWallet.toLowerCase();
-            let userObj = window.globalUsersMap[wLower];
-            if (!userObj) { await window.checkRegistrationAndProceed(window.currentUserWallet); return; }
+            const wLower = currentUserWallet.toLowerCase();
+            let userObj = globalUsersMap[wLower];
+            if (!userObj) { await checkRegistrationAndProceed(currentUserWallet); return; }
 
-            window.isDepositInProgress = true;
+            isDepositInProgress = true;
             const isUpgrade = (userObj.totalInvested || 0) > 0;
             const entryType = isUpgrade ? 'UPGRADE' : 'DIRECT_PACKAGE';
 
-            window.UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`, '⏳');
+            UI.showModal(`Confirm ${amount} USDT ${isUpgrade ? 'Upgrade' : 'Deposit'}`, `Please approve the <b>${amount} USDT (BEP-20)</b> transfer to TGIP Protocol Master Wallet.<br><span class="text-xs text-amber-300 mt-2 block">Opens a Separate 2x Return Capping Meter ($${amount * 2} Target)!</span>`, '⏳');
 
             let txHashConfirmed = null;
             try {
                 const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
                 if (!eth || typeof ethers === 'undefined') throw new Error("Web3 Wallet not detected. Please open inside Trust Wallet or MetaMask DApp Browser.");
-                await window.ensureBSCNetwork(eth);
+                await ensureBSCNetwork(eth);
                 const provider = new ethers.providers.Web3Provider(eth, "any");
                 const signer = provider.getSigner();
 
                 const usdtAbi = ["function balanceOf(address owner) view returns (uint256)", "function decimals() view returns (uint8)", "function transfer(address to, uint256 value) public returns (bool)"];
-                const usdtContract = new ethers.Contract(window.USDT_BEP20_CONTRACT, usdtAbi, signer);
+                const usdtContract = new ethers.Contract(USDT_BEP20_CONTRACT, usdtAbi, signer);
                 let decimals = 18;
                 try { decimals = await usdtContract.decimals(); } catch (e) { decimals = 18; }
 
                 const parsedAmount = ethers.utils.parseUnits(amount.toString(), decimals);
-                const userBal = await usdtContract.balanceOf(window.currentUserWallet);
+                const userBal = await usdtContract.balanceOf(currentUserWallet);
 
                 if (userBal.lt(parsedAmount)) {
                     const avail = parseFloat(ethers.utils.formatUnits(userBal, decimals)).toFixed(2);
                     throw new Error(`Insufficient BEP-20 USDT Balance! You have ${avail} USDT, but ${amount} USDT is required.`);
                 }
 
-                const tx = await usdtContract.transfer(window.MASTER_WALLET, parsedAmount);
+                const tx = await usdtContract.transfer(MASTER_WALLET, parsedAmount);
+                if (!tx || !tx.hash || !tx.hash.startsWith("0x") || tx.hash.length !== 66) {
+                    throw new Error("Invalid blockchain transaction hash returned.");
+                }
                 txHashConfirmed = tx.hash;
 
-                window.UI.showModal('Confirming on BSC Blockchain...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
+                UI.showModal('Confirming on BSC Blockchain...', `Transaction broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for block confirmation...`, '⛓️');
 
                 let receipt = null;
                 try { receipt = await tx.wait(1); } 
@@ -1801,72 +1838,118 @@
                     txHashConfirmed = null; throw new Error("Transaction reverted on blockchain.");
                 }
             } catch (err) {
-                window.isDepositInProgress = false;
-                if (!txHashConfirmed) { window.UI.showModal('Deposit Failed / Cancelled', err.reason || err.message || 'Transaction cancelled.', '❌'); return; }
+                isDepositInProgress = false;
+                if (!txHashConfirmed) { UI.showModal('Deposit Failed / Cancelled', err.reason || err.message || 'Transaction cancelled.', '❌'); return; }
             }
 
             try {
-                const res = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, amount, entryType);
-                try { window.refreshDashboardUI(); } catch (uiErr) {}
+                let res = null;
+                let unlockedClubs = [];
+                await commitAtomicStateMutation((state) => {
+                    // Prevent duplicate replay of same transaction hash
+                    if (txHashConfirmed && state.processedTxHashes && state.processedTxHashes[txHashConfirmed.toLowerCase()]) {
+                        return;
+                    }
+                    res = applyUnifiedInvestmentOnState(state, currentUserWallet, amount, entryType, null, txHashConfirmed, unlockedClubs);
+                });
+
+                try { refreshDashboardUI(); } catch (uiErr) {}
+
+                for (const c of unlockedClubs) {
+                    await sendTelegramAlert('Royalty Club Unlocked! 👑', c.wallet, c.reqTotal.toFixed(2), '#CLUB-QUALIFIED', `🏆 <b>Achievement:</b> Completed 2 Directs for Tier $${c.reqTotal} (Cap: $${c.cap})!`);
+                }
 
                 if (res) {
                     const actionTitle = isUpgrade ? `Associate Package Upgrade (${res.recordId})` : `New Package Deposit (${res.recordId})`;
                     const extraInfoHtml = `🔢 <b>New Queue Position:</b> #${res.queuePosition} (${isUpgrade ? 'Clone ID Added at Bottom' : 'Main Pool ID'})\n` + `🎯 <b>2x Capping Meter:</b> $${(amount * 2).toFixed(2)} USDT\n` + `💧 <b>45% Pool:</b> $${res.poolShare.toFixed(2)} | 🤝 <b>10% Direct:</b> $${res.directShare.toFixed(2)} | 🌐 <b>40% Matrix:</b> $${res.teamTotalShare.toFixed(2)}`;
-                    await window.sendTelegramAlert(actionTitle, window.currentUserWallet, amount, txHashConfirmed, extraInfoHtml);
-                    window.UI.showModal(`Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+                    await sendTelegramAlert(actionTitle, currentUserWallet, amount, txHashConfirmed, extraInfoHtml);
+                    UI.showModal(`Deposit Successful! TGIP 2x Meter Opened (${res.recordId}) 🎉`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">TGIP 2x Meter ID:</span><span class="font-bold text-emerald-400 font-mono">${res.recordId} (Pos #${res.queuePosition})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">2x Return Capping Target:</span><span class="font-bold text-amber-300 font-mono">$${amount} &rarr; $${(amount * 2).toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">💧 45% Liquidity Pool:</span><span class="font-bold text-amber-400 font-mono">$${res.poolShare.toFixed(2)} USDT</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">🤝 10% Direct Sponsor:</span><span class="font-bold text-emerald-400 font-mono">$${res.directShare.toFixed(2)} USDT</span></div><div class="flex justify-between"><span class="text-gray-400">🌐 40% (20 Up / 20 Down):</span><span class="font-bold text-sky-400 font-mono">$${res.teamTotalShare.toFixed(2)} USDT</span></div></div>`, '🚀', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Live on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
                 }
-            } catch (postErr) {} finally { window.isDepositInProgress = false; }
+            } catch (postErr) {} finally { isDepositInProgress = false; }
         };
 
-        window.getActiveDirectCount = function() {
-            if (!window.currentUserWallet) return 0;
-            const wLower = window.currentUserWallet.toLowerCase();
-            return Object.values(window.globalUsersMap || {}).filter(u => u.sponsor && u.sponsor.toLowerCase() === wLower && (u.totalInvested || 0) > 0).length;
-        };
+        function getActiveDirectCount() {
+            if (!currentUserWallet) return 0;
+            const wLower = currentUserWallet.toLowerCase();
+            return Object.values(globalUsersMap || {}).filter(u => u.sponsor && u.sponsor.toLowerCase() === wLower && (u.totalInvested || 0) > 0).length;
+        }
 
         window.requestWithdrawal = async function() {
-            if (!window.currentUserWallet || !window.currentUserData) return;
-            const activeDirects = window.getActiveDirectCount();
-            if (activeDirects < 1) { window.UI.showModal('1 Active Direct Compulsory 🔒', `At least <b>1 Active Direct Referral</b> is compulsory to unlock withdrawals on TGIP Protocol.<br><br>Share your referral link so your partner registers and activates a package!`, '🔒'); return; }
+            if (isWithdrawalInProgress) return;
+            if (!currentUserWallet || !currentUserData) return;
+            const activeDirects = getActiveDirectCount();
+            if (activeDirects < 1) { UI.showModal('1 Active Direct Compulsory 🔒', `At least <b>1 Active Direct Referral</b> is compulsory to unlock withdrawals on TGIP Protocol.<br><br>Share your referral link so your partner registers and activates a package!`, '🔒'); return; }
 
-            const currentBal = Number(window.currentUserData.balance || 0);
-            if (currentBal < window.MIN_WITHDRAW_USDT) { window.UI.showModal('Minimum Withdrawal is 3 USDT ⚠️', `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$3.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`, '⚠️'); return; }
+            const currentBal = Number(currentUserData.balance || 0);
+            if (currentBal < MIN_WITHDRAW_USDT) { UI.showModal('Minimum Withdrawal is 3 USDT ⚠️', `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$3.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`, '⚠️'); return; }
 
-            await window.updateLivePrice(false);
-            const totalWithdrawUSDT = currentBal;
-            const netPayoutUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
-            const reinvestUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
-            const tokenAmount = Number((netPayoutUSDT / window.liveTokenPrice).toFixed(2));
+            isWithdrawalInProgress = true;
+            try {
+                await window.updateLivePrice(false);
+                const wLower = currentUserWallet.toLowerCase();
+                let ticketId = '';
+                let totalWithdrawUSDT = 0;
+                let netPayoutUSDT = 0;
+                let reinvestUSDT = 0;
+                let tokenAmount = 0;
+                let reinvResult = null;
 
-            const wLower = window.currentUserWallet.toLowerCase();
-            window.globalUsersMap[wLower].balance = 0;
+                await commitAtomicStateMutation((state) => {
+                    const userInDb = state.globalUsersMap[wLower];
+                    if (!userInDb || Number(userInDb.balance || 0) < MIN_WITHDRAW_USDT) return;
 
-            const ticketId = '#WD-' + (window.withdrawalTicketCounter++);
-            const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    totalWithdrawUSDT = Number(userInDb.balance || 0);
+                    netPayoutUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
+                    reinvestUSDT = Number((totalWithdrawUSDT * 0.50).toFixed(4));
+                    tokenAmount = Number((netPayoutUSDT / liveTokenPrice).toFixed(2));
 
-            const reinvResult = await window.executeUnifiedInvestmentEngine(window.currentUserWallet, reinvestUSDT, 'AUTO_REINVEST', ticketId);
+                    userInDb.balance = 0;
+                    ticketId = '#WD-' + (state.withdrawalTicketCounter++);
+                    const nowStr = new Date().toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-            window.pendingWithdrawals.unshift({ id: ticketId, reinvestRecordId: reinvResult ? reinvResult.recordId : '#REINV', timestamp: nowStr, wallet: window.currentUserWallet, userName: window.currentUserData.name || 'TGIP Associate', totalUSDT: totalWithdrawUSDT, netUSDT: netPayoutUSDT, reinvestedUSDT: reinvestUSDT, tokenAmount: tokenAmount, liveRate: window.liveTokenPrice, status: 'PENDING' });
+                    reinvResult = applyUnifiedInvestmentOnState(state, currentUserWallet, reinvestUSDT, 'AUTO_REINVEST', ticketId, null, []);
 
-            await window.saveGlobalProtocolState();
-            window.refreshDashboardUI();
+                    state.pendingWithdrawals.unshift({
+                        id: ticketId,
+                        reinvestRecordId: reinvResult ? reinvResult.recordId : '#REINV',
+                        timestamp: nowStr,
+                        wallet: currentUserWallet,
+                        userName: userInDb.name || 'TGIP Associate',
+                        totalUSDT: totalWithdrawUSDT,
+                        netUSDT: netPayoutUSDT,
+                        reinvestedUSDT: reinvestUSDT,
+                        tokenAmount: tokenAmount,
+                        liveRate: liveTokenPrice,
+                        status: 'PENDING'
+                    });
+                });
 
-            const withdrawExtraHtml = `🪙 <b>50% Token Payout:</b> ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` + `🔄 <b>50% Auto-Reinvested:</b> $${reinvestUSDT.toFixed(2)} (${reinvResult ? reinvResult.recordId : '#REINV'} &rarr; Clone Pos #${reinvResult ? reinvResult.queuePosition : '--'}, 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
-            await window.sendTelegramAlert(`Associate Withdrawal & 50% Reinvestment (${ticketId})`, window.currentUserWallet, totalWithdrawUSDT.toFixed(2), ticketId, withdrawExtraHtml);
-            window.UI.showModal(`Withdrawal (${ticketId}) & New Clone 2x Meter (${reinvResult.recordId})!`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">Withdrawal Ticket:</span><span class="font-bold text-amber-400 font-mono">${ticketId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Token Payout (Admin Queue):</span><span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Auto-Reinvested Clone ID:</span><span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} (Pos #${reinvResult.queuePosition} • 2x: $${(reinvestUSDT * 2).toFixed(2)})</span></div><div class="flex justify-between"><span class="text-gray-400">Reinvest Split (45/10/40):</span><span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span></div></div>`, '🧾', `<div class="flex flex-wrap justify-center gap-2"><a href="${window.TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+                if (!reinvResult) {
+                    isWithdrawalInProgress = false;
+                    return;
+                }
+
+                refreshDashboardUI();
+
+                const withdrawExtraHtml = `🪙 <b>50% Token Payout:</b> ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` + `🔄 <b>50% Auto-Reinvested:</b> $${reinvestUSDT.toFixed(2)} (${reinvResult.recordId} &rarr; Clone Pos #${reinvResult.queuePosition}, 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
+                await sendTelegramAlert(`Associate Withdrawal & 50% Reinvestment (${ticketId})`, currentUserWallet, totalWithdrawUSDT.toFixed(2), ticketId, withdrawExtraHtml);
+                UI.showModal(`Withdrawal (${ticketId}) & New Clone 2x Meter (${reinvResult.recordId})!`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">Withdrawal Ticket:</span><span class="font-bold text-amber-400 font-mono">${ticketId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Token Payout (Admin Queue):</span><span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Auto-Reinvested Clone ID:</span><span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} (Pos #${reinvResult.queuePosition} • 2x: $${(reinvestUSDT * 2).toFixed(2)})</span></div><div class="flex justify-between"><span class="text-gray-400">Reinvest Split (45/10/40):</span><span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span></div></div>`, '🧾', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
+            } finally {
+                isWithdrawalInProgress = false;
+            }
         };
 
-        window.updateEstimatedTokensUI = function() {
+        function updateEstimatedTokensUI() {
             const estEl = document.getElementById('uiEstTokens');
-            if (!estEl || !window.currentUserData) return;
-            const withdrawable50Percent = (window.currentUserData.balance || 0) * 0.50;
-            const tokens = window.liveTokenPrice > 0 ? (withdrawable50Percent / window.liveTokenPrice) : 0;
+            if (!estEl || !currentUserData) return;
+            const withdrawable50Percent = (currentUserData.balance || 0) * 0.50;
+            const tokens = liveTokenPrice > 0 ? (withdrawable50Percent / liveTokenPrice) : 0;
             estEl.innerText = tokens.toLocaleString('en-US', { maximumFractionDigits: 2 });
-        };
+        }
 
-        window.updateClubBannerUI = function() {
-            if (!window.currentUserData) return;
-            const u = window.currentUserData;
+        function updateClubBannerUI() {
+            if (!currentUserData) return;
+            const u = currentUserData;
 
             const pillEl = document.getElementById('uiClubStatusPill');
             const timerEl = document.getElementById('uiClubCountdown');
@@ -1875,12 +1958,12 @@
             if (u.progressionTier === undefined || u.progressionTier < 0) {
                 pillEl.innerText = "Activate $50+ to Start Apex Timer";
                 timerEl.innerText = "--:--:--";
-                if(document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$0 USDT`;
+                if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$0 USDT`;
                 return;
             }
 
             const reqTotal = CLUB_TIERS[u.progressionTier];
-            if(document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$${reqTotal} USDT`;
+            if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$${reqTotal} USDT`;
 
             if (u.clubStatus === "ACTIVE") {
                 pillEl.className = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold px-3 py-0.5 rounded-full font-mono";
@@ -1904,7 +1987,6 @@
                 subNoteEl.innerText = u.titanLost ? "Titan Permanently Closed. Upgrade to try Apex." : "Upgrade to next tier to re-qualify.";
             }
             else {
-                // INACTIVE
                 const startTs = u.clubTimerStart || Date.now();
                 const remainingMs = startTs + SEVEN_DAYS_MS - Date.now();
 
@@ -1924,36 +2006,34 @@
                 }
             }
 
-            // OPTIMIZED: Only recalculate direct count for the visual UI when refreshDashboardUI is explicitly called, NOT every 1s
             let qualifiedDirects = 0;
-            if (u.progressionTier >= 0 && window.currentUserWallet) {
-                for (const [w, dir] of Object.entries(window.globalUsersMap)) {
-                    if (dir.sponsor && dir.sponsor.toLowerCase() === window.currentUserWallet.toLowerCase() && dir.wallet.toLowerCase() !== window.currentUserWallet.toLowerCase()) {
+            if (u.progressionTier >= 0 && currentUserWallet) {
+                for (const [w, dir] of Object.entries(globalUsersMap)) {
+                    if (dir.sponsor && dir.sponsor.toLowerCase() === currentUserWallet.toLowerCase() && dir.wallet.toLowerCase() !== currentUserWallet.toLowerCase()) {
                         if ((dir.totalInvested || 0) >= reqTotal) {
                             qualifiedDirects++;
                         }
                     }
                 }
             }
-            if(document.getElementById('uiClubQualifyingCount')) document.getElementById('uiClubQualifyingCount').innerText = Math.min(2, qualifiedDirects);
-            if(document.getElementById('uiClubEarnedAmt')) document.getElementById('uiClubEarnedAmt').innerText = (u.clubEarned || 0).toFixed(2);
-            if(document.getElementById('uiClubCardStat')) document.getElementById('uiClubCardStat').innerText = (u.clubEarned || 0).toFixed(2);
-        };
+            if (document.getElementById('uiClubQualifyingCount')) document.getElementById('uiClubQualifyingCount').innerText = Math.min(2, qualifiedDirects);
+            if (document.getElementById('uiClubEarnedAmt')) document.getElementById('uiClubEarnedAmt').innerText = (u.clubEarned || 0).toFixed(2);
+            if (document.getElementById('uiClubCardStat')) document.getElementById('uiClubCardStat').innerText = (u.clubEarned || 0).toFixed(2);
+        }
 
-        window.refreshDashboardUI = function() {
-            if (!window.currentUserWallet) return;
-            const wLower = window.currentUserWallet.toLowerCase();
-            const data = window.globalUsersMap[wLower];
+        function refreshDashboardUI() {
+            if (!currentUserWallet) return;
+            const wLower = currentUserWallet.toLowerCase();
+            const data = globalUsersMap[wLower];
             if (!data) return;
-            window.currentUserData = data;
+            currentUserData = data;
 
-            const activeDirects = window.getActiveDirectCount();
-            const qIndex = window.globalQueueOrder.indexOf(wLower);
-            const totalActiveInQueue = window.globalQueueOrder.length;
+            const activeDirects = getActiveDirectCount();
+            const qIndex = globalQueueOrder.indexOf(wLower);
+            const totalActiveInQueue = globalQueueOrder.length;
 
-            // Find all active queue positions (Main ID + Clone IDs) for this user
             const myAllPositions = [];
-            (window.globalQueueOrder || []).forEach((addr, idx) => {
+            (globalQueueOrder || []).forEach((addr, idx) => {
                 if (addr && addr.toLowerCase() === wLower) {
                     myAllPositions.push(idx + 1);
                 }
@@ -1967,7 +2047,6 @@
                 ? myAllPositions.map(p => `#${p}`).join(', ')
                 : "Inactive (Deposit to Join Queue)";
 
-            // Render detailed badges inside My Active Global Queue Positions Box
             const cloneBadgeEl = document.getElementById('uiMyCloneCountBadge');
             const posListEl = document.getElementById('uiMyQueuePositionsList');
             if (cloneBadgeEl) cloneBadgeEl.innerText = myAllPositions.length;
@@ -1975,7 +2054,7 @@
                 if (myAllPositions.length === 0) {
                     posListEl.innerHTML = `<span class="text-gray-500 text-xs">No active positions yet. Activate a package to get your Main Queue Position!</span>`;
                 } else {
-                    const userChronoRecs = [...(window.investmentRecords || [])]
+                    const userChronoRecs = [...(investmentRecords || [])]
                         .reverse()
                         .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
                     posListEl.innerHTML = myAllPositions.map((posNum, idx) => {
@@ -2015,7 +2094,7 @@
             document.getElementById('uiUplineCount').innerText = uplinesAbove;
             document.getElementById('uiDownlineCount').innerText = downlinesBelow;
 
-            const pendingCount = (window.pendingWithdrawals || []).filter(w => w.status === 'PENDING').length;
+            const pendingCount = (pendingWithdrawals || []).filter(w => w.status === 'PENDING').length;
             const badgeEl = document.getElementById('adminPendingCountBadge');
             if (badgeEl) badgeEl.innerText = pendingCount;
 
@@ -2040,30 +2119,33 @@
                 reqStatus.innerText = `0 / 1 Compulsory`;
             }
 
-            window.updateClubBannerUI();
-            window.renderPackagesDynamic();
-            window.renderIndividual2xMetersAndLedgers();
-            window.renderMyDirectPartnersList();
-            window.updateEstimatedTokensUI();
-        };
+            updateClubBannerUI();
+            renderPackagesDynamic();
+            renderIndividual2xMetersAndLedgers();
+            renderMyDirectPartnersList();
+            updateEstimatedTokensUI();
+        }
 
-        // --- OPTIMIZED DOM RENDERING (PREVENTS HANGING) ---
-        window.renderPackagesDynamic = function() {
-            const allPackages = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000];
-            const hasInvestedAlready = window.currentUserData && (window.currentUserData.totalInvested || 0) > 0;
+        function renderPackagesDynamic() {
+            // 10 Tiers including both $100 AND the new $150 Direct Titan Tier Package Button
+            const allPackages = [10, 25, 50, 100, 150, 250, 500, 1000, 2000, 5000];
+            const hasInvestedAlready = currentUserData && (currentUserData.totalInvested || 0) > 0;
             const visiblePackages = hasInvestedAlready ? allPackages.filter(a => a !== 10) : allPackages;
             const pkgContainer = document.getElementById('packagesContainer');
             if (!pkgContainer) return;
-            
+
             let pkgHtml = '';
-            visiblePackages.forEach((amt, idx) => {
+            visiblePackages.forEach((amt) => {
                 const isStarter = amt === 10 || amt === 25;
+                const isSpecial150 = amt === 150;
+                const tierTitle = isStarter ? 'Basic Package' : (isSpecial150 ? 'Titan Club Tier' : 'Club Tier');
+                const clubBadgeText = amt === 100 ? '+$50 = $150 Titan' : (isSpecial150 ? 'Unlocks 5% (Apex+Titan)' : 'Eligible');
                 pkgHtml += `
-                    <div class="glass-card p-5 rounded-2xl flex flex-col justify-between ${isStarter ? 'border-slate-700' : 'border-emerald-500/40'}">
+                    <div class="glass-card p-5 rounded-2xl flex flex-col justify-between ${isStarter ? 'border-slate-700' : (isSpecial150 ? 'border-amber-400/70 ring-1 ring-amber-400/30' : 'border-emerald-500/40')}">
                         <div>
                             <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-extrabold uppercase ${isStarter ? 'text-gray-400 bg-slate-800' : 'text-emerald-400 bg-emerald-500/10'} px-2.5 py-0.5 rounded border ${isStarter ? 'border-slate-700' : 'border-emerald-500/30'}">
-                                    ${isStarter ? 'Basic Package' : 'Club Tier'}
+                                <span class="text-xs font-extrabold uppercase ${isStarter ? 'text-gray-400 bg-slate-800 border-slate-700' : (isSpecial150 ? 'text-amber-300 bg-amber-500/20 border-amber-400/40' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30')} px-2.5 py-0.5 rounded border">
+                                    ${tierTitle}
                                 </span>
                                 <span class="text-[11px] text-amber-300 font-mono font-bold">2x Cap: $${amt * 2}</span>
                             </div>
@@ -2074,7 +2156,7 @@
                                 <div class="flex justify-between"><span>🌐 Matrix (40%):</span><span class="text-sky-400 font-mono font-bold">$${(amt * 0.40).toFixed(2)}</span></div>
                                 <div class="flex justify-between border-t border-slate-800 pt-1.5 mt-1">
                                     <span class="${isStarter ? 'text-gray-500' : 'text-amber-300'} font-semibold">👑 Clubs (5%):</span>
-                                    <span class="${isStarter ? 'text-gray-500' : 'text-amber-300'} font-mono font-extrabold">${isStarter ? 'Not Eligible' : 'Eligible'}</span>
+                                    <span class="${isStarter ? 'text-gray-500' : 'text-amber-300'} font-mono font-extrabold">${isStarter ? 'Not Eligible' : clubBadgeText}</span>
                                 </div>
                             </div>
                         </div>
@@ -2084,17 +2166,17 @@
                     </div>
                 `;
             });
-            pkgContainer.innerHTML = pkgHtml; // SINGLE DOM UPDATE
-        };
+            pkgContainer.innerHTML = pkgHtml;
+        }
 
-        window.renderIndividual2xMetersAndLedgers = function() {
+        function renderIndividual2xMetersAndLedgers() {
             const topMetersBox = document.getElementById('individualCappingMetersBox');
             const ledgerContainer = document.getElementById('userInvestmentRecordsList');
             const withdrawContainer = document.getElementById('userWithdrawalRecordsList');
             if (!topMetersBox || !ledgerContainer || !withdrawContainer) return;
 
-            const wLower = (window.currentUserWallet || '').toLowerCase();
-            const myRecords = (window.investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+            const wLower = (currentUserWallet || '').toLowerCase();
+            const myRecords = (investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
 
             const activeCount = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001).length;
             const completedCount = myRecords.filter(r => (r.earned2x || 0) >= (r.target2x || r.amount * 2) - 0.0001).length;
@@ -2107,7 +2189,8 @@
             } else {
                 let metersHtml = '';
                 let ledgerHtml = '';
-                myRecords.forEach((rec) => {
+                // Cap DOM rendering to latest 100 entries for lag-free UI while keeping full math on all records
+                myRecords.slice(0, 100).forEach((rec) => {
                     const isReinv = rec.type === 'AUTO_REINVEST'; const isUpg = rec.type === 'UPGRADE';
                     const target2x = rec.target2x || (rec.amount * 2); const earned2x = rec.earned2x || 0;
                     const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
@@ -2155,18 +2238,18 @@
                         </div>
                     `;
                 });
-                topMetersBox.innerHTML = metersHtml; // SINGLE DOM UPDATE
-                ledgerContainer.innerHTML = ledgerHtml; // SINGLE DOM UPDATE
+                topMetersBox.innerHTML = metersHtml;
+                ledgerContainer.innerHTML = ledgerHtml;
             }
 
-            const myWithdraws = (window.pendingWithdrawals || []).filter(w => w.wallet && w.wallet.toLowerCase() === wLower);
+            const myWithdraws = (pendingWithdrawals || []).filter(w => w.wallet && w.wallet.toLowerCase() === wLower);
             document.getElementById('uiUserWithdrawTicketCount').innerText = myWithdraws.length;
 
             if (myWithdraws.length === 0) {
                 withdrawContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No withdrawal tickets yet.</div>`;
             } else {
                 let wdHtml = '';
-                myWithdraws.forEach(w => {
+                myWithdraws.slice(0, 100).forEach(w => {
                     const isPending = w.status === 'PENDING';
                     wdHtml += `
                         <div class="bg-slate-950/90 border ${isPending ? 'border-amber-500/40' : 'border-emerald-500/40'} p-3.5 rounded-xl flex justify-between items-center gap-2">
@@ -2181,17 +2264,17 @@
                         </div>
                     `;
                 });
-                withdrawContainer.innerHTML = wdHtml; // SINGLE DOM UPDATE
+                withdrawContainer.innerHTML = wdHtml;
             }
-        };
+        }
 
-        window.renderMyDirectPartnersList = function() {
+        function renderMyDirectPartnersList() {
             const listEl = document.getElementById('myDirectPartnersList');
             const countEl = document.getElementById('uiTotalDirectsRegistered');
-            if (!listEl || !window.currentUserWallet) return;
+            if (!listEl || !currentUserWallet) return;
 
-            const wLower = window.currentUserWallet.toLowerCase();
-            const myDirects = Object.values(window.globalUsersMap || {}).filter(
+            const wLower = currentUserWallet.toLowerCase();
+            const myDirects = Object.values(globalUsersMap || {}).filter(
                 u => u.sponsor && u.sponsor.toLowerCase() === wLower && u.wallet.toLowerCase() !== wLower
             );
 
@@ -2202,8 +2285,8 @@
                 return;
             }
 
-            const myTierVal = window.currentUserData && window.currentUserData.progressionTier >= 0 ? CLUB_TIERS[window.currentUserData.progressionTier] : 999999;
-            
+            const myTierVal = currentUserData && currentUserData.progressionTier >= 0 ? CLUB_TIERS[currentUserData.progressionTier] : 999999;
+
             let listHtml = '';
             myDirects.forEach(d => {
                 const isActive = (d.totalInvested || 0) > 0;
@@ -2211,7 +2294,7 @@
                 listHtml += `
                     <div class="bg-slate-950/90 border border-slate-800 p-2.5 rounded-xl flex justify-between items-center">
                         <div>
-                            <b class="text-white">${d.name || 'Member'}</b>
+                            <b class="text-white">${escapeHtmlTelegram(d.name || 'Member')}</b>
                             <span class="text-gray-400 font-mono text-[11px] ml-2">${d.wallet.slice(0,6)}...${d.wallet.slice(-4)}</span>
                             ${isTierMatched ? `<span class="ml-1.5 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">👑 Club Matched</span>` : ''}
                         </div>
@@ -2222,19 +2305,20 @@
                     </div>
                 `;
             });
-            listEl.innerHTML = listHtml; // SINGLE DOM UPDATE
-        };
+            listEl.innerHTML = listHtml;
+        }
 
         window.openAdminModal = function() {
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
             document.getElementById('adminModal').style.display = 'flex';
-            window.renderAdminDashboardData();
+            renderAdminDashboardData();
         };
         window.closeAdminModal = function() {
             document.getElementById('adminModal').style.display = 'none';
         };
 
-        window.renderAdminDashboardData = function() {
-            const allUsers = Object.values(window.globalUsersMap || {});
+        function renderAdminDashboardData() {
+            const allUsers = Object.values(globalUsersMap || {});
             const totalRegs = allUsers.length;
             const totalActive = allUsers.filter(u => (u.totalInvested || 0) > 0).length;
             const totalVol = allUsers.reduce((acc, u) => acc + (u.totalInvested || 0) + (u.autoReinvestedTotal || 0), 0);
@@ -2242,7 +2326,7 @@
             document.getElementById('adminTotalRegs').innerText = totalRegs;
             document.getElementById('adminTotalActive').innerText = totalActive;
             document.getElementById('adminTotalVolume').innerText = `$${totalVol.toFixed(2)}`;
-            document.getElementById('adminOverflowTotal').innerText = `$${Number(window.protocolOverflowReserve || 0).toFixed(2)}`;
+            document.getElementById('adminOverflowTotal').innerText = `$${Number(protocolOverflowReserve || 0).toFixed(2)}`;
 
             let activeApexCount = 0;
             let activeTitanCount = 0;
@@ -2259,28 +2343,28 @@
             const adminApexEl = document.getElementById('adminActiveApex');
             const adminTitanEl = document.getElementById('adminActiveTitan');
             const adminClubPaidEl = document.getElementById('adminTotalClubPaid');
-            
+
             if (adminApexEl) adminApexEl.innerText = activeApexCount;
             if (adminTitanEl) adminTitanEl.innerText = activeTitanCount;
             if (adminClubPaidEl) adminClubPaidEl.innerText = `$${totalClubPaidOut.toFixed(2)}`;
 
             const listEl = document.getElementById('adminWithdrawalList');
             const pendingCountEl = document.getElementById('adminModalPendingCount');
-            const pending = (window.pendingWithdrawals || []).filter(w => w.status === 'PENDING');
+            const pending = (pendingWithdrawals || []).filter(w => w.status === 'PENDING');
             if (pendingCountEl) pendingCountEl.innerText = pending.length;
 
-            if (!window.pendingWithdrawals || window.pendingWithdrawals.length === 0) {
+            if (!pendingWithdrawals || pendingWithdrawals.length === 0) {
                 listEl.innerHTML = `<div class="text-center text-gray-400 py-8 bg-slate-900/70 rounded-xl border border-slate-800 text-xs">No withdrawal requests submitted yet.</div>`;
             } else {
                 let wdHtml = '';
-                window.pendingWithdrawals.forEach(item => {
+                pendingWithdrawals.slice(0, 150).forEach(item => {
                     const isPending = item.status === 'PENDING';
                     wdHtml += `
                         <div class="bg-slate-900/95 border ${isPending ? 'border-amber-500/50' : 'border-emerald-500/30'} p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                             <div class="space-y-1">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="font-mono font-extrabold text-amber-400">${item.id}</span>
-                                    <span class="text-white font-bold">${item.userName || 'Member'}</span>
+                                    <span class="text-white font-bold">${escapeHtmlTelegram(item.userName || 'Member')}</span>
                                     <span class="text-gray-400 font-mono">(${item.wallet.slice(0,6)}...${item.wallet.slice(-4)})</span>
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${item.status}</span>
                                 </div>
@@ -2298,18 +2382,18 @@
                         </div>
                     `;
                 });
-                listEl.innerHTML = wdHtml; // SINGLE DOM UPDATE
+                listEl.innerHTML = wdHtml;
             }
 
             const membersEl = document.getElementById('adminAllMembersList');
             if (membersEl) {
                 let memHtml = '';
-                allUsers.forEach(u => {
+                allUsers.slice(0, 250).forEach(u => {
                     const isActive = (u.totalInvested || 0) > 0;
                     memHtml += `
                         <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl flex flex-wrap justify-between items-center gap-2">
                             <div>
-                                <b class="text-white">${u.name || 'Member'}</b>
+                                <b class="text-white">${escapeHtmlTelegram(u.name || 'Member')}</b>
                                 <span class="text-gray-400 font-mono ml-2 break-all">${u.wallet}</span>
                             </div>
                             <div class="flex items-center gap-3 font-mono">
@@ -2320,19 +2404,18 @@
                         </div>
                     `;
                 });
-                membersEl.innerHTML = memHtml; // SINGLE DOM UPDATE
+                membersEl.innerHTML = memHtml;
             }
-        };
-
-        window.isAdminTransferInProgress = false;
+        }
 
         window.adminApproveAndTransfer = async function(reqId) {
-            if (window.isAdminTransferInProgress) return;
+            if (isAdminTransferInProgress) return;
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
 
-            const reqItem = (window.pendingWithdrawals || []).find(w => w.id === reqId);
+            const reqItem = (pendingWithdrawals || []).find(w => w.id === reqId);
             if (!reqItem || reqItem.status !== 'PENDING') return;
 
-            window.isAdminTransferInProgress = true;
+            isAdminTransferInProgress = true;
             let txHashConfirmed = null;
 
             try {
@@ -2340,7 +2423,7 @@
                 if (!eth || typeof ethers === 'undefined') {
                     throw new Error("Admin Web3 Wallet not detected!");
                 }
-                await window.ensureBSCNetwork(eth);
+                await ensureBSCNetwork(eth);
                 const provider = new ethers.providers.Web3Provider(eth, "any");
                 const signer = provider.getSigner();
 
@@ -2348,17 +2431,17 @@
                     "function decimals() view returns (uint8)",
                     "function transfer(address to, uint256 value) public returns (bool)"
                 ];
-                const tokenContract = new ethers.Contract(window.TEMPLE_DA_CONTRACT, tokenAbi, signer);
+                const tokenContract = new ethers.Contract(TEMPLE_DA_CONTRACT, tokenAbi, signer);
                 let decimals = 18;
                 try { decimals = await tokenContract.decimals(); } catch (e) { decimals = 18; }
 
                 const parsedTokens = ethers.utils.parseUnits(reqItem.tokenAmount.toString(), decimals);
-                window.UI.showModal('Sending Temple_DA Tokens...', `Confirm transferring <b>${reqItem.tokenAmount} Temple_DA</b> to <code>${reqItem.wallet}</code> in your wallet...`, '⏳');
+                UI.showModal('Sending Temple_DA Tokens...', `Confirm transferring <b>${reqItem.tokenAmount} Temple_DA</b> to <code>${reqItem.wallet}</code> in your wallet...`, '⏳');
 
                 const tx = await tokenContract.transfer(reqItem.wallet, parsedTokens);
                 txHashConfirmed = tx.hash;
 
-                window.UI.showModal('Confirming Payout on BSC...', `Token transfer broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for confirmation...`, '⛓️');
+                UI.showModal('Confirming Payout on BSC...', `Token transfer broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for confirmation...`, '⛓️');
 
                 let receipt = null;
                 try {
@@ -2377,25 +2460,30 @@
                     throw new Error("Token transfer reverted on blockchain.");
                 }
             } catch (err) {
-                window.isAdminTransferInProgress = false;
+                isAdminTransferInProgress = false;
                 if (!txHashConfirmed) {
-                    window.UI.showModal('Transfer Failed / Cancelled', err.reason || err.message || 'Token transfer cancelled.', '❌');
+                    UI.showModal('Transfer Failed / Cancelled', err.reason || err.message || 'Token transfer cancelled.', '❌');
                     return;
                 }
             }
 
             try {
-                reqItem.status = 'APPROVED & TRANSFERRED';
-                reqItem.txHash = txHashConfirmed;
-                await window.saveGlobalProtocolState();
-                try { window.renderAdminDashboardData(); } catch (e) {}
-                try { window.refreshDashboardUI(); } catch (e) {}
+                await commitAtomicStateMutation((state) => {
+                    const targetWd = (state.pendingWithdrawals || []).find(w => w.id === reqId);
+                    if (targetWd) {
+                        targetWd.status = 'APPROVED & TRANSFERRED';
+                        targetWd.txHash = txHashConfirmed;
+                    }
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
 
                 const payoutExtraHtml =
                     `🪙 <b>Tokens Sent:</b> ${reqItem.tokenAmount} Temple_DA\n` +
                     `🧾 <b>Withdrawal Ticket:</b> <code>${reqItem.id}</code>`;
 
-                await window.sendTelegramAlert(
+                await sendTelegramAlert(
                     `Associate Withdrawal Payout Sent (${reqItem.id})`,
                     reqItem.wallet,
                     reqItem.netUSDT.toFixed(2),
@@ -2403,16 +2491,16 @@
                     payoutExtraHtml
                 );
 
-                window.UI.showModal(
+                UI.showModal(
                     'Payout Transferred Successfully! ✅',
-                    `Successfully transferred <b>${reqItem.tokenAmount} Temple_DA ($${reqItem.netUSDT.toFixed(2)})</b> to <b>${reqItem.userName || 'Member'}</b>!<br><br><code class="text-[11px] text-emerald-400 bg-slate-950 p-2 rounded block break-all">Tx: ${txHashConfirmed}</code>`,
+                    `Successfully transferred <b>${reqItem.tokenAmount} Temple_DA ($${reqItem.netUSDT.toFixed(2)})</b> to <b>${escapeHtmlTelegram(reqItem.userName || 'Member')}</b>!<br><br><code class="text-[11px] text-emerald-400 bg-slate-950 p-2 rounded block break-all">Tx: ${txHashConfirmed}</code>`,
                     '👑',
                     '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
                 );
             } catch (postErr) {
                 console.error("Post-transfer UI warning:", postErr);
             } finally {
-                window.isAdminTransferInProgress = false;
+                isAdminTransferInProgress = false;
             }
         };
     </script>
