@@ -297,9 +297,9 @@
                         <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">
                             <i class="fa-solid fa-user-check mr-1"></i> Member: <span id="uiMemberName">--</span>
                         </span>
-                        <span class="bg-sky-500/15 text-sky-400 text-xs font-bold px-3 py-1 rounded-full border border-sky-500/30">
-                            <i class="fa-solid fa-hashtag mr-1"></i> Active Queue Pos (Main + Clones): <span id="uiGlobalPos">--</span>
-                        </span>
+                        <button type="button" onclick="scrollToClonePositionsBox()" class="bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 text-xs font-bold px-3 py-1 rounded-full border border-sky-500/30 transition-colors cursor-pointer flex items-center gap-1" title="Click to view all Main & Clone Queue Positions">
+                            <i class="fa-solid fa-hashtag"></i> Active Queue Pos: <span id="uiGlobalPos" class="text-white font-mono">--</span>
+                        </button>
                         <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">
                             <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1 (Required for Withdraw)
                         </span>
@@ -568,19 +568,36 @@
                 </div>
 
                 <!-- My Active Queue Positions (Main ID + Clone IDs) Display Box -->
-                <div class="mt-4 bg-slate-950/90 border border-sky-500/30 rounded-xl p-3.5">
+                <div id="myClonePositionsBoxSection" class="mt-4 bg-slate-950/90 border border-sky-500/30 rounded-xl p-3.5 transition-all">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <span class="text-xs font-extrabold text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-clone text-sky-400"></i> My Active Global Queue Positions (Main ID + Clone IDs)
+                            <i class="fa-solid fa-clone text-sky-400"></i> My Global Queue Positions (Main ID + Clone IDs)
                         </span>
                         <span class="text-[11px] font-mono bg-sky-500/15 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30">
-                            Total Active IDs: <b id="uiMyCloneCountBadge">0</b>
+                            Total IDs: <b id="uiMyCloneCountBadge">0</b>
                         </span>
                     </div>
                     <p class="text-[11px] text-gray-400 mb-2.5">
                         Every Upgrade (<b class="text-amber-300">#UPG</b>) & 50% Auto-Reinvestment (<b class="text-sky-300">#REINV</b>) places a new Clone ID at the bottom of the Global Queue. All 20 Up / 20 Down profits from every Clone ID credit directly to your Main ID!
                     </p>
-                    <div id="uiMyQueuePositionsList" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1"></div>
+                    <!-- Smart Filter Tabs for Clean Display -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-slate-800/90">
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" id="btnCloneFilterActive" onclick="setClonePositionFilter('ACTIVE')" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer transition-all">
+                                ⚡ Active Running (<span id="uiCloneFilterActiveCount">0</span>)
+                            </button>
+                            <button type="button" id="btnCloneFilterDone" onclick="setClonePositionFilter('DONE')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-slate-900 text-gray-400 border border-slate-800 hover:text-amber-300 cursor-pointer transition-all">
+                                🏆 2x Completed (<span id="uiCloneFilterDoneCount">0</span>)
+                            </button>
+                            <button type="button" id="btnCloneFilterAll" onclick="setClonePositionFilter('ALL')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-slate-900 text-gray-400 border border-slate-800 hover:text-sky-300 cursor-pointer transition-all">
+                                📋 All IDs (<span id="uiCloneFilterAllCount">0</span>)
+                            </button>
+                        </div>
+                        <button type="button" id="btnToggleExpandClones" onclick="toggleExpandAllClones()" class="hidden text-[10px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer font-mono">
+                            Show All IDs
+                        </button>
+                    </div>
+                    <div id="uiMyQueuePositionsList" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
@@ -926,6 +943,29 @@
         let isDepositInProgress = false;
         let isWithdrawalInProgress = false;
         let isAdminTransferInProgress = false;
+
+        let currentCloneFilterMode = 'ACTIVE';
+        let isCloneListExpanded = false;
+
+        window.scrollToClonePositionsBox = function() {
+            const el = document.getElementById('myClonePositionsBoxSection');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-amber-400');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400'), 1800);
+            }
+        };
+
+        window.setClonePositionFilter = function(mode) {
+            currentCloneFilterMode = mode;
+            isCloneListExpanded = false;
+            refreshDashboardUI();
+        };
+
+        window.toggleExpandAllClones = function() {
+            isCloneListExpanded = !isCloneListExpanded;
+            refreshDashboardUI();
+        };
 
         function escapeHtmlTelegram(str) {
             return String(str || '')
@@ -1963,26 +2003,89 @@
             document.getElementById('uiSponsorDisplay').innerText = (data.sponsor && data.sponsor.startsWith('0x'))
                 ? (data.sponsor.slice(0, 6) + "..." + data.sponsor.slice(-4))
                 : "Direct (No Sponsor)";
-            document.getElementById('uiGlobalPos').innerText = myAllPositions.length > 0
-                ? myAllPositions.map(p => `#${p}`).join(', ')
-                : "Inactive (Deposit to Join Queue)";
+
+            // Compact Top Header Queue Position Display (Prevents Long Overflow)
+            if (myAllPositions.length === 0) {
+                document.getElementById('uiGlobalPos').innerText = "Inactive (Deposit to Join Queue)";
+            } else if (myAllPositions.length <= 3) {
+                document.getElementById('uiGlobalPos').innerText = myAllPositions.map(p => `#${p}`).join(', ');
+            } else {
+                const mainPos = myAllPositions[0];
+                const latestPos = myAllPositions[myAllPositions.length - 1];
+                const extraClonesCount = myAllPositions.length - 1;
+                document.getElementById('uiGlobalPos').innerText = `Main #${mainPos} • Latest #${latestPos} (+${extraClonesCount} Clones)`;
+            }
 
             const cloneBadgeEl = document.getElementById('uiMyCloneCountBadge');
             const posListEl = document.getElementById('uiMyQueuePositionsList');
             if (cloneBadgeEl) cloneBadgeEl.innerText = myAllPositions.length;
             if (posListEl) {
+                const userChronoRecs = [...(investmentRecords || [])]
+                    .reverse()
+                    .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+
+                const structuredPositions = myAllPositions.map((posNum, idx) => {
+                    const isMain = idx === 0;
+                    const recMatch = userChronoRecs.find(r => Number(r.queuePosition) === Number(posNum)) || userChronoRecs[idx];
+                    const earned = recMatch ? Number(recMatch.earned2x || 0) : 0;
+                    const target = recMatch ? Number(recMatch.target2x || (recMatch.amount * 2) || 0) : 0;
+                    const isDone = target > 0 && earned >= target - 0.0001;
+                    return { posNum, idx, isMain, recMatch, earned, target, isDone };
+                });
+
+                const activeItems = structuredPositions.filter(item => !item.isDone);
+                const doneItems = structuredPositions.filter(item => item.isDone);
+
+                const activeCntEl = document.getElementById('uiCloneFilterActiveCount');
+                const doneCntEl = document.getElementById('uiCloneFilterDoneCount');
+                const allCntEl = document.getElementById('uiCloneFilterAllCount');
+                if (activeCntEl) activeCntEl.innerText = activeItems.length;
+                if (doneCntEl) doneCntEl.innerText = doneItems.length;
+                if (allCntEl) allCntEl.innerText = structuredPositions.length;
+
+                // Update Tab Button Active Styling
+                const btnAct = document.getElementById('btnCloneFilterActive');
+                const btnDone = document.getElementById('btnCloneFilterDone');
+                const btnAll = document.getElementById('btnCloneFilterAll');
+                if (btnAct && btnDone && btnAll) {
+                    btnAct.className = currentCloneFilterMode === 'ACTIVE'
+                        ? "px-2.5 py-1 rounded-lg text-[10px] font-extrabold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 cursor-pointer transition-all"
+                        : "px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-slate-900 text-gray-400 border border-slate-800 hover:text-emerald-300 cursor-pointer transition-all";
+                    btnDone.className = currentCloneFilterMode === 'DONE'
+                        ? "px-2.5 py-1 rounded-lg text-[10px] font-extrabold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/50 cursor-pointer transition-all"
+                        : "px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-slate-900 text-gray-400 border border-slate-800 hover:text-amber-300 cursor-pointer transition-all";
+                    btnAll.className = currentCloneFilterMode === 'ALL'
+                        ? "px-2.5 py-1 rounded-lg text-[10px] font-extrabold font-mono bg-sky-500/20 text-sky-300 border border-sky-500/50 cursor-pointer transition-all"
+                        : "px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-slate-900 text-gray-400 border border-slate-800 hover:text-sky-300 cursor-pointer transition-all";
+                }
+
+                let filteredList = structuredPositions;
+                if (currentCloneFilterMode === 'ACTIVE') filteredList = activeItems;
+                else if (currentCloneFilterMode === 'DONE') filteredList = doneItems;
+
+                const toggleBtn = document.getElementById('btnToggleExpandClones');
+                const MAX_COMPACT_CLONES = 6;
+
                 if (myAllPositions.length === 0) {
+                    if (toggleBtn) toggleBtn.classList.add('hidden');
                     posListEl.innerHTML = `<span class="text-gray-500 text-xs">No active positions yet. Activate a package to get your Main Queue Position!</span>`;
+                } else if (filteredList.length === 0) {
+                    if (toggleBtn) toggleBtn.classList.add('hidden');
+                    posListEl.innerHTML = `<span class="text-gray-400 text-xs py-1">No IDs in this category right now. Switch tabs above to view other IDs.</span>`;
                 } else {
-                    const userChronoRecs = [...(investmentRecords || [])]
-                        .reverse()
-                        .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
-                    posListEl.innerHTML = myAllPositions.map((posNum, idx) => {
-                        const isMain = idx === 0;
-                        const recMatch = userChronoRecs.find(r => Number(r.queuePosition) === Number(posNum)) || userChronoRecs[idx];
-                        const earned = recMatch ? Number(recMatch.earned2x || 0) : 0;
-                        const target = recMatch ? Number(recMatch.target2x || (recMatch.amount * 2) || 0) : 0;
-                        const isDone = target > 0 && earned >= target - 0.0001;
+                    if (toggleBtn) {
+                        if (filteredList.length > MAX_COMPACT_CLONES) {
+                            toggleBtn.classList.remove('hidden');
+                            toggleBtn.innerText = isCloneListExpanded
+                                ? `Show Compact (Top ${MAX_COMPACT_CLONES})`
+                                : `Show All (+${filteredList.length - MAX_COMPACT_CLONES} More)`;
+                        } else {
+                            toggleBtn.classList.add('hidden');
+                        }
+                    }
+
+                    const visibleItems = isCloneListExpanded ? filteredList : filteredList.slice(0, MAX_COMPACT_CLONES);
+                    posListEl.innerHTML = visibleItems.map(({ posNum, idx, isMain, recMatch, earned, target, isDone }) => {
                         const recLabel = recMatch
                             ? `${recMatch.id} ($${earned.toFixed(2)}/$${target.toFixed(2)} ${isDone ? '✓ 2x DONE' : 'Active'})`
                             : (isMain ? 'Main ID' : `Clone #${idx}`);
@@ -2290,12 +2393,15 @@
                                     Send 50% Payout: <b class="text-emerald-400 font-mono">${item.tokenAmount} Temple_DA ($${item.netUSDT.toFixed(2)})</b> • 50% Reinvested: <b class="text-sky-400 font-mono">$${item.reinvestedUSDT.toFixed(2)}</b>
                                 </div>
                             </div>
-                            <div class="shrink-0">
+                            <div class="shrink-0 flex flex-wrap sm:flex-col md:flex-row items-center gap-2">
                                 ${isPending ? `
-                                    <button onclick="adminApproveAndTransfer('${item.id}')" class="w-full sm:w-auto gold-btn font-extrabold px-4 py-2.5 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5">
+                                    <button onclick="adminApproveAndTransfer('${item.id}')" class="w-full sm:w-auto gold-btn font-extrabold px-3.5 py-2 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5" title="Transfer Temple_DA via Web3 Wallet & Approve">
                                         <i class="fa-solid fa-paper-plane"></i> Approve & Send T_DA
                                     </button>
-                                ` : `<span class="text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sent</span>`}
+                                    <button onclick="adminMarkApprovedAndSentManual('${item.id}')" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 font-extrabold px-3.5 py-2 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 shadow-lg transition-all" title="Directly change status from PENDING to APPROVED & SENT">
+                                        <i class="fa-solid fa-circle-check"></i> Mark Approved & Sent
+                                    </button>
+                                ` : `<span class="text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> ${escapeHtmlTelegram(item.status)}</span>`}
                             </div>
                         </div>
                     `;
@@ -2417,6 +2523,55 @@
                 );
             } catch (postErr) {
                 console.error("Post-transfer UI warning:", postErr);
+            } finally {
+                isAdminTransferInProgress = false;
+            }
+        };
+
+        // --- NEW ADMIN 1-CLICK MANUAL STATUS UPDATE: PENDING -> APPROVED & SENT ---
+        window.adminMarkApprovedAndSentManual = async function(reqId) {
+            if (isAdminTransferInProgress) return;
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+
+            const reqItem = (pendingWithdrawals || []).find(w => w.id === reqId);
+            if (!reqItem || reqItem.status !== 'PENDING') return;
+
+            isAdminTransferInProgress = true;
+            try {
+                await commitAtomicStateMutation((state) => {
+                    const targetWd = (state.pendingWithdrawals || []).find(w => w.id === reqId);
+                    if (targetWd) {
+                        targetWd.status = 'APPROVED & SENT';
+                        if (!targetWd.txHash) {
+                            targetWd.txHash = '#ADMIN-APPROVED-' + Date.now().toString().slice(-6);
+                        }
+                    }
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
+
+                const payoutExtraHtml =
+                    `🪙 <b>Tokens Sent:</b> ${reqItem.tokenAmount} Temple_DA ($${reqItem.netUSDT.toFixed(2)})\n` +
+                    `🧾 <b>Withdrawal Ticket:</b> <code>${reqItem.id}</code>\n` +
+                    `✅ <b>Status:</b> APPROVED & SENT`;
+
+                await sendTelegramAlert(
+                    `Associate Withdrawal Approved & Sent (${reqItem.id})`,
+                    reqItem.wallet,
+                    reqItem.netUSDT.toFixed(2),
+                    reqItem.id,
+                    payoutExtraHtml
+                );
+
+                UI.showModal(
+                    'Status Updated: Approved & Sent! ✅',
+                    `Ticket <b>${reqItem.id}</b> for <b>${escapeHtmlTelegram(reqItem.userName || 'Member')}</b> (<b>${reqItem.tokenAmount} Temple_DA</b>) has been marked as <b>APPROVED & SENT</b>!`,
+                    '✅',
+                    '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                );
+            } catch (err) {
+                UI.showModal('Update Error', err.message || 'Could not update withdrawal status.', '⚠️');
             } finally {
                 isAdminTransferInProgress = false;
             }
