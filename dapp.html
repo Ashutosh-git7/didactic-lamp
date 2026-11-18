@@ -701,9 +701,14 @@
             </div>
 
             <div class="space-y-3.5 text-xs">
+                <!-- Anti-Bot Honeypot Trap (Invisible to real users, traps automated spam bots) -->
+                <div style="position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;" aria-hidden="true">
+                    <input id="regBotTrapField" type="text" name="website_url_trap" tabindex="-1" autocomplete="off">
+                </div>
+
                 <div>
                     <label class="block text-gray-300 font-semibold mb-1">Your Full Name / Username *</label>
-                    <input id="regFullNameInput" type="text" placeholder="Enter your full name (e.g. Rahul Sharma)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none focus:border-amber-400">
+                    <input id="regFullNameInput" type="text" maxlength="60" placeholder="Enter your full name (e.g. Rahul Sharma)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none focus:border-amber-400">
                 </div>
 
                 <div>
@@ -734,7 +739,7 @@
                     <div class="flex justify-between"><span>Network:</span><b class="text-emerald-400">Binance Smart Chain (BEP-20)</b></div>
                 </div>
 
-                <button onclick="submitRegistrationForm()" class="w-full gold-btn font-extrabold py-3.5 rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2">
+                <button id="btnSubmitRegistration" onclick="submitRegistrationForm()" class="w-full gold-btn font-extrabold py-3.5 rounded-xl text-sm transition-all cursor-pointer shadow-lg flex items-center justify-center gap-2">
                     <i class="fa-solid fa-circle-check"></i> Complete TGIP Registration & Open Dashboard
                 </button>
             </div>
@@ -943,6 +948,7 @@
         let isDepositInProgress = false;
         let isWithdrawalInProgress = false;
         let isAdminTransferInProgress = false;
+        let isRegistrationInProgress = false;
 
         let currentCloneFilterMode = 'ACTIVE';
         let isCloneListExpanded = false;
@@ -1370,33 +1376,83 @@
         }
 
         window.submitRegistrationForm = async function() {
+            if (isRegistrationInProgress) return;
+
+            // 1. Honeypot Bot Trap Check (Invisible to humans, blocks automated spam scripts)
+            const botTrap = document.getElementById('regBotTrapField');
+            if (botTrap && botTrap.value.trim() !== '') {
+                return;
+            }
+
+            // 2. Anti-Spam Device Cooldown Check (Prevents bot flood from same browser)
+            const lastRegTs = parseInt(localStorage.getItem('tgip_reg_cooldown_ts') || '0', 10);
+            const nowTs = Date.now();
+            if (nowTs - lastRegTs < 45000) {
+                const waitSec = Math.ceil((45000 - (nowTs - lastRegTs)) / 1000);
+                UI.showModal('Anti-Spam Protection Active 🛡️', `Please wait <b>${waitSec} seconds</b> before submitting another registration request from this device.`, '⏳');
+                return;
+            }
+
             const nameInput = document.getElementById('regFullNameInput').value.trim();
             const phoneInput = document.getElementById('regPhoneInput').value.trim();
             const walletAddr = document.getElementById('regWalletInput').value.trim();
             let sponsorAddr = document.getElementById('regSponsorInput').value.trim();
 
-            if (!nameInput) { UI.showModal('Full Name Required', 'Please enter your Full Name or Username to complete registration.', '⚠️'); return; }
+            if (!nameInput || nameInput.length < 2) { UI.showModal('Full Name Required', 'Please enter your valid Full Name or Username to complete registration.', '⚠️'); return; }
             if (!walletAddr || !walletAddr.startsWith('0x') || walletAddr.length !== 42) { UI.showModal('Connect BEP-20 Wallet First', 'Please click the <b>Connect</b> button inside the registration form to link your BEP-20 wallet address.', '⚠️'); return; }
+
+            // 3. Verify Real Connected Web3 Wallet (Prevents fake script-generated 0x addresses)
+            try {
+                const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+                if (eth && eth.request) {
+                    const connectedAccounts = await eth.request({ method: 'eth_accounts' });
+                    if (!connectedAccounts || !connectedAccounts.some(a => a.toLowerCase() === walletAddr.toLowerCase())) {
+                        UI.showModal('Verify Web3 Wallet', 'Please click the <b>Connect</b> button to verify ownership of your BEP-20 wallet.', '🔒');
+                        return;
+                    }
+                }
+            } catch (e) {}
+
             if (sponsorAddr && (!sponsorAddr.startsWith('0x') || sponsorAddr.length !== 42 || sponsorAddr.toLowerCase() === walletAddr.toLowerCase())) { UI.showModal('Invalid Sponsor Address', 'Please enter a valid BEP-20 Sponsor Wallet Address (0x...) or leave it blank.', '⚠️'); return; }
 
             const wLower = walletAddr.toLowerCase();
-            await commitAtomicStateMutation((state) => {
-                if (!state.globalUsersMap[wLower]) {
-                    state.globalUsersMap[wLower] = {
-                        wallet: walletAddr, name: nameInput, phone: phoneInput || "", sponsor: sponsorAddr || "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
-                        progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
-                        booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
-                    };
+            if (globalUsersMap && globalUsersMap[wLower]) {
+                document.getElementById('registrationModal').style.display = 'none';
+                finalizeLogin(walletAddr);
+                return;
+            }
+
+            isRegistrationInProgress = true;
+            const regBtnEl = document.getElementById('btnSubmitRegistration');
+            if (regBtnEl) { regBtnEl.disabled = true; regBtnEl.style.opacity = '0.6'; }
+
+            try {
+                let isNewlyCreated = false;
+                await commitAtomicStateMutation((state) => {
+                    if (!state.globalUsersMap[wLower]) {
+                        state.globalUsersMap[wLower] = {
+                            wallet: walletAddr, name: nameInput, phone: phoneInput || "", sponsor: sponsorAddr || "", registeredAt: Date.now(), activatedAt: 0, firstPackageAmount: 0,
+                            progressionTier: -1, clubTimerStart: 0, clubStatus: "INACTIVE", apexActive: false, titanActive: false, titanLost: false, club5xCap: 0, clubEarned: 0,
+                            booster5PctClaimed: false, boosterEarned: 0, qualifyingDirects48h: [], balance: 0, totalInvested: 0, autoReinvestedTotal: 0, totalEarned: 0, directEarned: 0, poolEarned: 0, cappingLimit: 0, overflowedToPool: 0
+                        };
+                        isNewlyCreated = true;
+                    }
+                });
+
+                localStorage.setItem('tgip_reg_cooldown_ts', Date.now().toString());
+                document.getElementById('registrationModal').style.display = 'none';
+                finalizeLogin(walletAddr);
+
+                if (isNewlyCreated) {
+                    const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
+                    await sendTelegramAlert('New Member Registration', walletAddr, '0 (Registered)', '', `🤝 <b>Sponsor:</b> <code>${shortSponsor}</code>`);
+                    const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
+                    UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position and start your <b>7-Day Royalty Club Timer</b>!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
                 }
-            });
-
-            document.getElementById('registrationModal').style.display = 'none';
-            finalizeLogin(walletAddr);
-
-            const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
-            await sendTelegramAlert('New Member Registration', walletAddr, '0 (Registered)', '', `🤝 <b>Sponsor:</b> <code>${shortSponsor}</code>`);
-            const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
-            UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below to activate your Global Single-Leg position and start your <b>7-Day Royalty Club Timer</b>!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
+            } finally {
+                isRegistrationInProgress = false;
+                if (regBtnEl) { regBtnEl.disabled = false; regBtnEl.style.opacity = '1'; }
+            }
         };
 
         function finalizeLogin(walletAddress) {
@@ -1837,6 +1893,14 @@
         window.requestWithdrawal = async function() {
             if (isWithdrawalInProgress) return;
             if (!currentUserWallet || !currentUserData) return;
+
+            // Anti-Double-Click Cooldown Check for Withdrawal
+            const lastWdTs = parseInt(localStorage.getItem('tgip_wd_cooldown_ts') || '0', 10);
+            if (Date.now() - lastWdTs < 15000) {
+                UI.showModal('Processing Withdrawal ⏳', 'Your previous withdrawal request was just submitted. Please wait a few seconds.', '⏳');
+                return;
+            }
+
             const activeDirects = getActiveDirectCount();
             if (activeDirects < 1) { UI.showModal('1 Active Direct Compulsory 🔒', `At least <b>1 Active Direct Referral</b> is compulsory to unlock withdrawals on TGIP Protocol.<br><br>Share your referral link so your partner registers and activates a package!`, '🔒'); return; }
 
@@ -1844,6 +1908,9 @@
             if (currentBal < MIN_WITHDRAW_USDT) { UI.showModal('Minimum Withdrawal is 3 USDT ⚠️', `Your withdrawable balance is <b>$${currentBal.toFixed(2)} USDT</b>.<br>Minimum withdrawal is <b>$3.00 USDT</b> (50% paid in Temple_DA tokens + 50% auto-reinvested into a new TGIP 2x Meter).`, '⚠️'); return; }
 
             isWithdrawalInProgress = true;
+            const wdBtnEl = document.getElementById('btnWithdraw');
+            if (wdBtnEl) { wdBtnEl.disabled = true; wdBtnEl.style.opacity = '0.6'; }
+
             try {
                 await window.updateLivePrice(false);
                 const wLower = currentUserWallet.toLowerCase();
@@ -1889,6 +1956,7 @@
                     return;
                 }
 
+                localStorage.setItem('tgip_wd_cooldown_ts', Date.now().toString());
                 refreshDashboardUI();
 
                 const withdrawExtraHtml = `🪙 <b>50% Token Payout:</b> ${tokenAmount} Temple_DA ($${netPayoutUSDT.toFixed(2)})\n` + `🔄 <b>50% Auto-Reinvested:</b> $${reinvestUSDT.toFixed(2)} (${reinvResult.recordId} &rarr; Clone Pos #${reinvResult.queuePosition}, 2x Target: $${(reinvestUSDT * 2).toFixed(2)})`;
@@ -1896,6 +1964,7 @@
                 UI.showModal(`Withdrawal (${ticketId}) & New Clone 2x Meter (${reinvResult.recordId})!`, `<div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs"><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">Withdrawal Ticket:</span><span class="font-bold text-amber-400 font-mono">${ticketId}</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Token Payout (Admin Queue):</span><span class="font-bold text-emerald-400 font-mono">${tokenAmount} T_DA ($${netPayoutUSDT.toFixed(2)})</span></div><div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-gray-400">50% Auto-Reinvested Clone ID:</span><span class="font-bold text-sky-400 font-mono">${reinvResult.recordId} (Pos #${reinvResult.queuePosition} • 2x: $${(reinvestUSDT * 2).toFixed(2)})</span></div><div class="flex justify-between"><span class="text-gray-400">Reinvest Split (45/10/40):</span><span class="font-bold text-gray-200 font-mono">Pool $${reinvResult.poolShare.toFixed(2)} | Ref $${reinvResult.directShare.toFixed(2)} | Team $${reinvResult.teamTotalShare.toFixed(2)}</span></div></div>`, '🧾', `<div class="flex flex-wrap justify-center gap-2"><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5"><i class="fa-brands fa-telegram"></i> View Proof on Telegram</a><button onclick="closeModal()" class="gold-btn px-6 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Done ✓</button></div>`);
             } finally {
                 isWithdrawalInProgress = false;
+                if (wdBtnEl) { wdBtnEl.disabled = false; wdBtnEl.style.opacity = '1'; }
             }
         };
 
