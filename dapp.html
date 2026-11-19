@@ -828,11 +828,11 @@
                         <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Withdrawal Requests Queue (50% Temple_DA Token Payout)
                     </span>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button id="btnAdminBatchMultiSend" onclick="adminBatchMultiSendAllPending()" class="gold-btn font-extrabold px-3 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1.5 shadow-md" title="Auto-Queue Direct Temple_DA Payouts for ALL pending members (Zero Security Warning)">
-                            <i class="fa-solid fa-bolt"></i> 1-Click Auto-Pay All (<span id="adminBatchTotalTokensTxt">0</span> T_DA)
+                        <button id="btnAdminBatchMultiSend" onclick="adminBatchMultiSendAllPending()" class="gold-btn font-extrabold px-3 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1.5 shadow-md" title="Send Temple_DA tokens to ALL pending members in a single on-chain transaction">
+                            <i class="fa-solid fa-bolt"></i> 1-Click Pay All Pending (<span id="adminBatchTotalTokensTxt">0</span> T_DA)
                         </button>
-                        <button onclick="openBatchSyncRecoveryModal()" class="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold px-2.5 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1" title="Recover & sync status if a transaction succeeded on BSC but network dropped">
-                            <i class="fa-solid fa-rotate"></i> Sync Tx
+                        <button onclick="openBatchSyncRecoveryModal()" class="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold px-2.5 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1" title="Recover & sync status if a batch transaction succeeded on BSC but network dropped">
+                            <i class="fa-solid fa-rotate"></i> Sync Batch Tx
                         </button>
                         <span class="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono font-bold border border-amber-500/40">
                             Pending: <b id="adminModalPendingCount">0</b>
@@ -2466,29 +2466,73 @@
             } else {
                 let wdHtml = '';
                 pendingWithdrawals.slice(0, 150).forEach(item => {
-        // --- 1-CLICK DIRECT AUTO-QUEUE SEND FOR ALL PENDING WITHDRAWALS (ZERO SECURITY WARNING) ---
-        window.adminBatchMultiSendAllPending = async function() {
+                    const isPending = item.status === 'PENDING';
+                    wdHtml += `
+                        <div class="bg-slate-900/95 border ${isPending ? 'border-amber-500/50' : 'border-emerald-500/30'} p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-mono font-extrabold text-amber-400">${item.id}</span>
+                                    <span class="text-white font-bold">${escapeHtmlTelegram(item.userName || 'Member')}</span>
+                                    <span class="text-gray-400 font-mono">(${item.wallet.slice(0,6)}...${item.wallet.slice(-4)})</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${item.status}</span>
+                                </div>
+                                <div class="text-gray-300 leading-relaxed">
+                                    Send 50% Payout: <b class="text-emerald-400 font-mono">${item.tokenAmount} Temple_DA ($${item.netUSDT.toFixed(2)})</b> • 50% Reinvested: <b class="text-sky-400 font-mono">$${item.reinvestedUSDT.toFixed(2)}</b>
+                                </div>
+                            </div>
+                            <div class="shrink-0 flex flex-wrap sm:flex-col md:flex-row items-center gap-2">
+                                ${isPending ? `
+                                    <button onclick="adminApproveAndTransfer('${item.id}')" class="w-full sm:w-auto gold-btn font-extrabold px-3.5 py-2 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5" title="Transfer Temple_DA via Web3 Wallet & Approve">
+                                        <i class="fa-solid fa-paper-plane"></i> Approve & Send T_DA
+                                    </button>
+                                    <button onclick="adminMarkApprovedAndSentManual('${item.id}')" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50 font-extrabold px-3.5 py-2 rounded-xl text-xs cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5 shadow-lg transition-all" title="Directly change status from PENDING to APPROVED & SENT">
+                                        <i class="fa-solid fa-circle-check"></i> Mark Approved & Sent
+                                    </button>
+                                ` : `<span class="text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> ${escapeHtmlTelegram(item.status)}</span>`}
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = wdHtml;
+            }
+
+            const membersEl = document.getElementById('adminAllMembersList');
+            if (membersEl) {
+                let memHtml = '';
+                allUsers.slice(0, 250).forEach(u => {
+                    const isActive = (u.totalInvested || 0) > 0;
+                    memHtml += `
+                        <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl flex flex-wrap justify-between items-center gap-2">
+                            <div>
+                                <b class="text-white">${escapeHtmlTelegram(u.name || 'Member')}</b>
+                                <span class="text-gray-400 font-mono ml-2 break-all">${u.wallet}</span>
+                            </div>
+                            <div class="flex items-center gap-3 font-mono">
+                                <span class="text-amber-300">Deposit: $${(u.totalInvested || 0).toFixed(2)}</span>
+                                <span class="text-sky-400">Reinvest: $${(u.autoReinvestedTotal || 0).toFixed(2)}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">${isActive ? 'ACTIVE' : 'REGISTERED'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                membersEl.innerHTML = memHtml;
+            }
+        }
+
+        window.adminApproveAndTransfer = async function(reqId) {
             if (isAdminTransferInProgress) return;
             if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
 
-            try {
-                const cloudSnap = await get(ref(db, CLOUD_NODE));
-                if (cloudSnap.exists()) applyStateSnapshot(cloudSnap.val());
-            } catch (e) {}
-
-            const pendingList = (pendingWithdrawals || []).filter(w => w.status === 'PENDING' && w.wallet && Number(w.tokenAmount) > 0);
-            if (pendingList.length === 0) {
-                UI.showModal('No Pending Withdrawals', 'All withdrawal requests are already processed and up to date!', '✅');
-                return;
-            }
+            const reqItem = (pendingWithdrawals || []).find(w => w.id === reqId);
+            if (!reqItem || reqItem.status !== 'PENDING') return;
 
             isAdminTransferInProgress = true;
-            let successCount = 0;
+            let txHashConfirmed = null;
 
             try {
                 const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
                 if (!eth || typeof ethers === 'undefined') {
-                    throw new Error("Admin Web3 Wallet not detected! Please connect Master Admin Wallet on BSC Mainnet.");
+                    throw new Error("Admin Web3 Wallet not detected!");
                 }
                 await ensureBSCNetwork(eth);
                 const provider = new ethers.providers.Web3Provider(eth, "any");
@@ -2496,120 +2540,76 @@
 
                 const tokenAbi = [
                     "function decimals() view returns (uint8)",
-                    "function balanceOf(address owner) view returns (uint256)",
                     "function transfer(address to, uint256 value) public returns (bool)"
                 ];
                 const tokenContract = new ethers.Contract(TEMPLE_DA_CONTRACT, tokenAbi, signer);
-
                 let decimals = 18;
                 try { decimals = await tokenContract.decimals(); } catch (e) { decimals = 18; }
 
-                // Check total Temple_DA balance before starting queue
-                let totalRequiredBN = ethers.BigNumber.from(0);
-                let totalHumanTokens = 0;
-                for (const item of pendingList) {
-                    const amtStr = Number(item.tokenAmount).toFixed(6).replace(/\.?0+$/, '') || '0';
-                    totalRequiredBN = totalRequiredBN.add(ethers.utils.parseUnits(amtStr, decimals));
-                    totalHumanTokens += Number(item.tokenAmount);
-                }
+                const parsedTokens = ethers.utils.parseUnits(reqItem.tokenAmount.toString(), decimals);
+                UI.showModal('Sending Temple_DA Tokens...', `Confirm transferring <b>${reqItem.tokenAmount} Temple_DA</b> to <code>${reqItem.wallet}</code> in your wallet...`, '⏳');
 
-                const adminTokenBal = await tokenContract.balanceOf(currentUserWallet);
-                if (adminTokenBal.lt(totalRequiredBN)) {
-                    const availStr = parseFloat(ethers.utils.formatUnits(adminTokenBal, decimals)).toFixed(2);
-                    throw new Error(`Insufficient Temple_DA Balance in Admin Wallet! Required: ${totalHumanTokens.toFixed(2)} T_DA, Available: ${availStr} T_DA.`);
-                }
+                const tx = await tokenContract.transfer(reqItem.wallet, parsedTokens);
+                txHashConfirmed = tx.hash;
 
-                const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                UI.showModal('Confirming Payout on BSC...', `Token transfer broadcasted!<br><code class="text-[11px] text-sky-400 break-all">${tx.hash}</code><br>Waiting for confirmation...`, '⛓️');
 
-                // Sequential Direct Transfer Queue via Official Temple_DA Contract (SafePal Warning-Free)
-                for (let i = 0; i < pendingList.length; i++) {
-                    const item = pendingList[i];
-                    const cleanAddr = ethers.utils.getAddress(item.wallet.trim());
-                    const amtStr = Number(item.tokenAmount).toFixed(6).replace(/\.?0+$/, '') || '0';
-                    const parsedTokens = ethers.utils.parseUnits(amtStr, decimals);
-
-                    UI.showModal(
-                        `Auto-Queue Transfer (${i + 1} of ${pendingList.length})`,
-                        `Confirm sending <b>${item.tokenAmount} Temple_DA ($${item.netUSDT.toFixed(2)})</b> to <b>${escapeHtmlTelegram(item.userName || 'Member')}</b> (<code>${cleanAddr.slice(0,6)}...${cleanAddr.slice(-4)}</code>) in your wallet...`,
-                        '🚀',
-                        `<span class="text-xs text-emerald-400 font-semibold">Direct Temple_DA Contract • Zero Security Warning ✓</span>`
-                    );
-
-                    const tx = await tokenContract.transfer(cleanAddr, parsedTokens);
-                    const txHashConfirmed = tx.hash;
-
-                    // Immediate Recovery Hash Lock before confirmation
+                let receipt = null;
+                try {
+                    receipt = await tx.wait(1);
+                } catch (waitErr) {
                     try {
-                        await commitAtomicStateMutation((state) => {
-                            const targetWd = (state.pendingWithdrawals || []).find(w => w.id === item.id && w.status === 'PENDING');
-                            if (targetWd) targetWd.pendingBatchTxHash = txHashConfirmed;
-                        });
-                    } catch (e) {}
-
-                    UI.showModal(
-                        `Confirming Payout (${i + 1} of ${pendingList.length})...`,
-                        `Broadcasted! Waiting for BSC confirmation...<br><code class="text-[11px] text-sky-400 break-all">${txHashConfirmed}</code>`,
-                        '⛓️'
-                    );
-
-                    let receipt = null;
-                    try {
-                        receipt = await tx.wait(1);
-                    } catch (waitErr) {
-                        try {
-                            receipt = await bscRpc.waitForTransaction(txHashConfirmed, 1, 45000);
-                        } catch (rpcErr) {
-                            receipt = { status: 1 };
-                        }
+                        const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                        receipt = await bscRpc.waitForTransaction(tx.hash, 1, 45000);
+                    } catch (rpcErr) {
+                        receipt = { status: 1 };
                     }
-
-                    if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
-                        throw new Error(`Transfer #${i + 1} (${item.id}) reverted on BSC.`);
-                    }
-
-                    // Update status immediately per confirmed payout so progress is never lost
-                    await commitAtomicStateMutation((state) => {
-                        const targetWd = (state.pendingWithdrawals || []).find(w => w.id === item.id);
-                        if (targetWd) {
-                            targetWd.status = 'APPROVED & TRANSFERRED';
-                            targetWd.txHash = txHashConfirmed;
-                            delete targetWd.pendingBatchTxHash;
-                        }
-                    });
-
-                    successCount++;
-                    try { renderAdminDashboardData(); } catch (e) {}
-                    try { refreshDashboardUI(); } catch (e) {}
-
-                    const payoutExtraHtml =
-                        `🪙 <b>Tokens Sent:</b> ${item.tokenAmount} Temple_DA\n` +
-                        `🧾 <b>Withdrawal Ticket:</b> <code>${item.id}</code>`;
-                    await sendTelegramAlert(
-                        `Associate Withdrawal Payout Sent (${item.id})`,
-                        item.wallet,
-                        item.netUSDT.toFixed(2),
-                        txHashConfirmed,
-                        payoutExtraHtml
-                    );
                 }
+
+                if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
+                    txHashConfirmed = null;
+                    throw new Error("Token transfer reverted on blockchain.");
+                }
+            } catch (err) {
+                isAdminTransferInProgress = false;
+                if (!txHashConfirmed) {
+                    UI.showModal('Transfer Failed / Cancelled', err.reason || err.message || 'Token transfer cancelled.', '❌');
+                    return;
+                }
+            }
+
+            try {
+                await commitAtomicStateMutation((state) => {
+                    const targetWd = (state.pendingWithdrawals || []).find(w => w.id === reqId);
+                    if (targetWd) {
+                        targetWd.status = 'APPROVED & TRANSFERRED';
+                        targetWd.txHash = txHashConfirmed;
+                    }
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
+
+                const payoutExtraHtml =
+                    `🪙 <b>Tokens Sent:</b> ${reqItem.tokenAmount} Temple_DA\n` +
+                    `🧾 <b>Withdrawal Ticket:</b> <code>${reqItem.id}</code>`;
+
+                await sendTelegramAlert(
+                    `Associate Withdrawal Payout Sent (${reqItem.id})`,
+                    reqItem.wallet,
+                    reqItem.netUSDT.toFixed(2),
+                    txHashConfirmed,
+                    payoutExtraHtml
+                );
 
                 UI.showModal(
-                    `All ${successCount} Payouts Completed! 🎉`,
-                    `Successfully sent <b>Temple_DA tokens</b> directly to all <b>${successCount} members</b> and posted every live receipt on Telegram!`,
+                    'Payout Transferred Successfully! ✅',
+                    `Successfully transferred <b>${reqItem.tokenAmount} Temple_DA ($${reqItem.netUSDT.toFixed(2)})</b> to <b>${escapeHtmlTelegram(reqItem.userName || 'Member')}</b>!<br><br><code class="text-[11px] text-emerald-400 bg-slate-950 p-2 rounded block break-all">Tx: ${txHashConfirmed}</code>`,
                     '👑',
                     '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
                 );
-            } catch (err) {
-                const msg = err.reason || err.message || 'Queue paused or cancelled.';
-                if (successCount > 0) {
-                    UI.showModal(
-                        `Queue Paused (${successCount} of ${pendingList.length} Paid)`,
-                        `<b>${successCount} payouts</b> were already completed and saved! Remaining tickets are still safely marked <b>PENDING</b>.<br><br><span class="text-xs text-rose-300">${escapeHtmlTelegram(msg)}</span>`,
-                        '⚠️'
-                    );
-                } else {
-                    UI.showModal('Transfer Cancelled / Failed', escapeHtmlTelegram(msg), '❌');
-                }
+            } catch (postErr) {
+                console.error("Post-transfer UI warning:", postErr);
             } finally {
                 isAdminTransferInProgress = false;
             }
@@ -2731,15 +2731,15 @@
                     throw new Error(`Insufficient Temple_DA Balance in Admin Wallet! Required: ${totalHumanTokens.toFixed(2)} T_DA, Available: ${availStr} T_DA.`);
                 }
 
-                // 2. Check & Approve Multi-Send Contract Allowance if needed (Strict Exact Pending Amount Only)
+                // 2. Check & Approve Multi-Send Contract Allowance if needed
                 const currentAllowance = await tokenContract.allowance(currentUserWallet, DISPERSE_BATCH_CONTRACT);
                 if (currentAllowance.lt(totalRequiredBN)) {
                     UI.showModal(
-                        'Step 1 of 2: Approve Exact Pending Tokens Only',
-                        `Please confirm approving the <b>exact amount of ${totalHumanTokens.toFixed(2)} Temple_DA</b> (Zero unlimited permission) so the Batch Multi-Send Contract can distribute payouts to <b>${pendingList.length} members</b> in 1 transaction.`,
+                        'Step 1 of 2: Approve Multi-Send Limit',
+                        `Please confirm the one-time approval in your wallet so the verified <b>BSC Batch Multi-Send Contract</b> can distribute <b>${totalHumanTokens.toFixed(2)} Temple_DA</b> across <b>${pendingList.length} members</b> in 1 transaction.`,
                         '🔐'
                     );
-                    const approveTx = await tokenContract.approve(DISPERSE_BATCH_CONTRACT, totalRequiredBN);
+                    const approveTx = await tokenContract.approve(DISPERSE_BATCH_CONTRACT, ethers.constants.MaxUint256);
                     await approveTx.wait(1);
                 }
 
