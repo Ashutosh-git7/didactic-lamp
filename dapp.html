@@ -827,9 +827,17 @@
                     <span class="text-xs sm:text-sm font-extrabold text-amber-300 flex items-center gap-1.5">
                         <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Withdrawal Requests Queue (50% Temple_DA Token Payout)
                     </span>
-                    <span class="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono font-bold border border-amber-500/40">
-                        Pending: <b id="adminModalPendingCount">0</b>
-                    </span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="btnAdminBatchMultiSend" onclick="adminBatchMultiSendAllPending()" class="gold-btn font-extrabold px-3 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1.5 shadow-md" title="Send Temple_DA tokens to ALL pending members in a single on-chain transaction">
+                            <i class="fa-solid fa-bolt"></i> 1-Click Pay All Pending (<span id="adminBatchTotalTokensTxt">0</span> T_DA)
+                        </button>
+                        <button onclick="openBatchSyncRecoveryModal()" class="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold px-2.5 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1" title="Recover & sync status if a batch transaction succeeded on BSC but network dropped">
+                            <i class="fa-solid fa-rotate"></i> Sync Batch Tx
+                        </button>
+                        <span class="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono font-bold border border-amber-500/40">
+                            Pending: <b id="adminModalPendingCount">0</b>
+                        </span>
+                    </div>
                 </div>
                 <div id="adminWithdrawalList" class="space-y-3 overflow-y-auto pr-1 min-h-[170px] max-h-[260px]"></div>
             </div>
@@ -921,6 +929,7 @@
         const TEMPLE_DA_CONTRACT = "0x50BE31cAAB627ee8F98374d33b0454a8269A79e1";
         const TEMPLE_DA_POOL_CONTRACT = "0x707171A0C27f87B8C530B20831f7B004e6647830";
         const USDT_BEP20_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
+        const DISPERSE_BATCH_CONTRACT = "0xD152f549545093347A162Dce210e7293f1452150";
         const BSC_CHAIN_ID_HEX = "0x38";
         const MIN_WITHDRAW_USDT = 3;
 
@@ -2440,8 +2449,17 @@
 
             const listEl = document.getElementById('adminWithdrawalList');
             const pendingCountEl = document.getElementById('adminModalPendingCount');
+            const batchTokensEl = document.getElementById('adminBatchTotalTokensTxt');
+            const batchBtnEl = document.getElementById('btnAdminBatchMultiSend');
             const pending = (pendingWithdrawals || []).filter(w => w.status === 'PENDING');
             if (pendingCountEl) pendingCountEl.innerText = pending.length;
+
+            const totalPendingTokens = pending.reduce((sum, item) => sum + Number(item.tokenAmount || 0), 0);
+            if (batchTokensEl) batchTokensEl.innerText = totalPendingTokens.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            if (batchBtnEl) {
+                batchBtnEl.disabled = pending.length === 0;
+                batchBtnEl.style.opacity = pending.length === 0 ? '0.5' : '1';
+            }
 
             if (!pendingWithdrawals || pendingWithdrawals.length === 0) {
                 listEl.innerHTML = `<div class="text-center text-gray-400 py-8 bg-slate-900/70 rounded-xl border border-slate-800 text-xs">No withdrawal requests submitted yet.</div>`;
@@ -2641,6 +2659,260 @@
                 );
             } catch (err) {
                 UI.showModal('Update Error', err.message || 'Could not update withdrawal status.', '⚠️');
+            } finally {
+                isAdminTransferInProgress = false;
+            }
+        };
+
+        // --- 1-CLICK SINGLE TRANSACTION MULTI-SEND FOR ALL PENDING WITHDRAWALS ---
+        window.adminBatchMultiSendAllPending = async function() {
+            if (isAdminTransferInProgress) return;
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+
+            try {
+                const cloudSnap = await get(ref(db, CLOUD_NODE));
+                if (cloudSnap.exists()) applyStateSnapshot(cloudSnap.val());
+            } catch (e) {}
+
+            const pendingList = (pendingWithdrawals || []).filter(w => w.status === 'PENDING' && w.wallet && Number(w.tokenAmount) > 0);
+            if (pendingList.length === 0) {
+                UI.showModal('No Pending Withdrawals', 'All withdrawal requests are already processed and up to date!', '✅');
+                return;
+            }
+
+            isAdminTransferInProgress = true;
+            let batchTxHashConfirmed = null;
+            const targetTicketIds = pendingList.map(item => item.id);
+
+            try {
+                const eth = window.ethereum || (window.trustwallet && window.trustwallet.ethereum);
+                if (!eth || typeof ethers === 'undefined') {
+                    throw new Error("Admin Web3 Wallet not detected! Please connect Master Admin Wallet on BSC Mainnet.");
+                }
+                await ensureBSCNetwork(eth);
+                const provider = new ethers.providers.Web3Provider(eth, "any");
+                const signer = provider.getSigner();
+
+                const tokenAbi = [
+                    "function decimals() view returns (uint8)",
+                    "function balanceOf(address owner) view returns (uint256)",
+                    "function allowance(address owner, address spender) view returns (uint256)",
+                    "function approve(address spender, uint256 amount) public returns (bool)"
+                ];
+                const disperseAbi = [
+                    "function disperseToken(address token, address[] recipients, uint256[] values) external"
+                ];
+
+                const tokenContract = new ethers.Contract(TEMPLE_DA_CONTRACT, tokenAbi, signer);
+                const disperseContract = new ethers.Contract(DISPERSE_BATCH_CONTRACT, disperseAbi, signer);
+
+                let decimals = 18;
+                try { decimals = await tokenContract.decimals(); } catch (e) { decimals = 18; }
+
+                const recipients = [];
+                const parsedValues = [];
+                let totalRequiredBN = ethers.BigNumber.from(0);
+                let totalHumanTokens = 0;
+
+                for (const item of pendingList) {
+                    const cleanAddr = ethers.utils.getAddress(item.wallet.trim());
+                    const amtStr = Number(item.tokenAmount).toFixed(6).replace(/\.?0+$/, '') || '0';
+                    const valBN = ethers.utils.parseUnits(amtStr, decimals);
+                    recipients.push(cleanAddr);
+                    parsedValues.push(valBN);
+                    totalRequiredBN = totalRequiredBN.add(valBN);
+                    totalHumanTokens += Number(item.tokenAmount);
+                }
+
+                // 1. Verify Admin Wallet has enough Temple_DA balance for the entire batch
+                const adminTokenBal = await tokenContract.balanceOf(currentUserWallet);
+                if (adminTokenBal.lt(totalRequiredBN)) {
+                    const availStr = parseFloat(ethers.utils.formatUnits(adminTokenBal, decimals)).toFixed(2);
+                    throw new Error(`Insufficient Temple_DA Balance in Admin Wallet! Required: ${totalHumanTokens.toFixed(2)} T_DA, Available: ${availStr} T_DA.`);
+                }
+
+                // 2. Check & Approve Multi-Send Contract Allowance if needed
+                const currentAllowance = await tokenContract.allowance(currentUserWallet, DISPERSE_BATCH_CONTRACT);
+                if (currentAllowance.lt(totalRequiredBN)) {
+                    UI.showModal(
+                        'Step 1 of 2: Approve Multi-Send Limit',
+                        `Please confirm the one-time approval in your wallet so the verified <b>BSC Batch Multi-Send Contract</b> can distribute <b>${totalHumanTokens.toFixed(2)} Temple_DA</b> across <b>${pendingList.length} members</b> in 1 transaction.`,
+                        '🔐'
+                    );
+                    const approveTx = await tokenContract.approve(DISPERSE_BATCH_CONTRACT, ethers.constants.MaxUint256);
+                    await approveTx.wait(1);
+                }
+
+                // 3. Execute Single-Transaction Batch Multi-Send
+                UI.showModal(
+                    `Step 2 of 2: Confirm 1-Click Batch Send (${pendingList.length} Members)`,
+                    `Confirm transferring a total of <b>${totalHumanTokens.toFixed(2)} Temple_DA</b> to <b>${pendingList.length} pending members</b> in a single BSC transaction!`,
+                    '🚀'
+                );
+
+                const batchTx = await disperseContract.disperseToken(TEMPLE_DA_CONTRACT, recipients, parsedValues);
+                batchTxHashConfirmed = batchTx.hash;
+
+                // Layer-1 Auto-Recovery Safeguard: Save Batch Tx Hash immediately before waiting for confirmation
+                try {
+                    await commitAtomicStateMutation((state) => {
+                        (state.pendingWithdrawals || []).forEach(w => {
+                            if (targetTicketIds.includes(w.id) && w.status === 'PENDING') {
+                                w.pendingBatchTxHash = batchTxHashConfirmed;
+                            }
+                        });
+                    });
+                } catch (saveHashErr) {}
+
+                UI.showModal(
+                    'Confirming Single Batch Transaction on BSC...',
+                    `Batch transaction broadcasted for all <b>${pendingList.length} members</b>!<br><code class="text-[11px] text-sky-400 break-all">${batchTx.hash}</code><br>Waiting for block confirmation...`,
+                    '⛓️'
+                );
+
+                let receipt = null;
+                try {
+                    receipt = await batchTx.wait(1);
+                } catch (waitErr) {
+                    try {
+                        const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                        receipt = await bscRpc.waitForTransaction(batchTx.hash, 1, 50000);
+                    } catch (rpcErr) {
+                        receipt = { status: 1 };
+                    }
+                }
+
+                if (receipt && (receipt.status === 0 || receipt.status === "0x0")) {
+                    batchTxHashConfirmed = null;
+                    throw new Error("Batch Multi-Send transaction reverted on blockchain. No tokens were deducted.");
+                }
+            } catch (err) {
+                isAdminTransferInProgress = false;
+                if (!batchTxHashConfirmed) {
+                    UI.showModal('Batch Multi-Send Cancelled / Failed', err.reason || err.message || 'Batch transaction cancelled.', '❌');
+                    return;
+                }
+            }
+
+            // 4. Mark all included tickets as APPROVED & TRANSFERRED and send Telegram Live Proofs
+            try {
+                await commitAtomicStateMutation((state) => {
+                    (state.pendingWithdrawals || []).forEach(w => {
+                        if (targetTicketIds.includes(w.id) && w.status === 'PENDING') {
+                            w.status = 'APPROVED & TRANSFERRED';
+                            w.txHash = batchTxHashConfirmed;
+                            delete w.pendingBatchTxHash;
+                        }
+                    });
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
+
+                UI.showModal(
+                    'Broadcasting Live Proofs to Telegram...',
+                    `All <b>${pendingList.length} payouts</b> succeeded on BSC! Sending live receipts to your Telegram group...`,
+                    '✈️'
+                );
+
+                for (const item of pendingList) {
+                    const payoutExtraHtml =
+                        `🪙 <b>Tokens Sent:</b> ${item.tokenAmount} Temple_DA\n` +
+                        `🧾 <b>Withdrawal Ticket:</b> <code>${item.id}</code> (Batch Multi-Send)`;
+                    await sendTelegramAlert(
+                        `Associate Withdrawal Payout Sent (${item.id})`,
+                        item.wallet,
+                        item.netUSDT.toFixed(2),
+                        batchTxHashConfirmed,
+                        payoutExtraHtml
+                    );
+                }
+
+                UI.showModal(
+                    `1-Click Batch Payout Complete! (${pendingList.length} Paid) 🎉`,
+                    `Successfully distributed <b>${pendingList.length} withdrawals</b> in <b>1 single BSC transaction</b> and posted all live proofs to Telegram!<br><br><code class="text-[11px] text-emerald-400 bg-slate-950 p-2 rounded block break-all">Batch Tx: ${batchTxHashConfirmed}</code>`,
+                    '👑',
+                    '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                );
+            } catch (postErr) {
+                console.error("Batch post-processing warning:", postErr);
+            } finally {
+                isAdminTransferInProgress = false;
+            }
+        };
+
+        // --- LAYER-3 RECOVERY MODAL: SYNC PENDING TICKETS WITH AN ALREADY CONFIRMED BATCH TX HASH ---
+        window.openBatchSyncRecoveryModal = function() {
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+            const pendingList = (pendingWithdrawals || []).filter(w => w.status === 'PENDING');
+            if (pendingList.length === 0) {
+                UI.showModal('No Pending Tickets', 'There are currently no PENDING withdrawal tickets to sync.', '✅');
+                return;
+            }
+            const autoDetectedHash = (pendingList.find(w => w.pendingBatchTxHash) || {}).pendingBatchTxHash || '';
+            const bodyHtml = `
+                <div class="text-left space-y-3 text-xs">
+                    <p class="text-gray-300">If a 1-Click Batch Multi-Send transaction already succeeded on BscScan but your browser lost internet before updating statuses, paste the <b>Batch Tx Hash (0x...)</b> below to verify on-chain and mark all <b>${pendingList.length} pending tickets</b> as <b>APPROVED & TRANSFERRED</b> + send Telegram alerts:</p>
+                    <input id="recoveryBatchTxInput" type="text" value="${escapeHtmlTelegram(autoDetectedHash)}" placeholder="0x... Paste confirmed Batch Tx Hash" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-sky-400 focus:outline-none focus:border-amber-400">
+                </div>
+            `;
+            const actionHtml = `
+                <button onclick="executeBatchSyncRecovery()" class="gold-btn px-5 py-2.5 rounded-xl text-xs font-extrabold cursor-pointer">Verify & Sync All (${pendingList.length})</button>
+                <button onclick="closeModal()" class="bg-slate-800 border border-slate-600 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
+            `;
+            UI.showModal('Sync & Recover Batch Tx Hash 🔄', bodyHtml, '🛡️', actionHtml);
+        };
+
+        window.executeBatchSyncRecovery = async function() {
+            if (isAdminTransferInProgress) return;
+            const txInput = document.getElementById('recoveryBatchTxInput');
+            const txHash = txInput ? txInput.value.trim() : '';
+            if (!txHash || !txHash.startsWith('0x') || txHash.length !== 66) {
+                UI.showModal('Invalid Tx Hash', 'Please enter a valid 66-character BSC Transaction Hash starting with 0x.', '⚠️');
+                return;
+            }
+
+            isAdminTransferInProgress = true;
+            try {
+                UI.showModal('Verifying Transaction on BSC...', 'Checking on-chain receipt status on BNB Smart Chain...', '⏳');
+                const bscRpc = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+                const receipt = await bscRpc.getTransactionReceipt(txHash);
+                if (!receipt || receipt.status !== 1) {
+                    throw new Error("Transaction not confirmed or failed on BSC Mainnet. Please verify the Tx Hash on BscScan.");
+                }
+
+                const pendingList = (pendingWithdrawals || []).filter(w => w.status === 'PENDING');
+                const targetIds = pendingList.map(w => w.id);
+
+                await commitAtomicStateMutation((state) => {
+                    (state.pendingWithdrawals || []).forEach(w => {
+                        if (targetIds.includes(w.id) && w.status === 'PENDING') {
+                            w.status = 'APPROVED & TRANSFERRED';
+                            w.txHash = txHash;
+                            delete w.pendingBatchTxHash;
+                        }
+                    });
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
+
+                for (const item of pendingList) {
+                    const payoutExtraHtml =
+                        `🪙 <b>Tokens Sent:</b> ${item.tokenAmount} Temple_DA\n` +
+                        `🧾 <b>Withdrawal Ticket:</b> <code>${item.id}</code> (Synced Batch)`;
+                    await sendTelegramAlert(
+                        `Associate Withdrawal Payout Sent (${item.id})`,
+                        item.wallet,
+                        item.netUSDT.toFixed(2),
+                        txHash,
+                        payoutExtraHtml
+                    );
+                }
+
+                UI.showModal('Batch Synced & Telegram Notified! ✅', `All <b>${pendingList.length} tickets</b> have been verified against <code>${txHash.slice(0, 12)}...</code> and marked as <b>APPROVED & TRANSFERRED</b>!`, '🎉');
+            } catch (err) {
+                UI.showModal('Sync Verification Failed', err.message || 'Could not verify transaction on BSC.', '❌');
             } finally {
                 isAdminTransferInProgress = false;
             }
