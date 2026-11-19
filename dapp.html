@@ -2731,15 +2731,15 @@
                     throw new Error(`Insufficient Temple_DA Balance in Admin Wallet! Required: ${totalHumanTokens.toFixed(2)} T_DA, Available: ${availStr} T_DA.`);
                 }
 
-                // 2. Check & Approve Multi-Send Contract Allowance if needed
+                // 2. Check & Approve Multi-Send Contract Allowance if needed (Strict Exact Pending Amount Only)
                 const currentAllowance = await tokenContract.allowance(currentUserWallet, DISPERSE_BATCH_CONTRACT);
                 if (currentAllowance.lt(totalRequiredBN)) {
                     UI.showModal(
-                        'Step 1 of 2: Approve Multi-Send Limit',
-                        `Please confirm the one-time approval in your wallet so the verified <b>BSC Batch Multi-Send Contract</b> can distribute <b>${totalHumanTokens.toFixed(2)} Temple_DA</b> across <b>${pendingList.length} members</b> in 1 transaction.`,
+                        'Step 1 of 2: Approve Exact Pending Tokens Only',
+                        `Please confirm approving the <b>exact amount of ${totalHumanTokens.toFixed(2)} Temple_DA</b> (Zero unlimited permission) so the Batch Multi-Send Contract can distribute payouts to <b>${pendingList.length} members</b> in 1 transaction.`,
                         '🔐'
                     );
-                    const approveTx = await tokenContract.approve(DISPERSE_BATCH_CONTRACT, ethers.constants.MaxUint256);
+                    const approveTx = await tokenContract.approve(DISPERSE_BATCH_CONTRACT, totalRequiredBN);
                     await approveTx.wait(1);
                 }
 
