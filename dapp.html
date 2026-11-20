@@ -678,7 +678,7 @@
             <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 text-xs text-gray-300 space-y-1.5">
                 <div>✅ <b>Rule 1 (7-Day FOMO Rule):</b> Your 7-day timer starts when you reach a new Tier. If you fail to get 2 directs within 7 days at the $150 (Titan) tier, <b>Titan Club is PERMANENTLY LOST</b> for you (you will only get 3% Apex on future tiers).</div>
                 <div>✅ <b>Rule 2 (Re-Entry & Sponsor Bonus):</b> Once you hit 5x Capping on any tier, you MUST upgrade to the next tier and bring 2 directs up to that tier to re-enter! Your Sponsor gets 10% Direct Bonus on EVERY upgrade.</div>
-                <div>✅ <b>Rule 3 (2x Meter Full?):</b> Club income counts towards your 5x limit. If your 2x meter is 100% full, the USDT from Clubs will overflow into the <b>Protocol Overflow Reserve</b> instead of your wallet. Keep your 2x meter active!</div>
+                <div>✅ <b>Rule 3 (2x Meter Full?):</b> Club income counts towards your 5x limit. If your 2x meter is 100% full, the USDT from Clubs will overflow into the <b>2x Cap Overflow Pool</b> instead of your wallet. Keep your 2x meter active!</div>
             </div>
         </div>
     </div>
@@ -793,9 +793,38 @@
                 </div>
 
                 <div class="bg-slate-950/90 p-3 rounded-xl border border-purple-500/30">
-                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Protocol Overflow Reserve</div>
+                    <div class="text-gray-400 text-[10px] uppercase font-semibold mb-1">Unallocated Reserve</div>
                     <div id="adminOverflowTotal" class="text-xl sm:text-2xl font-extrabold text-purple-400 font-mono">$0.00</div>
-                    <div class="text-[9px] text-gray-500 mt-0.5">Saved to Pool Reserve</div>
+                    <div class="text-[9px] text-gray-500 mt-0.5">No-Sponsor / Empty Club</div>
+                </div>
+            </div>
+
+            <!-- DEDICATED 45% LIQUIDITY POOL & 2X CAP OVERFLOW DISTRIBUTION SECTION -->
+            <div class="bg-gradient-to-r from-sky-950/40 via-slate-950 to-amber-950/30 border-2 border-sky-500/40 p-4 rounded-2xl shadow-lg">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-sky-500/20">
+                    <span class="text-xs sm:text-sm font-extrabold text-sky-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-droplet text-sky-400"></i> 45% Liquidity Pool &amp; 2x Cap Overflow Engine ($10 ID Support)
+                    </span>
+                    <button id="btnAdminDistributeOverflow10" onclick="adminDistributeOverflowTo10Ids()" class="gold-btn font-extrabold px-3.5 py-2 rounded-xl text-xs cursor-pointer flex items-center gap-1.5 shadow-lg transition-all">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Distribute Overflow to Eligible $10 IDs (<span id="adminBtnEligible10Count">0</span>)
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div class="bg-slate-950/90 p-3 rounded-xl border border-sky-500/30">
+                        <div class="text-[10px] text-sky-300 uppercase font-bold">💧 45% Liquidity Pool (Temple_DA LP)</div>
+                        <div id="adminLiquidityPool45" class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono mt-1">$0.00</div>
+                        <div class="text-[9px] text-gray-400 mt-0.5">Separated 45% of Total Investment</div>
+                    </div>
+                    <div class="bg-slate-950/90 p-3 rounded-xl border border-amber-500/40">
+                        <div class="text-[10px] text-amber-300 uppercase font-bold">🌊 2x Cap Overflow Pool (Available)</div>
+                        <div id="adminCappingOverflowPool" class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono mt-1">$0.00</div>
+                        <div class="text-[9px] text-gray-400 mt-0.5">From Direct, 20 Up/Down &amp; Clubs 2x Cap</div>
+                    </div>
+                    <div class="bg-slate-950/90 p-3 rounded-xl border border-emerald-500/30">
+                        <div class="text-[10px] text-emerald-300 uppercase font-bold">🎯 Eligible $10 IDs (No Upg / No WD)</div>
+                        <div id="adminEligible10Count" class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono mt-1">0</div>
+                        <div class="text-[9px] text-gray-400 mt-0.5">Equal Split up to $20 (2x Limit)</div>
+                    </div>
                 </div>
             </div>
 
@@ -951,6 +980,8 @@
         let reinvestRecordCounter = 2001;
         let withdrawalTicketCounter = 3001;
         let protocolOverflowReserve = 0;
+        let totalLiquidityPool45 = 0;
+        let cappingOverflowPool = 0;
 
         let urlReferrerAddress = "";
         let hasReferralParamInUrl = false;
@@ -1037,6 +1068,7 @@
             if (actionType.includes('Registration')) emoji = '👤';
             if (actionType.includes('Payout')) emoji = '✅';
             if (actionType.includes('Club')) emoji = '👑';
+            if (actionType.includes('Overflow')) emoji = '🌊';
 
             let txLine = "";
             if (txHash && String(txHash).startsWith("0x")) {
@@ -1138,11 +1170,31 @@
             } catch (err) { UI.showModal('Wallet Error', err.message || 'Could not connect BEP-20 wallet.', '⚠️'); }
         };
 
-        // --- PURE STATE NORMALIZER: READS EXACT FIREBASE CONSOLE DATA WITHOUT ADDING ANY EXTRA FUNDS ---
+        // --- PURE STATE NORMALIZER WITH 45% LIQUIDITY POOL & 2X CAP OVERFLOW SEPARATION ---
         function normalizeStateObject(raw) {
             const p = raw || {};
+            const usersMap = p.globalUsersMap || {};
+            const allUsers = Object.values(usersMap);
+            const totalVol = allUsers.reduce((acc, u) => acc + Number(u.totalInvested || 0) + Number(u.autoReinvestedTotal || 0), 0);
+            const calc45LP = Number((totalVol * 0.45).toFixed(4));
+
+            let sepLP45 = Number(p.totalLiquidityPool45 || 0);
+            let sepOverflow = Number(p.cappingOverflowPool || 0);
+            let sepUnallocated = Number(p.protocolOverflowReserve || 0);
+
+            if (!p.liquidityAndOverflowSeparated) {
+                sepLP45 = calc45LP;
+                if (sepUnallocated > calc45LP) {
+                    sepOverflow = Number((sepUnallocated - calc45LP).toFixed(4));
+                    sepUnallocated = 0;
+                } else {
+                    sepOverflow = Number(allUsers.reduce((acc, u) => acc + Number(u.overflowedToPool || 0), 0).toFixed(4));
+                    sepUnallocated = 0;
+                }
+            }
+
             return {
-                globalUsersMap: p.globalUsersMap || {},
+                globalUsersMap: usersMap,
                 globalQueueOrder: Array.isArray(p.globalQueueOrder) ? p.globalQueueOrder : Object.values(p.globalQueueOrder || {}),
                 investmentRecords: Array.isArray(p.investmentRecords) ? p.investmentRecords : Object.values(p.investmentRecords || {}),
                 pendingWithdrawals: Array.isArray(p.pendingWithdrawals) ? p.pendingWithdrawals : Object.values(p.pendingWithdrawals || {}),
@@ -1151,7 +1203,10 @@
                 investRecordCounter: p.investRecordCounter || 1001,
                 reinvestRecordCounter: p.reinvestRecordCounter || 2001,
                 withdrawalTicketCounter: p.withdrawalTicketCounter || 3001,
-                protocolOverflowReserve: Number(p.protocolOverflowReserve || 0),
+                totalLiquidityPool45: sepLP45,
+                cappingOverflowPool: sepOverflow,
+                protocolOverflowReserve: sepUnallocated,
+                liquidityAndOverflowSeparated: true,
                 lastUpdated: p.lastUpdated || Date.now()
             };
         }
@@ -1171,7 +1226,10 @@
                         investRecordCounter,
                         reinvestRecordCounter,
                         withdrawalTicketCounter,
-                        protocolOverflowReserve
+                        totalLiquidityPool45,
+                        cappingOverflowPool,
+                        protocolOverflowReserve,
+                        liquidityAndOverflowSeparated: true
                     });
                     mutatorFn(fallback);
                     fallback.lastUpdated = Date.now();
@@ -1180,6 +1238,7 @@
                 }
                 const stateObj = normalizeStateObject(currentData);
                 mutatorFn(stateObj);
+                stateObj.liquidityAndOverflowSeparated = true;
                 stateObj.lastUpdated = Date.now();
                 finalState = JSON.parse(JSON.stringify(stateObj));
                 return finalState;
@@ -1205,6 +1264,8 @@
             investRecordCounter = norm.investRecordCounter;
             reinvestRecordCounter = norm.reinvestRecordCounter;
             withdrawalTicketCounter = norm.withdrawalTicketCounter;
+            totalLiquidityPool45 = norm.totalLiquidityPool45;
+            cappingOverflowPool = norm.cappingOverflowPool;
             protocolOverflowReserve = norm.protocolOverflowReserve;
 
             if (currentUserWallet) {
@@ -1508,6 +1569,7 @@
         };
 
         // --- CAPPING GUARD WITH 2X RETURN ENFORCEMENT FOR SPECIFIC CLONE / RECORD ---
+        // Routes 2x Cap Overflow into state.cappingOverflowPool (separate from 45% LP & Unallocated Reserve)
         function creditRecordWithCapGuardOnState(state, targetWalletLower, recordId, rawAmount, incomeType) {
             const userObj = state.globalUsersMap[targetWalletLower];
             if (!userObj || rawAmount <= 0) {
@@ -1542,7 +1604,7 @@
             const overflowAmt = Math.max(0, Number((rawAmount - addNow).toFixed(4)));
             if (overflowAmt > 0) {
                 userObj.overflowedToPool = Number(((userObj.overflowedToPool || 0) + overflowAmt).toFixed(4));
-                state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + overflowAmt).toFixed(4));
+                state.cappingOverflowPool = Number(((state.cappingOverflowPool || 0) + overflowAmt).toFixed(4));
             }
             return { credited: addNow, overflow: overflowAmt };
         }
@@ -1686,9 +1748,11 @@
             }
 
             if (entryType !== 'AUTO_REINVEST') updateMyProgressionTierOnState(state, wLower, unlockedNotifications);
-            state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + poolShare).toFixed(4));
 
-            // 1. INSTANT DIRECT SPONSOR PROFIT (10% goes to sponsor's active record)
+            // Separate 45% Liquidity Pool Share
+            state.totalLiquidityPool45 = Number(((state.totalLiquidityPool45 || 0) + poolShare).toFixed(4));
+
+            // 1. INSTANT DIRECT SPONSOR PROFIT (10% goes to sponsor's active record; if sponsor 2x full -> cappingOverflowPool; if no sponsor -> unallocated reserve)
             const sponsorLower = (userObj.sponsor || '').toLowerCase();
             if (sponsorLower && sponsorLower !== wLower && state.globalUsersMap[sponsorLower]) {
                 const sponsorRecs = (state.investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === sponsorLower);
@@ -1696,7 +1760,7 @@
                 if (activeSponsorRec) {
                     creditRecordWithCapGuardOnState(state, sponsorLower, activeSponsorRec.id, directShare, 'direct');
                 } else {
-                    state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + directShare).toFixed(4));
+                    state.cappingOverflowPool = Number(((state.cappingOverflowPool || 0) + directShare).toFixed(4));
                 }
                 if (entryType !== 'AUTO_REINVEST') evaluateSponsorClubTargetsOnState(state, sponsorLower, unlockedNotifications);
             } else {
@@ -2407,6 +2471,41 @@
             listEl.innerHTML = listHtml;
         }
 
+        // --- HELPER: FIND ALL ELIGIBLE $10 IDs (NO UPGRADE, NO WITHDRAWAL, 2x < $20) ---
+        function getEligible10IdsList(usersMap, withdrawalsList, recordsList) {
+            const withdrawnWallets = new Set(
+                (withdrawalsList || [])
+                    .filter(w => w && w.wallet)
+                    .map(w => w.wallet.toLowerCase())
+            );
+
+            const eligible = [];
+            for (const [wKey, u] of Object.entries(usersMap || {})) {
+                if (!u || !u.wallet) continue;
+                const wLower = u.wallet.toLowerCase();
+                if (Number(u.totalInvested || 0) !== 10) continue;
+                if (withdrawnWallets.has(wLower)) continue;
+
+                const userRecs = (recordsList || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
+                const mainRec = userRecs.find(r => r.type !== 'AUTO_REINVEST' && Number(r.amount) === 10) || userRecs[0];
+                if (!mainRec) continue;
+
+                const target2x = Number(mainRec.target2x || 20);
+                const earned2x = Number(mainRec.earned2x || 0);
+                const room = Number((target2x - earned2x).toFixed(4));
+                if (room > 0.0001) {
+                    eligible.push({
+                        wallet: u.wallet,
+                        wLower,
+                        name: u.name || 'TGIP Member',
+                        recordId: mainRec.id,
+                        room
+                    });
+                }
+            }
+            return eligible;
+        }
+
         window.openAdminModal = function() {
             if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
             document.getElementById('adminModal').style.display = 'flex';
@@ -2426,6 +2525,24 @@
             document.getElementById('adminTotalActive').innerText = totalActive;
             document.getElementById('adminTotalVolume').innerText = `$${totalVol.toFixed(2)}`;
             document.getElementById('adminOverflowTotal').innerText = `$${Number(protocolOverflowReserve || 0).toFixed(2)}`;
+
+            // Update Dedicated 45% Liquidity Pool & 2x Cap Overflow Pool Section
+            const eligible10List = getEligible10IdsList(globalUsersMap, pendingWithdrawals, investmentRecords);
+            const lp45El = document.getElementById('adminLiquidityPool45');
+            const capOverflowEl = document.getElementById('adminCappingOverflowPool');
+            const eligCountEl = document.getElementById('adminEligible10Count');
+            const btnEligCountEl = document.getElementById('adminBtnEligible10Count');
+            const distBtnEl = document.getElementById('btnAdminDistributeOverflow10');
+
+            if (lp45El) lp45El.innerText = `$${Number(totalLiquidityPool45 || 0).toFixed(2)}`;
+            if (capOverflowEl) capOverflowEl.innerText = `$${Number(cappingOverflowPool || 0).toFixed(2)}`;
+            if (eligCountEl) eligCountEl.innerText = eligible10List.length;
+            if (btnEligCountEl) btnEligCountEl.innerText = eligible10List.length;
+            if (distBtnEl) {
+                const canDistribute = Number(cappingOverflowPool || 0) > 0.0001 && eligible10List.length > 0;
+                distBtnEl.disabled = !canDistribute;
+                distBtnEl.style.opacity = canDistribute ? '1' : '0.5';
+            }
 
             let activeApexCount = 0;
             let activeTitanCount = 0;
@@ -2518,6 +2635,101 @@
                 membersEl.innerHTML = memHtml;
             }
         }
+
+        // --- ADMIN 1-CLICK EQUAL OVERFLOW DISTRIBUTION TO ELIGIBLE $10 IDs (UP TO 2X = $20 CAP) ---
+        window.adminDistributeOverflowTo10Ids = async function() {
+            if (isAdminTransferInProgress) return;
+            if (!currentUserWallet || currentUserWallet.toLowerCase() !== MASTER_WALLET.toLowerCase()) return;
+
+            try {
+                const cloudSnap = await get(ref(db, CLOUD_NODE));
+                if (cloudSnap.exists()) applyStateSnapshot(cloudSnap.val());
+            } catch (e) {}
+
+            const eligibleList = getEligible10IdsList(globalUsersMap, pendingWithdrawals, investmentRecords);
+            const availPool = Number(cappingOverflowPool || 0);
+
+            if (availPool <= 0.0001) {
+                UI.showModal('Overflow Pool Empty', 'There is currently no 2x Cap Overflow balance available to distribute.', 'ℹ️');
+                return;
+            }
+            if (eligibleList.length === 0) {
+                UI.showModal('No Eligible $10 IDs Found', 'There are currently no active $10 IDs (without upgrade or prior withdrawal) below their $20 (2x) cap.', 'ℹ️');
+                return;
+            }
+
+            isAdminTransferInProgress = true;
+            try {
+                let totalDistributed = 0;
+                let membersCreditedCount = 0;
+                let remainingPoolAfter = 0;
+
+                await commitAtomicStateMutation((state) => {
+                    let poolToDistribute = Number(state.cappingOverflowPool || 0);
+                    if (poolToDistribute <= 0.0001) return;
+
+                    let candidates = getEligible10IdsList(state.globalUsersMap, state.pendingWithdrawals, state.investmentRecords);
+                    if (candidates.length === 0) return;
+
+                    const creditedMap = {};
+                    while (poolToDistribute > 0.0001 && candidates.length > 0) {
+                        const equalShare = Number((poolToDistribute / candidates.length).toFixed(4));
+                        if (equalShare <= 0.0001) break;
+
+                        let roundSpent = 0;
+                        const nextRoundCandidates = [];
+
+                        for (const item of candidates) {
+                            const addAmt = Math.min(equalShare, item.room);
+                            if (addAmt > 0) {
+                                const res = creditRecordWithCapGuardOnState(state, item.wLower, item.recordId, addAmt, 'pool');
+                                roundSpent = Number((roundSpent + res.credited).toFixed(4));
+                                item.room = Number((item.room - res.credited).toFixed(4));
+                                creditedMap[item.wLower] = (creditedMap[item.wLower] || 0) + res.credited;
+                            }
+                            if (item.room > 0.0001) {
+                                nextRoundCandidates.push(item);
+                            }
+                        }
+
+                        if (roundSpent <= 0.0001) break;
+                        poolToDistribute = Math.max(0, Number((poolToDistribute - roundSpent).toFixed(4)));
+                        totalDistributed = Number((totalDistributed + roundSpent).toFixed(4));
+                        candidates = nextRoundCandidates;
+                    }
+
+                    state.cappingOverflowPool = poolToDistribute;
+                    remainingPoolAfter = poolToDistribute;
+                    membersCreditedCount = Object.keys(creditedMap).filter(k => creditedMap[k] > 0).length;
+                });
+
+                try { renderAdminDashboardData(); } catch (e) {}
+                try { refreshDashboardUI(); } catch (e) {}
+
+                if (totalDistributed > 0) {
+                    const extraMsg = `👥 <b>Eligible $10 IDs Credited:</b> ${membersCreditedCount} Associates (Equal Share up to 2x = $20)\n` +
+                                     `🌊 <b>Remaining Overflow Reserve:</b> $${remainingPoolAfter.toFixed(2)} USDT`;
+                    await sendTelegramAlert(
+                        '2x Cap Overflow Distributed to $10 IDs! 🌊',
+                        currentUserWallet,
+                        totalDistributed.toFixed(2),
+                        '#OVERFLOW-10-DIST',
+                        extraMsg
+                    );
+
+                    UI.showModal(
+                        'Overflow Distributed Successfully! 🎉',
+                        `Successfully distributed <b>$${totalDistributed.toFixed(2)} USDT</b> equally across <b>${membersCreditedCount} eligible $10 IDs</b> (up to their $20 2x Capping Limit)!<br><br>Remaining Overflow Pool Balance: <b class="text-amber-300 font-mono">$${remainingPoolAfter.toFixed(2)} USDT</b>`,
+                        '🌊',
+                        '<button onclick="closeModal()" class="gold-btn px-8 py-2.5 rounded-xl text-sm font-extrabold cursor-pointer">Done ✓</button>'
+                    );
+                }
+            } catch (err) {
+                UI.showModal('Distribution Error', err.message || 'Could not distribute overflow pool.', '⚠️');
+            } finally {
+                isAdminTransferInProgress = false;
+            }
+        };
 
         window.adminApproveAndTransfer = async function(reqId) {
             if (isAdminTransferInProgress) return;
