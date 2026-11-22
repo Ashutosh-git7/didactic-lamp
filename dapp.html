@@ -87,6 +87,11 @@
             background: linear-gradient(135deg, #229ED9 0%, #38BDF8 100%);
             box-shadow: 0 6px 24px rgba(56, 189, 248, 0.55);
         }
+        .rank-active-glow {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(16, 185, 129, 0.25));
+            border: 1px solid rgba(255, 215, 0, 0.65);
+            box-shadow: 0 0 18px rgba(245, 158, 11, 0.32);
+        }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #060913; }
         ::-webkit-scrollbar-thumb { background: #F59E0B; border-radius: 3px; }
@@ -288,293 +293,256 @@
         </div>
     </main>
 
-    <!-- MAIN AUTHENTICATED DASHBOARD -->
-    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-6">
-        <div class="glass-panel rounded-2xl p-5 sm:p-6 border-l-4 border-l-amber-400">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                <div>
-                    <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">
-                            <i class="fa-solid fa-user-check mr-1"></i> Member: <span id="uiMemberName">--</span>
-                        </span>
-                        <span id="uiActiveClubRankBadge" class="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold px-3 py-1 rounded-full border border-emerald-400/40 font-mono">
-                            <i class="fa-solid fa-crown text-amber-400 mr-1"></i> Club: <span id="uiHeaderClubName">Starter (No Club)</span>
-                        </span>
-                        <button type="button" onclick="scrollToClonePositionsBox()" class="bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 text-xs font-bold px-3 py-1 rounded-full border border-sky-500/30 transition-colors cursor-pointer flex items-center gap-1" title="Click to view all Main & Clone Queue Positions">
-                            <i class="fa-solid fa-hashtag"></i> Active Queue Pos: <span id="uiGlobalPos" class="text-white font-mono">--</span>
-                        </button>
-                        <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">
-                            <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1 (Required for Withdraw)
-                        </span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">TGIP Protocol Command Center</h2>
-                        <span class="text-[11px] bg-slate-900/90 border border-amber-400/30 text-amber-300 px-2.5 py-0.5 rounded-full font-semibold">
-                            <i class="fa-solid fa-handshake text-sky-400 mr-1"></i> In Collaboration with Temple_DA
-                        </span>
-                    </div>
-                    <p class="text-xs sm:text-sm text-gray-400 mt-1">
-                        Direct Sponsor: <span id="uiSponsorDisplay" class="font-mono text-amber-300 font-semibold">Direct / None</span> • 40% LP • 10–15% Direct • 40% Matrix • 5% Clubs
-                    </p>
-                </div>
-
-                <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-1.5 min-w-[280px] sm:min-w-[360px]">
-                    <div class="flex justify-between items-center text-[11px]">
-                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your TGIP Referral Link (Opens Registration)</span>
-                        <span class="text-emerald-400 font-semibold">10%–15% Direct + 5% Clubs</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
-                        <code id="refLinkTxt" class="text-sky-400 font-mono text-xs truncate max-w-[210px] sm:max-w-[260px]">...</code>
-                        <button onclick="copyRefLink()" class="gold-btn px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer">
-                            <i class="fa-regular fa-copy"></i> Copy Link
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- OFFICIAL TELEGRAM TRANSACTION PROOF BANNER IN DASHBOARD -->
-        <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-sky-500/40 bg-gradient-to-r from-sky-950/40 via-slate-900/90 to-amber-950/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 text-2xl shrink-0 shadow-lg">
-                    <i class="fa-brands fa-telegram"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm sm:text-base font-extrabold text-white">TGIP Protocol Live Transaction Proof Group</span>
-                        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">24/7 Live Bot</span>
-                    </div>
-                    <p class="text-xs text-gray-300 mt-0.5">
-                        All Associates' Deposits, Single One-Time Club Upgrades, Daily Self-Compounds, 50% Reinvestments &amp; Temple_DA Payouts broadcast live!
-                    </p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto justify-center">
-                <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="tg-btn font-extrabold py-3 px-6 rounded-xl text-xs sm:text-sm transition-transform hover:scale-105 flex items-center gap-2">
-                    <i class="fa-brands fa-telegram text-base"></i> Join Telegram Group Now
-                </a>
-            </div>
-        </div>
-
-        <!-- 7 NAMED ROYALTY CLUBS LIVE TRACKER BANNER (WITH FRESH A + B CALCULATION & $100 VIP POWER SUPPORT) -->
-        <div class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-emerald-500/40 relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/30">
+    <!-- MAIN AUTHENTICATED DASHBOARD (CLEAN, FUTURE-PROOF, ZERO-LAG 4-TAB COMMAND CENTER) -->
+    <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-5">
+        <!-- 1. TOP MEMBER IDENTITY, HIGHLIGHTED ROYALTY RANK & REFERRAL LINK -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div class="space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="bg-emerald-500 text-slate-950 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                            <i class="fa-solid fa-crown"></i> 7 Named Royalty Clubs
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/30">
+                            <i class="fa-solid fa-user-check mr-1"></i> <span id="uiMemberName">--</span>
                         </span>
-                        <span id="uiClubStatusPill" class="bg-slate-900 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono">
-                            Activate $50 (7-Day Timer) or ⚡ $100 VIP Power (No Timer!)
+                        <button type="button" id="uiActiveClubRankBadge" onclick="switchDashboardTab('clubs')" class="bg-slate-900 text-gray-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full border border-slate-700 font-mono transition-all cursor-pointer flex items-center gap-1.5" title="Click to view Royalty Club Rank Progress">
+                            <i class="fa-solid fa-crown text-amber-400"></i> <span id="uiHeaderClubName">Starter Rank</span>
+                        </button>
+                        <button type="button" onclick="switchDashboardTab('matrix')" class="bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 text-xs font-bold px-3 py-1.5 rounded-full border border-sky-500/30 transition-colors cursor-pointer flex items-center gap-1" title="View Queue & Clone Positions">
+                            <i class="fa-solid fa-hashtag"></i> Queue: <span id="uiGlobalPos" class="text-white font-mono">--</span>
+                        </button>
+                        <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1.5 rounded-full border border-rose-500/30">
+                            <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1
                         </span>
                     </div>
-                    <h3 class="text-base sm:text-lg font-extrabold text-white">
-                        Current Club: <span id="uiClubBannerTitle" class="text-amber-300">Starter</span> • Next Target: <b id="uiMyBasePkgTxt" class="text-emerald-400 font-mono">$50 (7d Timer) or ⚡ $100 VIP Power (No Timer) + $100 Fresh Direct (A+B)</b>
-                    </h3>
-                    <!-- LIVE A + B FRESH CALCULATION METER -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 text-[11px] font-mono">
-                        <div>
-                            <span class="text-gray-400 block text-[10px]">A: Fresh Direct Inv (#INV)</span>
-                            <b class="text-sky-400 text-xs">$<span id="uiFreshDirectInvA">0.00</span></b>
-                        </div>
-                        <div>
-                            <span class="text-gray-400 block text-[10px]">B: Fresh Direct Upg (#UPG)</span>
-                            <b class="text-amber-300 text-xs">$<span id="uiFreshDirectUpgB">0.00</span></b>
-                        </div>
-                        <div>
-                            <span class="text-gray-400 block text-[10px]">Total Fresh (A + B)</span>
-                            <b class="text-emerald-400 text-xs">$<span id="uiFreshDirectTotalAB">0.00</span> / $<span id="uiFreshDirectReqAB">100</span></b>
-                        </div>
-                        <div>
-                            <span class="text-gray-400 block text-[10px]">Contributing Directs (Min 2)</span>
-                            <b class="text-white text-xs"><span id="uiFreshContributingDirects">0</span> / 2 Directs</b>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-2.5 text-xs text-gray-400">
+                        <span>Sponsor: <b id="uiSponsorDisplay" class="font-mono text-amber-300">Direct / None</b></span>
+                        <span>•</span>
+                        <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 font-bold inline-flex items-center gap-1">
+                            <i class="fa-brands fa-telegram"></i> 24/7 Live Proofs Channel <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
                     </div>
-                    <p class="text-[11px] text-gray-300 leading-relaxed max-w-3xl">
-                        <b>⚡ $100 VIP Power Advantage:</b> Activating <b>$100</b> automatically enters <b>Apex Club (3% Pool) with NO 7-Day Timer</b> (only 1× = $100 Fresh Direct A+B across 2+ directs required) + unlocks <b>15% Direct Bonus</b>, <b>2x Daily Compound</b> &amp; <b>45% Overflow Share</b>! All higher clubs (<b>Titan &rarr; Crown</b>) also have <b>NO timer</b>.
-                    </p>
                 </div>
 
-                <div class="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 shrink-0 shadow-lg">
-                    <div class="text-center sm:text-left">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Apex Timer Status</div>
-                        <div id="uiClubCountdown" class="text-xl sm:text-2xl font-extrabold font-mono text-emerald-400">--:--:--</div>
-                        <div id="uiClubSubNote" class="text-[10px] text-gray-400">No Timer on $100 Power</div>
+                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 flex flex-col gap-1 min-w-[270px] sm:min-w-[350px]">
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your TGIP Referral Link</span>
+                        <span class="text-emerald-400 font-semibold">10%–15% Direct + 5% Clubs</span>
                     </div>
-                    <div class="h-10 w-[1px] bg-slate-800 hidden sm:block"></div>
-                    <div class="text-center sm:text-left">
-                        <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">5x Club Cap</div>
-                        <div class="text-lg sm:text-xl font-extrabold font-mono text-amber-400">
-                            $<span id="uiClubEarnedAmt">0.00</span> / $<span id="uiClub5xCapAmt">0</span>
-                        </div>
-                        <div id="uiClubSharePctNote" class="text-[10px] text-sky-400 font-mono">Pool Share: 0%</div>
+                    <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                        <code id="refLinkTxt" class="text-sky-400 font-mono text-xs truncate max-w-[200px] sm:max-w-[250px]">...</code>
+                        <button onclick="copyRefLink()" class="gold-btn px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
                     </div>
-                    <button onclick="openBoosterChartModal()" class="bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/40 text-emerald-300 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 flex items-center gap-1.5">
-                        <i class="fa-solid fa-list-ol"></i> 7 Clubs Chart
-                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
+        <!-- 2. CORE FINANCIAL SNAPSHOT: WITHDRAW / COMPOUND + 4 KPIs + SINGLE MASTER 2x METER -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
                 <div>
-                    <div class="flex justify-between items-center mb-2">
+                    <div class="flex justify-between items-center mb-1.5">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
                         <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
-                            Min: 3 USDT (50/50 Split)
+                            Min: 3 USDT (50/50)
                         </span>
                     </div>
 
-                    <div class="flex items-baseline gap-2 my-3">
+                    <div class="flex items-baseline gap-2 my-2">
                         <span id="uiBalance" class="text-4xl sm:text-5xl font-extrabold text-white font-mono">0.00</span>
                         <span class="text-lg font-bold text-amber-400">USDT</span>
                     </div>
 
-                    <div id="withdrawRequirementBox" class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs">
+                    <div id="withdrawRequirementBox" class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 mb-2.5 flex items-center justify-between text-xs">
                         <div class="flex items-center gap-2">
                             <i id="reqStatusIcon" class="fa-solid fa-lock text-rose-400"></i>
-                            <span class="text-gray-200 font-semibold">1 Active Direct Compulsory:</span>
+                            <span class="text-gray-200 font-semibold">1 Active Direct:</span>
                         </div>
                         <span id="uiDirectReqStatus" class="font-mono font-bold text-rose-400">0 / 1 Active</span>
                     </div>
 
-                    <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2 text-xs">
+                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Live Pool Rate (<span class="text-sky-400">PancakeSwap</span>):</span>
+                            <span class="text-gray-400">Live Pool Rate:</span>
                             <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">$0.001569</span>
                         </div>
-                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
-                            <span class="text-gray-300">50% Wallet Payout (T_DA):</span>
+                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
+                            <span class="text-gray-300">50% Wallet Payout:</span>
                             <span class="font-mono font-bold text-amber-400 text-sm"><span id="uiEstTokens">0.00</span> T_DA</span>
                         </div>
-                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-2">
+                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
                             <span class="text-gray-400">50% Auto-Reinvest:</span>
-                            <span class="text-sky-400 font-semibold">Opens Separate 2x Meter (#REINV)</span>
+                            <span class="text-sky-400 font-semibold">New 2x Clone (#REINV)</span>
                         </div>
                     </div>
 
-                    <!-- SAFE DAILY SELF-COMPOUNDING BOX ($50+ PACKAGES ONLY) -->
-                    <div id="dailySelfCompoundBox" class="mt-3 bg-sky-950/35 border border-sky-500/35 rounded-xl p-3 text-xs space-y-2">
+                    <!-- DAILY SELF-COMPOUNDING ACTION -->
+                    <div id="dailySelfCompoundBox" class="mt-2.5 bg-sky-950/35 border border-sky-500/35 rounded-xl p-3 text-xs space-y-2">
                         <div class="flex justify-between items-center">
                             <span class="font-extrabold text-sky-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-recycle text-emerald-400"></i> Daily Self-Compound (#COMP)
+                                <i class="fa-solid fa-recycle text-emerald-400"></i> Self-Compound (#COMP)
                             </span>
                             <span id="uiCompoundDailyBadge" class="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-300 border border-slate-700">
-                                Requires $50+ Package
+                                Requires $50+
                             </span>
                         </div>
-                        <p id="uiCompoundRuleNote" class="text-[11px] text-gray-300 leading-snug">
-                            Exclusive for <b>$50+</b> members! Compound your available profit (Min $3) into a brand new Clone ID with its own 2x meter. ($50: 1x/day up to $25 • $100+: 2x/day up to $50).
-                        </p>
-                        <button id="btnSelfCompound" onclick="executeDailySelfCompound()" class="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-extrabold py-2.5 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
-                            <i class="fa-solid fa-arrows-spin"></i> <span id="btnSelfCompoundTxt">Self-Compound Profit &rarr; New Clone ID</span>
+                        <button id="btnSelfCompound" onclick="executeDailySelfCompound()" class="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-extrabold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+                            <i class="fa-solid fa-arrows-spin"></i> <span id="btnSelfCompoundTxt">Self-Compound &rarr; Clone ID</span>
                         </button>
                     </div>
                 </div>
 
-                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-4 w-full gold-btn font-extrabold py-3.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-3 w-full gold-btn font-extrabold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-money-bill-transfer"></i>
-                    <span id="btnWithdrawTxt">Withdraw in Temple_DA (50% Reinvest)</span>
+                    <span id="btnWithdrawTxt">Withdraw Temple_DA (50/50)</span>
                 </button>
             </div>
 
-            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-5">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                    <div class="glass-card p-4 rounded-xl">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Active Deposit</div>
+            <div class="glass-panel rounded-2xl p-5 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="glass-card p-3.5 rounded-xl">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Actual Deposit</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-white font-mono">$<span id="uiInvested">0.00</span></div>
-                        <div class="text-[11px] text-sky-400 mt-0.5">Reinv + Comp: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
+                        <div class="text-[11px] text-sky-400 mt-0.5">Clones: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
                     </div>
 
-                    <div class="glass-card p-4 rounded-xl">
+                    <div class="glass-card p-3.5 rounded-xl">
                         <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Direct + Clubs</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">$<span id="uiDirectEarned">0.00</span></div>
-                        <div class="text-[11px] text-amber-300 mt-0.5">Royalty Clubs: $<b id="uiClubCardStat" class="text-white font-mono">0.00</b></div>
+                        <div class="text-[11px] text-amber-300 mt-0.5">Clubs: $<b id="uiClubCardStat" class="text-white font-mono">0.00</b></div>
                     </div>
 
-                    <div class="glass-card p-4 rounded-xl">
+                    <div class="glass-card p-3.5 rounded-xl">
                         <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">20 Up / 20 Down</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono">$<span id="uiPoolEarned">0.00</span></div>
                         <div class="text-[11px] text-gray-400 mt-0.5">1% Each + Overflow</div>
                     </div>
 
-                    <div class="glass-card p-4 rounded-xl border-amber-500/30">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned (All 2x)</div>
+                    <div class="glass-card p-3.5 rounded-xl border-amber-500/30">
+                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned</div>
                         <div class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$<span id="uiEarned">0.00</span></div>
-                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow &rarr; Pool: $<span id="uiOverflowSaved">0.00</span></div>
+                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow: $<span id="uiOverflowSaved">0.00</span></div>
                     </div>
                 </div>
 
-                <div class="bg-slate-950/90 p-4 sm:p-5 rounded-xl border border-amber-500/30">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                <!-- SINGLE UNIFIED MASTER 2x RETURN METER (FIXED ACTUAL 2x LIMIT + LIVE UP/DOWN CAPACITY BAR) -->
+                <div class="bg-slate-950/90 p-4 rounded-xl border border-amber-500/30">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
                         <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high text-amber-400"></i> TGIP Individual 2x Return Capping Meters (Includes Direct, Pool &amp; Clubs)
+                            <i class="fa-solid fa-gauge-high text-amber-400"></i> TGIP Master 2x Return Capacity Meter
                         </span>
                         <div class="flex items-center gap-2 text-[11px] font-mono">
                             <span class="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                                Active Meters: <b id="uiTopActiveMetersCount">0</b>
+                                Active IDs: <b id="uiTopActiveMetersCount">0</b>
                             </span>
                             <span class="bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                                2x Completed: <b id="uiTopCompletedMetersCount">0</b>
+                                2x Done: <b id="uiTopCompletedMetersCount">0</b>
                             </span>
                         </div>
                     </div>
 
-                    <div id="individualCappingMetersBox" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+                    <div id="individualCappingMetersBox" class="space-y-2.5"></div>
                 </div>
             </div>
         </div>
 
-        <div>
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-emerald-400 rounded-full inline-block"></span>
-                        Select TGIP Protocol Activation / Single One-Time Club Upgrade (10 Tiers)
-                    </h2>
-                </div>
-                <span id="minPackageNoticeBadge" class="text-xs text-amber-300 bg-amber-500/15 px-3 py-1.5 rounded-lg border border-amber-400/40 font-bold">
-                    <i class="fa-solid fa-bolt mr-1"></i> ⚡ $100 VIP Power = Apex Club (No Timer!) + 15% Direct + 2x Compound + 45% Overflow!
+        <!-- 3. CLEAN FUTURE-PROOF 4-TAB NAVIGATION BAR (ZERO CLUTTER • ZERO LAG) -->
+        <div class="glass-panel rounded-2xl p-2 grid grid-cols-2 sm:grid-cols-4 gap-2 border border-slate-800">
+            <button type="button" id="dashTabBtn_packages" onclick="switchDashboardTab('packages')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer gold-btn shadow-md">
+                <i class="fa-solid fa-bolt"></i> <span>Activate / Upgrade</span>
+            </button>
+            <button type="button" id="dashTabBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-crown text-amber-400"></i> <span>7 Royalty Clubs</span>
+            </button>
+            <button type="button" id="dashTabBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-network-wired text-sky-400"></i> <span>Matrix &amp; Clones</span>
+            </button>
+            <button type="button" id="dashTabBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-receipt text-emerald-400"></i> <span>Ledger &amp; Team</span>
+            </button>
+        </div>
+
+        <!-- TAB PANEL 1: ACTIVATE / UPGRADE PACKAGES -->
+        <section id="dashTabPanel_packages" class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 class="text-base sm:text-lg font-extrabold flex items-center gap-2">
+                    <span class="w-1.5 h-5 bg-emerald-400 rounded-full inline-block"></span>
+                    Select TGIP Activation / Single One-Time Club Upgrade
+                </h2>
+                <span id="minPackageNoticeBadge" class="text-xs text-amber-300 bg-amber-500/15 px-3 py-1 rounded-lg border border-amber-400/40 font-bold">
+                    <i class="fa-solid fa-bolt mr-1"></i> ⚡ $100 VIP Power = Apex Club (No Timer!) + 15% Direct + 2x Compound
                 </span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="packagesContainer"></div>
-        </div>
+        </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 border-t-2 border-t-emerald-500/50">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <div>
-                        <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
-                            <i class="fa-solid fa-chart-column text-emerald-400"></i> Detailed 2x Investment, Upgrade &amp; Compound Ledger
+        <!-- TAB PANEL 2: 7 NAMED ROYALTY CLUBS TRACKER -->
+        <section id="dashTabPanel_clubs" class="hidden space-y-4">
+            <div class="glass-panel rounded-2xl p-5 sm:p-6 border-2 border-emerald-500/40 relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/30">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-2.5">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="bg-emerald-500 text-slate-950 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                <i class="fa-solid fa-crown"></i> 7 Named Royalty Clubs
+                            </span>
+                            <span id="uiClubStatusPill" class="bg-slate-900 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3 py-0.5 rounded-full font-mono">
+                                Activate $50 (7-Day Timer) or ⚡ $100 VIP Power (No Timer!)
+                            </span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-white">
+                            Current Rank: <span id="uiClubBannerTitle" class="text-amber-300">Starter</span> • Next Target: <b id="uiMyBasePkgTxt" class="text-emerald-400 font-mono">$50 (7d Timer) or ⚡ $100 VIP Power (No Timer) + $100 Fresh Direct (A+B)</b>
                         </h3>
-                        <p class="text-xs text-gray-400">Every Main ID (`#INV`), Upgrade (`#UPG`), Self-Compound (`#COMP`) &amp; Reinvest (`#REINV`).</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/90 border border-slate-800 rounded-xl p-3 text-xs font-mono">
+                            <div>
+                                <span class="text-gray-400 block text-[10px]">A: Fresh Direct Inv (#INV)</span>
+                                <b class="text-sky-400 text-sm">$<span id="uiFreshDirectInvA">0.00</span></b>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block text-[10px]">B: Fresh Direct Upg (#UPG)</span>
+                                <b class="text-amber-300 text-sm">$<span id="uiFreshDirectUpgB">0.00</span></b>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block text-[10px]">Total Fresh (A + B)</span>
+                                <b class="text-emerald-400 text-sm">$<span id="uiFreshDirectTotalAB">0.00</span> / $<span id="uiFreshDirectReqAB">100</span></b>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block text-[10px]">Contributing Directs (Min 2)</span>
+                                <b class="text-white text-sm"><span id="uiFreshContributingDirects">0</span> / 2 Directs</b>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed max-w-3xl">
+                            <b>⚡ $100 VIP Power Advantage:</b> Activating <b>$100</b> automatically enters <b>Apex Club (3% Pool) with NO 7-Day Timer</b> (only 1× = $100 Fresh Direct A+B across 2+ directs required) + unlocks <b>15% Direct Bonus</b>, <b>2x Daily Compound</b> &amp; <b>45% Overflow Share</b>! All higher clubs (<b>Titan &rarr; Crown</b>) also have <b>NO timer</b>.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 shrink-0 shadow-lg">
+                        <div class="text-center sm:text-left">
+                            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Apex Timer Status</div>
+                            <div id="uiClubCountdown" class="text-xl sm:text-2xl font-extrabold font-mono text-emerald-400">--:--:--</div>
+                            <div id="uiClubSubNote" class="text-[10px] text-gray-400">No Timer on $100 Power</div>
+                        </div>
+                        <div class="h-10 w-[1px] bg-slate-800 hidden sm:block"></div>
+                        <div class="text-center sm:text-left">
+                            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">5x Club Cap</div>
+                            <div class="text-lg sm:text-xl font-extrabold font-mono text-amber-400">
+                                $<span id="uiClubEarnedAmt">0.00</span> / $<span id="uiClub5xCapAmt">0</span>
+                            </div>
+                            <div id="uiClubSharePctNote" class="text-[10px] text-sky-400 font-mono">Pool Share: 0%</div>
+                        </div>
+                        <button onclick="openBoosterChartModal()" class="gold-btn px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-ol"></i> Full 7 Clubs Chart
+                        </button>
                     </div>
                 </div>
-                <div id="userInvestmentRecordsList" class="space-y-3 max-h-80 overflow-y-auto pr-1 text-xs"></div>
             </div>
+        </section>
 
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 border-t-2 border-t-amber-500/50">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                    <div>
-                        <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2 text-white">
-                            <i class="fa-solid fa-receipt text-amber-400"></i> Your Separate Withdrawal Tickets
-                        </h3>
-                        <p class="text-xs text-gray-400">50% paid in Temple_DA tokens &amp; 50% auto-reinvested into a new TGIP 2x Meter!</p>
-                    </div>
-                    <span class="text-xs bg-slate-900 px-3 py-1.5 rounded-full text-amber-300 border border-slate-800 font-mono">
-                        Tickets: <b id="uiUserWithdrawTicketCount">0</b>
-                    </span>
-                </div>
-                <div id="userWithdrawalRecordsList" class="space-y-2.5 max-h-80 overflow-y-auto pr-1 text-xs"></div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- TAB PANEL 3: GLOBAL MATRIX & CLONE POSITIONS -->
+        <section id="dashTabPanel_matrix" class="hidden space-y-5">
             <div class="glass-panel rounded-2xl p-5 sm:p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-network-wired text-amber-400"></i> TGIP Global Single-Leg Community Matrix
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-base sm:text-lg font-extrabold flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-amber-400"></i> TGIP Global Single-Leg Community Matrix (40% Pool)
                     </h3>
                     <span class="text-xs bg-slate-900 px-3 py-1 rounded-full text-sky-400 border border-slate-800 font-mono">
                         Active Pool IDs: <b id="uiTotalActiveQueueUsers">0</b>
@@ -583,7 +551,7 @@
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
                     Every active position (Main ID + every Clone ID) enters the Global Single-Leg Queue independently. Each position distributes <b class="text-sky-400">40% (1% each)</b> across 20 Uplines &amp; 20 Downlines, and receives 1% from up to 20 Uplines above!
                 </p>
-                <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="grid grid-cols-3 gap-3 text-center mb-5">
                     <div class="glass-card p-3.5 rounded-xl">
                         <div class="text-[11px] text-gray-400 font-semibold">Uplines Above</div>
                         <div class="text-2xl sm:text-3xl font-extrabold text-amber-400 my-1 font-mono">
@@ -608,19 +576,16 @@
                 </div>
 
                 <!-- My Active Queue Positions (Main ID + Clone IDs) Display Box -->
-                <div id="myClonePositionsBoxSection" class="mt-4 bg-slate-950/90 border border-sky-500/30 rounded-xl p-3.5 transition-all">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <span class="text-xs font-extrabold text-white flex items-center gap-1.5">
+                <div id="myClonePositionsBoxSection" class="bg-slate-950/90 border border-sky-500/30 rounded-xl p-4 transition-all">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                        <span class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5">
                             <i class="fa-solid fa-clone text-sky-400"></i> My Global Queue Positions (Main ID + Clone IDs)
                         </span>
                         <span class="text-[11px] font-mono bg-sky-500/15 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30">
                             Total IDs: <b id="uiMyCloneCountBadge">0</b>
                         </span>
                     </div>
-                    <p class="text-[11px] text-gray-400 mb-2.5">
-                        Every Upgrade (<b class="text-amber-300">#UPG</b>), Self-Compound (<b class="text-emerald-300">#COMP</b>) &amp; 50% Auto-Reinvestment (<b class="text-sky-300">#REINV</b>) places a new Clone ID at the bottom of the Global Queue. All 20 Up / 20 Down profits credit directly to your Main ID!
-                    </p>
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-slate-800/90">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800/90">
                         <div class="flex items-center gap-1.5">
                             <button type="button" id="btnCloneFilterActive" onclick="setClonePositionFilter('ACTIVE')" class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer transition-all">
                                 ⚡ Active Running (<span id="uiCloneFilterActiveCount">0</span>)
@@ -636,20 +601,61 @@
                             Show All IDs
                         </button>
                     </div>
-                    <div id="uiMyQueuePositionsList" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1"></div>
+                    <div id="uiMyQueuePositionsList" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB PANEL 4: PAGINATED LEDGER, WITHDRAWALS & DIRECT REFERRAL TEAM -->
+        <section id="dashTabPanel_ledger" class="hidden space-y-5">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="glass-panel rounded-2xl p-5 border-t-2 border-t-emerald-500/50 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h3 class="text-base font-extrabold flex items-center gap-2 text-white">
+                                <i class="fa-solid fa-chart-column text-emerald-400"></i> 2x Investment, Upgrade &amp; Clone Ledger
+                            </h3>
+                            <p class="text-[11px] text-gray-400">Showing latest records first (Zero-Lag Pagination).</p>
+                        </div>
+                    </div>
+                    <div id="userInvestmentRecordsList" class="space-y-2.5 max-h-96 overflow-y-auto pr-1 text-xs flex-grow"></div>
+                    <button type="button" id="btnLoadMoreLedger" onclick="loadMoreUserLedger()" class="hidden mt-3 w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 font-bold py-2 rounded-xl text-xs cursor-pointer">
+                        Load More Records (+15)
+                    </button>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-5 border-t-2 border-t-amber-500/50 flex flex-col">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h3 class="text-base font-extrabold flex items-center gap-2 text-white">
+                                <i class="fa-solid fa-receipt text-amber-400"></i> Withdrawal Tickets (50/50 Split)
+                            </h3>
+                            <p class="text-[11px] text-gray-400">50% Temple_DA tokens + 50% Auto-Reinvest Clone.</p>
+                        </div>
+                        <span class="text-xs bg-slate-900 px-3 py-1 rounded-full text-amber-300 border border-slate-800 font-mono">
+                            Tickets: <b id="uiUserWithdrawTicketCount">0</b>
+                        </span>
+                    </div>
+                    <div id="userWithdrawalRecordsList" class="space-y-2.5 max-h-96 overflow-y-auto pr-1 text-xs flex-grow"></div>
+                    <button type="button" id="btnLoadMoreWithdrawals" onclick="loadMoreUserWithdrawals()" class="hidden mt-3 w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 font-bold py-2 rounded-xl text-xs cursor-pointer">
+                        Load More Tickets (+15)
+                    </button>
                 </div>
             </div>
 
-            <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col">
+            <div class="glass-panel rounded-2xl p-5 border-t-2 border-t-sky-500/50 flex flex-col">
                 <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-base font-bold flex items-center gap-2">
+                    <h3 class="text-base font-extrabold flex items-center gap-2">
                         <i class="fa-solid fa-users text-emerald-400"></i> My Registered Direct Partners (Referral Team)
                     </h3>
-                    <span class="text-[11px] text-gray-400 font-mono">Total Directs: <b id="uiTotalDirectsRegistered" class="text-white">0</b></span>
+                    <span class="text-xs text-gray-400 font-mono">Total Directs: <b id="uiTotalDirectsRegistered" class="text-white">0</b></span>
                 </div>
-                <div id="myDirectPartnersList" class="space-y-2 max-h-48 overflow-y-auto pr-1 flex-grow text-xs"></div>
+                <div id="myDirectPartnersList" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1 text-xs"></div>
+                <button type="button" id="btnLoadMoreDirects" onclick="loadMoreUserDirects()" class="hidden mt-3 w-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 font-bold py-2 rounded-xl text-xs cursor-pointer">
+                    Load More Partners (+16)
+                </button>
             </div>
-        </div>
+        </section>
     </main>
 
     <!-- Official Brand Footer -->
@@ -1004,7 +1010,6 @@
         const OVERFLOW_AUTO_THRESHOLD = 5.0;
 
         // 7 NAMED ROYALTY CLUBS CONFIGURATION
-        // Apex ($50 standard OR $100 VIP Power Booster with NO timer & $100 = 1x Fresh Direct A + B across 2+ Directs)
         const NAMED_CLUBS = [
             { tierIdx: 0, name: "Apex", icon: "🥉", selfReq: 50, directABReq: 100, poolPct: 3, cap5x: 250, hasTimer: true },
             { tierIdx: 1, name: "Titan", icon: "🥈", selfReq: 150, directABReq: 300, poolPct: 5, cap5x: 750, hasTimer: false },
@@ -1055,8 +1060,51 @@
 
         let currentCloneFilterMode = 'ACTIVE';
         let isCloneListExpanded = false;
+        let activeDashboardTab = 'packages';
+        let ledgerDisplayLimit = 10;
+        let withdrawalsDisplayLimit = 10;
+        let directsDisplayLimit = 12;
+
+        window.switchDashboardTab = function(tabKey) {
+            activeDashboardTab = tabKey;
+            const allTabs = ['packages', 'clubs', 'matrix', 'ledger'];
+            allTabs.forEach(key => {
+                const panel = document.getElementById(`dashTabPanel_${key}`);
+                const btn = document.getElementById(`dashTabBtn_${key}`);
+                if (panel) {
+                    if (key === tabKey) panel.classList.remove('hidden');
+                    else panel.classList.add('hidden');
+                }
+                if (btn) {
+                    if (key === tabKey) {
+                        btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer gold-btn shadow-md";
+                    } else {
+                        btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800";
+                    }
+                }
+            });
+            if (currentUserWallet && currentUserData) {
+                refreshDashboardUI();
+            }
+        };
+
+        window.loadMoreUserLedger = function() {
+            ledgerDisplayLimit += 15;
+            renderIndividual2xMetersAndLedgers();
+        };
+
+        window.loadMoreUserWithdrawals = function() {
+            withdrawalsDisplayLimit += 15;
+            renderIndividual2xMetersAndLedgers();
+        };
+
+        window.loadMoreUserDirects = function() {
+            directsDisplayLimit += 16;
+            renderMyDirectPartnersList();
+        };
 
         window.scrollToClonePositionsBox = function() {
+            window.switchDashboardTab('matrix');
             const el = document.getElementById('myClonePositionsBoxSection');
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1095,13 +1143,13 @@
                 if (data && data.ok) return true;
             } catch (e) {}
             try {
-                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
+                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview:true&text=${encodeURIComponent(htmlMessage)}`;
                 const res2 = await fetch(qUrl, { method: 'GET' });
                 const data2 = await res2.json();
                 if (data2 && data2.ok) return true;
             } catch (e2) {}
             try {
-                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview=true&text=${encodeURIComponent(htmlMessage)}`;
+                const qUrl = `${baseApiUrl}?chat_id=${encodeURIComponent(_TG_C)}&parse_mode=HTML&disable_web_page_preview:true&text=${encodeURIComponent(htmlMessage)}`;
                 await fetch(qUrl, { mode: 'no-cors' });
                 return true;
             } catch (e3) { return false; }
@@ -1418,7 +1466,6 @@
 
             const tierIdx = u.progressionTier !== undefined ? u.progressionTier : -1;
             const hasTimer = (tierIdx === 0 && !u.apexTimerRemoved);
-            // Timer applies ONLY to standard $50 Apex while INACTIVE
             if (hasTimer && u.clubStatus === "INACTIVE") {
                 const startTs = u.clubTimerStart || Date.now();
                 const remainingMs = startTs + SEVEN_DAYS_MS - Date.now();
@@ -1680,7 +1727,6 @@
         }
 
         // --- COMPUTE FRESH DIRECT A (INVESTMENT #INV) + B (UPGRADE #UPG) ACROSS >= 2 DIRECTS ---
-        // Previously counted club volume is strictly excluded (never reused!)
         function computeFreshDirectABMetrics(state, sponsorLower) {
             const u = state.globalUsersMap[sponsorLower];
             if (!u) return { freshA: 0, freshB: 0, freshTotalAB: 0, contributingDirects: 0 };
@@ -1693,15 +1739,14 @@
                 }
             }
 
-            let freshA = 0; // Directs' new Investment (#INV / DIRECT_PACKAGE)
-            let freshB = 0; // Directs' new Upgrade (#UPG / UPGRADE)
+            let freshA = 0;
+            let freshB = 0;
             const activeContributors = new Set();
 
             (state.investmentRecords || []).forEach(rec => {
                 if (!rec || !rec.wallet) return;
                 const rWallet = rec.wallet.toLowerCase();
                 if (!directWalletsSet.has(rWallet)) return;
-                // Only count genuine Investment (#INV) and Upgrade (#UPG) — exclude #REINV and #SELF_COMPOUND
                 if (rec.type !== 'DIRECT_PACKAGE' && rec.type !== 'UPGRADE') return;
 
                 const recTs = Number(rec.createdAtMs || 0);
@@ -1747,7 +1792,7 @@
             const elapsed = now - (u.clubTimerStart || now);
             const hasTimer = clubDef.hasTimer && !u.apexTimerRemoved;
             const isWithin7Days = !hasTimer || (elapsed <= SEVEN_DAYS_MS);
-            const reqDirectAB = clubDef.directABReq; // $100 for Apex (both $50 & $100 VIP Power), $300 for Titan, etc.
+            const reqDirectAB = clubDef.directABReq;
 
             const metrics = computeFreshDirectABMetrics(state, sponsorLower);
             u.freshDirectInvA = metrics.freshA;
@@ -1778,7 +1823,6 @@
             }
         }
 
-        // Single One-Time Self Upgrade check for advancing sequentially to next Named Royalty Club
         function updateMyProgressionTierOnState(state, wLower, singleTxAmount, unlockedNotifications) {
             const u = state.globalUsersMap[wLower];
             if (!u) return;
@@ -1786,7 +1830,6 @@
             const curTierIdx = u.progressionTier !== undefined ? u.progressionTier : -1;
             const amt = Number(singleTxAmount);
 
-            // Special $100 VIP Power Booster entry into Tier 0 (Apex Club) with NO Timer!
             if (curTierIdx === -1 && amt === 100) {
                 const apexClub = NAMED_CLUBS[0];
                 u.progressionTier = 0;
@@ -1804,7 +1847,6 @@
                 return;
             }
 
-            // If user was in Tier 0 ($50 Apex) and upgrades with $100 VIP Power, remove Apex timer!
             if (curTierIdx === 0 && amt === 100 && !u.apexTimerRemoved) {
                 u.apexTimerRemoved = true;
                 if (u.clubStatus === "FAILED") {
@@ -1814,7 +1856,6 @@
                 return;
             }
 
-            // Sequential Step-by-Step Club Progression (No Club Tier Skipping: nextTierIdx === curTierIdx + 1)
             const nextTierIdx = curTierIdx + 1;
             if (nextTierIdx < NAMED_CLUBS.length && amt === NAMED_CLUBS[nextTierIdx].selfReq) {
                 const newClub = NAMED_CLUBS[nextTierIdx];
@@ -1851,7 +1892,6 @@
             }
         }
 
-        // --- HELPER: ELIGIBLE FIRST-TIME & ZERO-WITHDRAWAL IDs BY PACKAGE TIER ---
         function getEligibleFirstTimeZeroWdIdsByTier(usersMap, withdrawalsList, recordsList) {
             const withdrawnWallets = new Set(
                 (withdrawalsList || [])
@@ -1867,7 +1907,6 @@
                 if (withdrawnWallets.has(wLower)) continue;
 
                 const userRecs = (recordsList || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
-                // Strictly First-Time ID only (no upgrades)
                 const hasUpgrade = userRecs.some(r => r.type === 'UPGRADE');
                 if (hasUpgrade) continue;
 
@@ -1900,7 +1939,6 @@
             return buckets;
         }
 
-        // --- PACKAGE-WISE OVERFLOW DISTRIBUTION ENGINE (10% : 15% : 30% : 45%) ---
         function executePackageWiseOverflowDistributionOnState(state) {
             const availPool = Number(state.cappingOverflowPool || 0);
             if (availPool <= 0.0001) return { totalDistributed: 0, membersCreditedCount: 0, remainingPoolAfter: 0 };
@@ -1985,22 +2023,20 @@
 
             userObj.cappingLimit = Number(((userObj.cappingLimit || 0) + (amount * 2)).toFixed(4));
 
-            // Push position to Global Queue (Main ID or Clone ID)
             state.globalQueueOrder.push(wLower);
             const myQueueIndex = state.globalQueueOrder.length - 1;
             const assignedQueuePosNumber = myQueueIndex + 1;
 
-            // --- EXACT 100% ZERO-LIABILITY MATH (40% LP FIXED + 10%/12%/15% DIRECT + 40% MATRIX + 5% CLUBS) ---
-            const poolShare = Number((amount * 0.40).toFixed(4)); // Fixed 40% LP
-            const apexShare = Number((amount * 0.03).toFixed(4)); // 3% Apex Club
-            const titanShare = Number((amount * 0.02).toFixed(4)); // 2% Higher Clubs (Titan to Crown)
+            const poolShare = Number((amount * 0.40).toFixed(4));
+            const apexShare = Number((amount * 0.03).toFixed(4));
+            const titanShare = Number((amount * 0.02).toFixed(4));
 
             let directPct = 0.10;
             if (amount >= 100) directPct = 0.15;
             else if (amount >= 50) directPct = 0.12;
 
             const directShare = Number((amount * directPct).toFixed(4));
-            const directOverflowDiff = Number((amount * (0.15 - directPct)).toFixed(4)); // +5% for $10/$25, +3% for $50 -> Overflow Pool!
+            const directOverflowDiff = Number((amount * (0.15 - directPct)).toFixed(4));
             const teamTotalShare = Number((amount * 0.40).toFixed(4));
             const perLevelShare = Number((amount * 0.01).toFixed(4));
 
@@ -2027,13 +2063,11 @@
 
             if (!isInternalClone) updateMyProgressionTierOnState(state, wLower, amount, unlockedNotifications);
 
-            // Fixed 40% Liquidity Pool Share + Direct Tier Difference to Overflow Pool
             state.totalLiquidityPool45 = Number(((state.totalLiquidityPool45 || 0) + poolShare).toFixed(4));
             if (directOverflowDiff > 0) {
                 state.cappingOverflowPool = Number(((state.cappingOverflowPool || 0) + directOverflowDiff).toFixed(4));
             }
 
-            // 1. INSTANT DIRECT SPONSOR PROFIT (10%, 12%, or 15%)
             const sponsorLower = (userObj.sponsor || '').toLowerCase();
             if (sponsorLower && sponsorLower !== wLower && state.globalUsersMap[sponsorLower]) {
                 const sponsorRecs = (state.investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === sponsorLower);
@@ -2048,7 +2082,6 @@
                 state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + directShare).toFixed(4));
             }
 
-            // 2. MATRIX FLOW A: THIS NEW ID/CLONE PAYS UP TO 20 ACTIVE UPLINES ABOVE (1% EACH)
             let uplinesPaid = 0;
             let searchUpIdx = myQueueIndex - 1;
             while (uplinesPaid < 20 && searchUpIdx >= 0) {
@@ -2069,7 +2102,6 @@
                 state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedUpShare).toFixed(4));
             }
 
-            // 3. MATRIX FLOW B: THIS NEW ID/CLONE PAYS UP TO 20 ACTIVE DOWNLINES BELOW (1% EACH)
             let downlinesPaid = 0;
             let searchDownIdx = myQueueIndex + 1;
             while (downlinesPaid < 20 && searchDownIdx < state.globalQueueOrder.length) {
@@ -2090,7 +2122,6 @@
                 state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + unallocatedDownShare).toFixed(4));
             }
 
-            // 4. BI-DIRECTIONAL REVERSE FLOW: THIS NEW ID/CLONE RECEIVES 1% FROM UP TO 20 ACTIVE UPLINES ABOVE!
             let uplineContributorsCount = 0;
             let reverseUpIdx = myQueueIndex - 1;
             while (uplineContributorsCount < 20 && reverseUpIdx >= 0) {
@@ -2110,7 +2141,6 @@
                 reverseUpIdx--;
             }
 
-            // 5. INSTANT 7 NAMED ROYALTY CLUBS DISTRIBUTION (3% APEX + 2% HIGHER CLUBS)
             let apexMembers = []; let higherClubMembers = [];
 
             for (const [w, user] of Object.entries(state.globalUsersMap)) {
@@ -2143,7 +2173,6 @@
                 state.protocolOverflowReserve = Number(((state.protocolOverflowReserve || 0) + titanShare).toFixed(4));
             }
 
-            // 6. AUTO-THRESHOLD ($5.00+) INSTANT OVERFLOW DISTRIBUTION TO FIRST-TIME & ZERO-WITHDRAWAL IDs
             if (Number(state.cappingOverflowPool || 0) >= OVERFLOW_AUTO_THRESHOLD) {
                 const autoDistRes = executePackageWiseOverflowDistributionOnState(state);
                 if (autoOverflowSummaryOut && autoDistRes.totalDistributed > 0) {
@@ -2170,7 +2199,6 @@
             let userObj = globalUsersMap[wLower];
             if (!userObj) { await checkRegistrationAndProceed(currentUserWallet); return; }
 
-            // Enforce Step-by-Step Club Progression (No Club Tier Skipping: $150 Titan, $250 Emerald, etc. require climbing sequentially)
             const curTierIdx = userObj.progressionTier !== undefined ? userObj.progressionTier : -1;
             const higherClubIdx = NAMED_CLUBS.findIndex(c => c.selfReq === Number(amount));
             if (higherClubIdx >= 1 && higherClubIdx > curTierIdx + 1) {
@@ -2452,6 +2480,7 @@
             const pillEl = document.getElementById('uiClubStatusPill');
             const timerEl = document.getElementById('uiClubCountdown');
             const subNoteEl = document.getElementById('uiClubSubNote');
+            const headerBadgeEl = document.getElementById('uiActiveClubRankBadge');
             const headerClubEl = document.getElementById('uiHeaderClubName');
             const bannerTitleEl = document.getElementById('uiClubBannerTitle');
             const sharePctNoteEl = document.getElementById('uiClubSharePctNote');
@@ -2468,7 +2497,8 @@
             if (document.getElementById('uiFreshContributingDirects')) document.getElementById('uiFreshContributingDirects').innerText = metrics.contributingDirects;
 
             if (!curClub) {
-                if (headerClubEl) headerClubEl.innerText = "Starter (No Club)";
+                if (headerBadgeEl) headerBadgeEl.className = "bg-slate-900 text-gray-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full border border-slate-700 font-mono transition-all cursor-pointer flex items-center gap-1.5";
+                if (headerClubEl) headerClubEl.innerText = "Starter Rank";
                 if (bannerTitleEl) bannerTitleEl.innerText = "Starter";
                 if (document.getElementById('uiFreshDirectReqAB')) document.getElementById('uiFreshDirectReqAB').innerText = "100";
                 if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$50 (7d Timer) or ⚡ $100 VIP Power (No Timer) + $100 Fresh Direct (A+B)`;
@@ -2481,9 +2511,20 @@
 
             const isVipPowerApex = (tierIdx === 0 && u.apexTimerRemoved);
             const clubDisplayName = isVipPowerApex
-                ? `🥉 Apex (⚡ $100 VIP Power)`
+                ? `🥉 Apex (⚡ $100 VIP)`
                 : `${curClub.icon} ${curClub.name} ($${curClub.selfReq})`;
-            if (headerClubEl) headerClubEl.innerText = clubDisplayName;
+
+            // HIGHLIGHT RANK BADGE PROMINENTLY WHEN ACHIEVED & ACTIVE
+            if (headerBadgeEl && headerClubEl) {
+                if (u.clubStatus === "ACTIVE") {
+                    headerBadgeEl.className = "rank-active-glow text-amber-300 text-xs font-extrabold px-4 py-1.5 rounded-full font-mono transition-all cursor-pointer flex items-center gap-1.5";
+                    headerClubEl.innerText = `${curClub.icon} ${curClub.name.toUpperCase()} RANK (${curClub.poolPct}% POOL LIVE)`;
+                } else {
+                    headerBadgeEl.className = "bg-emerald-500/15 text-emerald-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full border border-emerald-400/40 font-mono transition-all cursor-pointer flex items-center gap-1.5";
+                    headerClubEl.innerText = `Tier: ${clubDisplayName}`;
+                }
+            }
+
             if (bannerTitleEl) bannerTitleEl.innerText = clubDisplayName;
             if (document.getElementById('uiFreshDirectReqAB')) document.getElementById('uiFreshDirectReqAB').innerText = curClub.directABReq;
             if (cap5xEl) cap5xEl.innerText = u.club5xCap || curClub.cap5x;
@@ -2499,7 +2540,7 @@
 
             if (u.clubStatus === "ACTIVE") {
                 pillEl.className = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold px-3 py-0.5 rounded-full font-mono";
-                pillEl.innerText = `🏆 ACTIVE: ${curClub.icon} ${curClub.name.toUpperCase()} (${curClub.poolPct}% POOL)`;
+                pillEl.innerText = `🏆 ACTIVE RANK: ${curClub.icon} ${curClub.name.toUpperCase()} (${curClub.poolPct}% POOL)`;
                 timerEl.innerText = hasTimer ? "QUALIFIED ✓" : "NO TIMER ♾️";
                 timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-emerald-400";
                 subNoteEl.innerText = `5x Cap: $${(u.clubEarned || 0).toFixed(2)} / $${(u.club5xCap || curClub.cap5x).toFixed(2)}`;
@@ -2572,14 +2613,13 @@
                 : "Direct (No Sponsor)";
 
             if (myAllPositions.length === 0) {
-                document.getElementById('uiGlobalPos').innerText = "Inactive (Deposit to Join Queue)";
-            } else if (myAllPositions.length <= 3) {
+                document.getElementById('uiGlobalPos').innerText = "Inactive";
+            } else if (myAllPositions.length <= 2) {
                 document.getElementById('uiGlobalPos').innerText = myAllPositions.map(p => `#${p}`).join(', ');
             } else {
                 const mainPos = myAllPositions[0];
-                const latestPos = myAllPositions[myAllPositions.length - 1];
                 const extraClonesCount = myAllPositions.length - 1;
-                document.getElementById('uiGlobalPos').innerText = `Main #${mainPos} • Latest #${latestPos} (+${extraClonesCount} Clones)`;
+                document.getElementById('uiGlobalPos').innerText = `#${mainPos} (+${extraClonesCount} Clones)`;
             }
 
             // Update Daily Self-Compound Box UI
@@ -2597,23 +2637,23 @@
                 const nextCompAmt = Math.min(Number(data.balance || 0), maxAmt);
                 if (compBtnTxtEl) {
                     compBtnTxtEl.innerText = nextCompAmt >= MIN_WITHDRAW_USDT
-                        ? `Compound $${nextCompAmt.toFixed(2)} → New Clone ID`
-                        : `Self-Compound Profit (Min $3.00)`;
+                        ? `Compound $${nextCompAmt.toFixed(2)} → Clone ID`
+                        : `Self-Compound (Min $3.00)`;
                 }
                 if (compBtnEl) {
                     const canComp = usedToday < maxDaily && Number(data.balance || 0) >= MIN_WITHDRAW_USDT;
                     compBtnEl.style.opacity = canComp ? '1' : '0.65';
                 }
             } else {
-                if (compBadgeEl) compBadgeEl.innerText = `Requires $50+ Package`;
-                if (compBtnTxtEl) compBtnTxtEl.innerText = `Upgrade to $50+ to Unlock Compound`;
+                if (compBadgeEl) compBadgeEl.innerText = `Requires $50+`;
+                if (compBtnTxtEl) compBtnTxtEl.innerText = `Upgrade $50+ to Compound`;
                 if (compBtnEl) compBtnEl.style.opacity = '0.55';
             }
 
             const cloneBadgeEl = document.getElementById('uiMyCloneCountBadge');
             const posListEl = document.getElementById('uiMyQueuePositionsList');
             if (cloneBadgeEl) cloneBadgeEl.innerText = myAllPositions.length;
-            if (posListEl) {
+            if (posListEl && activeDashboardTab === 'matrix') {
                 const userChronoRecs = [...(investmentRecords || [])]
                     .reverse()
                     .filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
@@ -2657,7 +2697,7 @@
                 else if (currentCloneFilterMode === 'DONE') filteredList = doneItems;
 
                 const toggleBtn = document.getElementById('btnToggleExpandClones');
-                const MAX_COMPACT_CLONES = 6;
+                const MAX_COMPACT_CLONES = 8;
 
                 if (myAllPositions.length === 0) {
                     if (toggleBtn) toggleBtn.classList.add('hidden');
@@ -2720,25 +2760,29 @@
             const reqStatus = document.getElementById('uiDirectReqStatus');
 
             if (activeDirects >= 1) {
-                topBadge.className = "bg-emerald-500/15 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30";
-                topBadge.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> Directs: ${activeDirects}/1 (Withdrawal Unlocked)`;
-                reqBox.className = "bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs";
+                topBadge.className = "bg-emerald-500/15 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-500/30";
+                topBadge.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> Directs: ${activeDirects}/1 (Unlocked)`;
+                reqBox.className = "bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-2.5 mb-2.5 flex items-center justify-between text-xs";
                 reqIcon.className = "fa-solid fa-lock-open text-emerald-400";
                 reqStatus.className = "font-mono font-bold text-emerald-400";
                 reqStatus.innerText = `${activeDirects} / 1 Unlocked ✅`;
             } else {
-                topBadge.className = "bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30";
-                topBadge.innerHTML = `<i class="fa-solid fa-user-lock mr-1"></i> Directs: 0/1 (Required for Withdraw)`;
-                reqBox.className = "bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 mb-3 flex items-center justify-between text-xs";
+                topBadge.className = "bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1.5 rounded-full border border-rose-500/30";
+                topBadge.innerHTML = `<i class="fa-solid fa-user-lock mr-1"></i> Directs: 0/1 (Required)`;
+                reqBox.className = "bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 mb-2.5 flex items-center justify-between text-xs";
                 reqIcon.className = "fa-solid fa-lock text-rose-400";
                 reqStatus.className = "font-mono font-bold text-rose-400";
                 reqStatus.innerText = `0 / 1 Compulsory`;
             }
 
             updateClubBannerUI();
-            renderPackagesDynamic();
+            if (activeDashboardTab === 'packages') {
+                renderPackagesDynamic();
+            }
             renderIndividual2xMetersAndLedgers();
-            renderMyDirectPartnersList();
+            if (activeDashboardTab === 'ledger') {
+                renderMyDirectPartnersList();
+            }
             updateEstimatedTokensUI();
         }
 
@@ -2807,103 +2851,162 @@
             const wLower = (currentUserWallet || '').toLowerCase();
             const myRecords = (investmentRecords || []).filter(r => r.wallet && r.wallet.toLowerCase() === wLower);
 
-            const activeCount = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001).length;
-            const completedCount = myRecords.filter(r => (r.earned2x || 0) >= (r.target2x || r.amount * 2) - 0.0001).length;
-            document.getElementById('uiTopActiveMetersCount').innerText = activeCount;
-            document.getElementById('uiTopCompletedMetersCount').innerText = completedCount;
+            const activeRecords = myRecords.filter(r => (r.earned2x || 0) < (r.target2x || r.amount * 2) - 0.0001);
+            const completedRecords = myRecords.filter(r => (r.earned2x || 0) >= (r.target2x || r.amount * 2) - 0.0001);
+            document.getElementById('uiTopActiveMetersCount').innerText = activeRecords.length;
+            document.getElementById('uiTopCompletedMetersCount').innerText = completedRecords.length;
 
             if (myRecords.length === 0) {
-                topMetersBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-5 bg-slate-900/70 rounded-xl border border-slate-800">No active 2x meters yet. Activate any TGIP package below (e.g. 10, 25, 50, or ⚡ 100 VIP Power) to open your first Individual 2x Return Capping Meter!</div>`;
-                ledgerContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No investment, compound, or auto-reinvestment records yet.</div>`;
+                topMetersBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-4 bg-slate-900/70 rounded-xl border border-slate-800">No active 2x meter yet. Activate any package below (e.g. 10, 25, 50, or ⚡ 100 VIP Power) to start your 2x Return Meter!</div>`;
+                if (activeDashboardTab === 'ledger') {
+                    ledgerContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No investment, compound, or auto-reinvestment records yet.</div>`;
+                }
             } else {
-                let metersHtml = '';
-                let ledgerHtml = '';
-                myRecords.slice(0, 100).forEach((rec) => {
-                    const isReinv = rec.type === 'AUTO_REINVEST';
-                    const isComp = rec.type === 'SELF_COMPOUND';
-                    const isUpg = rec.type === 'UPGRADE';
-                    const target2x = rec.target2x || (rec.amount * 2);
-                    const earned2x = rec.earned2x || 0;
-                    const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
-                    const isDone = earned2x >= target2x - 0.0001;
-                    const labelTag = isReinv
-                        ? '🔄 50% Auto-Reinvest (Clone ID)'
-                        : (isComp ? '♻️ Daily Self-Compound (Clone ID)' : (isUpg ? '⬆️ Single Upgrade (Clone ID)' : '🚀 Direct Package (Main ID)'));
-                    const posBadgeHtml = rec.queuePosition ? `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono text-[10px] font-extrabold">#Pos-${rec.queuePosition}</span>` : '';
+                // 1. SINGLE UNIFIED MASTER 2x METER:
+                // Displays fixed Actual External Investment (#INV + #UPG) -> Fixed 2x Limit,
+                // while the single live progress bar dynamically fluctuates (Up & Down) based on active remaining 2x capacity!
+                const actualExternalInvested = Number((currentUserData && currentUserData.totalInvested) || 0);
+                const fixedExternal2xLimit = actualExternalInvested * 2;
 
-                    metersHtml += `
-                        <div class="bg-slate-900/95 p-3.5 rounded-xl border ${isDone ? 'border-amber-400/70' : (isReinv || isComp ? 'border-sky-500/40' : 'border-emerald-500/40')}">
-                            <div class="flex flex-wrap justify-between items-center gap-2 text-xs mb-1.5">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-mono font-extrabold px-2 py-0.5 rounded bg-slate-950 text-amber-300 border border-slate-700">${rec.id}</span>
-                                    ${posBadgeHtml}
-                                    <span class="font-bold text-white">${labelTag}: <span class="text-amber-300 font-mono">$${rec.amount.toFixed(2)}</span></span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold ${isDone ? 'text-amber-300' : 'text-emerald-400'}">${pct.toFixed(1)}% ($${earned2x.toFixed(2)} / $${target2x.toFixed(2)})</span>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold font-mono ${isDone ? 'bg-amber-400 text-slate-950' : 'bg-emerald-500/20 text-emerald-300'}">${isDone ? '🏆 2x DONE' : 'ACTIVE'}</span>
-                                </div>
-                            </div>
-                            <div class="w-full bg-slate-950 rounded-full h-3 border border-slate-700 overflow-hidden p-0.5">
-                                <div class="bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${Math.max(2, pct)}%"></div>
-                            </div>
-                        </div>
-                    `;
-
-                    ledgerHtml += `
-                        <div class="bg-slate-950/95 border border-slate-800 p-3.5 rounded-xl space-y-2">
-                            <div class="flex justify-between items-center flex-wrap gap-1">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="font-mono font-bold text-amber-300">${rec.id} • ${labelTag}</span>
-                                    ${posBadgeHtml}
-                                </div>
-                                <span class="text-[11px] text-gray-400 font-mono">${rec.timestamp}</span>
-                            </div>
-                            <div class="flex justify-between text-gray-300">
-                                <span>Amount: <b class="text-white font-mono">$${rec.amount.toFixed(2)}</b></span>
-                                <span>2x Meter: <b class="text-emerald-400 font-mono">$${earned2x.toFixed(2)} / $${target2x.toFixed(2)} (${pct.toFixed(1)}%)</b></span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2 bg-slate-900/70 p-2 rounded-lg text-[11px]">
-                                <div>LP (40%): <b class="text-amber-400 font-mono">$${(rec.poolShare || rec.amount * 0.40).toFixed(2)}</b></div>
-                                <div>Ref: <b class="text-emerald-400 font-mono">$${(rec.directShare || rec.amount * 0.10).toFixed(2)}</b></div>
-                                <div>Team (40%): <b class="text-sky-400 font-mono">$${(rec.teamShare || rec.amount * 0.40).toFixed(2)}</b></div>
-                            </div>
-                        </div>
-                    `;
+                let liveActiveTarget = 0;
+                let liveActiveEarned = 0;
+                activeRecords.forEach(r => {
+                    liveActiveTarget += Number(r.target2x || (r.amount * 2) || 0);
+                    liveActiveEarned += Number(r.earned2x || 0);
                 });
-                topMetersBox.innerHTML = metersHtml;
-                ledgerContainer.innerHTML = ledgerHtml;
+
+                const remainingLiveRoom = Math.max(0, liveActiveTarget - liveActiveEarned);
+                const livePct = liveActiveTarget > 0 ? Math.min(100, (liveActiveEarned / liveActiveTarget) * 100) : 100;
+                const allCompleted = activeRecords.length === 0;
+
+                const activeClonesCount = activeRecords.filter(r => r.type === 'AUTO_REINVEST' || r.type === 'SELF_COMPOUND').length;
+
+                topMetersBox.innerHTML = `
+                    <div class="bg-slate-900/95 p-3.5 rounded-xl border ${allCompleted ? 'border-amber-400/70' : 'border-emerald-500/40'} space-y-2.5">
+                        <div class="flex flex-wrap justify-between items-center gap-2 text-xs">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-mono font-extrabold px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40">ACTUAL 2x LIMIT</span>
+                                <span class="font-bold text-white font-mono">Deposit: <b class="text-sky-400">$${actualExternalInvested.toFixed(2)}</b> &rarr; 2x Cap: <b class="text-amber-300">$${fixedExternal2xLimit.toFixed(2)}</b></span>
+                            </div>
+                            <span class="font-mono font-extrabold ${allCompleted ? 'text-amber-300' : 'text-emerald-400'}">
+                                ${allCompleted ? '🏆 100% 2x COMPLETED' : `${livePct.toFixed(1)}% Used • $${remainingLiveRoom.toFixed(2)} Left`}
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-3.5 border border-slate-700 overflow-hidden p-0.5">
+                            <div class="bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${Math.max(2, livePct)}%"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-[11px] font-mono bg-slate-950/85 p-2 rounded-lg border border-slate-800">
+                            <div>
+                                <span class="text-gray-400 block text-[9px]">Actual 2x Limit</span>
+                                <b class="text-white">$${fixedExternal2xLimit.toFixed(2)}</b>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block text-[9px]">Active Clones</span>
+                                <b class="text-sky-400">${activeClonesCount} Running</b>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 block text-[9px]">Remaining Capacity</span>
+                                <b class="text-emerald-400">$${remainingLiveRoom.toFixed(2)}</b>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 2. PAGINATED INDIVIDUAL LEDGER (Zero-Lag Rendering for Long-Term Scale)
+                const btnMoreLedger = document.getElementById('btnLoadMoreLedger');
+                if (activeDashboardTab === 'ledger') {
+                    const visibleLedger = myRecords.slice(0, ledgerDisplayLimit);
+                    if (btnMoreLedger) {
+                        if (myRecords.length > ledgerDisplayLimit) {
+                            btnMoreLedger.classList.remove('hidden');
+                            btnMoreLedger.innerText = `Load More Records (${visibleLedger.length} of ${myRecords.length} shown)`;
+                        } else {
+                            btnMoreLedger.classList.add('hidden');
+                        }
+                    }
+
+                    let ledgerHtml = '';
+                    visibleLedger.forEach((rec) => {
+                        const isReinv = rec.type === 'AUTO_REINVEST';
+                        const isComp = rec.type === 'SELF_COMPOUND';
+                        const isUpg = rec.type === 'UPGRADE';
+                        const target2x = rec.target2x || (rec.amount * 2);
+                        const earned2x = rec.earned2x || 0;
+                        const pct = target2x > 0 ? Math.min(100, (earned2x / target2x) * 100) : 0;
+                        const labelTag = isReinv
+                            ? '🔄 50% Auto-Reinvest (Clone ID)'
+                            : (isComp ? '♻️ Daily Self-Compound (Clone ID)' : (isUpg ? '⬆️ Single Upgrade (Clone ID)' : '🚀 Direct Package (Main ID)'));
+                        const posBadgeHtml = rec.queuePosition ? `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono text-[10px] font-extrabold">#Pos-${rec.queuePosition}</span>` : '';
+
+                        ledgerHtml += `
+                            <div class="bg-slate-950/95 border border-slate-800 p-3.5 rounded-xl space-y-2">
+                                <div class="flex justify-between items-center flex-wrap gap-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-mono font-bold text-amber-300">${rec.id} • ${labelTag}</span>
+                                        ${posBadgeHtml}
+                                    </div>
+                                    <span class="text-[11px] text-gray-400 font-mono">${rec.timestamp}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-300">
+                                    <span>Amount: <b class="text-white font-mono">$${rec.amount.toFixed(2)}</b></span>
+                                    <span>2x Meter: <b class="text-emerald-400 font-mono">$${earned2x.toFixed(2)} / $${target2x.toFixed(2)} (${pct.toFixed(1)}%)</b></span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 bg-slate-900/70 p-2 rounded-lg text-[11px]">
+                                    <div>LP (40%): <b class="text-amber-400 font-mono">$${(rec.poolShare || rec.amount * 0.40).toFixed(2)}</b></div>
+                                    <div>Ref: <b class="text-emerald-400 font-mono">$${(rec.directShare || rec.amount * 0.10).toFixed(2)}</b></div>
+                                    <div>Team (40%): <b class="text-sky-400 font-mono">$${(rec.teamShare || rec.amount * 0.40).toFixed(2)}</b></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    ledgerContainer.innerHTML = ledgerHtml;
+                }
             }
 
             const myWithdraws = (pendingWithdrawals || []).filter(w => w.wallet && w.wallet.toLowerCase() === wLower);
             document.getElementById('uiUserWithdrawTicketCount').innerText = myWithdraws.length;
 
-            if (myWithdraws.length === 0) {
-                withdrawContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No withdrawal tickets yet.</div>`;
-            } else {
-                let wdHtml = '';
-                myWithdraws.slice(0, 100).forEach(w => {
-                    const isPending = w.status === 'PENDING';
-                    wdHtml += `
-                        <div class="bg-slate-950/90 border ${isPending ? 'border-amber-500/40' : 'border-emerald-500/40'} p-3.5 rounded-xl flex justify-between items-center gap-2">
-                            <div>
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="font-mono font-bold text-amber-400">${w.id}</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${w.status}</span>
+            if (activeDashboardTab === 'ledger') {
+                const btnMoreWd = document.getElementById('btnLoadMoreWithdrawals');
+                if (myWithdraws.length === 0) {
+                    if (btnMoreWd) btnMoreWd.classList.add('hidden');
+                    withdrawContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No withdrawal tickets yet.</div>`;
+                } else {
+                    const visibleWd = myWithdraws.slice(0, withdrawalsDisplayLimit);
+                    if (btnMoreWd) {
+                        if (myWithdraws.length > withdrawalsDisplayLimit) {
+                            btnMoreWd.classList.remove('hidden');
+                            btnMoreWd.innerText = `Load More Tickets (${visibleWd.length} of ${myWithdraws.length} shown)`;
+                        } else {
+                            btnMoreWd.classList.add('hidden');
+                        }
+                    }
+
+                    let wdHtml = '';
+                    visibleWd.forEach(w => {
+                        const isPending = w.status === 'PENDING';
+                        wdHtml += `
+                            <div class="bg-slate-950/90 border ${isPending ? 'border-amber-500/40' : 'border-emerald-500/40'} p-3.5 rounded-xl flex justify-between items-center gap-2">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-mono font-bold text-amber-400">${w.id}</span>
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isPending ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'}">${w.status}</span>
+                                    </div>
+                                    <div class="text-gray-300">50% Payout: <b class="text-emerald-400 font-mono">${w.tokenAmount} T_DA ($${w.netUSDT.toFixed(2)})</b> • 50% Reinvest: <b class="text-sky-400 font-mono">${w.reinvestRecordId} ($${w.reinvestedUSDT.toFixed(2)})</b></div>
                                 </div>
-                                <div class="text-gray-300">50% Payout: <b class="text-emerald-400 font-mono">${w.tokenAmount} T_DA ($${w.netUSDT.toFixed(2)})</b> • 50% Reinvest: <b class="text-sky-400 font-mono">${w.reinvestRecordId} ($${w.reinvestedUSDT.toFixed(2)})</b></div>
+                                <span class="text-[10px] text-gray-500 font-mono">${w.timestamp}</span>
                             </div>
-                            <span class="text-[10px] text-gray-500 font-mono">${w.timestamp}</span>
-                        </div>
-                    `;
-                });
-                withdrawContainer.innerHTML = wdHtml;
+                        `;
+                    });
+                    withdrawContainer.innerHTML = wdHtml;
+                }
             }
         }
 
         function renderMyDirectPartnersList() {
             const listEl = document.getElementById('myDirectPartnersList');
             const countEl = document.getElementById('uiTotalDirectsRegistered');
+            const btnMoreDir = document.getElementById('btnLoadMoreDirects');
             if (!listEl || !currentUserWallet) return;
 
             const wLower = currentUserWallet.toLowerCase();
@@ -2914,12 +3017,23 @@
             if (countEl) countEl.innerText = myDirects.length;
 
             if (myDirects.length === 0) {
-                listEl.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/40 rounded-xl border border-slate-800/80">No direct partners registered under your link yet.</div>`;
+                if (btnMoreDir) btnMoreDir.classList.add('hidden');
+                listEl.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8 bg-slate-950/40 rounded-xl border border-slate-800/80">No direct partners registered under your link yet.</div>`;
                 return;
             }
 
+            const visibleDirects = myDirects.slice(0, directsDisplayLimit);
+            if (btnMoreDir) {
+                if (myDirects.length > directsDisplayLimit) {
+                    btnMoreDir.classList.remove('hidden');
+                    btnMoreDir.innerText = `Load More Partners (${visibleDirects.length} of ${myDirects.length} shown)`;
+                } else {
+                    btnMoreDir.classList.add('hidden');
+                }
+            }
+
             let listHtml = '';
-            myDirects.forEach(d => {
+            visibleDirects.forEach(d => {
                 const isActive = (d.totalInvested || 0) > 0;
                 const dTierIdx = d.progressionTier !== undefined ? d.progressionTier : -1;
                 const dClub = dTierIdx >= 0 ? NAMED_CLUBS[dTierIdx] : null;
