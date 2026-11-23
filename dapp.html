@@ -674,7 +674,7 @@
     </main>
 
     <!-- Official Brand Footer -->
-    <footer class="border-t border-slate-800/80 bg-slate-950/80 py-5 px-4 pb-20 sm:pb-5 mt-8 text-center text-xs text-gray-400">
+    <footer class="border-t border-slate-800/80 bg-slate-950/80 py-5 px-4 pb-24 sm:pb-6 mt-8 text-center text-xs text-gray-400">
         <div class="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-2">
                 <span class="font-extrabold gold-gradient-text">TGIP PROTOCOL</span>
@@ -690,9 +690,31 @@
         </div>
     </footer>
 
-    <!-- Compact Floating Quick-Join Telegram Button (Bottom Right - Zero Footer Overlap) -->
-    <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="fixed bottom-4 right-4 z-[90] tg-btn w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl border border-sky-300/40 transition-transform hover:scale-105" title="Join Live Proof Telegram Group">
-        <i class="fa-brands fa-telegram text-2xl sm:text-xl"></i>
+    <!-- Next-Gen Mobile-First Fixed Bottom App Navigation Dock (Authenticated Mobile View) -->
+    <div id="mobileBottomAppNav" class="hidden sm:hidden fixed bottom-0 left-0 right-0 z-[95] bg-slate-950/95 backdrop-blur-xl border-t border-amber-500/30 px-2 py-1.5 shadow-[0_-8px_25px_rgba(0,0,0,0.75)]">
+        <div class="grid grid-cols-4 gap-1">
+            <button type="button" id="mobNavBtn_packages" onclick="switchDashboardTab('packages')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span>Invest</span>
+            </button>
+            <button type="button" id="mobNavBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+                <i class="fa-solid fa-crown text-sm text-amber-400"></i>
+                <span>Clubs</span>
+            </button>
+            <button type="button" id="mobNavBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+                <i class="fa-solid fa-network-wired text-sm text-sky-400"></i>
+                <span>Matrix</span>
+            </button>
+            <button type="button" id="mobNavBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+                <i class="fa-solid fa-receipt text-sm text-emerald-400"></i>
+                <span>Ledger</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Compact Floating Quick-Join Telegram Button (Bottom Right - Zero Overlap) -->
+    <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="fixed bottom-20 sm:bottom-4 right-4 z-[90] tg-btn w-11 h-11 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl border border-sky-300/40 transition-transform hover:scale-105" title="Join Live Proof Telegram Group">
+        <i class="fa-brands fa-telegram text-xl"></i>
         <span class="hidden sm:inline">Live Proof Group</span>
     </a>
 
@@ -1121,6 +1143,7 @@
             allTabs.forEach(key => {
                 const panel = document.getElementById(`dashTabPanel_${key}`);
                 const btn = document.getElementById(`dashTabBtn_${key}`);
+                const mobBtn = document.getElementById(`mobNavBtn_${key}`);
                 if (panel) {
                     if (key === tabKey) panel.classList.remove('hidden');
                     else panel.classList.add('hidden');
@@ -1130,6 +1153,13 @@
                         btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer gold-btn shadow-md";
                     } else {
                         btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800";
+                    }
+                }
+                if (mobBtn) {
+                    if (key === tabKey) {
+                        mobBtn.className = "py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer";
+                    } else {
+                        mobBtn.className = "py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer";
                     }
                 }
             });
@@ -1693,6 +1723,8 @@
             document.getElementById('heroSection').classList.add('hidden');
             document.getElementById('mainDashboard').classList.remove('hidden');
             document.getElementById('mainDashboard').classList.add('flex');
+            const mobNav = document.getElementById('mobileBottomAppNav');
+            if (mobNav) mobNav.classList.remove('hidden');
             document.getElementById('btnConnect').classList.add('hidden');
             const regBtn = document.getElementById('btnNavRegister');
             if (regBtn) regBtn.classList.add('hidden');
@@ -1714,6 +1746,8 @@
             currentUserWallet = null;
             currentUserData = null;
             document.getElementById('mainDashboard').classList.add('hidden');
+            const mobNav = document.getElementById('mobileBottomAppNav');
+            if (mobNav) mobNav.classList.add('hidden');
             document.getElementById('heroSection').classList.remove('hidden');
             document.getElementById('btnConnect').classList.remove('hidden');
             const regBtn = document.getElementById('btnNavRegister');
@@ -2604,7 +2638,7 @@
                 pillEl.innerText = `🏆 ACTIVE RANK: ${curClub.icon} ${curClub.name.toUpperCase()} (${curClub.poolPct}% POOL)`;
                 timerEl.innerText = hasTimer ? "QUALIFIED ✓" : "NO TIMER ♾️";
                 timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-emerald-400";
-                subNoteEl.innerText = `5x Cap: $${(u.clubEarned || 0).toFixed(2)} / $${(u.club5xCap || curClub.cap5x).toFixed(2)}`;
+                subNoteEl.innerText = `Active Royalty Earning`;
             }
             else if (u.clubStatus === "CAPPED") {
                 pillEl.className = "bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold px-3 py-0.5 rounded-full font-mono";
