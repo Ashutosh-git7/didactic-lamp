@@ -160,7 +160,7 @@
 
     <!-- Main Navigation Header -->
     <nav class="glass-panel sticky top-0 z-50 px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center gap-2 border-b border-amber-500/20">
-        <!-- Brand Logo & Title (2-Line Stacked on Mobile to Match Logo Height, Inline on Desktop) -->
+        <!-- Brand Logo & Title -->
         <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
             <div class="relative shrink-0">
                 <img src="TGIP.png" data-logo-idx="0" onerror="window.resolveTGIPLogo(this)" alt="TGIP Protocol Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]">
@@ -221,7 +221,8 @@
             </div>
         </div>
     </nav>
-    <!-- PRE-LOGIN HERO SECTION (CLASS-A INSTITUTIONAL WEB3 DEFI LANDING) -->
+
+    <!-- PRE-LOGIN HERO SECTION -->
     <main id="heroSection" class="flex-grow container mx-auto px-4 py-8 sm:py-14 flex flex-col items-center justify-center text-center">
         <div class="relative mb-5">
             <div class="absolute -inset-3 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-sky-400 opacity-35 blur-2xl animate-pulse"></div>
@@ -294,7 +295,7 @@
         </div>
     </main>
 
-    <!-- MAIN AUTHENTICATED DASHBOARD (CLEAN, FUTURE-PROOF, ZERO-LAG 4-TAB COMMAND CENTER) -->
+    <!-- MAIN AUTHENTICATED DASHBOARD (5-BUTTON NAVIGATION WITH DEFAULT HOME VIEW) -->
     <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-5">
         <!-- 1. TOP MEMBER IDENTITY, HIGHLIGHTED ROYALTY RANK & REFERRAL LINK -->
         <div class="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400">
@@ -338,133 +339,138 @@
             </div>
         </div>
 
-        <!-- 2. CORE FINANCIAL SNAPSHOT: WITHDRAW / COMPOUND + 4 KPIs + SINGLE MASTER 2x METER -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
-                <div>
-                    <div class="flex justify-between items-center mb-1.5">
-                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
-                        <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
-                            Min: 3 USDT (50/50)
-                        </span>
-                    </div>
-
-                    <div class="flex items-baseline gap-2 my-2">
-                        <span id="uiBalance" class="text-4xl sm:text-5xl font-extrabold text-white font-mono">0.00</span>
-                        <span class="text-lg font-bold text-amber-400">USDT</span>
-                    </div>
-
-                    <div id="withdrawRequirementBox" class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 mb-2.5 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <i id="reqStatusIcon" class="fa-solid fa-lock text-rose-400"></i>
-                            <span class="text-gray-200 font-semibold">1 Active Direct:</span>
-                        </div>
-                        <span id="uiDirectReqStatus" class="font-mono font-bold text-rose-400">0 / 1 Active</span>
-                    </div>
-
-                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Live Pool Rate:</span>
-                            <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">$0.001569</span>
-                        </div>
-                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
-                            <span class="text-gray-300">50% Wallet Payout:</span>
-                            <span class="font-mono font-bold text-amber-400 text-sm"><span id="uiEstTokens">0.00</span> T_DA</span>
-                        </div>
-                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
-                            <span class="text-gray-400">50% Auto-Reinvest:</span>
-                            <span class="text-sky-400 font-semibold">New 2x Clone (#REINV)</span>
-                        </div>
-                    </div>
-
-                    <!-- DAILY SELF-COMPOUNDING ACTION -->
-                    <div id="dailySelfCompoundBox" class="mt-2.5 bg-sky-950/35 border border-sky-500/35 rounded-xl p-3 text-xs space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="font-extrabold text-sky-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-recycle text-emerald-400"></i> Self-Compound (#COMP)
-                            </span>
-                            <span id="uiCompoundDailyBadge" class="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-300 border border-slate-700">
-                                Requires $50+
-                            </span>
-                        </div>
-                        <button id="btnSelfCompound" onclick="executeDailySelfCompound()" class="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-extrabold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
-                            <i class="fa-solid fa-arrows-spin"></i> <span id="btnSelfCompoundTxt">Self-Compound &rarr; Clone ID</span>
-                        </button>
-                    </div>
-                </div>
-
-                <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-3 w-full gold-btn font-extrabold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-money-bill-transfer"></i>
-                    <span id="btnWithdrawTxt">Withdraw Temple_DA (50/50)</span>
-                </button>
-            </div>
-
-            <div class="glass-panel rounded-2xl p-5 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-4">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="glass-card p-3.5 rounded-xl">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Actual Deposit</div>
-                        <div class="text-xl sm:text-2xl font-extrabold text-white font-mono">$<span id="uiInvested">0.00</span></div>
-                        <div class="text-[11px] text-sky-400 mt-0.5">Clones: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
-                    </div>
-
-                    <div class="glass-card p-3.5 rounded-xl">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Direct + Clubs</div>
-                        <div class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">$<span id="uiDirectEarned">0.00</span></div>
-                        <div class="text-[11px] text-amber-300 mt-0.5">Clubs: $<b id="uiClubCardStat" class="text-white font-mono">0.00</b></div>
-                    </div>
-
-                    <div class="glass-card p-3.5 rounded-xl">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">20 Up / 20 Down</div>
-                        <div class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono">$<span id="uiPoolEarned">0.00</span></div>
-                        <div class="text-[11px] text-gray-400 mt-0.5">1% Each + Overflow</div>
-                    </div>
-
-                    <div class="glass-card p-3.5 rounded-xl border-amber-500/30">
-                        <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned</div>
-                        <div class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$<span id="uiEarned">0.00</span></div>
-                        <div class="text-[11px] text-emerald-400 mt-0.5">Overflow: $<span id="uiOverflowSaved">0.00</span></div>
-                    </div>
-                </div>
-
-                <!-- SINGLE UNIFIED MASTER 2x RETURN METER (FIXED ACTUAL 2x LIMIT + LIVE UP/DOWN CAPACITY BAR) -->
-                <div class="bg-slate-950/90 p-4 rounded-xl border border-amber-500/30">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
-                        <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high text-amber-400"></i> TGIP Master 2x Return Capacity Meter
-                        </span>
-                        <div class="flex items-center gap-2 text-[11px] font-mono">
-                            <span class="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                                Active IDs: <b id="uiTopActiveMetersCount">0</b>
-                            </span>
-                            <span class="bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                                2x Done: <b id="uiTopCompletedMetersCount">0</b>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div id="individualCappingMetersBox" class="space-y-2.5"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. CLEAN FUTURE-PROOF 4-TAB NAVIGATION BAR (ZERO CLUTTER • ZERO LAG) -->
-        <div class="glass-panel rounded-2xl p-2 grid grid-cols-2 sm:grid-cols-4 gap-2 border border-slate-800">
-            <button type="button" id="dashTabBtn_packages" onclick="switchDashboardTab('packages')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer gold-btn shadow-md">
-                <i class="fa-solid fa-bolt"></i> <span>Activate / Upgrade</span>
+        <!-- 2. 5-BUTTON NAVIGATION BAR (HOME, INVEST, CLUBS, MATRIX, LEDGER) -->
+        <div class="glass-panel rounded-2xl p-2 grid grid-cols-5 gap-1.5 sm:gap-2 border border-slate-800">
+            <button type="button" id="dashTabBtn_home" onclick="switchDashboardTab('home')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-extrabold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer gold-btn shadow-md">
+                <i class="fa-solid fa-house"></i> <span>Home</span>
             </button>
-            <button type="button" id="dashTabBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
-                <i class="fa-solid fa-crown text-amber-400"></i> <span>7 Royalty Clubs</span>
+            <button type="button" id="dashTabBtn_packages" onclick="switchDashboardTab('packages')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-bolt"></i> <span>Invest</span>
             </button>
-            <button type="button" id="dashTabBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
-                <i class="fa-solid fa-network-wired text-sky-400"></i> <span>Matrix &amp; Clones</span>
+            <button type="button" id="dashTabBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-crown text-amber-400"></i> <span>Clubs</span>
             </button>
-            <button type="button" id="dashTabBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
-                <i class="fa-solid fa-receipt text-emerald-400"></i> <span>Ledger &amp; Team</span>
+            <button type="button" id="dashTabBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-network-wired text-sky-400"></i> <span>Matrix</span>
+            </button>
+            <button type="button" id="dashTabBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800">
+                <i class="fa-solid fa-receipt text-emerald-400"></i> <span>Ledger</span>
             </button>
         </div>
 
-        <!-- TAB PANEL 1: ACTIVATE / UPGRADE PACKAGES -->
-        <section id="dashTabPanel_packages" class="space-y-4">
+        <!-- TAB PANEL 0: HOME (DEFAULT POST-LOGIN OVERVIEW) -->
+        <section id="dashTabPanel_home" class="space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Withdrawable Profit</span>
+                            <span class="text-[11px] bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-semibold">
+                                Min: 3 USDT (50/50)
+                            </span>
+                        </div>
+
+                        <div class="flex items-baseline gap-2 my-2">
+                            <span id="uiBalance" class="text-4xl sm:text-5xl font-extrabold text-white font-mono">0.00</span>
+                            <span class="text-lg font-bold text-amber-400">USDT</span>
+                        </div>
+
+                        <div id="withdrawRequirementBox" class="bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 mb-2.5 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <i id="reqStatusIcon" class="fa-solid fa-lock text-rose-400"></i>
+                                <span class="text-gray-200 font-semibold">1 Active Direct:</span>
+                            </div>
+                            <span id="uiDirectReqStatus" class="font-mono font-bold text-rose-400">0 / 1 Active</span>
+                        </div>
+
+                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Live Pool Rate:</span>
+                                <span id="dashboardLiveRateTxt" class="font-mono text-emerald-400 font-bold">$0.001569</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
+                                <span class="text-gray-300">50% Wallet Payout:</span>
+                                <span class="font-mono font-bold text-amber-400 text-sm"><span id="uiEstTokens">0.00</span> T_DA</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-slate-800/80 pt-1.5">
+                                <span class="text-gray-400">50% Auto-Reinvest:</span>
+                                <span class="text-sky-400 font-semibold">New 2x Clone (#REINV)</span>
+                            </div>
+                        </div>
+
+                        <!-- DAILY SELF-COMPOUNDING ACTION -->
+                        <div id="dailySelfCompoundBox" class="mt-2.5 bg-sky-950/35 border border-sky-500/35 rounded-xl p-3 text-xs space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-extrabold text-sky-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-recycle text-emerald-400"></i> Self-Compound (#COMP)
+                                </span>
+                                <span id="uiCompoundDailyBadge" class="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-900 text-amber-300 border border-slate-700">
+                                    Requires $50+
+                                </span>
+                            </div>
+                            <button id="btnSelfCompound" onclick="executeDailySelfCompound()" class="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-extrabold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+                                <i class="fa-solid fa-arrows-spin"></i> <span id="btnSelfCompoundTxt">Self-Compound &rarr; Clone ID</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="btnWithdraw" onclick="requestWithdrawal()" class="mt-3 w-full gold-btn font-extrabold py-3 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+                        <span id="btnWithdrawTxt">Withdraw Temple_DA (50/50)</span>
+                    </button>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-5 border-t-4 border-t-sky-400 lg:col-span-2 flex flex-col justify-between gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="glass-card p-3.5 rounded-xl">
+                            <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Actual Deposit</div>
+                            <div class="text-xl sm:text-2xl font-extrabold text-white font-mono">$<span id="uiInvested">0.00</span></div>
+                            <div class="text-[11px] text-sky-400 mt-0.5">Clones: $<b id="uiAutoReinvestedTotal" class="text-white font-mono">0.00</b></div>
+                        </div>
+
+                        <div class="glass-card p-3.5 rounded-xl">
+                            <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Direct + Clubs</div>
+                            <div class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono">$<span id="uiDirectEarned">0.00</span></div>
+                            <div class="text-[11px] text-amber-300 mt-0.5">Clubs: $<b id="uiClubCardStat" class="text-white font-mono">0.00</b></div>
+                        </div>
+
+                        <div class="glass-card p-3.5 rounded-xl">
+                            <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">20 Up / 20 Down</div>
+                            <div class="text-xl sm:text-2xl font-extrabold text-sky-400 font-mono">$<span id="uiPoolEarned">0.00</span></div>
+                            <div class="text-[11px] text-gray-400 mt-0.5">1% Each + Overflow</div>
+                        </div>
+
+                        <div class="glass-card p-3.5 rounded-xl border-amber-500/30">
+                            <div class="text-gray-400 text-[11px] uppercase font-semibold mb-1">Total Earned</div>
+                            <div class="text-xl sm:text-2xl font-extrabold text-amber-300 font-mono">$<span id="uiEarned">0.00</span></div>
+                            <div class="text-[11px] text-emerald-400 mt-0.5">Overflow: $<span id="uiOverflowSaved">0.00</span></div>
+                        </div>
+                    </div>
+
+                    <!-- SINGLE UNIFIED MASTER 2x RETURN METER -->
+                    <div class="bg-slate-950/90 p-4 rounded-xl border border-amber-500/30">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-2.5">
+                            <span class="font-extrabold text-xs sm:text-sm text-white flex items-center gap-2">
+                                <i class="fa-solid fa-gauge-high text-amber-400"></i> TGIP Master 2x Return Capacity Meter
+                            </span>
+                            <div class="flex items-center gap-2 text-[11px] font-mono">
+                                <span class="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                                    Active IDs: <b id="uiTopActiveMetersCount">0</b>
+                                </span>
+                                <span class="bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                                    2x Done: <b id="uiTopCompletedMetersCount">0</b>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="individualCappingMetersBox" class="space-y-2.5"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB PANEL 1: INVEST / ACTIVATE / UPGRADE PACKAGES -->
+        <section id="dashTabPanel_packages" class="hidden space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 class="text-base sm:text-lg font-extrabold flex items-center gap-2">
                     <span class="w-1.5 h-5 bg-emerald-400 rounded-full inline-block"></span>
@@ -510,6 +516,10 @@
                                 <span class="text-gray-400 block text-[10px]">Contributing Directs (Min 2)</span>
                                 <b class="text-white text-sm"><span id="uiFreshContributingDirects">0</span> / 2 Directs</b>
                             </div>
+                        </div>
+                        <div id="uiClubRemainingSummaryBox" class="bg-slate-950/85 border border-emerald-500/30 rounded-xl px-3.5 py-2.5 text-xs font-mono text-gray-200 flex flex-wrap items-center justify-between gap-2">
+                            <span id="uiClubRemainingDirectTxt">Remaining Direct (A+B) Needed: <b class="text-amber-300">$100.00</b></span>
+                            <span id="uiClubRemainingUpgradeTxt">Remaining Self Upgrade Needed: <b class="text-sky-400">Select $50 or ⚡ $100 VIP</b></span>
                         </div>
                         <p class="text-xs text-gray-300 leading-relaxed max-w-3xl">
                             <b>⚡ $100 VIP Power Advantage:</b> Activating <b>$100</b> automatically enters <b>Apex Club (3% Pool) with NO 7-Day Timer</b> (only 1× = $100 Fresh Direct A+B across 2+ directs required) + unlocks <b>15% Direct Bonus</b>, <b>2x Daily Compound</b> &amp; <b>45% Overflow Share</b>! All higher clubs (<b>Titan &rarr; Crown</b>) also have <b>NO timer</b>.
@@ -609,7 +619,6 @@
 
         <!-- TAB PANEL 4: CLEAN SUB-TABBED LEDGER, WITHDRAWALS & DIRECT REFERRAL TEAM -->
         <section id="dashTabPanel_ledger" class="hidden space-y-4">
-            <!-- Sub-Tab Switcher for Mobile & Desktop Clarity -->
             <div class="grid grid-cols-3 gap-2 bg-slate-950/90 p-1.5 rounded-xl border border-slate-800">
                 <button type="button" id="ledgerSubBtn_investments" onclick="switchLedgerSubTab('investments')" class="py-2.5 px-2 rounded-lg text-xs font-extrabold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer transition-all flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-chart-column"></i> <span>2x Ledger</span>
@@ -690,29 +699,33 @@
         </div>
     </footer>
 
-    <!-- Next-Gen Mobile-First Fixed Bottom App Navigation Dock (Authenticated Mobile View) -->
-    <div id="mobileBottomAppNav" class="hidden sm:hidden fixed bottom-0 left-0 right-0 z-[95] bg-slate-950/95 backdrop-blur-xl border-t border-amber-500/30 px-2 py-1.5 shadow-[0_-8px_25px_rgba(0,0,0,0.75)]">
-        <div class="grid grid-cols-4 gap-1">
-            <button type="button" id="mobNavBtn_packages" onclick="switchDashboardTab('packages')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer">
+    <!-- 5-Button Mobile Bottom Navigation Dock -->
+    <div id="mobileBottomAppNav" class="hidden sm:hidden fixed bottom-0 left-0 right-0 z-[95] bg-slate-950/95 backdrop-blur-xl border-t border-amber-500/30 px-1.5 py-1.5 shadow-[0_-8px_25px_rgba(0,0,0,0.75)]">
+        <div class="grid grid-cols-5 gap-1">
+            <button type="button" id="mobNavBtn_home" onclick="switchDashboardTab('home')" class="py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer">
+                <i class="fa-solid fa-house text-sm"></i>
+                <span>Home</span>
+            </button>
+            <button type="button" id="mobNavBtn_packages" onclick="switchDashboardTab('packages')" class="py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
                 <i class="fa-solid fa-bolt text-sm"></i>
                 <span>Invest</span>
             </button>
-            <button type="button" id="mobNavBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+            <button type="button" id="mobNavBtn_clubs" onclick="switchDashboardTab('clubs')" class="py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
                 <i class="fa-solid fa-crown text-sm text-amber-400"></i>
                 <span>Clubs</span>
             </button>
-            <button type="button" id="mobNavBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+            <button type="button" id="mobNavBtn_matrix" onclick="switchDashboardTab('matrix')" class="py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
                 <i class="fa-solid fa-network-wired text-sm text-sky-400"></i>
                 <span>Matrix</span>
             </button>
-            <button type="button" id="mobNavBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
+            <button type="button" id="mobNavBtn_ledger" onclick="switchDashboardTab('ledger')" class="py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer">
                 <i class="fa-solid fa-receipt text-sm text-emerald-400"></i>
                 <span>Ledger</span>
             </button>
         </div>
     </div>
 
-    <!-- Compact Floating Quick-Join Telegram Button (Bottom Right - Zero Overlap) -->
+    <!-- Compact Floating Quick-Join Telegram Button -->
     <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="fixed bottom-20 sm:bottom-4 right-4 z-[90] tg-btn w-11 h-11 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl border border-sky-300/40 transition-transform hover:scale-105" title="Join Live Proof Telegram Group">
         <i class="fa-brands fa-telegram text-xl"></i>
         <span class="hidden sm:inline">Live Proof Group</span>
@@ -735,7 +748,6 @@
                 </div>
             </div>
 
-            <!-- HIGHLIGHTED $100 VIP POWER CALLOUT -->
             <div class="bg-gradient-to-r from-amber-500/20 via-amber-950/40 to-emerald-500/20 border-2 border-amber-400/60 rounded-xl p-3.5 mb-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                     <span class="font-extrabold text-amber-300 text-sm flex items-center gap-1.5"><i class="fa-solid fa-bolt"></i> ⚡ $100 VIP Power Booster (Direct Apex Club Entry • No Timer!)</span>
@@ -949,10 +961,10 @@
                         <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Withdrawal Requests Queue (50% Temple_DA Token Payout)
                     </span>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button id="btnAdminBatchMultiSend" onclick="adminBatchMultiSendAllPending()" class="gold-btn font-extrabold px-3 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1.5 shadow-md" title="Send Temple_DA tokens to ALL pending members in a single on-chain transaction">
+                        <button id="btnAdminBatchMultiSend" onclick="adminBatchMultiSendAllPending()" class="gold-btn font-extrabold px-3 py-1.5 rounded-xl text-xs cursor-pointer flex items-center gap-1.5 shadow-md" title="Send Temple_DA tokens to ALL pending members in a single on-chain transaction">
                             <i class="fa-solid fa-bolt"></i> 1-Click Pay All Pending (<span id="adminBatchTotalTokensTxt">0</span> T_DA)
                         </button>
-                        <button onclick="openBatchSyncRecoveryModal()" class="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold px-2.5 py-1.5 rounded-xl text-[11px] cursor-pointer flex items-center gap-1" title="Recover & sync status if a batch transaction succeeded on BSC but network dropped">
+                        <button onclick="openBatchSyncRecoveryModal()" class="bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 font-bold px-2.5 py-1.5 rounded-xl text-xs cursor-pointer flex items-center gap-1" title="Recover & sync status if a batch transaction succeeded on BSC but network dropped">
                             <i class="fa-solid fa-rotate"></i> Sync Batch Tx
                         </button>
                         <span class="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono font-bold border border-amber-500/40">
@@ -1097,7 +1109,7 @@
 
         let currentCloneFilterMode = 'ACTIVE';
         let isCloneListExpanded = false;
-        let activeDashboardTab = 'packages';
+        let activeDashboardTab = 'home';
         let activeLedgerSubTab = 'investments';
         let ledgerDisplayLimit = 10;
         let withdrawalsDisplayLimit = 10;
@@ -1139,7 +1151,7 @@
 
         window.switchDashboardTab = function(tabKey) {
             activeDashboardTab = tabKey;
-            const allTabs = ['packages', 'clubs', 'matrix', 'ledger'];
+            const allTabs = ['home', 'packages', 'clubs', 'matrix', 'ledger'];
             allTabs.forEach(key => {
                 const panel = document.getElementById(`dashTabPanel_${key}`);
                 const btn = document.getElementById(`dashTabBtn_${key}`);
@@ -1150,16 +1162,16 @@
                 }
                 if (btn) {
                     if (key === tabKey) {
-                        btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer gold-btn shadow-md";
+                        btn.className = "py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-extrabold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer gold-btn shadow-md";
                     } else {
-                        btn.className = "py-3 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800";
+                        btn.className = "py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer bg-slate-900/80 text-gray-300 hover:text-white border border-slate-800";
                     }
                 }
                 if (mobBtn) {
                     if (key === tabKey) {
-                        mobBtn.className = "py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer";
+                        mobBtn.className = "py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-extrabold text-amber-300 bg-amber-500/15 border border-amber-400/40 cursor-pointer";
                     } else {
-                        mobBtn.className = "py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer";
+                        mobBtn.className = "py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-gray-400 hover:text-white cursor-pointer";
                     }
                 }
             });
@@ -1708,7 +1720,7 @@
                     const shortSponsor = sponsorAddr ? `${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}` : 'Direct';
                     await sendTelegramAlert('New Member Registration', walletAddr, '0 (Registered)', '', `🤝 <b>Sponsor:</b> <code>${shortSponsor}</code>`);
                     const sponsorText = sponsorAddr ? `under sponsor <code>${sponsorAddr.slice(0,6)}...${sponsorAddr.slice(-4)}</code>` : `directly`;
-                    UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package below (or <b>⚡ $100 VIP Power</b> for No-Timer Apex Club entry!) to activate your Global Single-Leg position!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
+                    UI.showModal('TGIP Registration Successful! 🎉', `Welcome <b>${nameInput}</b>!<br><br>Your account is registered on <b>TGIP Protocol (in collaboration with Temple_DA)</b> ${sponsorText}.<br>Select any package in Invest (or <b>⚡ $100 VIP Power</b> for No-Timer Apex Club entry!) to activate your Global Single-Leg position!<br><br><a href="${TELEGRAM_GROUP_INVITE}" target="_blank" class="tg-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold mt-2"><i class="fa-brands fa-telegram"></i> Join Official Telegram Group</a>`, '✅');
                 }
             } finally {
                 isRegistrationInProgress = false;
@@ -1739,7 +1751,7 @@
             document.getElementById('refLinkTxt').innerText = `${baseDomain}?ref=${walletAddress}`;
 
             currentUserData = globalUsersMap[wLower];
-            refreshDashboardUI();
+            window.switchDashboardTab('home');
         }
 
         window.disconnectWallet = function() {
@@ -1850,7 +1862,6 @@
                 }
             });
 
-            // Include any legacy direct member deposits not yet present in investmentRecords
             if (curTierIdx === 0) {
                 for (const dWallet of directWalletsSet) {
                     const dUser = state.globalUsersMap[dWallet];
@@ -2580,6 +2591,8 @@
             const bannerTitleEl = document.getElementById('uiClubBannerTitle');
             const sharePctNoteEl = document.getElementById('uiClubSharePctNote');
             const cap5xEl = document.getElementById('uiClub5xCapAmt');
+            const remDirectEl = document.getElementById('uiClubRemainingDirectTxt');
+            const remUpgradeEl = document.getElementById('uiClubRemainingUpgradeTxt');
 
             const tierIdx = u.progressionTier !== undefined ? u.progressionTier : -1;
             const curClub = tierIdx >= 0 ? NAMED_CLUBS[tierIdx] : null;
@@ -2597,6 +2610,8 @@
                 if (bannerTitleEl) bannerTitleEl.innerText = "Starter";
                 if (document.getElementById('uiFreshDirectReqAB')) document.getElementById('uiFreshDirectReqAB').innerText = "100";
                 if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `$50 (7d Timer) or ⚡ $100 VIP Power (No Timer) + $100 Fresh Direct (A+B)`;
+                if (remDirectEl) remDirectEl.innerHTML = `Remaining Direct (A+B) Needed: <b class="text-amber-300">$100.00</b> (Min 2 Directs)`;
+                if (remUpgradeEl) remUpgradeEl.innerHTML = `Self Upgrade Needed: <b class="text-sky-400">$50 or ⚡ $100 VIP</b>`;
                 pillEl.innerText = "Activate $50 (7-Day Timer) or ⚡ $100 VIP Power (No Timer!)";
                 timerEl.innerText = "--:--:--";
                 if (cap5xEl) cap5xEl.innerText = "0";
@@ -2609,7 +2624,6 @@
                 ? `🥉 Apex (⚡ $100 VIP)`
                 : `${curClub.icon} ${curClub.name} ($${curClub.selfReq})`;
 
-            // HIGHLIGHT RANK BADGE PROMINENTLY WHEN ACHIEVED & ACTIVE
             if (headerBadgeEl && headerClubEl) {
                 if (u.clubStatus === "ACTIVE") {
                     headerBadgeEl.className = "rank-active-glow text-amber-300 text-xs font-extrabold px-4 py-1.5 rounded-full font-mono transition-all cursor-pointer flex items-center gap-1.5";
@@ -2625,8 +2639,29 @@
             if (cap5xEl) cap5xEl.innerText = u.club5xCap || curClub.cap5x;
             if (sharePctNoteEl) sharePctNoteEl.innerText = `Pool Share: ${curClub.poolPct}%`;
 
+            const remCurClubDirect = Math.max(0, Number(curClub.directABReq || 0) - Number(metrics.freshTotalAB || 0));
+            const remDirectsCount = Math.max(0, 2 - Number(metrics.contributingDirects || 0));
+
+            if (remDirectEl) {
+                if (u.clubStatus === "ACTIVE") {
+                    remDirectEl.innerHTML = nextClub
+                        ? `${curClub.name} Direct Done ✓ • Next (${nextClub.name}) Direct A+B Target: <b class="text-emerald-400">$${nextClub.directABReq.toFixed(2)}</b>`
+                        : `${curClub.name} Direct Target Completed ✓`;
+                } else {
+                    remDirectEl.innerHTML = `Remaining Direct (A+B) for ${curClub.name}: <b class="text-amber-300">$${remCurClubDirect.toFixed(2)}</b>${remDirectsCount > 0 ? ` • Need <b class="text-rose-400">${remDirectsCount}</b> more direct(s)` : ` • Directs OK ✓`}`;
+                }
+            }
+
+            if (remUpgradeEl) {
+                if (nextClub) {
+                    remUpgradeEl.innerHTML = `Next Self Upgrade (${nextClub.icon} ${nextClub.name}): <b class="text-sky-400">$${nextClub.selfReq} One-Time Upgrade</b>`;
+                } else {
+                    remUpgradeEl.innerHTML = `Self Upgrade: <b class="text-emerald-400">Max Club Reached ✓</b>`;
+                }
+            }
+
             if (nextClub) {
-                if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `Next: ${nextClub.icon} ${nextClub.name} ($${nextClub.selfReq} One-Time Upgrade + $${nextClub.directABReq} Fresh A+B)`;
+                if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `${nextClub.icon} ${nextClub.name} ($${nextClub.selfReq} Upgrade + $${nextClub.directABReq} Fresh A+B)`;
             } else {
                 if (document.getElementById('uiMyBasePkgTxt')) document.getElementById('uiMyBasePkgTxt').innerText = `👑 Maximum Crown Club Tier Reached!`;
             }
@@ -2666,17 +2701,17 @@
                         const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
                         const pad = n => String(n).padStart(2, '0');
                         pillEl.className = "bg-amber-500/20 text-amber-300 border border-amber-400/50 text-[10px] font-extrabold px-3 py-0.5 rounded-full font-mono animate-pulse";
-                        pillEl.innerText = `⏳ APEX LIVE: Need $${curClub.directABReq} Fresh (A+B) across 2+ Directs`;
+                        pillEl.innerText = `⏳ APEX LIVE: Need $${remCurClubDirect.toFixed(0)} More Fresh (A+B) across 2+ Directs`;
                         timerEl.innerText = `${days}d ${pad(hrs)}h ${pad(mins)}m`;
                         timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-amber-400";
-                        subNoteEl.innerText = `Fresh A+B: $${metrics.freshTotalAB.toFixed(0)} / $${curClub.directABReq}`;
+                        subNoteEl.innerText = `Left: $${remCurClubDirect.toFixed(0)} (${metrics.freshTotalAB.toFixed(0)}/${curClub.directABReq})`;
                     }
                 } else {
                     pillEl.className = "bg-sky-500/20 text-sky-300 border border-sky-400/50 text-[10px] font-extrabold px-3 py-0.5 rounded-full font-mono";
-                    pillEl.innerText = `♾️ ${isVipPowerApex ? '⚡ $100 VIP POWER APEX' : curClub.name.toUpperCase()} READY: Need $${curClub.directABReq} Fresh (A+B) across 2+ Directs`;
+                    pillEl.innerText = `♾️ ${isVipPowerApex ? '⚡ $100 VIP POWER APEX' : curClub.name.toUpperCase()} READY: Need $${remCurClubDirect.toFixed(0)} More Fresh (A+B)`;
                     timerEl.innerText = "NO TIMER ♾️";
                     timerEl.className = "text-xl sm:text-2xl font-extrabold font-mono text-sky-400";
-                    subNoteEl.innerText = `Fresh A+B: $${metrics.freshTotalAB.toFixed(0)} / $${curClub.directABReq}`;
+                    subNoteEl.innerText = `Left: $${remCurClubDirect.toFixed(0)} (${metrics.freshTotalAB.toFixed(0)}/${curClub.directABReq})`;
                 }
             }
 
@@ -2718,7 +2753,6 @@
                 document.getElementById('uiGlobalPos').innerText = `#${mainPos} (+${extraClonesCount} Clones)`;
             }
 
-            // Update Daily Self-Compound Box UI
             const totalInv = Number(data.totalInvested || 0);
             const compBadgeEl = document.getElementById('uiCompoundDailyBadge');
             const compBtnTxtEl = document.getElementById('btnSelfCompoundTxt');
@@ -2954,12 +2988,9 @@
             document.getElementById('uiTopCompletedMetersCount').innerText = completedRecords.length;
 
             if (myRecords.length === 0) {
-                topMetersBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-4 bg-slate-900/70 rounded-xl border border-slate-800">No active 2x meter yet. Activate any package below (e.g. 10, 25, 50, or ⚡ 100 VIP Power) to start your 2x Return Meter!</div>`;
+                topMetersBox.innerHTML = `<div class="text-center text-gray-400 text-xs py-4 bg-slate-900/70 rounded-xl border border-slate-800">No active 2x meter yet. Activate any package in Invest (e.g. 10, 25, 50, or ⚡ 100 VIP Power) to start your 2x Return Meter!</div>`;
                 ledgerContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-slate-950/50 rounded-xl border border-slate-800/80">No investment, compound, or auto-reinvestment records yet.</div>`;
             } else {
-                // 1. SINGLE UNIFIED MASTER 2x METER:
-                // Displays fixed Actual External Investment (#INV + #UPG) -> Fixed 2x Limit,
-                // while the single live progress bar dynamically fluctuates (Up & Down) based on active remaining 2x capacity!
                 const actualExternalInvested = Number((currentUserData && currentUserData.totalInvested) || 0);
                 const fixedExternal2xLimit = actualExternalInvested * 2;
 
@@ -3007,7 +3038,6 @@
                     </div>
                 `;
 
-                // 2. PAGINATED INDIVIDUAL LEDGER
                 const btnMoreLedger = document.getElementById('btnLoadMoreLedger');
                 const visibleLedger = myRecords.slice(0, ledgerDisplayLimit);
                 if (btnMoreLedger) {
