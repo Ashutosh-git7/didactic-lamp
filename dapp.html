@@ -297,49 +297,7 @@
 
     <!-- MAIN AUTHENTICATED DASHBOARD (5-BUTTON NAVIGATION WITH DEFAULT HOME VIEW) -->
     <main id="mainDashboard" class="flex-grow container mx-auto px-4 py-6 hidden flex-col gap-5">
-        <!-- 1. TOP MEMBER IDENTITY, HIGHLIGHTED ROYALTY RANK & REFERRAL LINK -->
-        <div class="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div class="space-y-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/30">
-                            <i class="fa-solid fa-user-check mr-1"></i> <span id="uiMemberName">--</span>
-                        </span>
-                        <button type="button" id="uiActiveClubRankBadge" onclick="switchDashboardTab('clubs')" class="bg-slate-900 text-gray-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full border border-slate-700 font-mono transition-all cursor-pointer flex items-center gap-1.5" title="Click to view Royalty Club Rank Progress">
-                            <i class="fa-solid fa-crown text-amber-400"></i> <span id="uiHeaderClubName">Starter Rank</span>
-                        </button>
-                        <button type="button" onclick="switchDashboardTab('matrix')" class="bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 text-xs font-bold px-3 py-1.5 rounded-full border border-sky-500/30 transition-colors cursor-pointer flex items-center gap-1" title="View Queue & Clone Positions">
-                            <i class="fa-solid fa-hashtag"></i> Queue: <span id="uiGlobalPos" class="text-white font-mono">--</span>
-                        </button>
-                        <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1.5 rounded-full border border-rose-500/30">
-                            <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1
-                        </span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2.5 text-xs text-gray-400">
-                        <span>Sponsor: <b id="uiSponsorDisplay" class="font-mono text-amber-300">Direct / None</b></span>
-                        <span>•</span>
-                        <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 font-bold inline-flex items-center gap-1">
-                            <i class="fa-brands fa-telegram"></i> 24/7 Live Proofs Channel <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 flex flex-col gap-1 min-w-[260px] sm:min-w-[350px]">
-                    <div class="flex justify-between items-center text-[10px]">
-                        <span class="text-gray-400 uppercase font-bold tracking-wider">Your TGIP Referral Link</span>
-                        <span class="text-emerald-400 font-semibold">10%–15% Direct + 5% Clubs</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-                        <code id="refLinkTxt" class="text-sky-400 font-mono text-xs truncate max-w-[190px] sm:max-w-[250px]">...</code>
-                        <button onclick="copyRefLink()" class="gold-btn px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer">
-                            <i class="fa-regular fa-copy"></i> Copy
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. 5-BUTTON NAVIGATION BAR (HOME, INVEST, CLUBS, MATRIX, LEDGER) -->
+        <!-- 1. 5-BUTTON NAVIGATION BAR (HOME, INVEST, CLUBS, MATRIX, LEDGER) -->
         <div class="glass-panel rounded-2xl p-2 grid grid-cols-5 gap-1.5 sm:gap-2 border border-slate-800">
             <button type="button" id="dashTabBtn_home" onclick="switchDashboardTab('home')" class="py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl text-[11px] sm:text-sm font-extrabold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer gold-btn shadow-md">
                 <i class="fa-solid fa-house"></i> <span>Home</span>
@@ -358,8 +316,50 @@
             </button>
         </div>
 
-        <!-- TAB PANEL 0: HOME (DEFAULT POST-LOGIN OVERVIEW) -->
-        <section id="dashTabPanel_home" class="space-y-4">
+        <!-- TAB PANEL 0: HOME (DEFAULT POST-LOGIN OVERVIEW WITH MEMBER IDENTITY, POSITION, REFERRAL, BALANCE & 2x METER) -->
+        <section id="dashTabPanel_home" class="space-y-5">
+            <!-- MEMBER IDENTITY, HIGHLIGHTED ROYALTY RANK & REFERRAL LINK -->
+            <div class="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/30">
+                                <i class="fa-solid fa-user-check mr-1"></i> <span id="uiMemberName">--</span>
+                            </span>
+                            <button type="button" id="uiActiveClubRankBadge" onclick="switchDashboardTab('clubs')" class="bg-slate-900 text-gray-300 text-xs font-extrabold px-3.5 py-1.5 rounded-full border border-slate-700 font-mono transition-all cursor-pointer flex items-center gap-1.5" title="Click to view Royalty Club Rank Progress">
+                                <i class="fa-solid fa-crown text-amber-400"></i> <span id="uiHeaderClubName">Starter Rank</span>
+                            </button>
+                            <button type="button" onclick="switchDashboardTab('matrix')" class="bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 text-xs font-bold px-3 py-1.5 rounded-full border border-sky-500/30 transition-colors cursor-pointer flex items-center gap-1" title="View Queue & Clone Positions">
+                                <i class="fa-solid fa-hashtag"></i> Queue: <span id="uiGlobalPos" class="text-white font-mono">--</span>
+                            </button>
+                            <span id="topDirectBadge" class="bg-rose-500/15 text-rose-400 text-xs font-bold px-3 py-1.5 rounded-full border border-rose-500/30">
+                                <i class="fa-solid fa-user-lock mr-1"></i> Directs: <span id="uiDirectCountTop">0</span>/1
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 text-xs text-gray-400">
+                            <span>Sponsor: <b id="uiSponsorDisplay" class="font-mono text-amber-300">Direct / None</b></span>
+                            <span>•</span>
+                            <a href="https://t.me/+3SrEDfLpD6ozMDI9" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 font-bold inline-flex items-center gap-1">
+                                <i class="fa-brands fa-telegram"></i> 24/7 Live Proofs Channel <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 flex flex-col gap-1 min-w-[260px] sm:min-w-[350px]">
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-gray-400 uppercase font-bold tracking-wider">Your TGIP Referral Link</span>
+                            <span class="text-emerald-400 font-semibold">10%–15% Direct + 5% Clubs</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                            <code id="refLinkTxt" class="text-sky-400 font-mono text-xs truncate max-w-[190px] sm:max-w-[250px]">...</code>
+                            <button onclick="copyRefLink()" class="gold-btn px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-t-4 border-t-amber-400 relative overflow-hidden">
                     <div>
