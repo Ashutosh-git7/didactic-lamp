@@ -1781,7 +1781,8 @@
             const u = state.globalUsersMap[sponsorLower];
             if (!u) return { freshA: 0, freshB: 0, freshTotalAB: 0, contributingDirects: 0 };
 
-            const tierStartTs = Number(u.clubTierEnteredAt || u.clubTimerStart || 0);
+            const curTierIdx = u.progressionTier !== undefined ? u.progressionTier : 0;
+            const tierStartTs = curTierIdx > 0 ? Number(u.clubTierEnteredAt || u.clubTimerStart || 0) : 0;
             const directWalletsSet = new Set();
             for (const [wKey, dir] of Object.entries(state.globalUsersMap || {})) {
                 const dSpon = getCleanSponsor(dir);
@@ -1794,6 +1795,7 @@
             let freshA = 0;
             let freshB = 0;
             const activeContributors = new Set();
+            const invByDirect = {};
 
             (state.investmentRecords || []).forEach(rec => {
                 if (!rec || !rec.wallet) return;
@@ -1803,22 +1805,25 @@
 
                 const recTs = Number(rec.createdAtMs || 0);
                 if (tierStartTs > 0 && recTs > 0 && recTs < tierStartTs) return;
-                if (tierStartTs > 0 && recTs === 0 && (u.progressionTier || 0) > 0) return;
+                if (tierStartTs > 0 && recTs === 0 && curTierIdx > 0) return;
 
                 const amt = Number(rec.amount || 0);
                 if (amt > 0) {
                     if (rec.type === 'DIRECT_PACKAGE') freshA += amt;
                     else if (rec.type === 'UPGRADE') freshB += amt;
                     activeContributors.add(rWallet);
+                    invByDirect[rWallet] = (invByDirect[rWallet] || 0) + amt;
                 }
             });
 
-            if (freshA + freshB === 0 && (u.progressionTier || 0) === 0 && Number(u.clubConsumedDirectVolume || 0) === 0) {
+            // Include any legacy direct member deposits not yet present in investmentRecords
+            if (curTierIdx === 0) {
                 for (const dWallet of directWalletsSet) {
                     const dUser = state.globalUsersMap[dWallet];
-                    const inv = Number((dUser && dUser.totalInvested) || 0);
-                    if (inv > 0) {
-                        freshA += inv;
+                    const totalDirInv = Number((dUser && dUser.totalInvested) || 0);
+                    const recordedDirInv = Number(invByDirect[dWallet] || 0);
+                    if (totalDirInv > recordedDirInv + 0.0001) {
+                        freshA += (totalDirInv - recordedDirInv);
                         activeContributors.add(dWallet);
                     }
                 }
